@@ -1,0 +1,206 @@
+DRAPER CITY, UTAH — TITLE IX ZONING REGULATIONS
+Representative excerpt covering commercial and industrial districts.
+Source: Draper City Code of Ordinances, Title 9.
+(This file is a testing fixture. Verify against the live ordinance at
+https://library.municode.com/ut/draper/codes/code_of_ordinances)
+
+================================================================================
+CHAPTER 9-13. COMMERCIAL DISTRICTS
+================================================================================
+
+9-13-010. PURPOSE OF COMMERCIAL DISTRICTS.
+The commercial districts established in this title are intended to provide for
+a range of retail, service, and commercial uses at scales appropriate to their
+locations. Uses that are not expressly listed as permitted or conditional are
+prohibited.
+
+--------------------------------------------------------------------------------
+9-13-030. COMMERCIAL GENERAL (CG) DISTRICT.
+--------------------------------------------------------------------------------
+
+A. Purpose. The CG District accommodates a full range of retail and service
+activities serving community-wide needs, including uses of moderate intensity.
+
+B. Permitted Uses. The following uses are permitted by right in the CG District:
+   1. Retail and service establishments, general
+   2. Restaurants and food service, including drive-through
+   3. Financial institutions and professional offices
+   4. Self-storage facilities and mini-warehouse facilities
+   5. Wholesale establishments with ancillary retail
+   6. Personal service establishments
+   7. Commercial recreation, indoor
+
+C. Conditional Uses. The following uses require a conditional use permit in the
+CG District:
+   1. Automobile service stations and repair
+   2. Car wash facilities
+   3. Outdoor storage, accessory to a permitted use
+   4. Residential uses above ground floor
+
+D. Prohibited Uses. The following uses are expressly prohibited in the CG District:
+   1. Heavy manufacturing or industrial uses
+   2. Junk yards, salvage operations
+   3. Single-family or multi-family residential as a principal use
+
+--------------------------------------------------------------------------------
+9-13-050. COMMUNITY SHOPPING (CS) DISTRICT.
+--------------------------------------------------------------------------------
+
+A. Purpose. The CS District provides neighborhood-scale commercial uses serving
+the day-to-day needs of nearby residential areas. Uses are limited to those
+compatible with adjacent residential zones.
+
+B. Permitted Uses. The following uses are permitted by right in the CS District:
+   1. Retail establishments, neighborhood scale (under 40,000 sq ft)
+   2. Personal service establishments
+   3. Medical and dental offices
+   4. Financial institutions
+   5. Restaurants, without drive-through
+
+C. Conditional Uses. The following uses require a conditional use permit in the
+CS District:
+   1. Self-storage facilities
+   2. Mini-warehouse facilities
+   3. Drive-through facilities
+   4. Automobile service stations
+
+D. Prohibited Uses.
+   1. Manufacturing or industrial uses of any kind
+   2. Warehousing (except mini-warehouse as a conditional use per subsection C.2)
+   3. Adult-oriented businesses
+
+--------------------------------------------------------------------------------
+9-13-070. COMMERCIAL BUSINESS PARK (CBP) DISTRICT.
+--------------------------------------------------------------------------------
+
+A. Purpose. The CBP District provides areas for integrated development combining
+office, research, light manufacturing, and supporting commercial uses in an
+employment center setting.
+
+B. Permitted Uses. The following uses are permitted by right in the CBP District:
+   1. Professional and general offices
+   2. Research and development facilities
+   3. Light manufacturing and assembly operations
+   4. Warehousing and distribution
+   5. Self-storage facilities and mini-warehouse facilities
+   6. Flex industrial uses (office/warehouse combination)
+   7. Ancillary retail and food service (not to exceed 20% of floor area)
+
+C. Conditional Uses.
+   1. Automobile sales and fleet operations
+   2. Contractor storage yards, screened
+   3. Outdoor storage
+
+D. Maximum Building Height: 45 feet.
+E. Minimum Landscape: 20% of site area.
+
+================================================================================
+CHAPTER 9-14. INDUSTRIAL DISTRICTS
+================================================================================
+
+9-14-010. PURPOSE OF INDUSTRIAL DISTRICTS.
+Industrial districts are intended to provide locations for manufacturing,
+processing, assembling, warehousing, and distribution uses. Industrial uses
+shall be sited and operated to minimize impacts on adjacent non-industrial areas.
+
+--------------------------------------------------------------------------------
+9-14-020. LIGHT INDUSTRIAL (M1) DISTRICT.
+--------------------------------------------------------------------------------
+
+A. Purpose. The M1 District is established to provide areas for light
+manufacturing, assembly, warehousing, distribution, and related industrial uses
+that can be located near commercial and residential areas without generating
+significant noise, odor, vibration, or other nuisance impacts.
+
+B. Permitted Uses. The following uses are permitted by right in the M1 District:
+   1. Manufacturing, light (including assembly and fabrication, limited)
+   2. Warehousing and distribution facilities
+   3. Self-storage warehouses
+   4. Mini-warehouse facilities
+   5. Research and development facilities
+   6. Flex industrial uses
+   7. Wholesale trade establishments
+   8. Contractor shops and yards, enclosed
+   9. Trucking terminals and freight handling
+   10. Public utility facilities
+
+C. Conditional Uses.
+   1. Outdoor storage exceeding 10% of lot area
+   2. Concrete or asphalt batch plants
+   3. Auto wrecking or recycling, fully enclosed
+
+D. Prohibited Uses.
+   1. Heavy manufacturing (as defined in Section 9-02-020)
+   2. Residential uses of any kind, except caretaker dwelling accessory to the
+      primary industrial use
+   3. Retail establishments as a principal use (ancillary retail permitted up
+      to 15% of floor area)
+
+E. Maximum Building Height: 50 feet.
+F. Minimum Lot Area: 20,000 square feet.
+
+--------------------------------------------------------------------------------
+9-14-030. MANUFACTURING LIMITED (ML) DISTRICT.
+--------------------------------------------------------------------------------
+
+A. Purpose. The ML District is similar to M1 but allows somewhat heavier
+industrial uses in areas buffered from sensitive receptors.
+
+B. Permitted Uses:
+   1. All uses permitted in M1 District
+   2. Manufacturing, medium (limited per Section 9-14-030.D)
+   3. Building materials supply
+   4. Vehicle fleet storage and maintenance
+
+C. Prohibited Uses:
+   1. Residential uses of any kind
+
+================================================================================
+CHAPTER 9-15. RESIDENTIAL DISTRICTS (Excerpted)
+================================================================================
+
+9-15-010. SINGLE FAMILY RESIDENTIAL (R-1-10) DISTRICT.
+
+A. Purpose. The R-1-10 District is established for single-family residential use
+at a medium density (minimum 10,000 sq ft lots).
+
+B. Permitted Uses:
+   1. Single-family dwellings
+   2. Home occupations (subject to Section 9-20-040 standards)
+   3. Parks and open space
+   4. Schools and religious institutions
+   5. Family day care (up to 8 children)
+
+C. Prohibited Uses:
+   1. Commercial uses of any kind as a principal use
+   2. Industrial uses
+   3. Warehousing or storage facilities (commercial)
+   4. Mini-warehouse or self-storage facilities
+
+9-15-040. MULTI-FAMILY RESIDENTIAL (RM) DISTRICT.
+
+A. Purpose. The RM District provides for multi-family residential development
+including apartments, condominiums, and townhomes.
+
+B. Permitted Uses:
+   1. Multi-family dwellings
+   2. Townhomes and condominiums
+   3. Accessory dwelling units
+
+C. Prohibited Uses:
+   1. Industrial uses
+   2. Commercial uses other than accessory uses to residential
+   3. Self-storage or mini-warehouse facilities
+
+================================================================================
+CHAPTER 9-16. OPEN SPACE AND PUBLIC FACILITY DISTRICTS (Excerpted)
+================================================================================
+
+9-16-010. OPEN SPACE (OS) DISTRICT.
+Permitted Uses: parks, trails, natural open space, agricultural uses.
+Prohibited: commercial, industrial, residential (except caretaker).
+Self-storage, mini-warehouse, and warehousing are prohibited.
+
+9-16-020. PUBLIC FACILITIES (PF) DISTRICT.
+Permitted Uses: government buildings, schools, utilities, hospitals.
+Self-storage, mini-warehouse, and industrial uses are prohibited.

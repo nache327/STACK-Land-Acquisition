@@ -1,0 +1,40 @@
+import uuid
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+
+from app.models.job import JobStatus
+
+TargetUse = Literal["self_storage", "mini_warehouse", "light_industrial", "luxury_garage_condo"]
+
+ALL_USES: list[TargetUse] = [
+    "self_storage",
+    "mini_warehouse",
+    "light_industrial",
+    "luxury_garage_condo",
+]
+
+
+class JobCreate(BaseModel):
+    """POST /api/jobs body."""
+    # Either a city name ("Draper, UT") or an ArcGIS map URL
+    jurisdiction: str = Field(..., min_length=2, max_length=512)
+    # URL to Municode / eCode360 / city website — OR omit if uploading PDF
+    ordinance_url: str | None = Field(None, max_length=1024)
+    target_uses: list[TargetUse] = Field(default_factory=lambda: list(ALL_USES))
+
+
+class JobRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    jurisdiction_id: uuid.UUID | None
+    status: JobStatus
+    jurisdiction_input: str | None
+    ordinance_url: str | None
+    target_uses: list[str] | None
+    error_message: str | None
+    progress: dict | None
+    created_at: datetime
+    updated_at: datetime

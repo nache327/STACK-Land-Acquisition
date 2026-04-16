@@ -1,0 +1,86 @@
+import enum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Numeric,
+    String,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db import Base
+
+
+class UsePermission(str, enum.Enum):
+    permitted = "permitted"
+    conditional = "conditional"
+    prohibited = "prohibited"
+    unclear = "unclear"
+
+
+class ZoneUseMatrix(Base):
+    __tablename__ = "zone_use_matrix"
+    __table_args__ = (
+        UniqueConstraint("jurisdiction_id", "zone_code", name="uq_zone_matrix"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    jurisdiction_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("jurisdictions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    zone_code: Mapped[str] = mapped_column(String(50), nullable=False)
+    zone_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    self_storage: Mapped[UsePermission] = mapped_column(
+        Enum(UsePermission, name="use_permission_enum"),
+        nullable=False,
+        default=UsePermission.unclear,
+    )
+    mini_warehouse: Mapped[UsePermission] = mapped_column(
+        Enum(UsePermission, name="use_permission_enum", create_constraint=False),
+        nullable=False,
+        default=UsePermission.unclear,
+    )
+    light_industrial: Mapped[UsePermission] = mapped_column(
+        Enum(UsePermission, name="use_permission_enum", create_constraint=False),
+        nullable=False,
+        default=UsePermission.unclear,
+    )
+    luxury_garage_condo: Mapped[UsePermission] = mapped_column(
+        Enum(UsePermission, name="use_permission_enum", create_constraint=False),
+        nullable=False,
+        default=UsePermission.unclear,
+    )
+
+    # JSON array of {"section": "...", "quote": "..."}
+    citations: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Numeric(4, 3), nullable=True)
+    human_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    notes: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    jurisdiction: Mapped["Jurisdiction"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="zone_matrix"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ZoneUseMatrix {self.zone_code} ({self.jurisdiction_id})>"

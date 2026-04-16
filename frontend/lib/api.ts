@@ -1,0 +1,149 @@
+/**
+ * Typed API client for the FastAPI backend.
+ *
+ * All functions throw on non-2xx responses with the error detail from the API.
+ * Phase 1: all endpoints wired to the correct paths.
+ * Phase 2+: response schemas validated with Zod at runtime.
+ */
+
+import {
+  JobSchema,
+  ParcelDetailSchema,
+  ParcelListResponseSchema,
+  ZoneMatrixResponseSchema,
+  type Job,
+  type JobCreate,
+  type ParcelDetail,
+  type ParcelListResponse,
+  type ZoneMatrixResponse,
+} from "./schemas";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+async function fetchJSON<T>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { "Content-Type": "application/json", ...init?.headers },
+    ...init,
+  });
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      detail = body.detail ?? detail;
+    } catch {
+      // ignore JSON parse failure
+    }
+    throw new Error(detail);
+  }
+
+  return res.json() as Promise<T>;
+}
+
+// ---- jobs -----------------------------------------------------------------
+
+export const api = {
+  async createJob(payload: JobCreate): Promise<Job> {
+    const raw = await fetchJSON<unknown>("/api/jobs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return JobSchema.parse(raw);
+  },
+
+  async getJob(jobId: string): Promise<Job> {
+    const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}`);
+    return JobSchema.parse(raw);
+  },
+
+  // ---- parcels ------------------------------------------------------------
+
+  async listParcels(
+    jurisdictionId: string,
+    params: Record<string, string | number | boolean | string[]> = {}
+  ): Promise<ParcelListResponse> {
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => qs.append(key, String(v)));
+      } else {
+        qs.set(key, String(value));
+      }
+    }
+    const raw = await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/parcels?${qs}`
+    );
+    return ParcelListResponseSchema.parse(raw);
+  },
+
+  async getParcel(parcelId: number): Promise<ParcelDetail> {
+    const raw = await fetchJSON<unknown>(`/api/parcels/${parcelId}`);
+    return ParcelDetailSchema.parse(raw);
+  },
+
+  // ---- zones --------------------------------------------------------------
+
+  async getZoneMatrix(jurisdictionId: string): Promise<ZoneMatrixResponse> {
+    const raw = await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/zones`
+    );
+    return ZoneMatrixResponseSchema.parse(raw);
+  },
+
+  async updateZone(
+    jurisdictionId: string,
+    zoneCode: string,
+    patch: Record<string, unknown>
+  ): Promise<void> {
+    await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      }
+    );
+  },
+
+  async getZoneSummary(jurisdictionId: string): Promise<Record<string, number>> {
+    return fetchJSON<Record<string, number>>(
+      `/api/jurisdictions/${jurisdictionId}/parcels/zone-summary`
+    );
+  },
+
+  // ---- ordinances ---------------------------------------------------------
+
+  async triggerParse(
+    jurisdictionId: string,
+    ordinanceUrl?: string
+  ): Promise<{ status: string; message: string }> {
+    return fetchJSON<{ status: string; message: string }>(
+      `/api/ordinances/${jurisdictionId}/parse`,
+      {
+        method: "POST",
+        body: JSON.stringify({ ordinance_url: ordinanceUrl ?? null }),
+      }
+    );
+  },
+
+  // ---- shortlists ---------------------------------------------------------
+
+  async createShortlist(payload: {
+    jurisdiction_id: string;
+    name: string;
+    filters: Record<string, unknown>;
+    parcel_ids: number[];
+  }): Promise<{ id: string }> {
+    return fetchJSON<{ id: string }>("/api/shortlists", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  shortlistExportUrl(shortlistId: string): string {
+    return `${BASE_URL}/api/shortlists/${shortlistId}/export.csv`;
+  },
+};

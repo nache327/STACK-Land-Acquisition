@@ -1,0 +1,54 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Alembic
+backend/alembic/versions/*.pyc
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/.turbo/
+frontend/coverage/
+*.tsbuildinfo
+# pnpm-lock.yaml is intentionally committed — do NOT add it here
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+*.log
+
+# Data / cache
+*.tif
+*.geojson.cache
+/data/

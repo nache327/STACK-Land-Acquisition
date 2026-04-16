@@ -1,0 +1,321 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { useState, useEffect, useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useJobPoller } from "@/hooks/useJobPoller";
+import { useParcelList } from "@/hooks/useParcels";
+import { JobProgress } from "@/components/JobProgress";
+import { ParcelTable } from "@/components/ParcelTable";
+import { ParcelDrawer } from "@/components/ParcelDrawer";
+import { FilterPanel, DEFAULT_FILTERS } from "@/components/FilterPanel";
+import type { FilterState } from "@/components/FilterPanel";
+import { useParcelDetail } from "@/hooks/useParcels";
+import type { ParcelRow } from "@/lib/schemas";
+import { api } from "@/lib/api";
+import Link from "next/link";
+
+// MapLibre GL JS must not be SSR'd
+const ParcelMap = dynamic(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-400">
+      Loading map…
+    </div>
+  ),
+});
+
+interface Props {
+  params: { jobId: string };
+}
+
+export default function DashboardPage({ params }: Props) {
+  const { jobId } = params;
+  const { data: job, isLoading, error } = useJobPoller(jobId);
+
+  if (isLoading || !job) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <span className="text-sm text-slate-400">Loading…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="text-sm text-red-600">Failed to load job: {String(error)}</p>
+      </div>
+    );
+  }
+
+  if (job.status !== "ready") {
+    return <JobProgress job={job} />;
+  }
+
+  return <DashboardReady job={job} />;
+}
+
+// ─── Dashboard (ready state) ──────────────────────────────────────────────────
+
+function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status: string } }) {
+  const jurisdictionId = job.jurisdiction_id;
+  const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
+  // Shortlist selection
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [shortlistName, setShortlistName] = useState("");
+  const [shortlistSaved, setShortlistSaved] = useState<string | null>(null); // saved shortlist id
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [filters]);
+
+  // Build query params from filter state
+  const listParams: Record<string, string | number | boolean | string[]> = {
+    page: 1,
+    page_size: 200,
+    vacant_only: filters.vacantOnly,
+    exclude_flood: filters.excludeFlood,
+    exclude_steep: filters.excludeSteep,
+    exclude_wetland: filters.excludeWetland,
+  };
+  if (filters.zones.length > 0) listParams.zones = filters.zones;
+  if (filters.minAcres != null) listParams.min_acres = filters.minAcres;
+  if (filters.maxAcres != null) listParams.max_acres = filters.maxAcres;
+
+  const { data: parcelList, isLoading: tableLoading } = useParcelList(
+    jurisdictionId,
+    listParams
+  );
+
+  const { data: parcelDetail } = useParcelDetail(drawerOpen ? selectedParcelId : null);
+
+  const parcels = parcelList?.items ?? [];
+
+  // ── Keyboard navigation ───────────────────────────────────────────────────
+  const navigateParcel = useCallback(
+    (direction: "up" | "down") => {
+      if (parcels.length === 0) return;
+      const currentIdx = parcels.findIndex((p) => p.id === selectedParcelId);
+      let nextIdx: number;
+      if (currentIdx === -1) {
+        nextIdx = direction === "down" ? 0 : parcels.length - 1;
+      } else {
+        nextIdx =
+          direction === "down"
+            ? Math.min(currentIdx + 1, parcels.length - 1)
+            : Math.max(currentIdx - 1, 0);
+      }
+      setSelectedParcelId(parcels[nextIdx].id);
+      setDrawerOpen(true);
+    },
+    [parcels, selectedParcelId]
+  );
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Don't steal keys from input/textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+
+      if (e.key === "Escape") {
+        setDrawerOpen(false);
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        navigateParcel("down");
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        navigateParcel("up");
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [navigateParcel]);
+
+  // ── Shortlist toggle ──────────────────────────────────────────────────────
+  function toggleShortlist(parcelId: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(parcelId)) next.delete(parcelId);
+      else next.add(parcelId);
+      return next;
+    });
+  }
+
+  // ── Save shortlist + trigger CSV download ────────────────────────────────
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!jurisdictionId) throw new Error("No jurisdiction");
+      return api.createShortlist({
+        jurisdiction_id: jurisdictionId,
+        name: shortlistName.trim() || `Shortlist ${new Date().toLocaleDateString()}`,
+        filters: filters as unknown as Record<string, unknown>,
+        parcel_ids: Array.from(selectedIds),
+      });
+    },
+    onSuccess: (sl) => {
+      setShortlistSaved(sl.id);
+      // Trigger download
+      const url = api.shortlistExportUrl(sl.id);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${shortlistName || "shortlist"}.csv`;
+      a.click();
+    },
+  });
+
+  // ── Parcel click ──────────────────────────────────────────────────────────
+  function handleParcelClick(parcel: ParcelRow) {
+    setSelectedParcelId(parcel.id);
+    setDrawerOpen(true);
+  }
+
+  return (
+    <div className="flex h-screen flex-col overflow-hidden">
+      {/* Top bar */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-slate-900 hover:text-emerald-600"
+          >
+            Zoning Finder
+          </Link>
+          <span className="text-slate-300">/</span>
+          <span className="text-sm text-slate-500">Dashboard</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+            {parcelList?.total?.toLocaleString() ?? "…"} parcels
+          </span>
+          {jurisdictionId && (
+            <Link
+              href={`/ordinance/${job.jurisdiction_id}`}
+              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Zone Matrix
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {/* Three-pane body */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: filter panel */}
+        <aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
+          <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
+        </aside>
+
+        {/* Center: map */}
+        <main className="relative flex-1 overflow-hidden">
+          {jurisdictionId ? (
+            <ParcelMap
+              jurisdictionId={jurisdictionId}
+              selectedParcelId={selectedParcelId}
+              onParcelClick={(id) => {
+                setSelectedParcelId(id);
+                setDrawerOpen(true);
+              }}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-400">
+              No jurisdiction data
+            </div>
+          )}
+        </main>
+
+        {/* Right: parcel table (hidden when drawer is open) */}
+        <aside
+          className={[
+            "w-[420px] shrink-0 overflow-y-auto border-l border-slate-200 bg-white transition-all",
+            drawerOpen ? "hidden" : "",
+          ].join(" ")}
+        >
+          {tableLoading ? (
+            <div className="flex h-full items-center justify-center text-sm text-slate-400">
+              Loading parcels…
+            </div>
+          ) : (
+            <ParcelTable
+              parcels={parcels}
+              onRowClick={handleParcelClick}
+              selectedId={selectedParcelId}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+            />
+          )}
+        </aside>
+      </div>
+
+      {/* Parcel drawer */}
+      {drawerOpen && (
+        <ParcelDrawer
+          parcel={parcelDetail ?? null}
+          onClose={() => setDrawerOpen(false)}
+          isInShortlist={selectedParcelId !== null && selectedIds.has(selectedParcelId)}
+          onToggleShortlist={
+            selectedParcelId !== null
+              ? () => toggleShortlist(selectedParcelId)
+              : undefined
+          }
+        />
+      )}
+
+      {/* Shortlist action bar — appears when parcels are checked */}
+      {selectedIds.size > 0 && (
+        <div className="flex h-14 shrink-0 items-center gap-3 border-t border-slate-200 bg-white px-4 shadow-md">
+          <span className="text-sm font-medium text-slate-700">
+            {selectedIds.size} parcel{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="flex flex-1 items-center gap-2">
+            <input
+              type="text"
+              value={shortlistName}
+              onChange={(e) => setShortlistName(e.target.value)}
+              placeholder="Name your shortlist…"
+              className="w-56 rounded-md border border-slate-200 px-3 py-1.5 text-sm placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+            />
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {saveMutation.isPending ? "Saving…" : "Save & Export CSV"}
+            </button>
+            {saveMutation.isError && (
+              <span className="text-xs text-red-600">
+                {(saveMutation.error as Error)?.message}
+              </span>
+            )}
+            {shortlistSaved && (
+              <a
+                href={api.shortlistExportUrl(shortlistSaved)}
+                className="text-xs text-emerald-600 underline"
+                download
+              >
+                Download again
+              </a>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setSelectedIds(new Set());
+              setShortlistSaved(null);
+              setShortlistName("");
+            }}
+            className="text-xs text-slate-400 hover:text-slate-600"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,147 @@
+/**
+ * Zod schemas that mirror the FastAPI Pydantic schemas.
+ * Used for runtime validation of API responses in the frontend.
+ */
+import { z } from "zod";
+
+// ---- enums ----------------------------------------------------------------
+
+export const UsePermissionSchema = z.enum([
+  "permitted",
+  "conditional",
+  "prohibited",
+  "unclear",
+]);
+export type UsePermission = z.infer<typeof UsePermissionSchema>;
+
+export const JobStatusSchema = z.enum([
+  "pending",
+  "discovering_layers",
+  "downloading_parcels",
+  "parsing_ordinance",
+  "running_overlays",
+  "ready",
+  "failed",
+]);
+export type JobStatus = z.infer<typeof JobStatusSchema>;
+
+export const TargetUseSchema = z.enum([
+  "self_storage",
+  "mini_warehouse",
+  "light_industrial",
+  "luxury_garage_condo",
+]);
+export type TargetUse = z.infer<typeof TargetUseSchema>;
+
+// ---- job ------------------------------------------------------------------
+
+export const JobSchema = z.object({
+  id: z.string().uuid(),
+  jurisdiction_id: z.string().uuid().nullable(),
+  status: JobStatusSchema,
+  jurisdiction_input: z.string().nullable(),
+  ordinance_url: z.string().nullable(),
+  target_uses: z.array(z.string()).nullable(),
+  error_message: z.string().nullable(),
+  progress: z.record(z.unknown()).nullable(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+export type Job = z.infer<typeof JobSchema>;
+
+export const JobCreateSchema = z.object({
+  jurisdiction: z.string().min(2),
+  ordinance_url: z.string().url().optional(),
+  target_uses: z.array(TargetUseSchema).default([
+    "self_storage",
+    "mini_warehouse",
+    "light_industrial",
+    "luxury_garage_condo",
+  ]),
+});
+export type JobCreate = z.infer<typeof JobCreateSchema>;
+
+// ---- parcel ---------------------------------------------------------------
+
+export const ParcelRowSchema = z.object({
+  id: z.number().int(),
+  jurisdiction_id: z.string().uuid(),
+  apn: z.string(),
+  address: z.string().nullable(),
+  owner_name: z.string().nullable(),
+  acres: z.number().nullable(),
+  zoning_code: z.string().nullable(),
+  land_use_code: z.string().nullable(),
+  improvement_value: z.number().nullable(),
+  has_structure: z.boolean().nullable(),
+  in_flood_zone: z.boolean(),
+  avg_slope_pct: z.number().nullable(),
+  in_wetland: z.boolean(),
+  county_link: z.string().nullable(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+export type ParcelRow = z.infer<typeof ParcelRowSchema>;
+
+export const ParcelDetailSchema = ParcelRowSchema.extend({
+  raw: z.record(z.unknown()).nullable().optional(),
+  geom: z.record(z.unknown()).nullable().optional(),
+  centroid: z.record(z.unknown()).nullable().optional(),
+});
+export type ParcelDetail = z.infer<typeof ParcelDetailSchema>;
+
+export const ParcelListResponseSchema = z.object({
+  items: z.array(ParcelRowSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  page_size: z.number().int(),
+});
+export type ParcelListResponse = z.infer<typeof ParcelListResponseSchema>;
+
+// ---- zone use matrix ------------------------------------------------------
+
+export const CitationSchema = z.object({
+  section: z.string(),
+  quote: z.string(),
+});
+
+export const ZoneRowSchema = z.object({
+  id: z.number().int(),
+  jurisdiction_id: z.string().uuid(),
+  zone_code: z.string(),
+  zone_name: z.string().nullable(),
+  self_storage: UsePermissionSchema,
+  mini_warehouse: UsePermissionSchema,
+  light_industrial: UsePermissionSchema,
+  luxury_garage_condo: UsePermissionSchema,
+  citations: z.array(CitationSchema).nullable(),
+  confidence: z.number().nullable(),
+  human_reviewed: z.boolean(),
+  notes: z.string().nullable(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+export type ZoneRow = z.infer<typeof ZoneRowSchema>;
+
+export const ZoneMatrixResponseSchema = z.object({
+  zones: z.array(ZoneRowSchema),
+  unknown_zones: z.array(z.string()),
+  parser_warnings: z.array(z.string()),
+});
+export type ZoneMatrixResponse = z.infer<typeof ZoneMatrixResponseSchema>;
+
+// ---- jurisdiction ---------------------------------------------------------
+
+export const JurisdictionSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  state: z.string().length(2),
+  county: z.string().nullable(),
+  parcel_source: z.enum(["city_gis", "county_gis", "regrid"]).nullable(),
+  parcel_endpoint: z.string().nullable(),
+  zoning_endpoint: z.string().nullable(),
+  ordinance_url: z.string().nullable(),
+  last_indexed_at: z.string().datetime().nullable(),
+  created_at: z.string().datetime(),
+});
+export type Jurisdiction = z.infer<typeof JurisdictionSchema>;

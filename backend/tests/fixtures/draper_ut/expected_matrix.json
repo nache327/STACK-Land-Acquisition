@@ -1,0 +1,69 @@
+{
+  "_comment": "Hand-labeled ground truth for the Draper UT ordinance excerpt fixture.",
+  "_note": "Verify these classifications against the live Draper City ordinance before finalizing.",
+  "zones": [
+    {
+      "code": "CG",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "CS",
+      "self_storage": "conditional",
+      "mini_warehouse": "conditional",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "conditional"
+    },
+    {
+      "code": "CBP",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "M1",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "ML",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "R-1-10",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    },
+    {
+      "code": "RM",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    },
+    {
+      "code": "OS",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    },
+    {
+      "code": "PF",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    }
+  ]
+}

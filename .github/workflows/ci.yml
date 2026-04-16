@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "phase/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Backend — pytest
+  # -------------------------------------------------------------------------
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: zoning_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "backend/pyproject.toml"
+
+      - name: Install system deps (GDAL)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgdal-dev gdal-bin libgeos-dev libproj-dev libpq-dev
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Run unit tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/zoning_test
+          ANTHROPIC_API_KEY: ""
+          REGRID_API_KEY: ""
+        run: |
+          pytest --cov=app --cov-report=term-missing --cov-fail-under=60 -v -m "not integration"
+
+      - name: Run integration tests (Draper E2E)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/zoning_test
+          ANTHROPIC_API_KEY: ""
+          REGRID_API_KEY: ""
+        run: |
+          pytest tests/test_draper_e2e.py -v -m integration --timeout=300
+
+  # -------------------------------------------------------------------------
+  # Frontend — typecheck + jest
+  # -------------------------------------------------------------------------
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/package.json"
+
+      - name: Install dependencies
+        working-directory: frontend
+        # Use --frozen-lockfile once pnpm-lock.yaml is committed (after first pnpm install)
+        run: pnpm install
+
+      - name: Type check
+        working-directory: frontend
+        run: pnpm typecheck
+
+      - name: Run tests
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_TILESERV_URL: http://localhost:7800
+          NEXT_PUBLIC_MAPLIBRE_STYLE: https://tiles.openfreemap.org/styles/liberty
+        run: pnpm test --coverage
