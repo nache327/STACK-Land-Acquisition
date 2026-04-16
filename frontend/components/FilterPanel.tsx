@@ -31,10 +31,10 @@ export const DEFAULT_FILTERS: FilterState = {
   zones: [],
   minAcres: null,
   maxAcres: null,
-  excludeFlood: true,
+  excludeFlood: false,
   excludeSteep: false,
   excludeWetland: false,
-  vacantOnly: true,
+  vacantOnly: false,
 };
 
 interface FilterPanelProps {

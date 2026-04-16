@@ -218,6 +218,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           {jurisdictionId ? (
             <ParcelMap
               jurisdictionId={jurisdictionId}
+              filters={filters}
               selectedParcelId={selectedParcelId}
               onParcelClick={(id) => {
                 setSelectedParcelId(id);
