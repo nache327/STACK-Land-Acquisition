@@ -108,14 +108,26 @@ async def get_parcels_map_layer(
                         'id',         p.id,
                         'geometry',   ST_AsGeoJSON(p.geom, 6)::json,
                         'properties', json_build_object(
-                            'id',            p.id,
-                            'apn',           p.apn,
-                            'zoning_code',   p.zoning_code,
-                            'acres',         p.acres,
-                            'has_structure', p.has_structure,
-                            'in_flood_zone', p.in_flood_zone,
-                            'in_wetland',    p.in_wetland,
-                            'address',       p.address
+                            'id',                p.id,
+                            'apn',               p.apn,
+                            'zoning_code',       p.zoning_code,
+                            'acres',             p.acres,
+                            'has_structure',     p.has_structure,
+                            'in_flood_zone',     p.in_flood_zone,
+                            'in_wetland',        p.in_wetland,
+                            'address',           p.address,
+                            'storage_permission', CASE
+                                WHEN zum.self_storage    = 'permitted'
+                                  OR zum.mini_warehouse  = 'permitted'
+                                  OR zum.luxury_garage_condo = 'permitted'
+                                THEN 'permitted'
+                                WHEN zum.self_storage    = 'conditional'
+                                  OR zum.mini_warehouse  = 'conditional'
+                                  OR zum.luxury_garage_condo = 'conditional'
+                                THEN 'conditional'
+                                WHEN zum.zone_code IS NOT NULL THEN 'prohibited'
+                                ELSE 'unclassified'
+                            END
                         )
                     )
                     ORDER BY p.id
@@ -124,6 +136,9 @@ async def get_parcels_map_layer(
             )
         ) AS fc
         FROM parcels p
+        LEFT JOIN zone_use_matrix zum
+            ON  zum.jurisdiction_id = p.jurisdiction_id
+            AND zum.zone_code       = p.zoning_code
         WHERE p.jurisdiction_id = :jid
     """)
 

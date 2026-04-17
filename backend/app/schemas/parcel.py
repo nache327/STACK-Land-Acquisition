@@ -22,9 +22,6 @@ class ParcelRead(BaseModel):
     avg_slope_pct: float | None
     in_wetland: bool
     county_link: str | None
-    # GeoJSON geometry (serialized by service layer)
-    geom: dict | None = None
-    centroid: dict | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -45,10 +42,10 @@ class ParcelFilter(BaseModel):
     zones: list[str] | None = None
     min_acres: float | None = Field(None, ge=0)
     max_acres: float | None = Field(None, ge=0)
-    exclude_flood: bool = True
+    exclude_flood: bool = False
     exclude_steep: bool = False
     exclude_wetland: bool = False
-    vacant_only: bool = True
+    vacant_only: bool = False
     bbox: list[float] | None = Field(
         None,
         description="[min_lng, min_lat, max_lng, max_lat]",
