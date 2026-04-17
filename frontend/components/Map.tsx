@@ -98,10 +98,20 @@ interface MapProps {
 }
 
 const PARCEL_SOURCE   = "parcels";
-const PARCEL_DIM      = "parcels-dim";      // always visible, dark gray
-const PARCEL_FILL     = "parcels-fill";     // qualifying only, bright green
+const PARCEL_DIM      = "parcels-dim";      // always visible, very dark base
+const PARCEL_FILL     = "parcels-fill";     // qualifying only, colored by permission
 const PARCEL_LINE     = "parcels-line";
 const PARCEL_SELECTED = "parcels-selected";
+
+// Colors by storage permission status
+const PERMISSION_COLORS = {
+  permitted:    "#10b981",  // emerald green  — build by right
+  conditional:  "#f59e0b",  // amber          — needs CUP
+  prohibited:   "#6b7280",  // gray           — not viable
+  unclassified: "#94a3b8",  // light slate    — no ordinance data yet
+} as const;
+
+type PermissionStatus = keyof typeof PERMISSION_COLORS;
 
 const TILESERV_URL = process.env.NEXT_PUBLIC_TILESERV_URL ?? null;
 const DEFAULT_CENTER: [number, number] = [-111.868, 40.524];
@@ -203,7 +213,7 @@ export default function Map({
         },
       } as maplibregl.LayerSpecification);
 
-      // 2. Bright qualifying layer — filtered, green gradient
+      // 2. Qualifying layer — filtered, colored by storage permission
       const qualFilter = buildQualifyingFilter(filtersRef.current);
       map.addLayer({
         id: PARCEL_FILL,
@@ -212,13 +222,20 @@ export default function Map({
         ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
         filter: qualFilter ?? ["boolean", true],
         paint: {
-          // Confirmed vacant = neon green; unknown = bright green
           "fill-color": [
-            "case",
-            ["==", ["get", "has_structure"], false], "#39ff14",
-            "#00e676",
-          ],
-          "fill-opacity": 0.72,
+            "match", ["get", "storage_permission"],
+            "permitted",    PERMISSION_COLORS.permitted,
+            "conditional",  PERMISSION_COLORS.conditional,
+            "prohibited",   PERMISSION_COLORS.prohibited,
+            PERMISSION_COLORS.unclassified,
+          ] as maplibregl.ExpressionSpecification,
+          "fill-opacity": [
+            "match", ["get", "storage_permission"],
+            "permitted",    0.82,
+            "conditional",  0.78,
+            "prohibited",   0.35,
+            0.45,
+          ] as maplibregl.ExpressionSpecification,
         },
       } as maplibregl.LayerSpecification);
 
@@ -320,21 +337,35 @@ export default function Map({
       }
       map.getCanvas().style.cursor = "pointer";
       const props = features[0].properties ?? {};
-      const isVacant  = props.has_structure === false;
-      const hasFlood  = props.in_flood_zone === true;
+      const isVacant   = props.has_structure === false;
+      const hasFlood   = props.in_flood_zone === true;
       const hasWetland = props.in_wetland === true;
+      const perm = (props.storage_permission ?? "unclassified") as PermissionStatus;
+      const permLabel: Record<PermissionStatus, string> = {
+        permitted:    "Permitted by right",
+        conditional:  "Conditional use permit",
+        prohibited:   "Prohibited",
+        unclassified: "Zone not classified",
+      };
+      const permColor: Record<PermissionStatus, string> = {
+        permitted:    "color:#10b981;font-weight:600",
+        conditional:  "color:#f59e0b;font-weight:600",
+        prohibited:   "color:#6b7280",
+        unclassified: "color:#94a3b8",
+      };
 
       popup
         .setLngLat(e.lngLat)
         .setHTML(
-          `<div class="text-xs space-y-0.5">
-            <div class="font-mono font-semibold">${props.apn ?? "—"}</div>
+          `<div style="font-size:12px;line-height:1.5">
+            <div style="font-family:monospace;font-weight:700">${props.apn ?? "—"}</div>
             <div>${props.zoning_code ?? "—"} &middot; ${
               props.acres != null ? Number(props.acres).toFixed(2) + " ac" : "—"
             }</div>
-            ${isVacant ? '<div class="text-green-700 font-medium">Vacant</div>' : ""}
-            ${hasFlood ? '<div class="text-red-500 font-medium">⚠ Flood zone</div>' : ""}
-            ${hasWetland ? '<div class="text-blue-500 font-medium">⚠ Wetland</div>' : ""}
+            <div style="${permColor[perm]}">${permLabel[perm]}</div>
+            ${isVacant  ? '<div style="color:#059669;font-weight:500">Vacant</div>' : ""}
+            ${hasFlood  ? '<div style="color:#dc2626;font-weight:500">⚠ Flood zone</div>' : ""}
+            ${hasWetland ? '<div style="color:#2563eb;font-weight:500">⚠ Wetland</div>' : ""}
           </div>`
         )
         .addTo(map);
@@ -369,7 +400,33 @@ export default function Map({
     );
   }, [selectedParcelId]);
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      {/* Permission legend */}
+      <div className="absolute bottom-8 left-3 z-10 rounded-lg border border-slate-200 bg-white/90 px-3 py-2 shadow-sm backdrop-blur-sm">
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+          Storage Permission
+        </p>
+        {(
+          [
+            ["permitted",    "Permitted by right"],
+            ["conditional",  "Conditional use"],
+            ["prohibited",   "Prohibited"],
+            ["unclassified", "Not classified"],
+          ] as [PermissionStatus, string][]
+        ).map(([key, label]) => (
+          <div key={key} className="flex items-center gap-1.5 text-xs text-slate-700">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: PERMISSION_COLORS[key] }}
+            />
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ─── Geometry helpers ─────────────────────────────────────────────────────────
