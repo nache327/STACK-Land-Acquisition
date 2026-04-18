@@ -48,9 +48,7 @@ async def list_parcels(
     if exclude_wetland:
         filters.append(Parcel.in_wetland == False)  # noqa: E712
     if vacant_only:
-        filters.append(
-            (Parcel.has_structure == False) | (Parcel.has_structure == None)  # noqa: E711, E712
-        )
+        filters.append(Parcel.has_structure == False)  # noqa: E712
 
     count_q = select(func.count()).select_from(Parcel).where(and_(*filters))
     total_result = await db.execute(count_q)

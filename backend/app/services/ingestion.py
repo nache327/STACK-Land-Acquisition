@@ -33,6 +33,7 @@ _APN_FIELDS = ["PARCEL", "APN", "PARCELNO", "PARCEL_NO", "PARCEL_ID", "PIN"]
 _ADDRESS_FIELDS = ["PROP_LOC", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS"]
 _ZONE_FIELDS = ["ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST"]
 _LANDUSE_FIELDS = ["LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS"]
+_PROPTYPE_FIELDS = ["PROP_TYPE", "PROPERTY_TYPE", "PROP_CLASS", "PROPTYPE"]
 _ACRES_FIELDS = ["CALC_ACRE", "PARCEL_ACR", "ACRES", "GIS_ACRES", "ACREAGE"]
 _LINK_FIELDS = ["LINK", "COUNTY_LINK", "PARCEL_URL", "URL", "WEB_LINK"]
 _FLOOD_FIELDS = ["FLOODZONE", "FLOOD_ZONE", "FLD_ZONE", "SFHA"]
@@ -96,8 +97,18 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
     if land_use:
         land_use = str(land_use).strip() or None
 
+    prop_type = _first(row, _PROPTYPE_FIELDS)
+    prop_type_str = str(prop_type).strip().upper() if prop_type else ""
+
     vacant = is_vacant_by_landuse(land_use)
-    has_structure: bool | None = False if vacant is True else None
+    if vacant is None and prop_type_str:
+        if "VACANT" in prop_type_str or "VAC LAND" in prop_type_str:
+            vacant = True
+        elif prop_type_str and "VACANT" not in prop_type_str:
+            # Known non-vacant property types
+            vacant = False
+
+    has_structure: bool | None = None if vacant is None else (not vacant)
 
     # Build raw property snapshot (strip geometry, coerce to str)
     if hasattr(row, "_asdict"):
