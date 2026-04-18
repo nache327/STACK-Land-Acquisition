@@ -171,9 +171,16 @@ def _build_user_message(
     jurisdiction_name: str,
     known_zone_codes: list[str],
 ) -> str:
-    codes_str = ", ".join(known_zone_codes) if known_zone_codes else "unknown"
+    # Flatten composite codes like "A5; CC; RM2" → individual base codes
+    base_codes: set[str] = set()
+    for raw in known_zone_codes:
+        for part in re.split(r"[;,]", raw):
+            code = part.strip()
+            if code:
+                base_codes.add(code)
+    codes_str = ", ".join(sorted(base_codes)) if base_codes else "unknown"
     # Truncate text to avoid excessive token usage
-    text = sections_text[:75_000]
+    text = sections_text[:100_000]
     return (
         f"Jurisdiction: {jurisdiction_name}\n"
         f"Known zone codes to classify: {codes_str}\n\n"
@@ -186,7 +193,7 @@ def _call_claude(system_prompt: str, user_message: str) -> str:
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=4096,
+        max_tokens=16000,
         system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
     )
