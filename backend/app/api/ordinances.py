@@ -46,7 +46,7 @@ async def trigger_parse(
     from app.services.ordinance_parser import parse_ordinance_sections
     from app.models.zone_use_matrix import ZoneUseMatrix
     from app.models.parcel import Parcel
-    from sqlalchemy import delete
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
     from sqlalchemy import select as sa_select
 
     # Fetch known zone codes
@@ -83,10 +83,9 @@ async def trigger_parse(
             seen[zone.code] = zone
     deduped_zones = list(seen.values())
 
-    # Save zones
-    await db.execute(delete(ZoneUseMatrix).where(ZoneUseMatrix.jurisdiction_id == jurisdiction_id))
+    # Upsert zones — insert or update existing row for the same (jurisdiction_id, zone_code)
     for zone in deduped_zones:
-        db.add(ZoneUseMatrix(
+        stmt = pg_insert(ZoneUseMatrix).values(
             jurisdiction_id=jurisdiction_id,
             zone_code=zone.code,
             zone_name=zone.name,
@@ -97,7 +96,20 @@ async def trigger_parse(
             citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
             confidence=zone.confidence,
             notes=zone.notes,
-        ))
+        ).on_conflict_do_update(
+            constraint="uq_zone_matrix",
+            set_=dict(
+                zone_name=zone.name,
+                self_storage=zone.self_storage,
+                mini_warehouse=zone.mini_warehouse,
+                light_industrial=zone.light_industrial,
+                luxury_garage_condo=zone.luxury_garage_condo,
+                citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
+                confidence=zone.confidence,
+                notes=zone.notes,
+            ),
+        )
+        await db.execute(stmt)
     j.ordinance_url = url
     await db.commit()
 
