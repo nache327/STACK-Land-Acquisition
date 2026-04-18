@@ -47,6 +47,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ZONEOMICS_BASE = "https://www.zoneomics.com/code"
+CENSUS_API = "https://api.census.gov/data/2022/acs/acs5"
+MIN_POPULATION = 15_000
+
+# US Census FIPS codes for each state
+STATE_FIPS = {
+    "AL": "01", "AK": "02", "AZ": "04", "AR": "05", "CA": "06",
+    "CO": "08", "CT": "09", "DE": "10", "FL": "12", "GA": "13",
+    "HI": "15", "ID": "16", "IL": "17", "IN": "18", "IA": "19",
+    "KS": "20", "KY": "21", "LA": "22", "ME": "23", "MD": "24",
+    "MA": "25", "MI": "26", "MN": "27", "MS": "28", "MO": "29",
+    "MT": "30", "NE": "31", "NV": "32", "NH": "33", "NJ": "34",
+    "NM": "35", "NY": "36", "NC": "37", "ND": "38", "OH": "39",
+    "OK": "40", "OR": "41", "PA": "42", "RI": "44", "SC": "45",
+    "SD": "46", "TN": "47", "TX": "48", "UT": "49", "VT": "50",
+    "VA": "51", "WA": "53", "WV": "54", "WI": "55", "WY": "56",
+}
 
 STATE_CODES = {
     "utah": "UT", "new-jersey": "NJ", "pennsylvania": "PA",
@@ -86,6 +102,69 @@ EXCLUDE_KEYWORDS = [
     "landscape", "lighting", "trail", "senior", "disability", "cannabis",
     "short term rental", "annexation", "water", "sewer",
 ]
+
+
+# ─── Census population filter ────────────────────────────────────────────────
+
+def _normalize_city_name(name: str) -> str:
+    """Normalize a city name to match Zoneomics slug style.
+    'Salt Lake City city, Utah' → 'salt-lake-city'
+    """
+    # Strip state suffix (", Utah")
+    name = re.sub(r",.*$", "", name).strip()
+    # Strip place-type suffixes
+    name = re.sub(
+        r"\b(city|town|village|township|borough|CDP|municipality|"
+        r"unified government|metro government|urban county)\b",
+        "", name, flags=re.I,
+    ).strip()
+    # Lowercase, replace spaces/special chars with hyphens
+    name = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return name
+
+
+async def get_populated_cities(state_code: str, min_pop: int = MIN_POPULATION) -> set[str]:
+    """
+    Query Census ACS5 for all places in a state with population >= min_pop.
+    Returns a set of normalized city-name slugs (e.g. {'draper', 'provo', ...}).
+    """
+    fips = STATE_FIPS.get(state_code.upper())
+    if not fips:
+        logger.warning("No FIPS code for state %s — skipping population filter", state_code)
+        return set()
+
+    url = (
+        f"{CENSUS_API}?get=NAME,B01003_001E"
+        f"&for=place:*&in=state:{fips}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            rows = resp.json()
+    except Exception as exc:
+        logger.warning("Census API failed for %s: %s — skipping population filter", state_code, exc)
+        return set()
+
+    # rows[0] is header: ['NAME', 'B01003_001E', 'state', 'place']
+    populated = set()
+    for row in rows[1:]:
+        try:
+            pop = int(row[1]) if row[1] else 0
+        except (ValueError, TypeError):
+            pop = 0
+        if pop >= min_pop:
+            populated.add(_normalize_city_name(row[0]))
+
+    logger.info("  %d places in %s with population >= %d", len(populated), state_code, min_pop)
+    return populated
+
+
+def _city_slug_matches(city_slug: str, populated: set[str]) -> bool:
+    """Check if a Zoneomics city slug (e.g. 'salt-lake-city-UT') is in the populated set."""
+    # Strip state suffix: 'salt-lake-city-UT' → 'salt-lake-city'
+    name = re.sub(r"-[A-Z]{2}$", "", city_slug)
+    return name in populated
 
 
 # ─── Zoneomics scraping helpers ───────────────────────────────────────────────
@@ -296,6 +375,15 @@ async def main(states: list[str], limit: int | None, dry_run: bool, concurrency:
             logger.info("Fetching city list for %s (%s)…", state_code, state_slug)
             cities = await get_cities_for_state(state_slug, client)
             logger.info("  Found %d cities in %s", len(cities), state_code)
+
+            # Filter by population
+            populated = await get_populated_cities(state_code.upper(), min_pop=MIN_POPULATION)
+            if populated:
+                before = len(cities)
+                cities = [c for c in cities if _city_slug_matches(c, populated)]
+                logger.info("  After population filter (>=%d): %d → %d cities",
+                            MIN_POPULATION, before, len(cities))
+
             all_cities.extend((c, state_code.upper()) for c in cities)
             await asyncio.sleep(0.5)
 
