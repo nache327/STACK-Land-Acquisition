@@ -47,6 +47,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ZONEOMICS_BASE = "https://www.zoneomics.com/code"
+
+# Cities where Zoneomics has no content — use direct PDF/HTML URLs instead
+MANUAL_OVERRIDES: dict[str, list[str]] = {
+    "lehi-UT": [
+        "https://www.lehi-ut.gov/media/0y2bxpc1/tbl05030-b-nonresidential-zones.pdf",
+        "https://www.lehi-ut.gov/media/ktwl0egv/ch08permitteduses.pdf",
+        "https://www.lehi-ut.gov/media/plhlbcda/ch05zoningdistricts.pdf",
+    ],
+}
 CENSUS_API = "https://api.census.gov/data/2022/acs/acs5"
 MIN_POPULATION = 15_000
 
@@ -194,7 +203,12 @@ async def get_relevant_chapters(city_slug: str, client: httpx.AsyncClient) -> li
     """
     Fetch the city's Zoneomics page and return URLs of chapters that likely
     contain zoning use tables based on title keywords.
+    Falls back to MANUAL_OVERRIDES for cities not indexed by Zoneomics.
     """
+    if city_slug in MANUAL_OVERRIDES:
+        logger.info("  %s — using manual override (%d URLs)", city_slug, len(MANUAL_OVERRIDES[city_slug]))
+        return MANUAL_OVERRIDES[city_slug]
+
     url = f"{ZONEOMICS_BASE}/{city_slug}"
     try:
         resp = await client.get(url, timeout=20.0)
