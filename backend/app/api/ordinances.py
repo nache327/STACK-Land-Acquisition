@@ -21,17 +21,15 @@ class OrdinanceParseRequest(BaseModel):
     ordinance_url: str | None = None
 
 
-@router.post("/ordinances/{jurisdiction_id}/parse", status_code=202)
+@router.post("/ordinances/{jurisdiction_id}/parse")
 async def trigger_parse(
     jurisdiction_id: uuid.UUID,
     body: OrdinanceParseRequest = OrdinanceParseRequest(),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
-    Trigger ordinance parsing for a jurisdiction.
-    Accepts an optional ordinance_url override; falls back to the stored URL.
-    Runs in the background — returns 202 Accepted immediately.
+    Trigger ordinance parsing for a jurisdiction — runs synchronously so errors
+    are visible in the response.
     """
     j = await db.get(Jurisdiction, jurisdiction_id)
     if j is None:
@@ -41,18 +39,69 @@ async def trigger_parse(
     if not url:
         raise HTTPException(
             status_code=422,
-            detail=(
-                "No ordinance URL provided and none stored for this jurisdiction. "
-                "Pass ordinance_url in the request body."
-            ),
+            detail="No ordinance URL provided and none stored for this jurisdiction.",
         )
 
-    background_tasks.add_task(_run_parse, jurisdiction_id, url)
+    from app.services.ordinance_fetcher import fetch_from_url
+    from app.services.ordinance_parser import parse_ordinance_sections
+    from app.models.zone_use_matrix import ZoneUseMatrix
+    from app.models.parcel import Parcel
+    from sqlalchemy import delete
+    from sqlalchemy import select as sa_select
+
+    # Fetch known zone codes
+    rows = await db.execute(
+        sa_select(Parcel.zoning_code)
+        .where(Parcel.jurisdiction_id == jurisdiction_id, Parcel.zoning_code.isnot(None))
+        .distinct()
+    )
+    known_codes = sorted({r[0] for r in rows.fetchall() if r[0]})
+
+    # Fetch ordinance
+    try:
+        sections = await fetch_from_url(url)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Fetch failed: {exc}")
+
+    if not sections:
+        raise HTTPException(status_code=422, detail="Fetcher returned 0 sections — page may be JavaScript-rendered or empty.")
+
+    combined = "\n\n".join(
+        f"[Section {s.section_id}: {s.heading}]\n{s.text}" for s in sections
+    )
+
+    # Parse with Claude
+    try:
+        output = await parse_ordinance_sections(combined, j.name, known_codes)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Claude parse failed: {exc}")
+
+    # Save zones
+    await db.execute(delete(ZoneUseMatrix).where(ZoneUseMatrix.jurisdiction_id == jurisdiction_id))
+    for zone in output.zones:
+        db.add(ZoneUseMatrix(
+            jurisdiction_id=jurisdiction_id,
+            zone_code=zone.code,
+            zone_name=zone.name,
+            self_storage=zone.self_storage,
+            mini_warehouse=zone.mini_warehouse,
+            light_industrial=zone.light_industrial,
+            luxury_garage_condo=zone.luxury_garage_condo,
+            citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
+            confidence=zone.confidence,
+            notes=zone.notes,
+        ))
+    j.ordinance_url = url
+    await db.commit()
+
     return {
-        "status": "accepted",
-        "jurisdiction_id": str(jurisdiction_id),
-        "ordinance_url": url,
-        "message": "Ordinance parsing started. Check /api/jurisdictions/{id}/zones for results.",
+        "status": "ok",
+        "sections_fetched": len(sections),
+        "chars_sent": len(combined),
+        "known_codes": known_codes,
+        "zones_saved": len(output.zones),
+        "unknown_zones": output.unknown_zones,
+        "parser_warnings": output.parser_warnings,
     }
 
 

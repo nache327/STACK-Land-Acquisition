@@ -42,15 +42,38 @@ _BROWSER_HEADERS = {
     "Accept-Language": "en-US,en;q=0.5",
 }
 
-# Common zone code patterns for Utah / generic US municipalities
+# Generic US zone code patterns (industrial, commercial, residential, mixed-use, ag, open space)
 _ZONE_CODE_RE = re.compile(
-    r"\b(M[12L]L?|CBP?|CP|CG|C[CSNO]B?|R[-\s]?[1-9](?:[-\s]\d+)?|RM[-\s]?\d*H?|RMH?|OS|OF?|PF|IN|A[-\s]?1?|ML)\b",
+    r"\b("
+    # Industrial: I-1, I-2, LI, LI-1, HI, M-1, M1, ML, MU
+    r"(?:LI|HI|M[12L]L?|IN?)[-\s]?\d*"
+    r"|(?:I|M)[-\s]\d{1,2}"
+    # Commercial: B-1, B-2, C-1, CB, CG, GC, CC, LC, HC, NC, SC, TC, CBP
+    r"|(?:GC|LC|HC|NC|SC|TC|RC|CC|CB|CBP?|CP|CG|C[CSNO]B?|C|B)[-\s]?\d{0,2}"
+    # Office/Business Park: OF, OB, OC, BP, BP-1
+    r"|(?:OF?|OB|OC|BP|PBD)[-\s]?\d{0,2}"
+    # Mixed-Use / TOD: MU-1, MU-2, TOD, TOD-1
+    r"|(?:MU|TOD)[-\s]?\d{0,2}"
+    # Residential: R-1, R-2, RM, RS, RR, RMH, R1, R2, RA-1
+    r"|R(?:M|R|S|H|A)?[-\s]?\d*(?:[-\s]\d+)?"
+    # Open Space / Public: OS, PF, PR, PL
+    r"|(?:OS|PF|PR|PL)[-\s]?\d{0,2}"
+    # Agricultural: A-1, AG, RR-1
+    r"|(?:AG|A[-\s]?\d*)"
+    r")\b",
     re.IGNORECASE,
 )
 
-# Section number patterns: "9-13-040", "9.13.040", "18.35.020(B)"
+# Section number patterns — handles many US ordinance formats:
+#   "9-13-040", "9.13.040", "18.35.020(B)"  (three-part numeric)
+#   "14.25", "18.35"                          (two-part numeric)
+#   "§ 153.045", "§153.45"                   (section symbol)
+#   "Sec. 14.20.030", "Section 14-300"       (word prefix)
+#   "Art. III", "Article 5"                  (article prefix, for land use tables)
 _SECTION_NUM_RE = re.compile(
-    r"^(?P<num>\d+[-\.]\d+[-\.]\d+(?:[A-Za-z])?)[.\s]+(?P<heading>[^\n]{3,120})",
+    r"^(?:§+\s*|[Ss]ec(?:tion)?\.?\s*|[Aa]rt(?:icle)?\.?\s*)?"
+    r"(?P<num>\d+(?:[-\.]\d+){1,3}(?:[A-Za-z])?)"
+    r"[.\s:–—]+(?P<heading>[^\n]{3,120})",
     re.MULTILINE,
 )
 
@@ -260,3 +283,45 @@ def _find_district_codes(text: str) -> list[str]:
     for m in _ZONE_CODE_RE.finditer(text):
         seen[m.group(0).upper()] = None
     return list(seen)
+
+
+# ─── Ordinance URL discovery ─────────────────────────────────────────────────
+
+def _city_to_slug(jurisdiction_name: str) -> str:
+    """Convert 'Draper City, UT' → 'draper', 'Salt Lake City, UT' → 'salt_lake_city'."""
+    name = re.sub(r",\s*[A-Z]{2}\s*$", "", jurisdiction_name).strip()
+    name = re.sub(
+        r"\b(city|town|village|township|municipality|unincorporated)\b", "", name, flags=re.I
+    ).strip()
+    return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+
+
+async def discover_ordinance_url(jurisdiction_name: str, state: str) -> str | None:
+    """
+    Try to find the zoning ordinance URL for a jurisdiction by probing
+    common Municode and eCode360 URL patterns.  Returns the first URL
+    that returns HTTP 200, or None if nothing is found.
+    """
+    slug = _city_to_slug(jurisdiction_name)
+    st = state.lower()
+
+    candidates = [
+        f"https://library.municode.com/{st}/{slug}/codes/code_of_ordinances",
+        f"https://library.municode.com/{st}/{slug}/codes/municipal_code",
+        f"https://library.municode.com/{st}/{slug}/codes/zoning_ordinance",
+        f"https://library.municode.com/{st}/{slug}/codes/land_development_code",
+        f"https://www.ecode360.com/{slug}",
+    ]
+
+    async with httpx.AsyncClient(
+        follow_redirects=True, timeout=10.0, headers=_BROWSER_HEADERS
+    ) as client:
+        for url in candidates:
+            try:
+                resp = await client.head(url)
+                if resp.status_code == 200:
+                    return url
+            except httpx.HTTPError:
+                continue
+
+    return None

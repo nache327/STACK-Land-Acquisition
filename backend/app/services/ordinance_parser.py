@@ -225,10 +225,10 @@ def _apply_luxury_garage_inference(zone: dict[str, Any]) -> dict[str, Any]:
     """
     Apply the luxury_garage_condo inference rule when the ordinance is silent.
     Rule (applied in order):
-      1. mini_warehouse == permitted  → permitted
-      2. self_storage == permitted    → permitted
-      3. light_industrial == permitted → conditional
-      4. none of the above            → prohibited
+      1. mini_warehouse or self_storage == permitted  → permitted
+      2. mini_warehouse or self_storage == conditional → conditional
+      3. light_industrial == permitted or conditional  → conditional
+      4. none of the above                             → prohibited
     Only overrides when luxury_garage_condo is 'unclear' or None.
     """
     lgc = zone.get("luxury_garage_condo")
@@ -241,7 +241,9 @@ def _apply_luxury_garage_inference(zone: dict[str, Any]) -> dict[str, Any]:
 
     if mw == "permitted" or ss == "permitted":
         zone["luxury_garage_condo"] = "permitted"
-    elif li == "permitted":
+    elif mw == "conditional" or ss == "conditional":
+        zone["luxury_garage_condo"] = "conditional"
+    elif li in ("permitted", "conditional"):
         zone["luxury_garage_condo"] = "conditional"
     else:
         zone["luxury_garage_condo"] = "prohibited"

@@ -24,20 +24,39 @@ When searching for uses, accept these synonyms:
 **self_storage:**
 - self-storage, self storage, mini-storage, mini storage
 - mini-warehouse, mini warehouse, personal storage
-- storage facility, storage warehouse
+- storage facility, storage warehouse, indoor storage
+- commercial storage, personal storage warehouse
+- storage units, storage lockers, climate-controlled storage
 
 **mini_warehouse:**
 - mini-warehouse, mini warehouse, mini-storage, mini storage
+- storage warehouse, warehouse (mini), storage units (commercial)
 
 **light_industrial:**
 - light industrial, light manufacturing, limited industrial
 - research and development, flex industrial, assembly
-- fabrication (limited)
+- fabrication (limited), light assembly, warehouse/distribution (light)
+- industrial park, business park (industrial)
 
 **luxury_garage_condo:**
 - garage condominium, garage condo, private garage condominium
 - automotive condominium, RV and boat storage condominium
 - motorcoach condominium, motor vehicle storage (private, owned)
+- storage condominiums (vehicle), private vehicle storage units
+- climate-controlled condominiums (vehicle), specialty storage condominiums
+
+---
+
+## Explicit Prohibition Terms
+
+If any of these appear in a "Prohibited Uses" section or in a district's purpose statement, classify the relevant uses as `"prohibited"` even if not listed:
+
+- "warehousing of any kind" → prohibits `self_storage`, `mini_warehouse`, `luxury_garage_condo`
+- "no warehousing or storage" → same
+- "no industrial uses" → prohibits all four uses
+- "commercial storage prohibited" → prohibits `self_storage`, `mini_warehouse`
+- "intensive commercial uses" listed as prohibited → likely prohibits `self_storage`
+- Pure residential purpose statement with no listed exceptions → all four uses `"prohibited"`
 
 ---
 
@@ -54,9 +73,9 @@ Use **exactly** one of these four values per use per zone:
 
 Most ordinances do not name this product class. Apply these rules **in order**:
 
-1. If `mini_warehouse` = `"permitted"` → set `luxury_garage_condo` = `"permitted"`
-2. If `self_storage` = `"permitted"` AND the district allows accessory residential or office use → set `luxury_garage_condo` = `"permitted"`
-3. If only `light_industrial` = `"permitted"` → set `luxury_garage_condo` = `"conditional"`
+1. If `mini_warehouse` = `"permitted"` OR `self_storage` = `"permitted"` → set `luxury_garage_condo` = `"permitted"`
+2. If `mini_warehouse` = `"conditional"` OR `self_storage` = `"conditional"` → set `luxury_garage_condo` = `"conditional"`
+3. If `light_industrial` = `"permitted"` or `"conditional"` → set `luxury_garage_condo` = `"conditional"`
 4. If none of the above → set `luxury_garage_condo` = `"prohibited"` (not `"unclear"` — silence is prohibition)
 5. Set `"unclear"` **only** if there is direct but ambiguous ordinance text about the use
 
@@ -202,10 +221,20 @@ Return **ONLY** valid JSON — no preamble, no markdown fences, no explanation. 
 
 ---
 
+## Land Use Tables
+
+Many ordinances use a **consolidated Land Use Table** — a matrix where rows are uses and columns are zoning districts (or vice versa). If you see such a table:
+
+- Each cell typically contains `P` (permitted), `C` or `CUP` (conditional), `—` or blank or `X` (prohibited), or `N/A`.
+- Read across the row for your target use to get each zone's permission.
+- A blank cell in a land use table means **prohibited** (not unclear), because land use tables are exhaustive lists.
+- Table headers may abbreviate zone codes — match them to the `known zone codes` list provided.
+
 ## Instructions
 
 1. Read the full ordinance text provided in the user message.
-2. Identify every zoning district described (by code and name).
-3. For each district, classify all four uses.
-4. Apply the luxury_garage_condo inference rule for any district where the use is not named.
-5. Return ONLY the JSON object — nothing else.
+2. Identify every zoning district described (by code and name). Match against the known zone codes list.
+3. Look for both district-by-district sections AND consolidated land use tables.
+4. For each district, classify all four uses.
+5. Apply the luxury_garage_condo inference rule for any district where the use is not named.
+6. Return ONLY the JSON object — nothing else.
