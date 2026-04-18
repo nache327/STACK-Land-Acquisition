@@ -17,7 +17,9 @@ interface Props {
 export default function OrdinancePage({ params }: Props) {
   const { jobId } = params;
   const { data: job } = useJobPoller(jobId);
-  const jurisdictionId = job?.jurisdiction_id ?? null;
+  // Fall back to using the URL param directly as a jurisdiction ID
+  // (happens when navigated via the old link that passed jurisdiction_id instead of jobId)
+  const jurisdictionId = job?.jurisdiction_id ?? jobId;
 
   const queryClient = useQueryClient();
   const [ordinanceUrl, setOrdinanceUrl] = useState("");
