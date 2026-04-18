@@ -76,9 +76,16 @@ async def trigger_parse(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Claude parse failed: {exc}")
 
+    # Deduplicate zones by code (keep highest confidence if Claude returns duplicates)
+    seen: dict[str, object] = {}
+    for zone in output.zones:
+        if zone.code not in seen or zone.confidence > seen[zone.code].confidence:
+            seen[zone.code] = zone
+    deduped_zones = list(seen.values())
+
     # Save zones
     await db.execute(delete(ZoneUseMatrix).where(ZoneUseMatrix.jurisdiction_id == jurisdiction_id))
-    for zone in output.zones:
+    for zone in deduped_zones:
         db.add(ZoneUseMatrix(
             jurisdiction_id=jurisdiction_id,
             zone_code=zone.code,
