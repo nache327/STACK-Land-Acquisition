@@ -77,7 +77,7 @@ export default function OrdinancePage({ params }: Props) {
           </Link>
           <span className="text-slate-300">/</span>
           <Link
-            href={`/dashboard/${jobId}`}
+            href={`/dashboard/${jurisdictionId}`}
             className="text-sm text-slate-500 hover:text-slate-900"
           >
             Dashboard
