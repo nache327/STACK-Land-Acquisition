@@ -68,19 +68,23 @@ STATE_CODES = {
     "wisconsin": "WI", "wyoming": "WY",
 }
 
-# Chapter titles that are likely to contain zoning use tables
+# Chapter titles that likely contain zoning use tables — broad to catch varied naming
 USE_TABLE_KEYWORDS = [
-    "commercial zone", "commercial district",
-    "manufacturing zone", "manufacturing district",
-    "industrial zone", "industrial district",
-    "business zone", "business district",
-    "light industrial", "general industrial",
-    "mixed use", "mixed-use",
-    "permitted use", "use regulation", "use table",
-    "zone establishment", "zoning district",
-    "land use", "use matrix",
-    "office zone", "office district",
-    "employment zone",
+    "commercial", "manufacturing", "industrial", "business",
+    "mixed use", "mixed-use", "employment",
+    "permitted use", "use regulation", "use table", "land use", "use matrix",
+    "zone district", "zoning district", "zone establishment",
+    "regulations within",
+    "office", "warehouse", "flex",
+]
+
+# Exclude chapters that match keywords above but are clearly not use tables
+EXCLUDE_KEYWORDS = [
+    "sign", "parking", "wireless", "accessory dwelling", "enforcement",
+    "administration", "general provision", "definition", "subdivision",
+    "appeal", "non-conforming", "nonconforming", "flood", "wetland",
+    "landscape", "lighting", "trail", "senior", "disability", "cannabis",
+    "short term rental", "annexation", "water", "sewer",
 ]
 
 
@@ -121,13 +125,18 @@ async def get_relevant_chapters(city_slug: str, client: httpx.AsyncClient) -> li
         return []
 
     soup = BeautifulSoup(resp.text, "html.parser")
+    seen_hrefs: set[str] = set()
     relevant = []
     for a in soup.find_all("a", href=True):
         href = a["href"]
         if not re.match(rf"^/code/{re.escape(city_slug)}/chapter_\d+$", href):
             continue
+        if href in seen_hrefs:
+            continue
+        seen_hrefs.add(href)
         title = a.get_text(strip=True).lower()
-        if any(kw in title for kw in USE_TABLE_KEYWORDS):
+        if any(kw in title for kw in USE_TABLE_KEYWORDS) and \
+           not any(ex in title for ex in EXCLUDE_KEYWORDS):
             relevant.append(f"https://www.zoneomics.com{href}")
 
     return relevant
