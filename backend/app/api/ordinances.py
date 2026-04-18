@@ -108,6 +108,7 @@ async def trigger_parse(
                 confidence=zone.confidence,
                 notes=zone.notes,
             ),
+            where=ZoneUseMatrix.confidence < zone.confidence,
         )
         await db.execute(stmt)
     j.ordinance_url = url
