@@ -56,6 +56,24 @@ async def trigger_parse(
     }
 
 
+@router.get("/ordinances/test-fetch")
+async def test_fetch(url: str) -> dict:
+    """Debug: fetch a URL and return what the ordinance fetcher sees."""
+    from app.services.ordinance_fetcher import fetch_from_url
+    try:
+        sections = await fetch_from_url(url)
+        return {
+            "section_count": len(sections),
+            "total_chars": sum(len(s.text) for s in sections),
+            "sections": [
+                {"id": s.section_id, "heading": s.heading[:80], "chars": len(s.text), "preview": s.text[:200]}
+                for s in sections[:5]
+            ],
+        }
+    except Exception as exc:
+        return {"error": str(exc), "section_count": 0}
+
+
 async def _run_parse(jurisdiction_id: uuid.UUID, ordinance_url: str) -> None:
     """Background wrapper — creates its own DB session."""
     from app.db import async_session_maker
