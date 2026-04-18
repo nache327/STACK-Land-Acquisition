@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useJobPoller } from "@/hooks/useJobPoller";
 import { ZoneMatrix } from "@/components/ZoneMatrix";
 import { ZoneOverrideDrawer } from "@/components/ZoneOverrideDrawer";
 import type { ZoneRow } from "@/lib/schemas";
@@ -15,11 +14,7 @@ interface Props {
 }
 
 export default function OrdinancePage({ params }: Props) {
-  const { jobId } = params;
-  const { data: job } = useJobPoller(jobId);
-  // Fall back to using the URL param directly as a jurisdiction ID
-  // (happens when navigated via the old link that passed jurisdiction_id instead of jobId)
-  const jurisdictionId = job?.jurisdiction_id ?? jobId;
+  const jurisdictionId = params.jobId;
 
   const queryClient = useQueryClient();
   const [ordinanceUrl, setOrdinanceUrl] = useState("");

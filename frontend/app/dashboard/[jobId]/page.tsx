@@ -197,7 +197,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           </span>
           {jurisdictionId && (
             <Link
-              href={`/ordinance/${jobId}`}
+              href={`/ordinance/${jurisdictionId}`}
               className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
               Zone Matrix
