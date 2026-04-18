@@ -205,6 +205,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
     logger.info("Downloaded %d features", len(gdf))
 
     # ── Step 3: ingest into PostGIS ───────────────────────────────────────
+    await _set_status(
+        db, job, JobStatus.downloading_parcels,
+        progress={"step": "ingesting", "parcels_downloaded": len(gdf)},
+    )
+    await db.commit()
     logger.info("Ingesting parcels into PostGIS …")
     count = await ingest_parcels(gdf, jurisdiction.id, db, replace=True)
 
@@ -230,6 +235,16 @@ async def _run(db: AsyncSession, job: Job) -> None:
 
     # ── Step 4: parse ordinance (optional — non-fatal if it fails) ───────
     ordinance_url = job.ordinance_url or cfg.ordinance_url
+    if not ordinance_url:
+        # Auto-discover the ordinance URL from Municode / eCode360
+        try:
+            from app.services.ordinance_fetcher import discover_ordinance_url
+            discovered = await discover_ordinance_url(cfg.name, cfg.state or "")
+            if discovered:
+                ordinance_url = discovered
+                logger.info("Auto-discovered ordinance URL for %s: %s", cfg.name, discovered)
+        except Exception as exc:
+            logger.warning("Ordinance URL discovery failed (non-fatal): %s", exc)
     if ordinance_url:
         await _set_status(db, job, JobStatus.parsing_ordinance)
         await db.commit()

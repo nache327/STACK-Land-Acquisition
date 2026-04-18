@@ -147,7 +147,7 @@ async def ingest_parcels(
 
     logger.info("Mapping %d GDF rows → Parcel dicts …", len(gdf))
     rows: list[dict] = []
-    for _, row in gdf.iterrows():
+    for row in gdf.itertuples(index=False):
         mapped = _map_row(row, jurisdiction_id)
         if mapped is not None:
             rows.append(mapped)
@@ -166,14 +166,14 @@ async def ingest_parcels(
             delete(Parcel).where(Parcel.jurisdiction_id == jurisdiction_id)
         )
 
-    BATCH = 500
+    BATCH = 2000
     total_inserted = 0
     num_batches = math.ceil(len(rows) / BATCH)
     for i in range(0, len(rows), BATCH):
         batch = rows[i : i + BATCH]
         await db.execute(insert(Parcel), batch)
         total_inserted += len(batch)
-        logger.debug("Inserted batch %d/%d", i // BATCH + 1, num_batches)
+        logger.info("Inserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id

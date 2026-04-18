@@ -185,7 +185,7 @@ async def _download_bbox_features(url: str, bbox: tuple[float, float, float, flo
     }
     query_url = url.rstrip("/") + "/query"
 
-    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
         resp = await client.get(query_url, params=params)
         resp.raise_for_status()
         data = resp.json()
@@ -209,9 +209,15 @@ async def _bulk_flag_by_geometry(
     """
     import asyncio
 
-    # Build union of overlay polygons
-    valid_geoms = gdf.geometry.dropna()
-    if valid_geoms.empty:
+    # Build union of overlay polygons.
+    # Simplify to ~10 m precision first — dramatically reduces vertex count and
+    # WKT string size, which is the main source of slowness on large datasets.
+    valid_geoms = [
+        g.simplify(0.0001, preserve_topology=True)
+        for g in gdf.geometry.dropna()
+        if g is not None and not g.is_empty
+    ]
+    if not valid_geoms:
         return 0
 
     union = unary_union(valid_geoms)
