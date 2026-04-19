@@ -47,9 +47,30 @@ class JurisdictionConfig:
     parcel_endpoint: str          # FeatureServer URL  OR  Regrid path
     zoning_endpoint: str | None = None
     ordinance_url: str | None = None
+    where_clause: str | None = None   # SQL WHERE clause for filtered endpoints
+
+
+# Utah statewide parcel layer (UGRC) — covers all 29 Utah counties, monthly updates
+_UGRC_UT = (
+    "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest"
+    "/services/Parcels_Utah/FeatureServer/0"
+)
+
+
+def _ugrc(city_name: str, full_name: str, county: str) -> JurisdictionConfig:
+    """Helper to build a UGRC-backed JurisdictionConfig for a Utah city."""
+    return JurisdictionConfig(
+        name=full_name,
+        state="UT",
+        county=county,
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=_UGRC_UT,
+        where_clause=f"PARCEL_CITY='{city_name}'",
+    )
 
 
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
+    # ── Draper (city-specific layer with zoning codes — keep as-is) ───────────
     "draper": JurisdictionConfig(
         name="Draper City, UT",
         state="UT",
@@ -65,6 +86,51 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         ),
         ordinance_url="https://library.municode.com/ut/draper/codes/code_of_ordinances",
     ),
+    # ── Salt Lake County ──────────────────────────────────────────────────────
+    "sandy": _ugrc("Sandy", "Sandy, UT", "Salt Lake"),
+    "west jordan": _ugrc("West Jordan", "West Jordan, UT", "Salt Lake"),
+    "west valley city": _ugrc("West Valley City", "West Valley City, UT", "Salt Lake"),
+    "west valley": _ugrc("West Valley City", "West Valley City, UT", "Salt Lake"),
+    "south jordan": _ugrc("South Jordan", "South Jordan, UT", "Salt Lake"),
+    "midvale": _ugrc("Midvale", "Midvale, UT", "Salt Lake"),
+    "millcreek": _ugrc("Millcreek", "Millcreek, UT", "Salt Lake"),
+    "cottonwood heights": _ugrc("Cottonwood Heights", "Cottonwood Heights, UT", "Salt Lake"),
+    "murray": _ugrc("Murray", "Murray, UT", "Salt Lake"),
+    "taylorsville": _ugrc("Taylorsville", "Taylorsville, UT", "Salt Lake"),
+    "herriman": _ugrc("Herriman", "Herriman, UT", "Salt Lake"),
+    "riverton": _ugrc("Riverton", "Riverton, UT", "Salt Lake"),
+    "holladay": _ugrc("Holladay", "Holladay, UT", "Salt Lake"),
+    "south salt lake": _ugrc("South Salt Lake", "South Salt Lake, UT", "Salt Lake"),
+    "bluffdale": _ugrc("Bluffdale", "Bluffdale, UT", "Salt Lake"),
+    "salt lake city": _ugrc("Salt Lake City", "Salt Lake City, UT", "Salt Lake"),
+    # ── Utah County ───────────────────────────────────────────────────────────
+    "provo": _ugrc("Provo", "Provo, UT", "Utah"),
+    "orem": _ugrc("Orem", "Orem, UT", "Utah"),
+    "lehi": _ugrc("Lehi", "Lehi, UT", "Utah"),
+    "american fork": _ugrc("American Fork", "American Fork, UT", "Utah"),
+    "eagle mountain": _ugrc("Eagle Mountain", "Eagle Mountain, UT", "Utah"),
+    "pleasant grove": _ugrc("Pleasant Grove", "Pleasant Grove, UT", "Utah"),
+    "springville": _ugrc("Springville", "Springville, UT", "Utah"),
+    "spanish fork": _ugrc("Spanish Fork", "Spanish Fork, UT", "Utah"),
+    "payson": _ugrc("Payson", "Payson, UT", "Utah"),
+    # ── Weber County ─────────────────────────────────────────────────────────
+    "ogden": _ugrc("Ogden", "Ogden, UT", "Weber"),
+    "roy": _ugrc("Roy", "Roy, UT", "Weber"),
+    # ── Davis County ─────────────────────────────────────────────────────────
+    "layton": _ugrc("Layton", "Layton, UT", "Davis"),
+    "bountiful": _ugrc("Bountiful", "Bountiful, UT", "Davis"),
+    "clearfield": _ugrc("Clearfield", "Clearfield, UT", "Davis"),
+    "syracuse": _ugrc("Syracuse", "Syracuse, UT", "Davis"),
+    # ── Cache County ─────────────────────────────────────────────────────────
+    "logan": _ugrc("Logan", "Logan, UT", "Cache"),
+    # ── Washington County ─────────────────────────────────────────────────────
+    "st. george": _ugrc("St. George", "St George, UT", "Washington"),
+    "saint george": _ugrc("St. George", "St George, UT", "Washington"),
+    "st george": _ugrc("St. George", "St George, UT", "Washington"),
+    "washington": _ugrc("Washington", "Washington, UT", "Washington"),
+    "hurricane": _ugrc("Hurricane", "Hurricane, UT", "Washington"),
+    # ── Iron County ───────────────────────────────────────────────────────────
+    "cedar city": _ugrc("Cedar City", "Cedar City, UT", "Iron"),
 }
 
 
@@ -141,7 +207,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     result = await db.execute(
         select(Jurisdiction).where(Jurisdiction.name == cfg.name)
     )
-    jurisdiction = result.scalar_one_or_none()
+    jurisdiction = result.scalars().first()
 
     if jurisdiction is None:
         jurisdiction = Jurisdiction(
@@ -197,9 +263,10 @@ async def _run(db: AsyncSession, job: Job) -> None:
         # Fake a progress update so the UI shows *something*
         await _progress(len(gdf), len(gdf))
     else:
-        logger.info("Downloading parcels from ArcGIS: %s", cfg.parcel_endpoint)
+        logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
         gdf = await download_all_features(
             cfg.parcel_endpoint,
+            where=cfg.where_clause or "1=1",
             progress_callback=_progress,
         )
     logger.info("Downloaded %d features", len(gdf))
