@@ -31,6 +31,15 @@ _WEBMAP_ITEM_RE = re.compile(
 _PARCEL_KEYWORDS = ["parcel", "parcels", "cadastral", "ownership", "tax lot"]
 _ZONING_KEYWORDS = ["zoning", "zone district", "land use", "landuse", "general plan"]
 
+# Layers whose titles contain these strings are almost never the city-wide parcel layer
+_PARCEL_EXCLUDE = [
+    "row", "right of way", "right-of-way",
+    "centerline", "address", "building", "utility",
+    "pipeline", "easement", "trail", "sidewalk",
+    "highway", "road", "street", "subdivision",
+    "project", "corridor", "boundary", "permit",
+]
+
 _GEOCODER_URL = (
     "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
     "/findAddressCandidates"
@@ -185,18 +194,31 @@ async def _hub_search(
         logger.warning("Hub search q=%r failed: %s", query, exc)
         return None
 
+    candidates: list[tuple[int, str]] = []
     for ds in data.get("data", []):
         attrs = ds.get("attributes", {})
         title = (attrs.get("name") or attrs.get("title") or "").lower()
         url = attrs.get("url") or ""
         layer_id = attrs.get("layerId")
-        if any(kw in title for kw in keywords) and "FeatureServer" in url:
-            full_url = url.rstrip("/")
-            if layer_id is not None:
-                full_url = f"{full_url}/{layer_id}"
-            return full_url
 
-    return None
+        if not any(kw in title for kw in keywords):
+            continue
+        if "FeatureServer" not in url:
+            continue
+        if any(ex in title for ex in _PARCEL_EXCLUDE):
+            logger.debug("Hub: skipping excluded layer %r", title)
+            continue
+
+        full_url = url.rstrip("/")
+        if layer_id is not None:
+            full_url = f"{full_url}/{layer_id}"
+        # Score: shorter title = more likely to be the city-wide layer
+        candidates.append((len(title), full_url))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x: x[0])
+    return candidates[0][1]
 
 
 # ─── Geocoding ────────────────────────────────────────────────────────────────
