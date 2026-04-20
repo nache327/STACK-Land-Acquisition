@@ -94,6 +94,24 @@ CITIES: list[CityConfig] = [
         service_url="https://gis.chcity.org/server/rest/services/CityData/Zoning_SD/MapServer/0",
         zone_field="Zoning",
     ),
+    CityConfig(
+        name="Draper",
+        jur_id="6e618f70-ae79-4d2d-8548-fda3ea21823a",
+        service_url="https://services2.arcgis.com/nAPVXppTJAHM40Se/arcgis/rest/services/Zoning/FeatureServer/5",
+        zone_field="ZONING",
+    ),
+    CityConfig(
+        name="Millcreek",
+        jur_id="0fd008ca-1a7e-41d6-9995-c59c6fe8a8d9",
+        service_url="https://services9.arcgis.com/XRrSFvEwSsReIxuA/arcgis/rest/services/Millcreek_Base_Zones_Aug_2022/FeatureServer/0",
+        zone_field="ZONE_",
+    ),
+    CityConfig(
+        name="Midvale",
+        jur_id="5f366dff-dde9-471c-8fb2-58894796535d",
+        service_url="https://gis.midvalecity.org:6443/arcgis/rest/services/Planning_and_Zoning/Zoning_District_and_Overlay_Service/MapServer/1",
+        zone_field="Zone_Name",
+    ),
 ]
 
 
