@@ -50,21 +50,19 @@ class JurisdictionConfig:
     where_clause: str | None = None   # SQL WHERE clause for filtered endpoints
 
 
-# Utah statewide parcel layer (UGRC) — covers all 29 Utah counties, monthly updates
-_UGRC_UT = (
-    "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest"
-    "/services/Parcels_Utah/FeatureServer/0"
-)
+# UGRC county-specific parcel layers (services1.arcgis.com, org 99lidPhWCzftIe9K)
+# Each county has its own FeatureServer, filtered by PARCEL_CITY to get one city's parcels.
+_UGRC = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services"
 
 
-def _ugrc(city_name: str, full_name: str, county: str) -> JurisdictionConfig:
-    """Helper to build a UGRC-backed JurisdictionConfig for a Utah city."""
+def _ugrc(county_service: str, city_name: str, full_name: str, county: str) -> JurisdictionConfig:
+    """Build a UGRC county-backed JurisdictionConfig for a Utah city."""
     return JurisdictionConfig(
         name=full_name,
         state="UT",
         county=county,
         parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=_UGRC_UT,
+        parcel_endpoint=f"{_UGRC}/{county_service}/FeatureServer/0",
         where_clause=f"PARCEL_CITY='{city_name}'",
     )
 
@@ -86,51 +84,51 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         ),
         ordinance_url="https://library.municode.com/ut/draper/codes/code_of_ordinances",
     ),
-    # ── Salt Lake County ──────────────────────────────────────────────────────
-    "sandy": _ugrc("Sandy", "Sandy, UT", "Salt Lake"),
-    "west jordan": _ugrc("West Jordan", "West Jordan, UT", "Salt Lake"),
-    "west valley city": _ugrc("West Valley City", "West Valley City, UT", "Salt Lake"),
-    "west valley": _ugrc("West Valley City", "West Valley City, UT", "Salt Lake"),
-    "south jordan": _ugrc("South Jordan", "South Jordan, UT", "Salt Lake"),
-    "midvale": _ugrc("Midvale", "Midvale, UT", "Salt Lake"),
-    "millcreek": _ugrc("Millcreek", "Millcreek, UT", "Salt Lake"),
-    "cottonwood heights": _ugrc("Cottonwood Heights", "Cottonwood Heights, UT", "Salt Lake"),
-    "murray": _ugrc("Murray", "Murray, UT", "Salt Lake"),
-    "taylorsville": _ugrc("Taylorsville", "Taylorsville, UT", "Salt Lake"),
-    "herriman": _ugrc("Herriman", "Herriman, UT", "Salt Lake"),
-    "riverton": _ugrc("Riverton", "Riverton, UT", "Salt Lake"),
-    "holladay": _ugrc("Holladay", "Holladay, UT", "Salt Lake"),
-    "south salt lake": _ugrc("South Salt Lake", "South Salt Lake, UT", "Salt Lake"),
-    "bluffdale": _ugrc("Bluffdale", "Bluffdale, UT", "Salt Lake"),
-    "salt lake city": _ugrc("Salt Lake City", "Salt Lake City, UT", "Salt Lake"),
-    # ── Utah County ───────────────────────────────────────────────────────────
-    "provo": _ugrc("Provo", "Provo, UT", "Utah"),
-    "orem": _ugrc("Orem", "Orem, UT", "Utah"),
-    "lehi": _ugrc("Lehi", "Lehi, UT", "Utah"),
-    "american fork": _ugrc("American Fork", "American Fork, UT", "Utah"),
-    "eagle mountain": _ugrc("Eagle Mountain", "Eagle Mountain, UT", "Utah"),
-    "pleasant grove": _ugrc("Pleasant Grove", "Pleasant Grove, UT", "Utah"),
-    "springville": _ugrc("Springville", "Springville, UT", "Utah"),
-    "spanish fork": _ugrc("Spanish Fork", "Spanish Fork, UT", "Utah"),
-    "payson": _ugrc("Payson", "Payson, UT", "Utah"),
-    # ── Weber County ─────────────────────────────────────────────────────────
-    "ogden": _ugrc("Ogden", "Ogden, UT", "Weber"),
-    "roy": _ugrc("Roy", "Roy, UT", "Weber"),
-    # ── Davis County ─────────────────────────────────────────────────────────
-    "layton": _ugrc("Layton", "Layton, UT", "Davis"),
-    "bountiful": _ugrc("Bountiful", "Bountiful, UT", "Davis"),
-    "clearfield": _ugrc("Clearfield", "Clearfield, UT", "Davis"),
-    "syracuse": _ugrc("Syracuse", "Syracuse, UT", "Davis"),
-    # ── Cache County ─────────────────────────────────────────────────────────
-    "logan": _ugrc("Logan", "Logan, UT", "Cache"),
-    # ── Washington County ─────────────────────────────────────────────────────
-    "st. george": _ugrc("St. George", "St George, UT", "Washington"),
-    "saint george": _ugrc("St. George", "St George, UT", "Washington"),
-    "st george": _ugrc("St. George", "St George, UT", "Washington"),
-    "washington": _ugrc("Washington", "Washington, UT", "Washington"),
-    "hurricane": _ugrc("Hurricane", "Hurricane, UT", "Washington"),
-    # ── Iron County ───────────────────────────────────────────────────────────
-    "cedar city": _ugrc("Cedar City", "Cedar City, UT", "Iron"),
+    # ── Salt Lake County (Parcels_SaltLake) ──────────────────────────────────
+    "sandy":            _ugrc("Parcels_SaltLake", "Sandy",            "Sandy, UT",            "Salt Lake"),
+    "west jordan":      _ugrc("Parcels_SaltLake", "West Jordan",      "West Jordan, UT",      "Salt Lake"),
+    "west valley city": _ugrc("Parcels_SaltLake", "West Valley City", "West Valley City, UT", "Salt Lake"),
+    "west valley":      _ugrc("Parcels_SaltLake", "West Valley City", "West Valley City, UT", "Salt Lake"),
+    "south jordan":     _ugrc("Parcels_SaltLake", "South Jordan",     "South Jordan, UT",     "Salt Lake"),
+    "midvale":          _ugrc("Parcels_SaltLake", "Midvale",          "Midvale, UT",          "Salt Lake"),
+    "millcreek":        _ugrc("Parcels_SaltLake", "Millcreek",        "Millcreek, UT",        "Salt Lake"),
+    "cottonwood heights": _ugrc("Parcels_SaltLake", "Cottonwood Heights", "Cottonwood Heights, UT", "Salt Lake"),
+    "murray":           _ugrc("Parcels_SaltLake", "Murray",           "Murray, UT",           "Salt Lake"),
+    "taylorsville":     _ugrc("Parcels_SaltLake", "Taylorsville",     "Taylorsville, UT",     "Salt Lake"),
+    "herriman":         _ugrc("Parcels_SaltLake", "Herriman",         "Herriman, UT",         "Salt Lake"),
+    "riverton":         _ugrc("Parcels_SaltLake", "Riverton",         "Riverton, UT",         "Salt Lake"),
+    "holladay":         _ugrc("Parcels_SaltLake", "Holladay",         "Holladay, UT",         "Salt Lake"),
+    "south salt lake":  _ugrc("Parcels_SaltLake", "South Salt Lake",  "South Salt Lake, UT",  "Salt Lake"),
+    "bluffdale":        _ugrc("Parcels_SaltLake", "Bluffdale",        "Bluffdale, UT",        "Salt Lake"),
+    "salt lake city":   _ugrc("Parcels_SaltLake", "Salt Lake City",   "Salt Lake City, UT",   "Salt Lake"),
+    # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
+    "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
+    "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
+    "lehi":          _ugrc("Parcels_Utah", "Lehi",          "Lehi, UT",          "Utah"),
+    "american fork": _ugrc("Parcels_Utah", "American Fork", "American Fork, UT", "Utah"),
+    "eagle mountain": _ugrc("Parcels_Utah", "Eagle Mountain", "Eagle Mountain, UT", "Utah"),
+    "pleasant grove": _ugrc("Parcels_Utah", "Pleasant Grove", "Pleasant Grove, UT", "Utah"),
+    "springville":   _ugrc("Parcels_Utah", "Springville",   "Springville, UT",   "Utah"),
+    "spanish fork":  _ugrc("Parcels_Utah", "Spanish Fork",  "Spanish Fork, UT",  "Utah"),
+    "payson":        _ugrc("Parcels_Utah", "Payson",        "Payson, UT",        "Utah"),
+    # ── Weber County (Parcels_Weber) ─────────────────────────────────────────
+    "ogden": _ugrc("Parcels_Weber", "Ogden", "Ogden, UT", "Weber"),
+    "roy":   _ugrc("Parcels_Weber", "Roy",   "Roy, UT",   "Weber"),
+    # ── Davis County (Parcels_Davis) ─────────────────────────────────────────
+    "layton":    _ugrc("Parcels_Davis", "Layton",    "Layton, UT",    "Davis"),
+    "bountiful": _ugrc("Parcels_Davis", "Bountiful", "Bountiful, UT", "Davis"),
+    "clearfield": _ugrc("Parcels_Davis", "Clearfield", "Clearfield, UT", "Davis"),
+    "syracuse":  _ugrc("Parcels_Davis", "Syracuse",  "Syracuse, UT",  "Davis"),
+    # ── Cache County (Parcels_Cache) ─────────────────────────────────────────
+    "logan": _ugrc("Parcels_Cache", "Logan", "Logan, UT", "Cache"),
+    # ── Washington County (Parcels_Washington) ────────────────────────────────
+    "st. george":  _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
+    "saint george": _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
+    "st george":   _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
+    "washington":  _ugrc("Parcels_Washington", "Washington", "Washington, UT", "Washington"),
+    "hurricane":   _ugrc("Parcels_Washington", "Hurricane",  "Hurricane, UT",  "Washington"),
+    # ── Iron County (Parcels_Iron) ────────────────────────────────────────────
+    "cedar city": _ugrc("Parcels_Iron", "Cedar City", "Cedar City, UT", "Iron"),
 }
 
 

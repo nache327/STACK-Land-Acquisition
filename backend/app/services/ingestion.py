@@ -35,7 +35,7 @@ _ZONE_FIELDS = ["ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST"]
 _LANDUSE_FIELDS = ["LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS"]
 _PROPTYPE_FIELDS = ["PROP_TYPE", "PROPERTY_TYPE", "PROP_CLASS", "PROPTYPE"]
 _ACRES_FIELDS = ["CALC_ACRE", "PARCEL_ACR", "ACRES", "GIS_ACRES", "ACREAGE"]
-_LINK_FIELDS = ["LINK", "COUNTY_LINK", "PARCEL_URL", "URL", "WEB_LINK"]
+_LINK_FIELDS = ["LINK", "COUNTY_LINK", "PARCEL_URL", "URL", "WEB_LINK", "CoParcel_URL"]
 _FLOOD_FIELDS = ["FLOODZONE", "FLOOD_ZONE", "FLD_ZONE", "SFHA"]
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -54,6 +54,21 @@ def _safe_float(val: Any) -> float | None:
         return float(val) if val is not None else None
     except (ValueError, TypeError):
         return None
+
+
+_AREA_SQM_FIELDS = ["Shape__Area", "SHAPE__AREA", "shape_Area", "SHAPE_Area"]
+_SQM_PER_ACRE = 4046.856
+
+
+def _resolve_acres(row: Any, geom: Any) -> float | None:
+    """Return parcel acreage, preferring explicit fields then Shape__Area (sq m)."""
+    v = _safe_float(_first(row, _ACRES_FIELDS))
+    if v is not None and v > 0:
+        return round(v, 4)
+    sqm = _safe_float(_first(row, _AREA_SQM_FIELDS))
+    if sqm is not None and sqm > 0:
+        return round(sqm / _SQM_PER_ACRE, 4)
+    return None
 
 
 def _is_in_flood_zone(raw_value: Any) -> bool:
@@ -125,7 +140,7 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
         "zoning_code": str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None,
         "land_use_code": land_use,
-        "acres": _safe_float(_first(row, _ACRES_FIELDS)),
+        "acres": _resolve_acres(row, geom),
         "county_link": str(lk).strip() if (lk := _first(row, _LINK_FIELDS)) else None,
         "in_flood_zone": _is_in_flood_zone(_first(row, _FLOOD_FIELDS)),
         "in_wetland": False,
