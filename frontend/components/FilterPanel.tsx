@@ -58,7 +58,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   const hasParcelsWithZones = Object.keys(zoneSummary ?? {}).length > 0;
 
   // Fallback: load from zone_use_matrix when parcels have no zoning codes
-  const { data: zoneMatrix } = useQuery({
+  const { data: zoneMatrix, isLoading: matrixLoading } = useQuery({
     queryKey: ["zone-matrix", jurisdictionId],
     queryFn: () => api.getZoneMatrix(jurisdictionId!),
     enabled: !!jurisdictionId && !summaryLoading && !hasParcelsWithZones,
@@ -161,7 +161,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
               );
             })}
           </div>
-        ) : summaryLoading ? (
+        ) : summaryLoading || matrixLoading ? (
           <p className="text-xs text-slate-400">Loading…</p>
         ) : (
           <p className="text-xs text-slate-400">No zone data</p>
