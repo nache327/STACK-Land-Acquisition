@@ -47,7 +47,7 @@ interface FilterPanelProps {
 export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
-  // Fetch zone summary (zone codes + parcel counts from parcels table)
+  // Parcel-based zone summary (zone code → parcel count)
   const { data: zoneSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ["zone-summary", jurisdictionId],
     queryFn: () => api.getZoneSummary(jurisdictionId!),
@@ -55,13 +55,11 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const hasParcelsWithZones = Object.keys(zoneSummary ?? {}).length > 0;
-
-  // Fallback: load from zone_use_matrix when parcels have no zoning codes
+  // Ordinance matrix — always fetch in parallel; shown when parcels have no zone codes
   const { data: zoneMatrix, isLoading: matrixLoading } = useQuery({
     queryKey: ["zone-matrix", jurisdictionId],
     queryFn: () => api.getZoneMatrix(jurisdictionId!),
-    enabled: !!jurisdictionId && !summaryLoading && !hasParcelsWithZones,
+    enabled: !!jurisdictionId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -85,8 +83,8 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   }
 
   const sortedZones = Object.entries(zoneSummary ?? {}).sort((a, b) => b[1] - a[1]);
-  // Zones from ordinance matrix (no parcel count, but shows permitted use)
-  const matrixZones = !hasParcelsWithZones
+  // Fall back to ordinance matrix when parcels carry no zoning codes
+  const matrixZones = sortedZones.length === 0
     ? (zoneMatrix?.zones ?? []).map((z) => ({ code: z.zone_code, name: z.zone_name, storage: z.self_storage }))
     : [];
 
@@ -161,7 +159,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
               );
             })}
           </div>
-        ) : summaryLoading || matrixLoading ? (
+        ) : summaryLoading && matrixLoading ? (
           <p className="text-xs text-slate-400">Loading…</p>
         ) : (
           <p className="text-xs text-slate-400">No zone data</p>
