@@ -249,7 +249,7 @@ async def get_or_create_jurisdiction(
     result = await db.execute(
         select(Jurisdiction).where(Jurisdiction.name == full_name)
     )
-    j = result.scalar_one_or_none()
+    j = result.scalars().first()
     if j is None:
         j = Jurisdiction(name=full_name, state=state_code, county=None)
         db.add(j)
