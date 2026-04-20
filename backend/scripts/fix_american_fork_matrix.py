@@ -55,12 +55,12 @@ def classify_american_fork(code: str) -> str:
     if re.match(r'^RA-', u):
         return "conditional"
 
-    # Professional Office — prohibited
+    # Professional Office — conditional (self-storage listed as CUP in Jan 2025 PC minutes)
     if u.startswith("PO"):
-        return "prohibited"
+        return "conditional"
 
-    # Public Facility — prohibited
-    if u == "PF":
+    # Public Facility / Shoreline Preservation — prohibited
+    if u in ("PF", "SP"):
         return "prohibited"
 
     # Residential (R1-, R2-, R3-, R4-, PR-) — prohibited
@@ -106,7 +106,7 @@ async def replace_matrix(classifications: dict[str, str]) -> None:
                 "zc": zone_code,
                 "zn": zone_code,
                 "ss": perm,
-                "notes": "Rule-based classification from American Fork zone code patterns",
+                "notes": "Heuristic from AF zoning code §17.6.110 + Jan 2025 Planning Commission use matrix reference",
             })
         logger.info("Inserted %d American Fork matrix rows", len(classifications))
     await engine.dispose()
