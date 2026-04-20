@@ -232,7 +232,7 @@ export default function Map({
           "fill-opacity": [
             "match", ["get", "storage_permission"],
             "permitted",    0.82,
-            "conditional",  0.78,
+            "conditional",  0.45,
             "prohibited",   0.35,
             0.45,
           ] as maplibregl.ExpressionSpecification,
