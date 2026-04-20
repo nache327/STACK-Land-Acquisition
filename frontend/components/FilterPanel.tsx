@@ -47,11 +47,21 @@ interface FilterPanelProps {
 export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
-  // Fetch zone summary (zone codes + counts)
-  const { data: zoneSummary } = useQuery({
+  // Fetch zone summary (zone codes + parcel counts from parcels table)
+  const { data: zoneSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ["zone-summary", jurisdictionId],
     queryFn: () => api.getZoneSummary(jurisdictionId!),
     enabled: !!jurisdictionId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const hasParcelsWithZones = Object.keys(zoneSummary ?? {}).length > 0;
+
+  // Fallback: load from zone_use_matrix when parcels have no zoning codes
+  const { data: zoneMatrix } = useQuery({
+    queryKey: ["zone-matrix", jurisdictionId],
+    queryFn: () => api.getZoneMatrix(jurisdictionId!),
+    enabled: !!jurisdictionId && !summaryLoading && !hasParcelsWithZones,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -75,6 +85,10 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   }
 
   const sortedZones = Object.entries(zoneSummary ?? {}).sort((a, b) => b[1] - a[1]);
+  // Zones from ordinance matrix (no parcel count, but shows permitted use)
+  const matrixZones = !hasParcelsWithZones
+    ? (zoneMatrix?.zones ?? []).map((z) => ({ code: z.zone_code, name: z.zone_name, storage: z.self_storage }))
+    : [];
 
   return (
     <div className="space-y-5 p-4 text-sm">
@@ -94,9 +108,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
           )}
         </div>
 
-        {sortedZones.length === 0 ? (
-          <p className="text-xs text-slate-400">Loading…</p>
-        ) : (
+        {sortedZones.length > 0 ? (
           <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
             {sortedZones.map(([code, count]) => {
               const checked = filters.zones.includes(code);
@@ -119,6 +131,40 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
               );
             })}
           </div>
+        ) : matrixZones.length > 0 ? (
+          <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+            {matrixZones.map(({ code, name, storage }) => {
+              const checked = filters.zones.includes(code);
+              return (
+                <label
+                  key={code}
+                  className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleZone(code)}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="flex-1 font-mono text-xs font-medium text-slate-700">
+                    {code}
+                  </span>
+                  {name && (
+                    <span className="text-xs text-slate-400 truncate max-w-[90px]" title={name}>
+                      {name}
+                    </span>
+                  )}
+                  {(storage === "permitted" || storage === "conditional") && (
+                    <span className="text-xs text-emerald-600 font-medium">✓</span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        ) : summaryLoading ? (
+          <p className="text-xs text-slate-400">Loading…</p>
+        ) : (
+          <p className="text-xs text-slate-400">No zone data</p>
         )}
       </section>
 
