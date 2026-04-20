@@ -112,6 +112,36 @@ CITIES: list[CityConfig] = [
         service_url="https://gis.midvalecity.org:6443/arcgis/rest/services/Planning_and_Zoning/Zoning_District_and_Overlay_Service/MapServer/1",
         zone_field="Zone_Name",
     ),
+    CityConfig(
+        name="Roy",
+        jur_id="b3b0b5f4-b6c1-4761-9e4a-10b9c2206740",
+        service_url="https://services2.arcgis.com/I9cUOJUZvdGAJncI/arcgis/rest/services/RoyCity_UT_Zoning/FeatureServer/0",
+        zone_field="ZONING",
+    ),
+    CityConfig(
+        name="Taylorsville",
+        jur_id="e44b2d47-ce45-4de0-84a9-ead0ee2f9741",
+        service_url="https://services3.arcgis.com/2mExWLvPG4dA2gsK/arcgis/rest/services/Zoning_GP_Dissolve/FeatureServer/0",
+        zone_field="New_Zone",
+    ),
+    CityConfig(
+        name="South Jordan",
+        jur_id="69ad5926-6404-4a17-8387-59e4f9f3a917",
+        service_url="https://gis2.southjordanutah.gov/server/rest/services/Development/Zoning/MapServer/0",
+        zone_field="ZONE_ID",
+    ),
+    CityConfig(
+        name="Tooele",
+        jur_id="ee7678ff-9d5d-4ed0-896c-0a7061ade1f8",
+        service_url="https://services3.arcgis.com/3PP5uLqByhZNekjG/arcgis/rest/services/Tooele_City__Land_Use___Zoning_WFL1/FeatureServer/0",
+        zone_field="LandUseCod",
+    ),
+    CityConfig(
+        name="North Salt Lake",
+        jur_id="f4e528c2-35aa-4856-a159-14471f3e8277",
+        service_url="https://services9.arcgis.com/eNX73FDxjlKFtCtH/arcgis/rest/services/NorthSaltLake_Zoning/FeatureServer/0",
+        zone_field="ZoningCode",
+    ),
 ]
 
 
