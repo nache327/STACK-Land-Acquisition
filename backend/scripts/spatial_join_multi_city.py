@@ -88,6 +88,12 @@ CITIES: list[CityConfig] = [
         service_url="https://services1.arcgis.com/OZXOaoaD8hmdOtqR/arcgis/rest/services/General_Zoning_view/FeatureServer/0",
         zone_field="ThirdLevel",
     ),
+    CityConfig(
+        name="Cottonwood Heights",
+        jur_id="b320fac8-d8ef-4325-8722-022036169218",
+        service_url="https://gis.chcity.org/server/rest/services/CityData/Zoning_SD/MapServer/0",
+        zone_field="Zoning",
+    ),
 ]
 
 
