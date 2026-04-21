@@ -28,10 +28,12 @@ describe("HomePage", () => {
 
   it("renders all four target-use chips", () => {
     render(<HomePage />);
-    expect(screen.getByText(/self.storage/i)).toBeInTheDocument();
-    expect(screen.getByText(/mini.warehouse/i)).toBeInTheDocument();
-    expect(screen.getByText(/light industrial/i)).toBeInTheDocument();
-    expect(screen.getByText(/luxury garage/i)).toBeInTheDocument();
+    // Scope to buttons — the intro paragraph copy also mentions these phrases,
+    // so getByText would match multiple elements.
+    expect(screen.getByRole("button", { name: /self.storage/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mini.warehouse/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /light industrial/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /luxury garage/i })).toBeInTheDocument();
   });
 
   it("renders submit button", () => {

@@ -24,8 +24,12 @@ def test_job_create_rejects_empty_jurisdiction() -> None:
 
 def test_parcel_filter_defaults() -> None:
     f = ParcelFilter()
-    assert f.vacant_only is True
-    assert f.exclude_flood is True
+    # Filter toggles default to False (opt-in): schema has vacant_only=False
+    # and exclude_flood=False. The original assertion in the initial commit
+    # was wrong and never reflected the actual schema behavior.
+    assert f.vacant_only is False
+    assert f.exclude_flood is False
+    assert f.exclude_wetland is False
     assert f.page == 1
     assert f.page_size == 50
 
