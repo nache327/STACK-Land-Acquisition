@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.jurisdiction import ParcelSource
+from app.models.jurisdiction import CoverageLevel, ParcelSource
 
 
 class JurisdictionBase(BaseModel):
@@ -24,6 +24,8 @@ class JurisdictionRead(JurisdictionBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    coverage_level: CoverageLevel | None = None
+    bbox: list[float] | None = None
     last_indexed_at: datetime | None
     created_at: datetime
 

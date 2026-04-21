@@ -13,6 +13,7 @@ class JobStatus(str, enum.Enum):
     pending = "pending"
     discovering_layers = "discovering_layers"
     downloading_parcels = "downloading_parcels"
+    downloading_zoning = "downloading_zoning"
     parsing_ordinance = "parsing_ordinance"
     running_overlays = "running_overlays"
     ready = "ready"

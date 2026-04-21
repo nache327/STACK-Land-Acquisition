@@ -6,6 +6,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     DateTime,
+    Enum,
     ForeignKey,
     Index,
     Numeric,
@@ -16,12 +17,14 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.models.zoning_district import ZoneClass
 
 
 class Parcel(Base):
     __tablename__ = "parcels"
     __table_args__ = (
         Index("ix_parcels_jurisdiction_zoning", "jurisdiction_id", "zoning_code"),
+        Index("ix_parcels_jurisdiction_zone_class", "jurisdiction_id", "zone_class"),
         Index("ix_parcels_apn", "apn"),
         Index("ix_parcels_geom", "geom", postgresql_using="gist"),
         Index("ix_parcels_centroid", "centroid", postgresql_using="gist"),
@@ -39,6 +42,10 @@ class Parcel(Base):
     owner_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
     acres: Mapped[float | None] = mapped_column(Numeric(10, 3), nullable=True)
     zoning_code: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    zone_class: Mapped[ZoneClass | None] = mapped_column(
+        Enum(ZoneClass, name="zone_class_enum", create_constraint=False),
+        nullable=True,
+    )
     land_use_code: Mapped[str | None] = mapped_column(String(512), nullable=True)
     improvement_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     has_structure: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
