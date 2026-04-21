@@ -42,16 +42,18 @@ ZONING_URL   = "https://maps.utahcounty.gov/arcgis/rest/services/Assessor/Commer
 def classify_lehi(label: str, desc: str) -> PerUseClassification:
     u = (label or "").strip().upper()
 
-    if u in ("LI", "T-M", "H/I", "BP"):
-        return storage_cls("permitted", 0.80, f"Lehi industrial: {label}")
-    if u in ("C", "C-H", "C-I", "CR", "HC", "NC", "TOD"):
+    # Permitted by right — climate-controlled storage (per Lehi Table of Uses)
+    if u in ("LI", "T-M", "H/I", "BP", "C", "C-1", "HI"):
+        return storage_cls("permitted", 0.82, f"Lehi permitted by right: {label}")
+    # Conditional — commercial zones (CUP may apply for non-climate-controlled)
+    if u in ("C-H", "C-I", "CR", "HC", "NC", "RC", "TOD"):
         return storage_cls("conditional", 0.70, f"Lehi commercial: {label}")
     if u == "MU":
-        return storage_cls("prohibited", 0.70, "Lehi mixed use — residential-oriented")
+        return storage_cls("prohibited", 0.78, "Lehi mixed use — residential-oriented")
     # Residential/rural — storage not permitted
     if u in ("PC", "TH-5"):
         return storage_cls("prohibited", 0.78, f"Lehi residential planned/townhouse: {label}")
-    if u in ("RC", "RA-1") or re.match(r'^A[-\d]', u) or u == "A":
+    if u in ("RA-1",) or re.match(r'^A[-\d]', u) or u == "A":
         return storage_cls("prohibited", 0.78, f"Lehi agricultural/rural: {label}")
     if u == "PF":
         return storage_cls("prohibited", 0.78, "Lehi public facility")
