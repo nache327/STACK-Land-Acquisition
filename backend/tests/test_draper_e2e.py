@@ -19,6 +19,7 @@ In CI they run automatically when DATABASE_URL is set (see ci.yml).
 """
 from __future__ import annotations
 
+import os
 import uuid
 
 import pytest
@@ -35,7 +36,7 @@ pytestmark = pytest.mark.integration
 
 # ─── Fixtures ────────────────────────────────────────────────────────────────
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module", loop_scope="session")
 async def draper_jurisdiction_id(db_engine) -> uuid.UUID:
     """
     Run the Draper pipeline once for the module and return the jurisdiction ID.
@@ -165,6 +166,10 @@ class TestDraperPipelineData:
         assert coverage >= 0.80, f"Only {coverage:.0%} of parcels have acreage"
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(
+        not os.environ.get("ANTHROPIC_API_KEY"),
+        reason="requires ANTHROPIC_API_KEY to run the ordinance parser",
+    )
     async def test_m1_cbp_cg_cs_permit_self_storage(
         self, draper_jurisdiction_id, db_engine
     ):
