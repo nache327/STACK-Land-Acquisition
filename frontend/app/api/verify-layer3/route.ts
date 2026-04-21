@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
   const notFound: Layer3Result = {
     status: "ordinance-not-found",
     ordinanceUrl: null,
+    ordinanceSource: null,
     selfStorageStatus: null,
     keepStatus: null,
     evidence: null,
