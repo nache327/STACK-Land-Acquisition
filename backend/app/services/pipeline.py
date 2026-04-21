@@ -511,9 +511,9 @@ async def _parse_and_save_ordinance(
     """
     from datetime import datetime, timezone
 
-    from sqlalchemy import delete
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    from app.models.zone_use_matrix import ZoneUseMatrix
+    from app.models.zone_use_matrix import ClassificationSource, ZoneUseMatrix
     from app.services.ordinance_fetcher import fetch_from_url
     from app.services.ordinance_parser import parse_ordinance_sections
 
@@ -553,13 +553,11 @@ async def _parse_and_save_ordinance(
             seen[zone.code] = zone
     deduped_zones = list(seen.values())
 
-    # Replace existing matrix rows for this jurisdiction
-    await db.execute(
-        delete(ZoneUseMatrix).where(ZoneUseMatrix.jurisdiction_id == jurisdiction.id)
-    )
-
+    # Upsert zone matrix rows — LLM output overwrites rule-based rows but never
+    # overwrites human-reviewed rows or prior LLM rows marked human.
     for zone in deduped_zones:
-        db.add(ZoneUseMatrix(
+        citations_val = [c.model_dump() for c in zone.citations] if zone.citations else None
+        stmt = pg_insert(ZoneUseMatrix).values(
             jurisdiction_id=jurisdiction.id,
             zone_code=zone.code,
             zone_name=zone.name,
@@ -567,10 +565,29 @@ async def _parse_and_save_ordinance(
             mini_warehouse=zone.mini_warehouse,
             light_industrial=zone.light_industrial,
             luxury_garage_condo=zone.luxury_garage_condo,
-            citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
+            citations=citations_val,
             confidence=zone.confidence,
             notes=zone.notes,
-        ))
+            classification_source=ClassificationSource.llm,
+        ).on_conflict_do_update(
+            constraint="uq_zone_matrix",
+            set_=dict(
+                zone_name=zone.name,
+                self_storage=zone.self_storage,
+                mini_warehouse=zone.mini_warehouse,
+                light_industrial=zone.light_industrial,
+                luxury_garage_condo=zone.luxury_garage_condo,
+                citations=citations_val,
+                confidence=zone.confidence,
+                notes=zone.notes,
+                classification_source=ClassificationSource.llm,
+            ),
+            where=(
+                (ZoneUseMatrix.human_reviewed == False) &
+                (ZoneUseMatrix.classification_source != ClassificationSource.human)
+            ),
+        )
+        await db.execute(stmt)
 
     jurisdiction.ordinance_url = ordinance_url
     await db.flush()
