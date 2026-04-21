@@ -47,6 +47,10 @@ desktop.ini
 
 # Docker
 *.log
+docker-compose.override.yml
+
+# Claude Code local config
+.claude/
 
 # Data / cache
 *.tif
