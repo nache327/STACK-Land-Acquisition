@@ -149,10 +149,14 @@ def classify_bluffdale(code: str) -> PerUseClassification:
     if any(kw in u for kw in ('CI CIVIC', 'CIVIC')):
         return storage_cls("prohibited", 0.75, f"Bluffdale civic zone: {code}")
 
+    # Prohibited — residential special districts
+    if 'SD-R' in u:
+        return storage_cls("prohibited", 0.72, f"Bluffdale SD-R residential special district: {code}")
+
     # Conditional — commercial/flex zones
     if any(kw in u for kw in ('GC-1', 'SD-X', 'SD-C', 'GW-R GATEWAY',
                                'REGIONAL COMMERCIAL', 'NC NEIGHBORHOOD', 'I-O INFILL',
-                               'A-5 AGRICULTURAL', 'SD-R')):
+                               'A-5 AGRICULTURAL')):
         return storage_cls("conditional", 0.65, f"Bluffdale commercial/flex zone: {code}")
 
     # Conditional — special districts (could accommodate storage with CUP)
