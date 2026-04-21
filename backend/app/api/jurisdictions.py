@@ -146,10 +146,13 @@ async def get_parcels_map_layer(
     result = await db.execute(sql, {"jid": jurisdiction_id})
     row = result.one_or_none()
 
+    headers = {"Cache-Control": "no-store"}
+
     if row is None or row.fc is None:
         return JSONResponse(
             content={"type": "FeatureCollection", "features": []},
             media_type="application/geo+json",
+            headers=headers,
         )
 
-    return JSONResponse(content=row.fc, media_type="application/geo+json")
+    return JSONResponse(content=row.fc, media_type="application/geo+json", headers=headers)
