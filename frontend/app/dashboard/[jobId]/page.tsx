@@ -268,6 +268,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       {drawerOpen && (
         <ParcelDrawer
           parcel={parcelDetail ?? null}
+          jurisdictionId={jurisdictionId ?? ""}
           onClose={() => setDrawerOpen(false)}
           isInShortlist={selectedParcelId !== null && selectedIds.has(selectedParcelId)}
           onToggleShortlist={

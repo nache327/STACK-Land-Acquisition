@@ -2,6 +2,7 @@
 GET  /api/jurisdictions                         — list known jurisdictions
 GET  /api/jurisdictions/:id                     — single jurisdiction
 GET  /api/jurisdictions/:id/zones               — zone→use matrix
+GET  /api/jurisdictions/:id/zones/:code         — single zone row (for Layer 3 verification)
 PATCH /api/jurisdictions/:id/zones/:code        — human override
 GET  /api/jurisdictions/:id/parcels/map         — GeoJSON FeatureCollection for MapLibre
 """
@@ -55,6 +56,27 @@ async def get_zone_matrix(
     )
     zones = result.scalars().all()
     return {"zones": zones, "unknown_zones": [], "parser_warnings": []}
+
+
+@router.get(
+    "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
+    response_model=ZoneUseMatrixRead,
+)
+async def get_zone(
+    jurisdiction_id: uuid.UUID,
+    zone_code: str,
+    db: AsyncSession = Depends(get_db),
+) -> ZoneUseMatrix:
+    result = await db.execute(
+        select(ZoneUseMatrix).where(
+            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+            ZoneUseMatrix.zone_code == zone_code,
+        )
+    )
+    zone = result.scalar_one_or_none()
+    if zone is None:
+        raise HTTPException(status_code=404, detail="Zone not found")
+    return zone
 
 
 @router.patch(
