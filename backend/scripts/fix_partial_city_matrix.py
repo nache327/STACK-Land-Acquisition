@@ -73,23 +73,28 @@ def classify_sandy(code: str) -> PerUseClassification:
         return storage_cls("prohibited", 0.72, "Sandy parameterized multifamily")
 
     if re.match(r'^PUD[\s(]', u) or re.match(r'^PUD \d', u):
-        return storage_cls("conditional", 0.65, "Sandy planned unit development")
+        return storage_cls("prohibited", 0.70, "Sandy PUD: residential planned unit development")
 
     sd_match = re.match(r'^SD\((.+?)\)', u)
     if sd_match:
         inner = sd_match.group(1).upper()
-        if re.match(r'^R[-\s]', inner) or inner.startswith('RM') or re.match(r'^\d+\.\d+$', inner):
+        # Residential base zones → prohibited
+        if (re.match(r'^R[-\s\d]', inner) or inner == 'R'
+                or inner.startswith('RM') or re.match(r'^\d+\.\d+$', inner)
+                or 'PO/R' in inner):
             return storage_cls("prohibited", 0.70, "Sandy SD residential base zone")
+        # Open space / park / public → prohibited
+        if inner.startswith('OS') or inner == 'P':
+            return storage_cls("prohibited", 0.70, "Sandy SD open space / public")
+        # Commercial / mixed / professional-office base zones → conditional
         if any(inner.startswith(p) for p in ('CC', 'CN', 'C-', 'MU', 'PO', 'TC', 'SMART', 'FM', 'MAGNA',
                                               'HARADA', 'MDM', 'UNION', 'UN.', 'CARNATION', 'JHS',
-                                              '1300', 'EH', 'H', 'P', 'X', 'OS', 'MU', 'C)')):
+                                              '1300', 'EH', 'H', 'X', 'C)')):
             return storage_cls("conditional", 0.65, "Sandy SD commercial/mixed base zone")
-        if inner.startswith('OS'):
-            return storage_cls("prohibited", 0.70, "Sandy SD open space")
         return storage_cls("conditional", 0.60, "Sandy SD unknown base zone")
 
     if u.startswith("A-"):
-        return storage_cls("conditional", 0.60, "Sandy agricultural")
+        return storage_cls("prohibited", 0.72, "Sandy agricultural — storage prohibited")
 
     logger.warning("[Sandy] Unknown code '%s' — prohibited (conservative default)", code)
     return storage_cls("prohibited", 0.45, f"Sandy unknown zone code '{code}' — conservative default")

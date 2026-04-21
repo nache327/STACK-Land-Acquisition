@@ -37,8 +37,8 @@ def classify_herriman(code: str) -> PerUseClassification:
         return storage_cls("permitted", 0.80, "Herriman industrial M-1")
     if re.match(r'^R-[0-9]', u) or re.match(r'^FR-', u):
         return storage_cls("prohibited", 0.80, "Herriman residential")
-    if re.match(r'^A-1', u):
-        return storage_cls("conditional", 0.65, "Herriman agricultural")
+    if re.match(r'^A-', u):
+        return storage_cls("prohibited", 0.72, "Herriman agricultural — storage prohibited")
     if u in ("C-1", "C-2"):
         return storage_cls("conditional", 0.70, "Herriman commercial")
     if u.startswith("MU"):
@@ -48,9 +48,9 @@ def classify_herriman(code: str) -> PerUseClassification:
     if u == "RC":
         return storage_cls("prohibited", 0.75, "Herriman rural conservation")
     if u in ("LPMPC", "AMSD"):
-        return storage_cls("conditional", 0.60, "Herriman planned/master community")
+        return storage_cls("prohibited", 0.55, "Herriman planned/master community — residential orientation assumed")
     if u == "TM":
-        return storage_cls("conditional", 0.65, "Herriman transitional mixed")
+        return storage_cls("prohibited", 0.55, "Herriman TM — assumed residential transitional, conservative default")
     logger.warning("[Herriman] Unknown code '%s' — prohibited (conservative default)", code)
     return storage_cls("prohibited", 0.45, f"Herriman unknown zone code '{code}' — conservative default")
 
@@ -76,7 +76,7 @@ def classify_eagle_mountain(code: str) -> PerUseClassification:
         return storage_cls("conditional", 0.60, f"Eagle Mountain flex/unknown commercial: {code}")
 
     if u.startswith("AGRICULTURE"):
-        return storage_cls("conditional", 0.65, "Eagle Mountain agricultural")
+        return storage_cls("prohibited", 0.72, "Eagle Mountain agricultural — storage prohibited")
 
     if any(kw in u for kw in ("OPEN SPACE", "PARK", "POND", "RETENTION",
                                 "CHURCH", "SCHOOL", "FIRE STATION",
@@ -96,9 +96,9 @@ def classify_hurricane(code: str) -> PerUseClassification:
     if u in ("HC", "GC", "NC", "PC"):
         return storage_cls("conditional", 0.70, "Hurricane commercial")
     if re.match(r'^A-', u):
-        return storage_cls("conditional", 0.65, "Hurricane agricultural")
+        return storage_cls("prohibited", 0.72, "Hurricane agricultural — storage prohibited")
     if u == "MH/RV":
-        return storage_cls("conditional", 0.65, "Hurricane MH/RV park — storage commonly co-located")
+        return storage_cls("prohibited", 0.70, "Hurricane mobile home/RV park — residential use")
     if u in ("PF", "OS"):
         return storage_cls("prohibited", 0.78, "Hurricane public/open space")
     if re.match(r'^R[M1A]', u) or u == "RR":
@@ -116,7 +116,7 @@ def classify_kaysville(code: str) -> PerUseClassification:
     if u == "MU":
         return storage_cls("prohibited", 0.70, "Kaysville mixed use — residential-oriented")
     if re.match(r'^A-', u):
-        return storage_cls("conditional", 0.65, "Kaysville agricultural")
+        return storage_cls("prohibited", 0.72, "Kaysville agricultural — storage prohibited")
     if u in ("PB", "PU"):
         return storage_cls("prohibited", 0.72, "Kaysville professional/public utility")
     if re.match(r'^R-', u):
