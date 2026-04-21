@@ -2,12 +2,16 @@
 
 /**
  * Three-layer zoning verification panel — embedded in ParcelDrawer.
- * Shows Layer 1 (Zoneomics), Layer 2 (City GIS match), Layer 3 (Ordinance AI).
+ * Layer 1: Our DB classification (auto, instant)
+ * Layer 2: Zone code integrity check (auto, computation)
+ * Layer 3: On-demand ordinance AI (user-triggered only)
  */
 
 import { useState } from "react";
 import {
   STATUS_CONFIG,
+  SOURCE_CONFIG,
+  USE_STATUS_CONFIG,
   type VerificationState,
   type Layer1Result,
   type Layer2Result,
@@ -34,6 +38,11 @@ export function VerificationPanel({
   const [expanded, setExpanded] = useState<"l1" | "l2" | "l3" | null>(null);
 
   const cfg = state ? STATUS_CONFIG[state.overallStatus] : STATUS_CONFIG.UNVERIFIED;
+
+  const canRunLayer3 =
+    !state ||
+    state.layer3.status === "not-run" ||
+    state.layer1?.classificationSource === "rule";
 
   return (
     <section className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
@@ -70,7 +79,7 @@ export function VerificationPanel({
 
       {/* Conflict flags */}
       {state?.conflictFlags.map((flag, i) => (
-        <p key={i} className="mb-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-red-700">
+        <p key={i} className="mb-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
           {flag}
         </p>
       ))}
@@ -79,42 +88,50 @@ export function VerificationPanel({
       <div className="space-y-1">
         <LayerRow
           id="l1"
-          label="Layer 1: Zoneomics API"
+          label="Layer 1: DB Classification"
           loading={layer1Loading}
           expanded={expanded === "l1"}
           onToggle={() => setExpanded(expanded === "l1" ? null : "l1")}
           result={state?.layer1 ?? null}
           renderSummary={(l1: Layer1Result) => (
-            <span>
-              Zone: <strong>{l1.zoneCode || "—"}</strong>
-              {l1.pluMatch && (
-                <span className="ml-1 text-emerald-700">
-                  · PLU: {l1.matchedTags.join(", ")}
-                </span>
-              )}
-              {!l1.pluMatch && l1.status === "complete" && (
-                <span className="ml-1 text-slate-400">· No PLU match</span>
-              )}
-              {l1.status === "no-coverage" && (
-                <span className="ml-1 text-slate-400">· No coverage</span>
-              )}
+            <span className="flex items-center gap-1.5">
+              <UseStatusBadge status={l1.selfStorageStatus} />
+              <SourceBadge source={l1.classificationSource} />
             </span>
           )}
           renderDetail={(l1: Layer1Result) => (
-            <div className="space-y-1">
-              <DetailRow label="Zone" value={l1.zoneCode} />
-              <DetailRow label="Description" value={l1.zoneDescription} />
-              <DetailRow label="PLU tags" value={l1.pluTags.join(", ") || "none"} />
-              <DetailRow label="Permit type" value={l1.permitType ?? "unknown"} />
+            <div className="space-y-1.5">
+              <p className="font-medium text-slate-600">{l1.zoneCode}{l1.zoneName ? ` — ${l1.zoneName}` : ""}</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                <UseRow label="Self-storage"   status={l1.selfStorageStatus} />
+                <UseRow label="Mini-warehouse"  status={l1.miniWarehouseStatus} />
+                <UseRow label="Light industrial" status={l1.lightIndustrialStatus} />
+                <UseRow label="Keep/garage condo" status={l1.luxuryGarageStatus} />
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <SourceBadge source={l1.classificationSource} />
+                {l1.confidence != null && (
+                  <span className="text-slate-400">
+                    {Math.round(l1.confidence * 100)}% confidence
+                  </span>
+                )}
+                {l1.humanReviewed && (
+                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                    Human reviewed
+                  </span>
+                )}
+              </div>
+              {l1.notes && (
+                <p className="text-slate-500 italic leading-snug">{l1.notes}</p>
+              )}
               <DetailRow label="Score" value={`+${l1.score} pts`} />
-              <DetailRow label="Fetched" value={new Date(l1.fetchedAt).toLocaleString()} />
             </div>
           )}
         />
 
         <LayerRow
           id="l2"
-          label="Layer 2: City GIS"
+          label="Layer 2: Zone Code Check"
           loading={false}
           expanded={expanded === "l2"}
           onToggle={() => setExpanded(expanded === "l2" ? null : "l2")}
@@ -122,30 +139,22 @@ export function VerificationPanel({
           renderSummary={(l2: Layer2Result) => (
             <span>
               {l2.matchType === "exact" && (
-                <span className="text-emerald-700">✓ Exact match</span>
-              )}
-              {l2.matchType === "probable" && (
-                <span className="text-lime-700">~ Probable match</span>
+                <span className="text-emerald-700">✓ Recognized</span>
               )}
               {l2.matchType === "conflict" && (
-                <span className="text-red-700 font-semibold">⚠ CONFLICT</span>
+                <span className="text-red-700 font-semibold">⚠ Mismatch</span>
               )}
               {l2.matchType === "unavailable" && (
                 <span className="text-slate-400">Unavailable</span>
-              )}
-              {l2.cityZoneCode && (
-                <span className="ml-1 text-slate-500">
-                  · City: {l2.cityZoneCode}
-                </span>
               )}
             </span>
           )}
           renderDetail={(l2: Layer2Result) => (
             <div className="space-y-1">
-              <DetailRow label="City zone code" value={l2.cityZoneCode ?? "—"} />
-              <DetailRow label="Zoneomics code" value={l2.zoneomicsZoneCode ?? "—"} />
-              <DetailRow label="Match type" value={l2.matchType} />
-              <DetailRow label="Data source" value={l2.dataSource} />
+              <DetailRow label="Parcel zone code" value={l2.cityZoneCode ?? "—"} />
+              <DetailRow label="DB zone code"     value={l2.dbZoneCode ?? "—"} />
+              <DetailRow label="Match"            value={l2.matchType} />
+              <DetailRow label="Source"           value={l2.dataSource} />
               {l2.note && <DetailRow label="Note" value={l2.note} />}
               <DetailRow label="Score" value={`+${l2.score} pts`} />
             </div>
@@ -154,13 +163,13 @@ export function VerificationPanel({
 
         <LayerRow
           id="l3"
-          label="Layer 3: Ordinance Text"
+          label="Layer 3: Ordinance AI"
           loading={layer3Loading}
           expanded={expanded === "l3"}
           onToggle={() => setExpanded(expanded === "l3" ? null : "l3")}
           result={state?.layer3.status !== "not-run" ? state?.layer3 ?? null : null}
           notRunAction={
-            state?.layer3.status === "not-run" || !state ? (
+            canRunLayer3 ? (
               <button
                 onClick={onRunLayer3}
                 disabled={layer3Loading}
@@ -187,10 +196,10 @@ export function VerificationPanel({
           )}
           renderDetail={(l3: Layer3Result) => (
             <div className="space-y-1">
-              <DetailRow label="Self-storage" value={l3.selfStorageStatus ?? "—"} />
+              <DetailRow label="Self-storage"     value={l3.selfStorageStatus ?? "—"} />
               <DetailRow label="Keep/garage condo" value={l3.keepStatus ?? "—"} />
-              <DetailRow label="AI confidence" value={l3.aiConfidence ?? "—"} />
-              <DetailRow label="Source" value={l3.classificationSource ?? "—"} />
+              <DetailRow label="AI confidence"    value={l3.aiConfidence ?? "—"} />
+              <DetailRow label="Source"           value={l3.classificationSource ?? "—"} />
               {l3.evidence && (
                 <div>
                   <p className="text-slate-500 mb-0.5">Evidence:</p>
@@ -291,6 +300,39 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <span className="text-slate-400 shrink-0">{label}</span>
       <span className="text-right text-slate-700">{value}</span>
     </div>
+  );
+}
+
+function UseRow({ label, status }: { label: string; status: string }) {
+  const cfg = USE_STATUS_CONFIG[status as keyof typeof USE_STATUS_CONFIG] ??
+    USE_STATUS_CONFIG.unclear;
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-slate-400 text-[10px]">{label}</span>
+      <span className={["rounded px-1 py-0.5 text-[10px] font-medium", cfg.bg, cfg.color].join(" ")}>
+        {cfg.label}
+      </span>
+    </div>
+  );
+}
+
+function UseStatusBadge({ status }: { status: string }) {
+  const cfg = USE_STATUS_CONFIG[status as keyof typeof USE_STATUS_CONFIG] ??
+    USE_STATUS_CONFIG.unclear;
+  return (
+    <span className={["rounded px-1.5 py-0.5 text-[10px] font-medium", cfg.bg, cfg.color].join(" ")}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function SourceBadge({ source }: { source: string }) {
+  const cfg = SOURCE_CONFIG[source as keyof typeof SOURCE_CONFIG] ??
+    SOURCE_CONFIG.unclear;
+  return (
+    <span className={["rounded px-1.5 py-0.5 text-[10px]", cfg.bg, cfg.color].join(" ")}>
+      {cfg.label}
+    </span>
   );
 }
 

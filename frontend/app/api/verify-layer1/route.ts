@@ -1,132 +1,118 @@
 /**
- * Layer 1 — Zoneomics API server-side proxy.
- * Keeps ZONEOMICS_API_KEY out of the browser.
+ * Layer 1 — Our own zone_use_matrix lookup.
+ * No external API. Reads our DB via the FastAPI backend.
  *
  * POST /api/verify-layer1
- * Body: { lat: number, lng: number, productType: "storage" | "keep" }
+ * Body: { jurisdictionId: string, zoneCode: string }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { scoreLayer1, STORAGE_PLU_TAGS, type Layer1Result } from "@/lib/verification";
+import { scoreLayer1DB, type Layer1Result, type UseStatus } from "@/lib/verification";
 
-const ZONEOMICS_BASE = "https://api.zoneomics.com/v2";
+const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ZONEOMICS_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "ZONEOMICS_API_KEY not configured" },
-      { status: 503 }
-    );
-  }
-
-  let lat: number, lng: number;
+  let jurisdictionId: string, zoneCode: string;
   try {
     const body = await req.json();
-    lat = Number(body.lat);
-    lng = Number(body.lng);
-    if (isNaN(lat) || isNaN(lng)) throw new Error("invalid coordinates");
+    jurisdictionId = String(body.jurisdictionId ?? "");
+    zoneCode = String(body.zoneCode ?? "");
+    if (!jurisdictionId || !zoneCode) throw new Error("missing fields");
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   try {
-    const url = new URL(`${ZONEOMICS_BASE}/zoneDetail`);
-    url.searchParams.set("lat", String(lat));
-    url.searchParams.set("lng", String(lng));
-    url.searchParams.set("api_key", apiKey);
-    url.searchParams.set("output_fields", "zoning,plu,plu-tags,controls");
-
-    const zRes = await fetch(url.toString(), {
+    const url = `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}`;
+    const res = await fetch(url, {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(8_000),
     });
 
-    if (!zRes.ok) {
-      const text = await zRes.text();
-      if (zRes.status === 404 || zRes.status === 422) {
-        // No coverage for this location
-        const result: Layer1Result = {
-          status: "no-coverage",
-          zoneCode: "",
-          zoneDescription: "",
-          pluTags: [],
-          pluMatch: false,
-          matchedTags: [],
-          permitType: null,
-          score: 0,
-          fetchedAt: Date.now(),
-        };
-        return NextResponse.json(result);
-      }
+    if (res.status === 404) {
+      const result: Layer1Result = {
+        status: "no-coverage",
+        zoneCode,
+        zoneName: "",
+        selfStorageStatus: "unclear",
+        miniWarehouseStatus: "unclear",
+        lightIndustrialStatus: "unclear",
+        luxuryGarageStatus: "unclear",
+        classificationSource: "unclear",
+        confidence: null,
+        humanReviewed: false,
+        notes: null,
+        permitType: null,
+        score: 0,
+        fetchedAt: Date.now(),
+      };
+      return NextResponse.json(result);
+    }
+
+    if (!res.ok) {
       return NextResponse.json(
-        { error: `Zoneomics returned ${zRes.status}: ${text.slice(0, 200)}` },
+        { error: `Backend returned ${res.status}` },
         { status: 502 }
       );
     }
 
-    const data = await zRes.json();
+    const row = await res.json();
 
-    // Parse Zoneomics response — field names may vary by subscription tier
-    const zoneCode: string =
-      data.zoning?.zone_code ?? data.zone_code ?? data.zoning ?? "";
-    const zoneDescription: string =
-      data.zoning?.zone_name ?? data.zone_name ?? data.description ?? "";
-    const rawPluTags: string[] = (
-      data["plu-tags"] ?? data.plu_tags ?? data.plu?.tags ?? []
-    ).map((t: string) => t.toLowerCase());
+    const classificationSource: Layer1Result["classificationSource"] =
+      (["llm", "rule", "human", "unclear"].includes(row.classification_source)
+        ? row.classification_source
+        : "unclear") as Layer1Result["classificationSource"];
 
-    // Determine permit type from PLU controls
-    const controls: unknown[] = data.controls ?? data.plu?.controls ?? [];
-    let permitType: Layer1Result["permitType"] = null;
-    for (const ctrl of controls as Array<Record<string, string>>) {
-      const tag = (ctrl.use_tag ?? ctrl.tag ?? "").toLowerCase();
-      const type = (ctrl.permit_type ?? ctrl.type ?? "").toLowerCase();
-      if (STORAGE_PLU_TAGS.has(tag)) {
-        if (type.includes("prohibit")) { permitType = "prohibited"; break; }
-        if (type.includes("condition") || type.includes("cup")) { permitType = "conditional"; }
-        else if (!permitType) { permitType = "permitted-by-right"; }
-      }
-    }
+    const toUseStatus = (v: string | null | undefined): UseStatus => {
+      if (v === "permitted" || v === "conditional" || v === "prohibited") return v;
+      return "unclear";
+    };
 
-    const { score, pluMatch, matchedTags } = scoreLayer1(
-      rawPluTags,
-      zoneDescription,
-      zoneCode,
-      permitType
-    );
+    const selfStorageStatus = toUseStatus(row.self_storage);
+
+    const { score, permitType } = scoreLayer1DB({
+      selfStorageStatus,
+      classificationSource,
+      confidence: row.confidence ?? null,
+    });
 
     const result: Layer1Result = {
       status: "complete",
-      zoneCode,
-      zoneDescription,
-      pluTags: rawPluTags,
-      pluMatch,
-      matchedTags,
+      zoneCode: row.zone_code ?? zoneCode,
+      zoneName: row.zone_name ?? "",
+      selfStorageStatus,
+      miniWarehouseStatus: toUseStatus(row.mini_warehouse),
+      lightIndustrialStatus: toUseStatus(row.light_industrial),
+      luxuryGarageStatus: toUseStatus(row.luxury_garage_condo),
+      classificationSource,
+      confidence: row.confidence ?? null,
+      humanReviewed: row.human_reviewed ?? false,
+      notes: row.notes ?? null,
       permitType,
       score,
-      rawResponse: data,
       fetchedAt: Date.now(),
     };
 
     return NextResponse.json(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    const errorResult: Layer1Result = {
+      status: "error",
+      zoneCode,
+      zoneName: "",
+      selfStorageStatus: "unclear",
+      miniWarehouseStatus: "unclear",
+      lightIndustrialStatus: "unclear",
+      luxuryGarageStatus: "unclear",
+      classificationSource: "unclear",
+      confidence: null,
+      humanReviewed: false,
+      notes: null,
+      permitType: null,
+      score: 0,
+      fetchedAt: Date.now(),
+    };
     if (msg.includes("timeout") || msg.includes("abort")) {
-      return NextResponse.json(
-        {
-          status: "error",
-          zoneCode: "",
-          zoneDescription: "",
-          pluTags: [],
-          pluMatch: false,
-          matchedTags: [],
-          permitType: null,
-          score: 0,
-          fetchedAt: Date.now(),
-          error: "Zoneomics request timed out",
-        } satisfies Layer1Result & { error: string },
-        { status: 200 } // Return 200 so map doesn't break
-      );
+      return NextResponse.json(errorResult, { status: 200 });
     }
     return NextResponse.json({ error: msg }, { status: 500 });
   }

@@ -11,25 +11,16 @@ import {
   type VerificationState,
 } from "@/lib/verification";
 
-function extractLatLng(centroid: Record<string, unknown> | null | undefined): [number, number] | null {
-  if (!centroid) return null;
-  const coords = centroid.coordinates as [number, number] | undefined;
-  if (!coords || coords.length < 2) return null;
-  return [coords[1], coords[0]]; // GeoJSON is [lng, lat] → return [lat, lng]
-}
-
 interface UseVerificationOptions {
   apn: string;
   zoneCode: string | null;
   jurisdictionId: string;
-  centroid?: Record<string, unknown> | null;
 }
 
 export function useVerification({
   apn,
   zoneCode,
   jurisdictionId,
-  centroid,
 }: UseVerificationOptions) {
   const [state, setState] = useState<VerificationState | null>(() =>
     zoneCode ? readCache(apn, zoneCode) : null
@@ -63,13 +54,10 @@ export function useVerification({
     []
   );
 
-  // Run Layer 1 (Zoneomics) — called when drawer opens
+  // Run Layer 1 (our DB) — called when drawer opens with a new parcel
   const runLayer1 = useCallback(async () => {
-    if (!zoneCode) return;
+    if (!zoneCode || !jurisdictionId) return;
     if (state?.layer1?.status === "complete") return; // already have it
-
-    const latLng = extractLatLng(centroid);
-    if (!latLng) return; // no centroid — can't call Zoneomics
 
     setLayer1Loading(true);
     setError(null);
@@ -78,7 +66,7 @@ export function useVerification({
       const res = await fetch("/api/verify-layer1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat: latLng[0], lng: latLng[1] }),
+        body: JSON.stringify({ jurisdictionId, zoneCode }),
       });
 
       if (!res.ok) throw new Error(`Layer 1 failed: ${res.status}`);
@@ -87,6 +75,7 @@ export function useVerification({
       const layer3: Layer3Result = state?.layer3 ?? {
         status: "not-run",
         ordinanceUrl: null,
+        ordinanceSource: null,
         selfStorageStatus: null,
         keepStatus: null,
         evidence: null,
@@ -104,7 +93,7 @@ export function useVerification({
     } finally {
       setLayer1Loading(false);
     }
-  }, [apn, zoneCode, centroid, state, buildState]);
+  }, [apn, zoneCode, jurisdictionId, state, buildState]);
 
   // Run Layer 3 (ordinance AI) — only on explicit user request
   const runLayer3 = useCallback(async () => {

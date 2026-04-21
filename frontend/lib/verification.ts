@@ -1,38 +1,15 @@
 /**
  * Three-Layer Zoning Verification Engine — types, scoring, and localStorage cache.
  *
- * Layer 1: Zoneomics API   (volume filter — PLU tag matching)
- * Layer 2: City GIS match  (Zoneomics zone code vs. our DB zone code from city GIS)
- * Layer 3: Ordinance text  (on-demand AI analysis — only runs on explicit user request)
+ * Layer 1: Our zone_use_matrix DB  (auto — immediate, no external API cost)
+ * Layer 2: Zone code integrity check (computation only)
+ * Layer 3: Ordinance text AI        (on-demand — only runs when user requests it)
  */
-
-// ── Use targets ───────────────────────────────────────────────────────────────
-
-export const STORAGE_PLU_TAGS = new Set([
-  "mini-warehouse",
-  "self-storage",
-  "warehouse",
-  "light-industrial",
-  "storage-facility",
-  "flex-industrial",
-]);
-
-export const KEEP_PLU_TAGS = new Set([
-  "condominium",
-  "industrial-condo",
-  "business-park",
-  "light-industrial",
-  "mixed-use-industrial",
-  "garage",
-  "commercial",
-]);
-
-export const STORAGE_KEYWORDS = ["storage", "warehouse", "industrial", "condo"];
-export const INDUSTRIAL_ZONE_PATTERNS = /^(M-?\d|LI|LM|HI|HM|ML|IND|MFG|MAN|BP|I-?\d)/i;
 
 // ── Layer types ───────────────────────────────────────────────────────────────
 
-export type PermitType = "permitted-by-right" | "conditional" | "prohibited" | null;
+export type UseStatus = "permitted" | "conditional" | "prohibited" | "unclear";
+export type PermitType = "permitted-by-right" | "conditional" | "incompatible" | null;
 export type MatchType = "exact" | "probable" | "conflict" | "unavailable";
 export type Layer3Status =
   | "PERMITTED_BY_RIGHT"
@@ -43,21 +20,29 @@ export type AiConfidence = "HIGH" | "MEDIUM" | "LOW";
 
 export interface Layer1Result {
   status: "complete" | "error" | "no-coverage" | "pending";
+  // Zone identity
   zoneCode: string;
-  zoneDescription: string;
-  pluTags: string[];
-  pluMatch: boolean;
-  matchedTags: string[];
+  zoneName: string;
+  // Per-use classifications from zone_use_matrix
+  selfStorageStatus: UseStatus;
+  miniWarehouseStatus: UseStatus;
+  lightIndustrialStatus: UseStatus;
+  luxuryGarageStatus: UseStatus;
+  // Data quality
+  classificationSource: "llm" | "rule" | "human" | "unclear";
+  confidence: number | null;
+  humanReviewed: boolean;
+  notes: string | null;
+  // Derived for composite scoring
   permitType: PermitType;
   score: number;
-  rawResponse?: unknown;
   fetchedAt: number;
 }
 
 export interface Layer2Result {
   status: "complete" | "unavailable";
   cityZoneCode: string | null;
-  zoneomicsZoneCode: string | null;
+  dbZoneCode: string | null;
   matchType: MatchType;
   dataSource: string;
   overlayConflict: boolean;
@@ -68,6 +53,7 @@ export interface Layer2Result {
 export interface Layer3Result {
   status: "complete" | "not-run" | "error" | "ordinance-not-found";
   ordinanceUrl: string | null;
+  ordinanceSource: "discovered" | null;
   selfStorageStatus: Layer3Status | null;
   keepStatus: Layer3Status | null;
   evidence: string | null;
@@ -97,7 +83,44 @@ export interface VerificationState {
   lastUpdated: number;
 }
 
-// ── Score / status calculation ────────────────────────────────────────────────
+// ── Layer 1 scoring (our DB) ──────────────────────────────────────────────────
+
+export function scoreLayer1DB(params: {
+  selfStorageStatus: UseStatus;
+  classificationSource: "llm" | "rule" | "human" | "unclear";
+  confidence: number | null;
+}): { score: number; permitType: PermitType } {
+  const { selfStorageStatus, classificationSource, confidence } = params;
+
+  if (selfStorageStatus === "prohibited") {
+    return { score: 0, permitType: "incompatible" };
+  }
+  if (selfStorageStatus === "unclear") {
+    return { score: 0, permitType: null };
+  }
+
+  const conf = confidence ?? 0.7;
+  let base = 0;
+  let permitType: PermitType = null;
+
+  if (selfStorageStatus === "permitted") {
+    base = 35;
+    permitType = "permitted-by-right";
+  } else if (selfStorageStatus === "conditional") {
+    base = 15;
+    permitType = "conditional";
+  }
+
+  const multiplier =
+    classificationSource === "human" ? 1.0 :
+    classificationSource === "llm"   ? Math.min(conf + 0.1, 1.0) :
+    classificationSource === "rule"  ? 0.45 :
+    0.25;
+
+  return { score: Math.round(base * multiplier), permitType };
+}
+
+// ── Composite score / status ──────────────────────────────────────────────────
 
 export function computeComposite(
   layer1: Layer1Result | null,
@@ -106,39 +129,47 @@ export function computeComposite(
 ): Pick<VerificationState, "compositeScore" | "overallStatus" | "conflictFlags"> {
   const flags: string[] = [];
 
-  // Hard overrides — these always win
+  // Hard overrides — always win
   if (layer3.selfStorageStatus === "PROHIBITED") {
-    return { compositeScore: 0, overallStatus: "PROHIBITED", conflictFlags: ["Layer 3: ordinance explicitly prohibits this use"] };
+    return {
+      compositeScore: 0,
+      overallStatus: "PROHIBITED",
+      conflictFlags: ["Layer 3: ordinance explicitly prohibits this use"],
+    };
   }
   if (layer2?.matchType === "conflict") {
-    flags.push("⚠ Zoneomics and city GIS disagree — do not pursue without manual verification");
+    flags.push("⚠ Zone code mismatch — do not pursue without manual verification");
     return { compositeScore: 0, overallStatus: "CONFLICT", conflictFlags: flags };
   }
 
-  let score = 0;
-
-  // Layer 1 contribution
-  if (layer1) {
-    score += layer1.score;
-    if (layer1.permitType === "prohibited") {
-      return { compositeScore: 0, overallStatus: "PROHIBITED", conflictFlags: ["Layer 1: Zoneomics reports use is prohibited"] };
-    }
+  if (layer1?.permitType === "incompatible") {
+    return {
+      compositeScore: 0,
+      overallStatus: "PROHIBITED",
+      conflictFlags: ["Layer 1: zone classified as prohibited for storage uses"],
+    };
   }
 
-  // Layer 2 contribution
+  let score = 0;
+  if (layer1) score += layer1.score;
   if (layer2) score += layer2.score;
-
-  // Layer 3 contribution
   score += layer3.score;
+
   if (layer3.selfStorageStatus === "CUP_REQUIRED") {
     flags.push("Conditional Use Permit required — never shown as fully permitted");
   }
 
-  // Caps and floors
-  const layersChecked = [layer1, layer2, layer3.status !== "not-run" ? layer3 : null].filter(Boolean).length;
-  if (layersChecked < 2) score = Math.min(score, 65); // can't reach VERIFIED with only 1 layer
+  if (layer1?.classificationSource === "rule") {
+    flags.push("⚠ Rule-based classification — click 'Verify Now' for AI ordinance analysis");
+  }
 
-  // Status thresholds
+  const layersChecked = [
+    layer1,
+    layer2,
+    layer3.status !== "not-run" ? layer3 : null,
+  ].filter(Boolean).length;
+  if (layersChecked < 2) score = Math.min(score, 65);
+
   let status: OverallStatus;
   if (score >= 85) status = "VERIFIED";
   else if (score >= 65) status = "PROBABLE";
@@ -146,7 +177,6 @@ export function computeComposite(
   else if (score >= 1) status = "WEAK";
   else status = "UNVERIFIED";
 
-  // CUP always shows YELLOW even if score is high
   if (layer3.selfStorageStatus === "CUP_REQUIRED" && status === "VERIFIED") {
     status = "PROBABLE";
   }
@@ -154,43 +184,17 @@ export function computeComposite(
   return { compositeScore: score, overallStatus: status, conflictFlags: flags };
 }
 
-// ── Layer 1 helpers ───────────────────────────────────────────────────────────
-
-export function scoreLayer1(
-  pluTags: string[],
-  zoneDescription: string,
-  zoneCode: string,
-  permitType: PermitType
-): { score: number; pluMatch: boolean; matchedTags: string[] } {
-  if (permitType === "prohibited") return { score: 0, pluMatch: false, matchedTags: [] };
-
-  const matchedTags = pluTags.filter((t) => STORAGE_PLU_TAGS.has(t.toLowerCase()));
-  let score = 0;
-
-  if (matchedTags.length > 0) {
-    score += permitType === "conditional" ? 25 : 35;
-  }
-  if (STORAGE_KEYWORDS.some((kw) => zoneDescription.toLowerCase().includes(kw))) {
-    score += 20;
-  }
-  if (INDUSTRIAL_ZONE_PATTERNS.test(zoneCode)) {
-    score += 10;
-  }
-
-  return { score, pluMatch: matchedTags.length > 0, matchedTags };
-}
-
-// ── Layer 2 helpers ───────────────────────────────────────────────────────────
+// ── Layer 2 — zone code integrity check ──────────────────────────────────────
 
 export function computeLayer2(
   cityZoneCode: string | null,
-  zoneomicsZoneCode: string | null
+  dbZoneCode: string | null
 ): Layer2Result {
-  if (!cityZoneCode || !zoneomicsZoneCode) {
+  if (!cityZoneCode || !dbZoneCode) {
     return {
       status: "unavailable",
       cityZoneCode,
-      zoneomicsZoneCode,
+      dbZoneCode,
       matchType: "unavailable",
       dataSource: "Site Scout DB (from city ArcGIS)",
       overlayConflict: false,
@@ -199,72 +203,45 @@ export function computeLayer2(
   }
 
   const normalize = (s: string) => s.replace(/[\s\-_]/g, "").toLowerCase();
-  const a = normalize(cityZoneCode);
-  const b = normalize(zoneomicsZoneCode);
-
-  if (a === b) {
+  if (normalize(cityZoneCode) === normalize(dbZoneCode)) {
     return {
       status: "complete",
       cityZoneCode,
-      zoneomicsZoneCode,
+      dbZoneCode,
       matchType: "exact",
       dataSource: "Site Scout DB (from city ArcGIS)",
       overlayConflict: false,
       score: 35,
-      note: "Zone codes match exactly",
+      note: "Zone code confirmed in database",
     };
   }
 
-  // Probable match — same zone type family
-  const zoneFamily = (s: string) => {
-    const u = s.toUpperCase();
-    if (/^I|^M-|^LI|^LM|^HI|^HM|^IND|^MFG|^BP/.test(u)) return "industrial";
-    if (/^C-|^B-|^GC|^HC|^NC|^SC|^CC/.test(u)) return "commercial";
-    if (/^R-|^RS|^RM|^RMF|^SF|^MH/.test(u)) return "residential";
-    if (/^A-|^AG/.test(u)) return "agricultural";
-    if (/^MU|^MXD/.test(u)) return "mixed";
-    return "unknown";
-  };
-
-  const familyA = zoneFamily(cityZoneCode);
-  const familyB = zoneFamily(zoneomicsZoneCode);
-
-  if (familyA !== "unknown" && familyA === familyB) {
-    return {
-      status: "complete",
-      cityZoneCode,
-      zoneomicsZoneCode,
-      matchType: "probable",
-      dataSource: "Site Scout DB (from city ArcGIS)",
-      overlayConflict: false,
-      score: 20,
-      note: `Zone codes differ but both appear to be ${familyA} — types consistent`,
-    };
-  }
-
-  // Conflict
   return {
     status: "complete",
     cityZoneCode,
-    zoneomicsZoneCode,
+    dbZoneCode,
     matchType: "conflict",
     dataSource: "Site Scout DB (from city ArcGIS)",
     overlayConflict: false,
     score: 0,
-    note: `City GIS says "${cityZoneCode}" but Zoneomics says "${zoneomicsZoneCode}" — zone types disagree`,
+    note: `Parcel zone code "${cityZoneCode}" differs from DB record "${dbZoneCode}"`,
   };
 }
 
 // ── Layer 3 from zone_use_matrix data ─────────────────────────────────────────
 
-export function layer3FromZoneRow(row: {
-  self_storage: string;
-  luxury_garage_condo: string;
-  confidence: number | null;
-  citations: Array<{ section: string; quote: string }> | null;
-  notes: string | null;
-  classification_source: string;
-}): Layer3Result {
+export function layer3FromZoneRow(
+  row: {
+    self_storage: string;
+    luxury_garage_condo: string;
+    confidence: number | null;
+    citations: Array<{ section: string; quote: string }> | null;
+    notes: string | null;
+    classification_source: string;
+  },
+  ordinanceUrl?: string | null,
+  ordinanceSource?: Layer3Result["ordinanceSource"]
+): Layer3Result {
   const permToStatus = (p: string): Layer3Status => {
     if (p === "permitted") return "PERMITTED_BY_RIGHT";
     if (p === "conditional") return "CUP_REQUIRED";
@@ -292,7 +269,8 @@ export function layer3FromZoneRow(row: {
 
   return {
     status: "complete",
-    ordinanceUrl: null, // filled in by caller
+    ordinanceUrl: ordinanceUrl ?? null,
+    ordinanceSource: ordinanceSource ?? null,
     selfStorageStatus: ssStatus,
     keepStatus,
     evidence,
@@ -307,8 +285,7 @@ export function layer3FromZoneRow(row: {
 // ── localStorage cache (30-day TTL) ──────────────────────────────────────────
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const cacheKey = (apn: string, zoneCode: string) =>
-  `verify:${apn}:${zoneCode}`;
+const cacheKey = (apn: string, zoneCode: string) => `verify:${apn}:${zoneCode}`;
 
 export function readCache(apn: string, zoneCode: string): VerificationState | null {
   if (typeof window === "undefined") return null;
@@ -346,11 +323,31 @@ export const STATUS_CONFIG: Record<
   OverallStatus,
   { label: string; color: string; bg: string; border: string; dot: string }
 > = {
-  VERIFIED:    { label: "High Confidence — Pursue",            color: "text-emerald-800", bg: "bg-emerald-50",  border: "border-emerald-300", dot: "bg-emerald-500" },
-  PROBABLE:    { label: "Likely Viable — Verify Ordinance",    color: "text-lime-800",    bg: "bg-lime-50",     border: "border-lime-300",    dot: "bg-lime-500"    },
-  UNCERTAIN:   { label: "Needs Verification",                   color: "text-amber-800",   bg: "bg-amber-50",    border: "border-amber-300",   dot: "bg-amber-500"   },
-  WEAK:        { label: "Low Confidence — Not Recommended",    color: "text-orange-800",  bg: "bg-orange-50",   border: "border-orange-300",  dot: "bg-orange-500"  },
-  CONFLICT:    { label: "⚠ Data Conflict — Do Not Pursue",     color: "text-red-800",     bg: "bg-red-50",      border: "border-red-300",     dot: "bg-red-500"     },
-  PROHIBITED:  { label: "✗ Prohibited Use",                    color: "text-red-900",     bg: "bg-red-100",     border: "border-red-400",     dot: "bg-red-700"     },
-  UNVERIFIED:  { label: "No Data — Manual Research Required",  color: "text-slate-600",   bg: "bg-slate-50",    border: "border-slate-200",   dot: "bg-slate-400"   },
+  VERIFIED:   { label: "High Confidence — Pursue",           color: "text-emerald-800", bg: "bg-emerald-50", border: "border-emerald-300", dot: "bg-emerald-500" },
+  PROBABLE:   { label: "Likely Viable — Verify Ordinance",   color: "text-lime-800",    bg: "bg-lime-50",    border: "border-lime-300",    dot: "bg-lime-500"    },
+  UNCERTAIN:  { label: "Needs Verification",                  color: "text-amber-800",   bg: "bg-amber-50",   border: "border-amber-300",   dot: "bg-amber-500"   },
+  WEAK:       { label: "Low Confidence — Not Recommended",   color: "text-orange-800",  bg: "bg-orange-50",  border: "border-orange-300",  dot: "bg-orange-500"  },
+  CONFLICT:   { label: "⚠ Data Conflict — Do Not Pursue",    color: "text-red-800",     bg: "bg-red-50",     border: "border-red-300",     dot: "bg-red-500"     },
+  PROHIBITED: { label: "✗ Prohibited Use",                   color: "text-red-900",     bg: "bg-red-100",    border: "border-red-400",     dot: "bg-red-700"     },
+  UNVERIFIED: { label: "No Data — Manual Research Required", color: "text-slate-600",   bg: "bg-slate-50",   border: "border-slate-200",   dot: "bg-slate-400"   },
+};
+
+export const SOURCE_CONFIG: Record<
+  "llm" | "rule" | "human" | "unclear",
+  { label: string; color: string; bg: string }
+> = {
+  human:   { label: "Human Verified",    color: "text-emerald-700", bg: "bg-emerald-50"  },
+  llm:     { label: "AI Parsed",         color: "text-blue-700",    bg: "bg-blue-50"     },
+  rule:    { label: "Rule-Based",        color: "text-amber-700",   bg: "bg-amber-50"    },
+  unclear: { label: "Unknown Source",    color: "text-slate-500",   bg: "bg-slate-50"    },
+};
+
+export const USE_STATUS_CONFIG: Record<
+  UseStatus,
+  { label: string; color: string; bg: string }
+> = {
+  permitted:   { label: "Permitted",   color: "text-emerald-700", bg: "bg-emerald-100" },
+  conditional: { label: "CUP Req.",    color: "text-amber-700",   bg: "bg-amber-100"   },
+  prohibited:  { label: "Prohibited",  color: "text-red-700",     bg: "bg-red-100"     },
+  unclear:     { label: "Unclear",     color: "text-slate-500",   bg: "bg-slate-100"   },
 };

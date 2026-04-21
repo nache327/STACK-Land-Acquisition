@@ -30,12 +30,11 @@ export function ParcelDrawer({
       apn: parcel?.apn ?? "",
       zoneCode: parcel?.zoning_code ?? null,
       jurisdictionId,
-      centroid: parcel?.centroid ?? null,
     });
 
   // Auto-run Layer 1 when drawer opens with a new parcel
   useEffect(() => {
-    if (parcel?.centroid && parcel.zoning_code) {
+    if (parcel?.zoning_code) {
       runLayer1();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
