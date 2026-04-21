@@ -20,17 +20,18 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import select as sa_select
 
 from app.db import async_session_maker
 from app.models.job import Job, JobStatus
-from app.models.jurisdiction import Jurisdiction, ParcelSource
+from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource
 from app.models.parcel import Parcel
 from app.services.arcgis_query import download_all_features
 from app.services.ingestion import ingest_parcels
+from app.services.zoning_ingestion import ingest_zoning_districts
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,12 @@ class JurisdictionConfig:
     parcel_source: ParcelSource
     parcel_endpoint: str          # FeatureServer URL  OR  Regrid path
     zoning_endpoint: str | None = None
+    # Direct URL to a spatial zoning-district FeatureServer. Distinct from
+    # `zoning_endpoint` (historical: zoning attribute on the parcel layer).
+    zoning_polygon_endpoint: str | None = None
     ordinance_url: str | None = None
     where_clause: str | None = None   # SQL WHERE clause for filtered endpoints
+    zoning_where_clause: str | None = None
 
 
 # UGRC county-specific parcel layers (services1.arcgis.com, org 99lidPhWCzftIe9K)
@@ -65,6 +70,60 @@ def _ugrc(county_service: str, city_name: str, full_name: str, county: str) -> J
         parcel_endpoint=f"{_UGRC}/{county_service}/FeatureServer/0",
         where_clause=f"PARCEL_CITY='{city_name}'",
     )
+
+
+# ── NJ statewide MOD-IV composite parcel service (NJOGIS) ────────────────────
+_NJ_STATEWIDE = (
+    "https://services2.arcgis.com/XVOqAjTOJ5P6ngMu/arcgis/rest"
+    "/services/Parcels_Composite_NJ_WM/FeatureServer/0"
+)
+# Jersey City zoning: the JC Land Use FeatureServer (all layers 1-4) contains only
+# tree canopy analysis polygons, not zoning districts — not usable. NJTPA zoning
+# at gis.njtpa.org/server/rest/services/LandUse/NJTPA_Zoning/FeatureServer/7
+# exists but returns 403 externally. Hudson County zoning left as None pending
+# a public zoning endpoint being identified.
+_NJ_JC_LANDUSE = None
+# Newark zoning districts (Layer 14 of Newark_NJ_Zoning service).
+_NJ_NEWARK_ZONING = (
+    "https://services7.arcgis.com/ZodPOMBKsdAsTqF4/arcgis/rest"
+    "/services/Newark_NJ_Zoning/FeatureServer/14"
+)
+
+
+def _nj(county_name: str, full_name: str, zoning_endpoint: str | None = None) -> JurisdictionConfig:
+    """Build a statewide-NJ-backed JurisdictionConfig for a NJ county."""
+    return JurisdictionConfig(
+        name=full_name,
+        state="NJ",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=_NJ_STATEWIDE,
+        where_clause=f"COUNTY='{county_name.upper()}'",
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
+def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
+    """Build all NJ county entries (avoids repeating the same config dict twice)."""
+    hudson  = _nj("Hudson",    "Hudson County, NJ",    _NJ_JC_LANDUSE)
+    essex   = _nj("Essex",     "Essex County, NJ",     _NJ_NEWARK_ZONING)
+    union   = _nj("Union",     "Union County, NJ")
+    midsx   = _nj("Middlesex", "Middlesex County, NJ")
+    passaic = _nj("Passaic",   "Passaic County, NJ")
+    return {
+        "hudson county":          hudson,
+        "hudson county, nj":      hudson,
+        "jersey city":            hudson,
+        "essex county":           essex,
+        "essex county, nj":       essex,
+        "newark":                 essex,
+        "union county":           union,
+        "union county, nj":       union,
+        "middlesex county":       midsx,
+        "middlesex county, nj":   midsx,
+        "passaic county":         passaic,
+        "passaic county, nj":     passaic,
+    }
 
 
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
@@ -129,6 +188,77 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "hurricane":   _ugrc("Parcels_Washington", "Hurricane",  "Hurricane, UT",  "Washington"),
     # ── Iron County (Parcels_Iron) ────────────────────────────────────────────
     "cedar city": _ugrc("Parcels_Iron", "Cedar City", "Cedar City, UT", "Iron"),
+
+    # ── New York ─────────────────────────────────────────────────────────────
+    # NYC — MapPLUTO (citywide parcels with ZONEDIST) + Zoning Districts polygons.
+    # Both layers published by NYC Dept of City Planning on services5.arcgis.com.
+    "new york city": JurisdictionConfig(
+        name="New York, NY",
+        state="NY",
+        county="New York",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest"
+            "/services/MAPPLUTO/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest"
+            "/services/v_Zoning_Districts_NYZD/FeatureServer/0"
+        ),
+    ),
+    "new york, ny": JurisdictionConfig(
+        name="New York, NY",
+        state="NY",
+        county="New York",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest"
+            "/services/MAPPLUTO/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest"
+            "/services/v_Zoning_Districts_NYZD/FeatureServer/0"
+        ),
+    ),
+
+    # ── Pennsylvania ─────────────────────────────────────────────────────────
+    # Philadelphia — OPA parcels + Zoning Base Districts (separate layers).
+    "philadelphia": JurisdictionConfig(
+        name="Philadelphia, PA",
+        state="PA",
+        county="Philadelphia",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
+            "/services/OPA_Properties_Public/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
+            "/services/Zoning_BaseDistricts/FeatureServer/0"
+        ),
+    ),
+    "philadelphia, pa": JurisdictionConfig(
+        name="Philadelphia, PA",
+        state="PA",
+        county="Philadelphia",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
+            "/services/OPA_Properties_Public/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
+            "/services/Zoning_BaseDistricts/FeatureServer/0"
+        ),
+    ),
+
+    # ── New Jersey counties ───────────────────────────────────────────────────
+    # Source: NJOGIS Parcels_Composite_NJ_WM — MOD-IV statewide composite.
+    # Filtered per county via COUNTY='<NAME>' (uppercase full county name).
+    # Note: OWNER_NAME is redacted in this service per NJ Daniel's Law.
+    # Zoning is municipal-level; Hudson uses Jersey City land use layer,
+    # Essex uses Newark zoning layer as best available coverage.
+    **{k: v for k, v in _build_nj_jurisdictions().items()},
 }
 
 
@@ -214,7 +344,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
             county=cfg.county,
             parcel_source=cfg.parcel_source,
             parcel_endpoint=cfg.parcel_endpoint,
-            zoning_endpoint=cfg.zoning_endpoint,
+            zoning_endpoint=cfg.zoning_polygon_endpoint or cfg.zoning_endpoint,
         )
         db.add(jurisdiction)
         await db.flush()
@@ -222,7 +352,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     else:
         # Update endpoints in case they changed
         jurisdiction.parcel_endpoint = cfg.parcel_endpoint
-        jurisdiction.zoning_endpoint = cfg.zoning_endpoint
+        jurisdiction.zoning_endpoint = cfg.zoning_polygon_endpoint or cfg.zoning_endpoint
         await db.flush()
         logger.info("Found existing Jurisdiction: %s (%s)", cfg.name, jurisdiction.id)
 
@@ -278,9 +408,42 @@ async def _run(db: AsyncSession, job: Job) -> None:
     logger.info("Ingesting parcels into PostGIS …")
     count = await ingest_parcels(gdf, jurisdiction.id, db, replace=True)
 
-    # Update last_indexed_at
+    # Update last_indexed_at + compute bbox from ingested parcels
     from datetime import datetime, timezone
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
+    await _refresh_jurisdiction_bbox(jurisdiction, db)
+    await db.flush()
+
+    # ── Step 3a: download + ingest zoning polygons (non-fatal) ───────────
+    zoning_count = 0
+    zoning_endpoint = cfg.zoning_polygon_endpoint or cfg.zoning_endpoint
+    if zoning_endpoint:
+        await _set_status(
+            db, job, JobStatus.downloading_zoning,
+            progress={"zoning_endpoint": zoning_endpoint},
+        )
+        await db.commit()
+        try:
+            logger.info("Downloading zoning districts from %s", zoning_endpoint)
+            zgdf = await download_all_features(
+                zoning_endpoint,
+                where=cfg.zoning_where_clause or "1=1",
+            )
+            zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
+            await db.commit()
+
+            # Denormalize zone_class onto parcels via centroid-in-polygon spatial join.
+            updated = await _backfill_parcel_zone_class(jurisdiction.id, db)
+            logger.info("zone_class backfill updated %d parcels", updated)
+            await db.commit()
+        except Exception as exc:
+            logger.warning("Zoning ingest failed (non-fatal): %s", exc)
+            await db.rollback()
+
+    # Record coverage state so the UI can flag partial jurisdictions
+    jurisdiction.coverage_level = _coverage_level(
+        parcel_count=count, zoning_count=zoning_count
+    )
     await db.flush()
 
     # ── Step 3b: apply overlays (flood + wetland, non-fatal) ─────────────
@@ -501,3 +664,81 @@ def _build_regrid_path(geo: Any) -> str:
         return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_")
 
     return f"{geo.state.lower()}/{slug(geo.county)}/{slug(geo.city)}"
+
+
+# ─── Helpers added for NY/PA pivot ───────────────────────────────────────────
+
+async def _refresh_jurisdiction_bbox(
+    jurisdiction: Jurisdiction, db: AsyncSession
+) -> None:
+    """
+    Compute [minLng, minLat, maxLng, maxLat] from the parcel set and store it
+    on the jurisdiction row so the frontend can fit-bounds without hard-coding
+    a center.
+    """
+    result = await db.execute(
+        text("""
+            SELECT
+                ST_XMin(ST_Extent(geom)) AS minx,
+                ST_YMin(ST_Extent(geom)) AS miny,
+                ST_XMax(ST_Extent(geom)) AS maxx,
+                ST_YMax(ST_Extent(geom)) AS maxy
+            FROM parcels
+            WHERE jurisdiction_id = :jid AND geom IS NOT NULL
+        """),
+        {"jid": jurisdiction.id},
+    )
+    row = result.one_or_none()
+    if row is None or row.minx is None:
+        return
+    jurisdiction.bbox = [
+        float(row.minx), float(row.miny),
+        float(row.maxx), float(row.maxy),
+    ]
+
+
+async def _backfill_parcel_zone_class(
+    jurisdiction_id: uuid.UUID, db: AsyncSession
+) -> int:
+    """
+    Populate parcels.zone_class via centroid-in-polygon spatial join against
+    zoning_districts. Uses a LATERAL subquery with LIMIT 1 so Postgres bails
+    out after the first matching zoning polygon per parcel — cuts NYC-scale
+    runtime (856k parcels × 5.4k polygons) from ~30 min to ~2 min by avoiding
+    the nested-loop cross product.
+    """
+    result = await db.execute(
+        text("""
+            UPDATE parcels p
+            SET zone_class = matched.zone_class
+            FROM (
+                SELECT p2.id AS parcel_id, zd.zone_class
+                FROM parcels p2
+                CROSS JOIN LATERAL (
+                    SELECT zone_class
+                    FROM zoning_districts zd
+                    WHERE zd.jurisdiction_id = :jid
+                      AND zd.geom IS NOT NULL
+                      AND ST_Contains(zd.geom, p2.centroid)
+                    LIMIT 1
+                ) zd
+                WHERE p2.jurisdiction_id = :jid
+                  AND p2.centroid IS NOT NULL
+            ) matched
+            WHERE p.id = matched.parcel_id
+        """),
+        {"jid": jurisdiction_id},
+    )
+    return result.rowcount or 0
+
+
+def _coverage_level(
+    *, parcel_count: int, zoning_count: int
+) -> CoverageLevel:
+    if parcel_count > 0 and zoning_count > 0:
+        return CoverageLevel.full
+    if parcel_count > 0:
+        return CoverageLevel.parcels_only
+    if zoning_count > 0:
+        return CoverageLevel.zoning_only
+    return CoverageLevel.partial

@@ -111,6 +111,7 @@ async def get_parcels_map_layer(
                             'id',                p.id,
                             'apn',               p.apn,
                             'zoning_code',       p.zoning_code,
+                            'zone_class',        p.zone_class,
                             'acres',             p.acres,
                             'has_structure',     p.has_structure,
                             'in_flood_zone',     p.in_flood_zone,
