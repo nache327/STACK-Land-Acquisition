@@ -49,8 +49,8 @@ def classify_highland(label: str, desc: str) -> PerUseClassification:
         return storage_cls("prohibited", 0.70, "Highland mixed-use residential — storage not permitted")
     if u == "PO":
         return storage_cls("conditional", 0.65, "Highland professional office")
-    if re.match(r'^A-', u):
-        return storage_cls("conditional", 0.65, f"Highland agricultural: {label}")
+    if re.match(r'^A[-\d]', u) or u == "A":
+        return storage_cls("prohibited", 0.78, f"Highland agricultural: {label}")
     if u in ("C", "OS", "PU"):
         return storage_cls("prohibited", 0.78, f"Highland civic/open space: {label}")
     if re.match(r'^R[-\s1]', u) or u == "R":

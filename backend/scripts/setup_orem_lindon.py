@@ -84,8 +84,11 @@ def classify_lindon(label: str, desc: str) -> PerUseClassification:
         return storage_cls("permitted", 0.80, f"Lindon industrial: {label}")
     if u == "CG-S":
         return storage_cls("permitted", 0.85, "Lindon commercial storage zone")
-    if u in ("CF", "CG", "CG-A", "CG-A8", "LVC", "MC", "PC-1", "PC-2",
-             "RC", "RBO", "SPOD", "AFPD"):
+    if u in ("PC-1", "PC-2"):
+        return storage_cls("prohibited", 0.75, f"Lindon planned community — residential: {label}")
+    if u == "RC":
+        return storage_cls("prohibited", 0.75, "Lindon rural community — residential")
+    if u in ("CF", "CG", "CG-A", "CG-A8", "LVC", "MC", "RBO", "SPOD", "AFPD"):
         return storage_cls("conditional", 0.70, f"Lindon commercial: {label}")
     if u in ("RMU-E", "RMU-W"):
         return storage_cls("prohibited", 0.72, f"Lindon residential mixed use: {label}")

@@ -106,8 +106,8 @@ def classify_washington(code: str) -> PerUseClassification:
     u = code.strip().upper()
     if re.match(r'^R-1-', u) or re.match(r'^RA-', u) or u in ("RRST", "PUD"):
         return storage_cls("prohibited", 0.75, "Washington residential")
-    if re.match(r'^A-', u):
-        return storage_cls("conditional", 0.65, "Washington agricultural")
+    if re.match(r'^A[-\d]', u) or u == "A":
+        return storage_cls("prohibited", 0.78, "Washington agricultural")
     logger.warning("[Washington] Unknown code '%s' — prohibited (conservative default)", code)
     return storage_cls("prohibited", 0.45, f"Washington unknown zone code '{code}' — conservative default")
 

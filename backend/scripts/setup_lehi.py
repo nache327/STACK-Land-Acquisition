@@ -44,12 +44,15 @@ def classify_lehi(label: str, desc: str) -> PerUseClassification:
 
     if u in ("LI", "T-M", "H/I", "BP"):
         return storage_cls("permitted", 0.80, f"Lehi industrial: {label}")
-    if u in ("C", "C-H", "C-I", "CR", "HC", "NC", "PC", "RC", "TOD", "TH-5"):
+    if u in ("C", "C-H", "C-I", "CR", "HC", "NC", "TOD"):
         return storage_cls("conditional", 0.70, f"Lehi commercial: {label}")
     if u == "MU":
         return storage_cls("prohibited", 0.70, "Lehi mixed use — residential-oriented")
-    if re.match(r'^A-', u) or u == "RA-1":
-        return storage_cls("conditional", 0.65, f"Lehi agricultural: {label}")
+    # Residential/rural — storage not permitted
+    if u in ("PC", "TH-5"):
+        return storage_cls("prohibited", 0.78, f"Lehi residential planned/townhouse: {label}")
+    if u in ("RC", "RA-1") or re.match(r'^A[-\d]', u) or u == "A":
+        return storage_cls("prohibited", 0.78, f"Lehi agricultural/rural: {label}")
     if u == "PF":
         return storage_cls("prohibited", 0.78, "Lehi public facility")
     if re.match(r'^R-', u) or re.match(r'^R\d', u):

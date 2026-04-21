@@ -51,16 +51,16 @@ def classify_pleasant_grove(label: str, desc: str) -> PerUseClassification:
         return storage_cls("permitted", 0.80, f"Pleasant Grove industrial: {label}")
     if u in ("C", "C-G", "C-N", "C-S1", "C-S2", "I", "RCO"):
         return storage_cls("conditional", 0.70, f"Pleasant Grove commercial: {label}")
-    if u == "A-1":
-        return storage_cls("conditional", 0.65, "Pleasant Grove agricultural")
+    if re.match(r'^A[-\d]', u) or u == "A":
+        return storage_cls("prohibited", 0.78, f"Pleasant Grove agricultural: {label}")
+    if u == "RAO":
+        return storage_cls("prohibited", 0.75, "Pleasant Grove residential agriculture overlay")
     if u in ("BMU", "GMU", "DMUO", "GBPO", "VGMU"):
         return storage_cls("conditional", 0.65, f"Pleasant Grove commercial MU: {label}")
     if u in ("MU", "T"):
         return storage_cls("prohibited", 0.70, f"Pleasant Grove mixed use — residential-oriented: {label}")
     if u == "P-O":
         return storage_cls("conditional", 0.65, "Pleasant Grove professional office")
-    if u == "RAO":
-        return storage_cls("conditional", 0.60, "Pleasant Grove residential agriculture overlay")
     if re.match(r'^R[-\s1]', u) or u in ("R-R", "MH", "SHO", "RM-7"):
         return storage_cls("prohibited", 0.80, f"Pleasant Grove residential: {label}")
     if "RESIDENTIAL" in d and "COMMERCIAL" not in d:

@@ -70,7 +70,7 @@ def classify_provo(label: str, desc: str) -> PerUseClassification:
     if u == "MU":
         return storage_cls("prohibited", 0.70, "Provo mixed use — residential-oriented")
     if re.match(r'^A\d', u) or u in ("A", "RA", "RAPD"):
-        return storage_cls("conditional", 0.65, f"Provo agricultural: {label}")
+        return storage_cls("prohibited", 0.78, f"Provo agricultural/rural: {label}")
     if re.match(r'^PRO-A', u):
         return storage_cls("conditional", 0.65, f"Provo redevelopment commercial overlay: {label}")
     if re.match(r'^PRO-R', u):
