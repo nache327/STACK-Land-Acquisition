@@ -26,6 +26,8 @@ from shapely import make_valid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -37,14 +39,14 @@ SG_JUR_ID = "86792c7c-76dd-45f8-a382-409097147a8f"
 UGRC_PARCELS = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/Parcels_Washington/FeatureServer/0"
 ZONING_URL   = "https://agisprodvm.washco.utah.gov/arcgis/rest/services/Zoning/MapServer/11"
 
-# GEN_ZONE → self_storage classification
+# GEN_ZONE → self_storage permission string (used by classify_st_george)
 GEN_ZONE_MAP = {
     "Agriculture":              "conditional",
     "Airport/Services":         "conditional",
     "Commercial":               "conditional",
     "Industrial/Manufacturing": "permitted",
     "Mining/Grazing":           "conditional",
-    "Mixed Use":                "conditional",
+    "Mixed Use":                "prohibited",
     "Open Space/Parks":         "prohibited",
     "Professional/Office":      "conditional",
     "Recreation/Resort":        "prohibited",
@@ -68,21 +70,22 @@ ZONE_OVERRIDE = {
 }
 
 
-def classify_st_george(zone_code: str, gen_zone: str | None) -> str:
-    if zone_code in ZONE_OVERRIDE:
-        return ZONE_OVERRIDE[zone_code]
-    if gen_zone and gen_zone in GEN_ZONE_MAP:
-        return GEN_ZONE_MAP[gen_zone]
-    # Fallback by code pattern
-    u = zone_code.strip().upper()
-    if re.match(r'^R[-\s]', u) or u in ("RCC", "PD-R", "PD"):
-        return "prohibited"
-    if re.match(r'^A-', u):
-        return "conditional"
-    if re.match(r'^C-', u) or re.match(r'^PD-C', u) or re.match(r'^PD-AP', u):
-        return "conditional"
-    logger.warning("[St. George] Unknown code '%s' (gen_zone=%s) → conditional", zone_code, gen_zone)
-    return "conditional"
+def classify_st_george(zone_code: str, gen_zone: str | None) -> PerUseClassification:
+    perm = ZONE_OVERRIDE.get(zone_code)
+    if perm is None and gen_zone:
+        perm = GEN_ZONE_MAP.get(gen_zone)
+    if perm is None:
+        u = zone_code.strip().upper()
+        if re.match(r'^R[-\s]', u) or u in ("RCC", "PD-R", "PD"):
+            perm = "prohibited"
+        elif re.match(r'^A-', u):
+            perm = "conditional"
+        elif re.match(r'^C-', u) or re.match(r'^PD-C', u) or re.match(r'^PD-AP', u):
+            perm = "conditional"
+        else:
+            logger.warning("[St. George] Unknown code '%s' (gen_zone=%s) — prohibited (conservative default)", zone_code, gen_zone)
+            perm = "prohibited"
+    return storage_cls(perm, 0.72, f"St. George: {zone_code}/{gen_zone}")
 
 
 # ── Step 1: Download UGRC parcels ──────────────────────────────────────────────
@@ -258,25 +261,27 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
 
 # ── Step 3: Build zone_use_matrix ──────────────────────────────────────────────
 
-async def build_matrix(zone_map: dict[str, tuple[str, str]]) -> None:
-    """zone_map: {zone_code: (gen_zone, classification)}"""
+async def build_matrix(zone_map: dict[str, tuple[str, PerUseClassification]]) -> None:
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         await conn.execute(
             text("DELETE FROM zone_use_matrix WHERE jurisdiction_id = :jid"),
             {"jid": SG_JUR_ID},
         )
-        for zone_code, (gen_zone, perm) in zone_map.items():
+        for zone_code, (gen_zone, cls) in zone_map.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid, :zc, :zn, :ss, 0.8, :notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid, :zc, :zn, :ss, :mw, :li, :lgc, 'rule', :conf, :notes)
             """), {
                 "jid": SG_JUR_ID,
                 "zc": zone_code,
                 "zn": gen_zone or zone_code,
-                "ss": perm,
-                "notes": "St. George Washington County GIS zoning classification",
+                "ss": cls.self_storage, "mw": cls.mini_warehouse,
+                "li": cls.light_industrial, "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence, "notes": cls.notes,
             })
     await engine.dispose()
     logger.info("[St. George] Inserted %d zone_use_matrix rows", len(zone_map))
@@ -304,20 +309,20 @@ async def main() -> None:
         logger.info("[St. George] Updated zoning_code on %d parcels", updated)
 
     # 3. Build zone_use_matrix from distinct (ZONINGCODE, GEN_ZONE) pairs
-    zone_map: dict[str, tuple[str, str]] = {}
+    zone_map: dict[str, tuple[str, PerUseClassification]] = {}
     for _, row in zoning_gdf.iterrows():
         zc = str(row["ZONINGCODE"]).strip()
         gz = str(row.get("GEN_ZONE", "") or "")
         if zc and zc not in zone_map:
-            perm = classify_st_george(zc, gz or None)
-            zone_map[zc] = (gz, perm)
+            cls = classify_st_george(zc, gz or None)
+            zone_map[zc] = (gz, cls)
 
     counts: dict[str, int] = {}
-    for _, (_, perm) in zone_map.items():
-        counts[perm] = counts.get(perm, 0) + 1
+    for _, (_, c) in zone_map.items():
+        counts[c.self_storage] = counts.get(c.self_storage, 0) + 1
     logger.info("[St. George] Zone classification distribution: %s", counts)
-    for zc, (gz, perm) in sorted(zone_map.items()):
-        logger.info("  %-20s %-28s → %s", zc, gz, perm)
+    for zc, (gz, cls) in sorted(zone_map.items()):
+        logger.info("  %-20s %-28s → %s", zc, gz, cls.self_storage)
 
     await build_matrix(zone_map)
 

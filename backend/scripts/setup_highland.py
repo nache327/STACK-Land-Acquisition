@@ -28,6 +28,8 @@ from shapely import make_valid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -38,40 +40,25 @@ UGRC_PARCELS = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/servic
 ZONING_URL   = "https://maps.utahcounty.gov/arcgis/rest/services/Assessor/CommercialAppraiser/MapServer/24"
 
 
-def classify_highland(label: str, desc: str) -> str:
+def classify_highland(label: str, desc: str) -> PerUseClassification:
     u = (label or "").strip().upper()
-    d = (desc or "").strip().upper()
 
-    # Commercial — conditional
     if u in ("C-1", "C-R", "FLEX", "PD-1", "R-P"):
-        return "conditional"
-
-    # Mixed use — conditional
+        return storage_cls("conditional", 0.70, f"Highland commercial: {label}")
     if u == "MUR":
-        return "conditional"
-
-    # Professional Office — conditional
+        return storage_cls("prohibited", 0.70, "Highland mixed-use residential — storage not permitted")
     if u == "PO":
-        return "conditional"
-
-    # Agricultural — conditional
+        return storage_cls("conditional", 0.65, "Highland professional office")
     if re.match(r'^A-', u):
-        return "conditional"
-
-    # Civic / Open Space / Public Utility — prohibited
+        return storage_cls("conditional", 0.65, f"Highland agricultural: {label}")
     if u in ("C", "OS", "PU"):
-        return "prohibited"
-
-    # Residential — prohibited
+        return storage_cls("prohibited", 0.78, f"Highland civic/open space: {label}")
     if re.match(r'^R[-\s1]', u) or u == "R":
-        return "prohibited"
-
-    # Non-conforming residential, conditional use residential — prohibited
+        return storage_cls("prohibited", 0.80, f"Highland residential: {label}")
     if u.startswith("NC ") or u.startswith("CU "):
-        return "prohibited"
-
-    logger.warning("[Highland] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
+        return storage_cls("prohibited", 0.75, f"Highland non-conforming/conditional residential: {label}")
+    logger.warning("[Highland] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Highland unknown zone code '{label}' — conservative default")
 
 
 def ensure_jurisdiction() -> str:
@@ -252,24 +239,30 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
     return updated
 
 
-async def build_matrix(jur_id: str, zone_map: dict[str, tuple[str, str]]) -> None:
+async def build_matrix(jur_id: str, zone_map: dict[str, tuple[str, PerUseClassification]]) -> None:
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         await conn.execute(
             text("DELETE FROM zone_use_matrix WHERE jurisdiction_id = :jid"),
             {"jid": jur_id},
         )
-        for zone_code, (desc, perm) in zone_map.items():
+        for zone_code, (desc, cls) in zone_map.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid, :zc, :zn, :ss, 0.8, :notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid, :zc, :zn, :ss, :mw, :li, :lgc, 'rule', :conf, :notes)
             """), {
                 "jid": jur_id,
                 "zc": zone_code,
                 "zn": desc or zone_code,
-                "ss": perm,
-                "notes": "Highland Utah County zoning classification",
+                "ss": cls.self_storage,
+                "mw": cls.mini_warehouse,
+                "li": cls.light_industrial,
+                "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence,
+                "notes": cls.notes,
             })
     await engine.dispose()
     logger.info("[Highland] Inserted %d zone_use_matrix rows", len(zone_map))
@@ -299,15 +292,15 @@ async def main() -> None:
         label = str(row["ZONE_HI_LABEL"]).strip()
         desc = str(row.get("ZONE_HI_DESC", "") or "")
         if label and label not in zone_map:
-            perm = classify_highland(label, desc)
-            zone_map[label] = (desc, perm)
+            cls = classify_highland(label, desc)
+            zone_map[label] = (desc, cls)
 
     counts: dict[str, int] = {}
-    for _, (_, p) in zone_map.items():
-        counts[p] = counts.get(p, 0) + 1
+    for _, (_, c) in zone_map.items():
+        counts[c.self_storage] = counts.get(c.self_storage, 0) + 1
     logger.info("[Highland] Zone distribution: %s", counts)
-    for zc, (desc, perm) in sorted(zone_map.items()):
-        logger.info("  %-20s %-30s → %s", zc, desc, perm)
+    for zc, (desc, cls) in sorted(zone_map.items()):
+        logger.info("  %-20s %-30s → %s", zc, desc, cls.self_storage)
 
     await build_matrix(jur_id, zone_map)
 

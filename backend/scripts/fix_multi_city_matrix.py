@@ -20,6 +20,8 @@ import psycopg2
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, apply_luxury_garage_inference, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -29,120 +31,98 @@ DB_SYNC = "host=aws-1-us-east-2.pooler.supabase.com port=5432 dbname=postgres us
 
 # ── Per-city classifiers ──────────────────────────────────────────────────────
 
-def classify_herriman(code: str) -> str:
+def classify_herriman(code: str) -> PerUseClassification:
     u = code.strip().upper()
-    # Industrial
     if u == "M-1":
-        return "permitted"
-    # Residential
+        return storage_cls("permitted", 0.80, "Herriman industrial M-1")
     if re.match(r'^R-[0-9]', u) or re.match(r'^FR-', u):
-        return "prohibited"
-    # Agricultural
+        return storage_cls("prohibited", 0.80, "Herriman residential")
     if re.match(r'^A-1', u):
-        return "conditional"
-    # Commercial
+        return storage_cls("conditional", 0.65, "Herriman agricultural")
     if u in ("C-1", "C-2"):
-        return "conditional"
-    # Mixed Use
+        return storage_cls("conditional", 0.70, "Herriman commercial")
     if u.startswith("MU"):
-        return "conditional"
-    # Office Park
+        return storage_cls("prohibited", 0.70, "Herriman mixed use — residential-oriented")
     if u == "OP":
-        return "prohibited"
-    # Rural Conservation
+        return storage_cls("prohibited", 0.72, "Herriman office park")
     if u == "RC":
-        return "prohibited"
-    # Planned/master community
+        return storage_cls("prohibited", 0.75, "Herriman rural conservation")
     if u in ("LPMPC", "AMSD"):
-        return "conditional"
-    # Transitional Mixed
+        return storage_cls("conditional", 0.60, "Herriman planned/master community")
     if u == "TM":
-        return "conditional"
-    logger.warning("[Herriman] Unknown code '%s' — conditional", code)
-    return "conditional"
+        return storage_cls("conditional", 0.65, "Herriman transitional mixed")
+    logger.warning("[Herriman] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"Herriman unknown zone code '{code}' — conservative default")
 
 
-def classify_eagle_mountain(code: str) -> str:
+def classify_eagle_mountain(code: str) -> PerUseClassification:
     u = code.strip().upper()
 
-    # Explicit permitted
     if u in ("INDUSTRIAL", "LIGHT MANUFACTURING/DISTRIBUTION ZONE",
              "BUSINESS PARK / LIGHT INDUSTRIAL", "BUSINESS PARK",
              "REGIONAL TECHNOLOGY", "AIRPARK", "LMD",
              "COMMERCIAL/INDUSTRIAL", "COMMERCIAL STORAGE"):
-        return "permitted"
+        return storage_cls("permitted", 0.80, f"Eagle Mountain industrial/storage: {code}")
 
-    # Commercial — conditional
+    if u == "MIXED-USE RESIDENTIAL/COMMERCIAL":
+        return storage_cls("prohibited", 0.72, "Eagle Mountain mixed-use residential — storage not permitted")
+
     if any(u.startswith(p) for p in ("COMMERCIAL", "VILLAGE CORE - COMMERCIAL",
                                       "NEIGHBORHOOD COMMERCIAL", "SATELLITE COMMERCIAL",
                                       "SATELLITE/COMMERCIAL", "TOWN CENTER")):
-        return "conditional"
-    if u in ("VILLAGE CORE", "MIXED-USE RESIDENTIAL/COMMERCIAL",
-             "FLEX USE TIER III-IV", "UNDER REVIEW", "OTHER"):
-        return "conditional"
+        return storage_cls("conditional", 0.70, f"Eagle Mountain commercial: {code}")
 
-    # Agriculture — conditional
+    if u in ("VILLAGE CORE", "FLEX USE TIER III-IV", "UNDER REVIEW", "OTHER"):
+        return storage_cls("conditional", 0.60, f"Eagle Mountain flex/unknown commercial: {code}")
+
     if u.startswith("AGRICULTURE"):
-        return "conditional"
+        return storage_cls("conditional", 0.65, "Eagle Mountain agricultural")
 
-    # Open space / parks / civic — prohibited
     if any(kw in u for kw in ("OPEN SPACE", "PARK", "POND", "RETENTION",
                                 "CHURCH", "SCHOOL", "FIRE STATION",
                                 "PUBLIC FACILIT")):
-        return "prohibited"
+        return storage_cls("prohibited", 0.78, f"Eagle Mountain civic/open space: {code}")
+
     if u in ("OS-1", "OS-N", "RC"):
-        return "prohibited"
+        return storage_cls("prohibited", 0.78, f"Eagle Mountain open space/conservation: {code}")
 
-    # Residential — prohibited (catch-all for everything left)
-    return "prohibited"
+    return storage_cls("prohibited", 0.72, f"Eagle Mountain residential (catch-all): {code}")
 
 
-def classify_hurricane(code: str) -> str:
+def classify_hurricane(code: str) -> PerUseClassification:
     u = code.strip().upper()
-    # Industrial
     if u in ("M-1", "M-2", "BMP"):
-        return "permitted"
-    # Commercial
+        return storage_cls("permitted", 0.80, "Hurricane industrial")
     if u in ("HC", "GC", "NC", "PC"):
-        return "conditional"
-    # Agricultural
+        return storage_cls("conditional", 0.70, "Hurricane commercial")
     if re.match(r'^A-', u):
-        return "conditional"
-    # MH/RV parks — conditional (storage commonly co-located)
+        return storage_cls("conditional", 0.65, "Hurricane agricultural")
     if u == "MH/RV":
-        return "conditional"
-    # Public / open space
+        return storage_cls("conditional", 0.65, "Hurricane MH/RV park — storage commonly co-located")
     if u in ("PF", "OS"):
-        return "prohibited"
-    # Residential
+        return storage_cls("prohibited", 0.78, "Hurricane public/open space")
     if re.match(r'^R[M1A]', u) or u == "RR":
-        return "prohibited"
-    logger.warning("[Hurricane] Unknown code '%s' — conditional", code)
-    return "conditional"
+        return storage_cls("prohibited", 0.80, "Hurricane residential")
+    logger.warning("[Hurricane] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"Hurricane unknown zone code '{code}' — conservative default")
 
 
-def classify_kaysville(code: str) -> str:
+def classify_kaysville(code: str) -> PerUseClassification:
     u = code.strip().upper()
-    # Industrial
     if u == "LI":
-        return "permitted"
-    # Commercial
-    if u in ("GC", "HC", "CC", "MU"):
-        return "conditional"
-    # Agricultural
+        return storage_cls("permitted", 0.80, "Kaysville light industrial")
+    if u in ("GC", "HC", "CC"):
+        return storage_cls("conditional", 0.70, "Kaysville commercial")
+    if u == "MU":
+        return storage_cls("prohibited", 0.70, "Kaysville mixed use — residential-oriented")
     if re.match(r'^A-', u):
-        return "conditional"
-    # Professional Business
-    if u == "PB":
-        return "prohibited"
-    # Public Utility
-    if u == "PU":
-        return "prohibited"
-    # Residential (R-* and R-A, R-D, R-T, R-M)
+        return storage_cls("conditional", 0.65, "Kaysville agricultural")
+    if u in ("PB", "PU"):
+        return storage_cls("prohibited", 0.72, "Kaysville professional/public utility")
     if re.match(r'^R-', u):
-        return "prohibited"
-    logger.warning("[Kaysville] Unknown code '%s' — conditional", code)
-    return "conditional"
+        return storage_cls("prohibited", 0.80, "Kaysville residential")
+    logger.warning("[Kaysville] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"Kaysville unknown zone code '{code}' — conservative default")
 
 
 CITY_CONFIGS = [
@@ -182,7 +162,8 @@ def get_zone_codes(jur_id: str) -> list[str]:
     return [r[0] for r in rows]
 
 
-async def replace_matrix(jur_id: str, name: str, classifications: dict[str, str]) -> None:
+async def replace_matrix(jur_id: str, name: str, classifications: dict[str, PerUseClassification]) -> None:
+    """Delete existing rows and re-insert with all 4 use columns + classification_source."""
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         deleted = await conn.execute(
@@ -191,18 +172,23 @@ async def replace_matrix(jur_id: str, name: str, classifications: dict[str, str]
         )
         logger.info("[%s] Deleted %d old rows", name, deleted.rowcount)
 
-        for zone_code, perm in classifications.items():
+        for zone_code, cls in classifications.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid, :zc, :zn, :ss, :conf, :notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid, :zc, :zn, :ss, :mw, :li, :lgc, 'rule', :conf, :notes)
             """), {
                 "jid": jur_id,
                 "zc": zone_code,
                 "zn": zone_code,
-                "ss": perm,
-                "conf": 0.75,
-                "notes": "Rule-based classification from zone code naming patterns",
+                "ss": cls.self_storage,
+                "mw": cls.mini_warehouse,
+                "li": cls.light_industrial,
+                "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence,
+                "notes": cls.notes,
             })
         logger.info("[%s] Inserted %d rows", name, len(classifications))
     await engine.dispose()
@@ -219,9 +205,9 @@ async def main() -> None:
 
         classifications = {code: classifier(code) for code in zone_codes}
 
-        counts = {}
-        for v in classifications.values():
-            counts[v] = counts.get(v, 0) + 1
+        counts: dict[str, int] = {}
+        for cls in classifications.values():
+            counts[cls.self_storage] = counts.get(cls.self_storage, 0) + 1
         logger.info("[%s] Distribution: %s", name, counts)
 
         await replace_matrix(jur_id, name, classifications)

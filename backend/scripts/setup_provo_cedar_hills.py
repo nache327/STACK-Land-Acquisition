@@ -28,6 +28,8 @@ from shapely import make_valid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -57,67 +59,47 @@ CITY_CONFIGS = [
 ]
 
 
-def classify_provo(label: str, desc: str) -> str:
+def classify_provo(label: str, desc: str) -> PerUseClassification:
     u = label.strip().upper()
-    d = (desc or "").strip().upper()
 
-    # Industrial / Manufacturing — permitted
     if u in ("M1", "M2", "MP", "FI", "AI", "PIC", "RBP"):
-        return "permitted"
-
-    # Commercial zones — conditional
+        return storage_cls("permitted", 0.80, f"Provo industrial: {label}")
     if u in ("CA", "CG", "CM", "DT1", "DT2", "FC1", "FC2", "FC3",
-             "GW", "ITOD", "MU", "PO", "SC1", "SC2", "SC3", "SSC", "WG"):
-        return "conditional"
-
-    # Agricultural — conditional
+             "GW", "ITOD", "PO", "SC1", "SC2", "SC3", "SSC", "WG"):
+        return storage_cls("conditional", 0.70, f"Provo commercial: {label}")
+    if u == "MU":
+        return storage_cls("prohibited", 0.70, "Provo mixed use — residential-oriented")
     if re.match(r'^A\d', u) or u in ("A", "RA", "RAPD"):
-        return "conditional"
-
-    # Project Redevelopment Overlays: A-series = commercial/industrial → conditional
-    #                                  R-series = residential → prohibited
+        return storage_cls("conditional", 0.65, f"Provo agricultural: {label}")
     if re.match(r'^PRO-A', u):
-        return "conditional"
+        return storage_cls("conditional", 0.65, f"Provo redevelopment commercial overlay: {label}")
     if re.match(r'^PRO-R', u):
-        return "prohibited"
-
-    # Specific Development Plan overlays — conditional
+        return storage_cls("prohibited", 0.75, f"Provo redevelopment residential overlay: {label}")
     if re.match(r'^SDP\d', u):
-        return "conditional"
-
-    # Residential — prohibited
+        return storage_cls("conditional", 0.60, f"Provo specific development plan: {label}")
     if re.match(r'^R\d', u) or re.match(r'^R[12]', u):
-        return "prohibited"
+        return storage_cls("prohibited", 0.80, f"Provo residential: {label}")
     if u in ("CR", "HDR", "LDR", "MDR", "VLDR", "RC", "RM"):
-        return "prohibited"
-
-    # Public / civic / health / training — prohibited
+        return storage_cls("prohibited", 0.78, f"Provo residential: {label}")
     if u in ("PF", "HCF", "TF", "OSPR"):
-        return "prohibited"
+        return storage_cls("prohibited", 0.78, f"Provo public/civic: {label}")
+    logger.warning("[Provo] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Provo unknown zone code '{label}' — conservative default")
 
-    logger.warning("[Provo] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
 
-
-def classify_cedar_hills(label: str, desc: str) -> str:
+def classify_cedar_hills(label: str, desc: str) -> PerUseClassification:
     u = label.strip().upper()
 
-    # Shopping Center — conditional
     if u == "SC-1":
-        return "conditional"
-
-    # Planned Development — conditional
+        return storage_cls("conditional", 0.70, "Cedar Hills shopping center")
     if u == "PD-1":
-        return "conditional"
-
-    # Hillside / Public Facilities / Residential — prohibited
+        return storage_cls("conditional", 0.60, "Cedar Hills planned development")
     if u in ("H-1", "PF", "TR-1"):
-        return "prohibited"
+        return storage_cls("prohibited", 0.78, f"Cedar Hills hillside/public: {label}")
     if re.match(r'^R-', u) or re.match(r'^PR\s', u):
-        return "prohibited"
-
-    logger.warning("[Cedar Hills] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
+        return storage_cls("prohibited", 0.80, f"Cedar Hills residential: {label}")
+    logger.warning("[Cedar Hills] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Cedar Hills unknown zone code '{label}' — conservative default")
 
 
 CLASSIFIERS = {
@@ -294,20 +276,24 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
     return updated
 
 
-async def build_matrix(jur_id: str, name: str, zone_map: dict[str, tuple[str, str]]) -> None:
+async def build_matrix(jur_id: str, name: str, zone_map: dict[str, tuple[str, PerUseClassification]]) -> None:
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         await conn.execute(
             text("DELETE FROM zone_use_matrix WHERE jurisdiction_id=:jid"), {"jid": jur_id}
         )
-        for zone_code, (desc, perm) in zone_map.items():
+        for zone_code, (desc, cls) in zone_map.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid,:zc,:zn,:ss,0.8,:notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid,:zc,:zn,:ss,:mw,:li,:lgc,'rule',:conf,:notes)
             """), {
                 "jid": jur_id, "zc": zone_code, "zn": desc or zone_code,
-                "ss": perm, "notes": f"{name} Utah County zoning classification",
+                "ss": cls.self_storage, "mw": cls.mini_warehouse,
+                "li": cls.light_industrial, "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence, "notes": cls.notes,
             })
     await engine.dispose()
     logger.info("[%s] Inserted %d zone_use_matrix rows", name, len(zone_map))
@@ -339,7 +325,7 @@ async def process_city(cfg: dict) -> None:
         updated = await update_zoning_codes(pairs)
         logger.info("[%s] Updated zoning_code on %d parcels", name, updated)
 
-    zone_map: dict[str, tuple[str, str]] = {}
+    zone_map: dict[str, tuple[str, PerUseClassification]] = {}
     for _, row in zoning_gdf.iterrows():
         label = str(row[cfg["label_field"]]).strip()
         desc = str(row.get(cfg["desc_field"], "") or "")
@@ -347,11 +333,11 @@ async def process_city(cfg: dict) -> None:
             zone_map[label] = (desc, classifier(label, desc))
 
     counts: dict[str, int] = {}
-    for _, (_, p) in zone_map.items():
-        counts[p] = counts.get(p, 0) + 1
+    for _, (_, c) in zone_map.items():
+        counts[c.self_storage] = counts.get(c.self_storage, 0) + 1
     logger.info("[%s] Zone distribution: %s", name, counts)
-    for zc, (desc, perm) in sorted(zone_map.items()):
-        logger.info("  %-20s %-42s → %s", zc, desc, perm)
+    for zc, (desc, cls) in sorted(zone_map.items()):
+        logger.info("  %-20s %-42s → %s", zc, desc, cls.self_storage)
 
     await build_matrix(jur_id, name, zone_map)
 

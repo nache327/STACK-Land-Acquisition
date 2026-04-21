@@ -26,6 +26,8 @@ from shapely import make_valid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -37,31 +39,23 @@ UGRC_PARCELS = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/servic
 ZONING_URL   = "https://maps.utahcounty.gov/arcgis/rest/services/Assessor/CommercialAppraiser/MapServer/25"
 
 
-def classify_lehi(label: str, desc: str) -> str:
+def classify_lehi(label: str, desc: str) -> PerUseClassification:
     u = (label or "").strip().upper()
 
-    # Industrial / Manufacturing — permitted
     if u in ("LI", "T-M", "H/I", "BP"):
-        return "permitted"
-
-    # Commercial zones — conditional
-    if u in ("C", "C-H", "C-I", "CR", "HC", "MU", "NC", "PC", "RC", "TOD", "TH-5"):
-        return "conditional"
-
-    # Agricultural — conditional
+        return storage_cls("permitted", 0.80, f"Lehi industrial: {label}")
+    if u in ("C", "C-H", "C-I", "CR", "HC", "NC", "PC", "RC", "TOD", "TH-5"):
+        return storage_cls("conditional", 0.70, f"Lehi commercial: {label}")
+    if u == "MU":
+        return storage_cls("prohibited", 0.70, "Lehi mixed use — residential-oriented")
     if re.match(r'^A-', u) or u == "RA-1":
-        return "conditional"
-
-    # Public Facility — prohibited
+        return storage_cls("conditional", 0.65, f"Lehi agricultural: {label}")
     if u == "PF":
-        return "prohibited"
-
-    # Residential — prohibited
+        return storage_cls("prohibited", 0.78, "Lehi public facility")
     if re.match(r'^R-', u) or re.match(r'^R\d', u):
-        return "prohibited"
-
-    logger.warning("[Lehi] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
+        return storage_cls("prohibited", 0.80, f"Lehi residential: {label}")
+    logger.warning("[Lehi] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Lehi unknown zone code '{label}' — conservative default")
 
 
 def download_ugrc_parcels() -> list[dict]:
@@ -217,21 +211,25 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
     return updated
 
 
-async def build_matrix(zone_map: dict[str, tuple[str, str]]) -> None:
+async def build_matrix(zone_map: dict[str, tuple[str, PerUseClassification]]) -> None:
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         await conn.execute(
             text("DELETE FROM zone_use_matrix WHERE jurisdiction_id = :jid"),
             {"jid": LEHI_JUR_ID},
         )
-        for zone_code, (desc, perm) in zone_map.items():
+        for zone_code, (desc, cls) in zone_map.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid, :zc, :zn, :ss, 0.8, :notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid, :zc, :zn, :ss, :mw, :li, :lgc, 'rule', :conf, :notes)
             """), {
                 "jid": LEHI_JUR_ID, "zc": zone_code, "zn": desc or zone_code,
-                "ss": perm, "notes": "Lehi Utah County zoning classification",
+                "ss": cls.self_storage, "mw": cls.mini_warehouse,
+                "li": cls.light_industrial, "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence, "notes": cls.notes,
             })
     await engine.dispose()
     logger.info("[Lehi] Inserted %d zone_use_matrix rows", len(zone_map))
@@ -262,11 +260,11 @@ async def main() -> None:
             zone_map[label] = (desc, classify_lehi(label, desc))
 
     counts: dict[str, int] = {}
-    for _, (_, p) in zone_map.items():
-        counts[p] = counts.get(p, 0) + 1
+    for _, (_, c) in zone_map.items():
+        counts[c.self_storage] = counts.get(c.self_storage, 0) + 1
     logger.info("[Lehi] Zone distribution: %s", counts)
-    for zc, (desc, perm) in sorted(zone_map.items()):
-        logger.info("  %-20s %-40s → %s", zc, desc, perm)
+    for zc, (desc, cls) in sorted(zone_map.items()):
+        logger.info("  %-20s %-40s → %s", zc, desc, cls.self_storage)
 
     await build_matrix(zone_map)
 

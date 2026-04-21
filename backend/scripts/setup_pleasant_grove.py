@@ -26,6 +26,8 @@ from shapely import make_valid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -38,49 +40,35 @@ UGRC_PARCELS = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/servic
 ZONING_URL   = "https://maps.utahcounty.gov/arcgis/rest/services/Assessor/CommercialAppraiser/MapServer/55"
 
 
-def classify_pleasant_grove(label: str, desc: str) -> str:
+def classify_pleasant_grove(label: str, desc: str) -> PerUseClassification:
     if not label or label.strip() == "None":
-        return "conditional"  # overlay-only districts
+        return storage_cls("prohibited", 0.45, "Pleasant Grove overlay-only district — conservative default")
 
     u = label.strip().upper()
     d = (desc or "").strip().upper()
 
-    # Industrial / Manufacturing — permitted
     if u in ("MD", "BMP"):
-        return "permitted"
-
-    # Commercial zones — conditional
+        return storage_cls("permitted", 0.80, f"Pleasant Grove industrial: {label}")
     if u in ("C", "C-G", "C-N", "C-S1", "C-S2", "I", "RCO"):
-        return "conditional"
-
-    # Agricultural — conditional
+        return storage_cls("conditional", 0.70, f"Pleasant Grove commercial: {label}")
     if u == "A-1":
-        return "conditional"
-
-    # Mixed use / overlay commercial zones — conditional
-    if u in ("BMU", "GMU", "DMUO", "GBPO", "MU", "VGMU", "T"):
-        return "conditional"
-
-    # Professional Office — conditional (storage usually CUP)
+        return storage_cls("conditional", 0.65, "Pleasant Grove agricultural")
+    if u in ("BMU", "GMU", "DMUO", "GBPO", "VGMU"):
+        return storage_cls("conditional", 0.65, f"Pleasant Grove commercial MU: {label}")
+    if u in ("MU", "T"):
+        return storage_cls("prohibited", 0.70, f"Pleasant Grove mixed use — residential-oriented: {label}")
     if u == "P-O":
-        return "conditional"
-
-    # Residential agriculture overlay — conditional (agricultural base)
+        return storage_cls("conditional", 0.65, "Pleasant Grove professional office")
     if u == "RAO":
-        return "conditional"
-
-    # Residential — prohibited
+        return storage_cls("conditional", 0.60, "Pleasant Grove residential agriculture overlay")
     if re.match(r'^R[-\s1]', u) or u in ("R-R", "MH", "SHO", "RM-7"):
-        return "prohibited"
+        return storage_cls("prohibited", 0.80, f"Pleasant Grove residential: {label}")
     if "RESIDENTIAL" in d and "COMMERCIAL" not in d:
-        return "prohibited"
-
-    # Senior / student housing
+        return storage_cls("prohibited", 0.75, f"Pleasant Grove residential (desc): {label}")
     if "SENIOR" in d or "STUDENT" in d:
-        return "prohibited"
-
-    logger.warning("[Pleasant Grove] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
+        return storage_cls("prohibited", 0.78, f"Pleasant Grove senior/student housing: {label}")
+    logger.warning("[Pleasant Grove] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Pleasant Grove unknown zone code '{label}' — conservative default")
 
 
 # ── Parcel download & insert ──────────────────────────────────────────────────
@@ -260,24 +248,27 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
     return updated
 
 
-async def build_matrix(zone_map: dict[str, tuple[str, str]]) -> None:
+async def build_matrix(zone_map: dict[str, tuple[str, PerUseClassification]]) -> None:
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         await conn.execute(
             text("DELETE FROM zone_use_matrix WHERE jurisdiction_id = :jid"),
             {"jid": PG_JUR_ID},
         )
-        for zone_code, (desc, perm) in zone_map.items():
+        for zone_code, (desc, cls) in zone_map.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid, :zc, :zn, :ss, 0.8, :notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid, :zc, :zn, :ss, :mw, :li, :lgc, 'rule', :conf, :notes)
             """), {
                 "jid": PG_JUR_ID,
                 "zc": zone_code,
                 "zn": desc or zone_code,
-                "ss": perm,
-                "notes": "Pleasant Grove Utah County zoning classification",
+                "ss": cls.self_storage, "mw": cls.mini_warehouse,
+                "li": cls.light_industrial, "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence, "notes": cls.notes,
             })
     await engine.dispose()
     logger.info("[Pleasant Grove] Inserted %d zone_use_matrix rows", len(zone_map))
@@ -308,15 +299,15 @@ async def main() -> None:
         label = str(row["ZONE_PG_LABEL"]).strip()
         desc = str(row.get("ZONE_PG_DESC", "") or "")
         if label and label not in zone_map:
-            perm = classify_pleasant_grove(label, desc)
-            zone_map[label] = (desc, perm)
+            cls = classify_pleasant_grove(label, desc)
+            zone_map[label] = (desc, cls)
 
     counts: dict[str, int] = {}
-    for _, (_, p) in zone_map.items():
-        counts[p] = counts.get(p, 0) + 1
+    for _, (_, c) in zone_map.items():
+        counts[c.self_storage] = counts.get(c.self_storage, 0) + 1
     logger.info("[Pleasant Grove] Zone distribution: %s", counts)
-    for zc, (desc, perm) in sorted(zone_map.items()):
-        logger.info("  %-20s %-45s → %s", zc, desc, perm)
+    for zc, (desc, cls) in sorted(zone_map.items()):
+        logger.info("  %-20s %-45s → %s", zc, desc, cls.self_storage)
 
     await build_matrix(zone_map)
 

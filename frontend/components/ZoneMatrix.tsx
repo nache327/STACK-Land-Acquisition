@@ -97,6 +97,14 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
                       ✓
                     </span>
                   )}
+                  {!zone.human_reviewed && zone.classification_source === "rule" && (
+                    <span
+                      title="Rule-based classification — not yet verified against ordinance text"
+                      className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+                    >
+                      ⚠
+                    </span>
+                  )}
                 </div>
               </td>
 

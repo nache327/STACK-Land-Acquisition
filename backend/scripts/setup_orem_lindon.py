@@ -24,6 +24,8 @@ from shapely import make_valid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.services.zone_classifier import PerUseClassification, storage_cls
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
@@ -53,61 +55,46 @@ CITY_CONFIGS = [
 ]
 
 
-def classify_orem(label: str, desc: str) -> str:
+def classify_orem(label: str, desc: str) -> PerUseClassification:
     u = label.strip().upper()
     d = (desc or "").strip().upper()
 
-    # Industrial — permitted
-    if u in ("M1", "M2", "CM"):
-        return "permitted"
-    if d == "INDUSTRIAL":
-        return "permitted"
-
-    # Commercial / Mixed — conditional
+    if u in ("M1", "M2", "CM") or d == "INDUSTRIAL":
+        return storage_cls("permitted", 0.80, f"Orem industrial: {label}")
     if u in ("BP", "C1", "C2", "C3", "HS", "IO", "PO", "UX"):
-        return "conditional"
-    if d in ("COMMERCIAL", "MIXED USE", "PLANNED DEVELOPMENT"):
-        return "conditional"
-
-    # Overlays that depend on context — conditional
+        return storage_cls("conditional", 0.70, f"Orem commercial: {label}")
+    if d == "COMMERCIAL" or d == "PLANNED DEVELOPMENT":
+        return storage_cls("conditional", 0.68, f"Orem commercial (desc): {label}")
+    if d == "MIXED USE":
+        return storage_cls("prohibited", 0.70, f"Orem mixed use — residential-oriented: {label}")
     if u in ("AGO", "HR"):
-        return "conditional"
-
-    # Prohibited overlays / residential / civic
-    if u in ("ASH", "HO", "OS5", "PF", "SH"):
-        return "prohibited"
-    if d == "RESIDENTIAL":
-        return "prohibited"
+        return storage_cls("conditional", 0.60, f"Orem overlay: {label}")
+    if u in ("ASH", "HO", "OS5", "PF", "SH") or d == "RESIDENTIAL":
+        return storage_cls("prohibited", 0.78, f"Orem civic/residential: {label}")
     if re.match(r'^R\d', u) or u in ("PRD", "PRD(UX)"):
-        return "prohibited"
+        return storage_cls("prohibited", 0.80, f"Orem residential: {label}")
+    logger.warning("[Orem] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Orem unknown zone code '{label}' — conservative default")
 
-    logger.warning("[Orem] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
 
-
-def classify_lindon(label: str, desc: str) -> str:
+def classify_lindon(label: str, desc: str) -> PerUseClassification:
     u = label.strip().upper()
 
-    # Industrial — permitted
     if u in ("HI", "LI", "LI-W", "RB"):
-        return "permitted"
-    # Explicit storage zone — permitted
+        return storage_cls("permitted", 0.80, f"Lindon industrial: {label}")
     if u == "CG-S":
-        return "permitted"
-
-    # Commercial / Mixed — conditional
+        return storage_cls("permitted", 0.85, "Lindon commercial storage zone")
     if u in ("CF", "CG", "CG-A", "CG-A8", "LVC", "MC", "PC-1", "PC-2",
-             "RC", "RMU-E", "RMU-W", "RBO", "SPOD", "AFPD"):
-        return "conditional"
-
-    # Public / Residential — prohibited
+             "RC", "RBO", "SPOD", "AFPD"):
+        return storage_cls("conditional", 0.70, f"Lindon commercial: {label}")
+    if u in ("RMU-E", "RMU-W"):
+        return storage_cls("prohibited", 0.72, f"Lindon residential mixed use: {label}")
     if u in ("PF", "PF-HSO", "PRD", "SHFO"):
-        return "prohibited"
+        return storage_cls("prohibited", 0.78, f"Lindon public/residential: {label}")
     if re.match(r'^R[13]', u) or re.match(r'^R1-', u):
-        return "prohibited"
-
-    logger.warning("[Lindon] Unknown code '%s' (%s) → conditional", label, desc)
-    return "conditional"
+        return storage_cls("prohibited", 0.80, f"Lindon residential: {label}")
+    logger.warning("[Lindon] Unknown code '%s' (%s) — prohibited (conservative default)", label, desc)
+    return storage_cls("prohibited", 0.45, f"Lindon unknown zone code '{label}' — conservative default")
 
 
 CLASSIFIERS = {"Orem": classify_orem, "Lindon": classify_lindon}
@@ -281,20 +268,24 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
     return updated
 
 
-async def build_matrix(jur_id: str, name: str, zone_map: dict[str, tuple[str, str]]) -> None:
+async def build_matrix(jur_id: str, name: str, zone_map: dict[str, tuple[str, PerUseClassification]]) -> None:
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
         await conn.execute(
             text("DELETE FROM zone_use_matrix WHERE jurisdiction_id=:jid"), {"jid": jur_id}
         )
-        for zone_code, (desc, perm) in zone_map.items():
+        for zone_code, (desc, cls) in zone_map.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid,:zc,:zn,:ss,0.8,:notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid,:zc,:zn,:ss,:mw,:li,:lgc,'rule',:conf,:notes)
             """), {
                 "jid": jur_id, "zc": zone_code, "zn": desc or zone_code,
-                "ss": perm, "notes": f"{name} Utah County zoning classification",
+                "ss": cls.self_storage, "mw": cls.mini_warehouse,
+                "li": cls.light_industrial, "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence, "notes": cls.notes,
             })
     await engine.dispose()
     logger.info("[%s] Inserted %d zone_use_matrix rows", name, len(zone_map))
@@ -326,7 +317,7 @@ async def process_city(cfg: dict) -> None:
         updated = await update_zoning_codes(pairs)
         logger.info("[%s] Updated zoning_code on %d parcels", name, updated)
 
-    zone_map: dict[str, tuple[str, str]] = {}
+    zone_map: dict[str, tuple[str, PerUseClassification]] = {}
     for _, row in zoning_gdf.iterrows():
         label = str(row[cfg["label_field"]]).strip()
         desc  = str(row.get(cfg["desc_field"], "") or "")
@@ -334,11 +325,11 @@ async def process_city(cfg: dict) -> None:
             zone_map[label] = (desc, classifier(label, desc))
 
     counts: dict[str, int] = {}
-    for _, (_, p) in zone_map.items():
-        counts[p] = counts.get(p, 0) + 1
+    for _, (_, c) in zone_map.items():
+        counts[c.self_storage] = counts.get(c.self_storage, 0) + 1
     logger.info("[%s] Zone distribution: %s", name, counts)
-    for zc, (desc, perm) in sorted(zone_map.items()):
-        logger.info("  %-22s %-38s → %s", zc, desc, perm)
+    for zc, (desc, cls) in sorted(zone_map.items()):
+        logger.info("  %-22s %-38s → %s", zc, desc, cls.self_storage)
 
     await build_matrix(jur_id, name, zone_map)
 

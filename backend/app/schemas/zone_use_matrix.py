@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.zone_use_matrix import UsePermission
+from app.models.zone_use_matrix import ClassificationSource, UsePermission
 
 
 class CitationSchema(BaseModel):
@@ -27,6 +27,7 @@ class ZoneUseMatrixRead(BaseModel):
     confidence: float | None
     human_reviewed: bool
     notes: str | None
+    classification_source: ClassificationSource
     created_at: datetime
     updated_at: datetime
 

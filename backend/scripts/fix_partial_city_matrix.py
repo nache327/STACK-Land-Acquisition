@@ -7,6 +7,7 @@ Fix zone_use_matrix coverage gaps for:
   - Draper       (compound semicolon-separated zone codes)
 
 Only INSERTs new rows — does not touch existing correct entries.
+Writes all 4 use columns + classification_source so data provenance is tracked.
 
 Run from backend/ directory:
     python scripts/fix_partial_city_matrix.py
@@ -24,6 +25,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import psycopg2
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+
+from app.services.zone_classifier import PerUseClassification, apply_luxury_garage_inference, storage_cls
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
@@ -60,153 +63,148 @@ def get_existing_matrix(jur_id: str) -> dict[str, str]:
 
 # ── Sandy ─────────────────────────────────────────────────────────────────────
 
-def classify_sandy(code: str) -> str:
+def classify_sandy(code: str) -> PerUseClassification:
     u = code.strip()
 
-    # Large-lot single-family residential
     if re.match(r'^R-1-\d+A$', u):
-        return "prohibited"
+        return storage_cls("prohibited", 0.72, "Sandy large-lot residential")
 
-    # Parameterized multi-family residential RM(n)
     if re.match(r'^RM\(\d', u):
-        return "prohibited"
+        return storage_cls("prohibited", 0.72, "Sandy parameterized multifamily")
 
-    # Parameterized PUD — planned unit developments are mixed use → conditional
     if re.match(r'^PUD[\s(]', u) or re.match(r'^PUD \d', u):
-        return "conditional"
+        return storage_cls("conditional", 0.65, "Sandy planned unit development")
 
-    # Named/parameterized special districts — classify by base zone component
     sd_match = re.match(r'^SD\((.+?)\)', u)
     if sd_match:
         inner = sd_match.group(1).upper()
-        # Residential base zones → prohibited
         if re.match(r'^R[-\s]', inner) or inner.startswith('RM') or re.match(r'^\d+\.\d+$', inner):
-            return "prohibited"
-        # Commercial / mixed / office base zones → conditional
+            return storage_cls("prohibited", 0.70, "Sandy SD residential base zone")
         if any(inner.startswith(p) for p in ('CC', 'CN', 'C-', 'MU', 'PO', 'TC', 'SMART', 'FM', 'MAGNA',
                                               'HARADA', 'MDM', 'UNION', 'UN.', 'CARNATION', 'JHS',
                                               '1300', 'EH', 'H', 'P', 'X', 'OS', 'MU', 'C)')):
-            return "conditional"
-        # Open space → prohibited
+            return storage_cls("conditional", 0.65, "Sandy SD commercial/mixed base zone")
         if inner.startswith('OS'):
-            return "prohibited"
-        # Default SD → conditional
-        return "conditional"
+            return storage_cls("prohibited", 0.70, "Sandy SD open space")
+        return storage_cls("conditional", 0.60, "Sandy SD unknown base zone")
 
-    # Agricultural
     if u.startswith("A-"):
-        return "conditional"
+        return storage_cls("conditional", 0.60, "Sandy agricultural")
 
-    # Fallback
-    logger.warning("[Sandy] Unknown code '%s' — conditional", code)
-    return "conditional"
+    logger.warning("[Sandy] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"Sandy unknown zone code '{code}' — conservative default")
 
 
 # ── Washington City ────────────────────────────────────────────────────────────
 
-def classify_washington(code: str) -> str:
+def classify_washington(code: str) -> PerUseClassification:
     u = code.strip().upper()
-    # Residential
     if re.match(r'^R-1-', u) or re.match(r'^RA-', u) or u in ("RRST", "PUD"):
-        return "prohibited"
-    # Agricultural
+        return storage_cls("prohibited", 0.75, "Washington residential")
     if re.match(r'^A-', u):
-        return "conditional"
-    # Fallback
-    logger.warning("[Washington] Unknown code '%s' — conditional", code)
-    return "conditional"
+        return storage_cls("conditional", 0.65, "Washington agricultural")
+    logger.warning("[Washington] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"Washington unknown zone code '{code}' — conservative default")
 
 
 # ── American Fork ──────────────────────────────────────────────────────────────
 
-def classify_american_fork_unmatched(code: str, existing: dict[str, str]) -> str:
+def classify_american_fork_unmatched(code: str, existing: dict[str, str]) -> PerUseClassification:
     """
     Parcel codes use R1-9000 format; matrix has R-1-9000 or R-1-9,000.
     Normalise the parcel code to match matrix keys.
     """
     u = code.strip()
-    # R1- → R-1-
     normalized = re.sub(r'^R(\d)-', r'R-\1-', u)
-    # Remove commas in numbers (R-1-9,000 → R-1-9000)
     normalized_nocomma = normalized.replace(',', '')
 
-    if normalized in existing:
-        return existing[normalized]
-    if normalized_nocomma in existing:
-        return existing[normalized_nocomma]
+    for key in (normalized, normalized_nocomma):
+        if key in existing:
+            perm = existing[key]
+            return storage_cls(perm, 0.70, f"American Fork normalized match: '{code}' → '{key}'")
 
-    # All unmatched AF codes are residential → prohibited
     if re.match(r'^R\d-\d+$', u):
-        return "prohibited"
+        return storage_cls("prohibited", 0.72, "American Fork unmatched residential code")
 
-    logger.warning("[American Fork] Unknown code '%s' — conditional", code)
-    return "conditional"
+    logger.warning("[American Fork] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"American Fork unknown zone code '{code}' — conservative default")
 
 
 # ── Bluffdale ──────────────────────────────────────────────────────────────────
 
-def classify_bluffdale(code: str) -> str:
+def classify_bluffdale(code: str) -> PerUseClassification:
     u = code.strip().upper()
 
-    # Permitted — industrial/commercial storage
+    # Permitted — confirmed industrial/commercial storage zones
     if any(kw in u for kw in ('I-1', 'LIGHT INDUSTR', 'HEAVY COMMERCIAL', 'SG-1',
                                'COMMERCIAL STORAGE', 'DR DESTINATION')):
-        return "permitted"
+        return storage_cls("permitted", 0.78, f"Bluffdale industrial/storage zone: {code}")
 
-    # Conditional — commercial/mixed/flex
-    if any(kw in u for kw in ('MIXED USE', 'GC-1', 'SD-X', 'SD-C', 'GW-R GATEWAY',
+    # Prohibited — residential zones (including Mixed Use which is residential-oriented)
+    if any(kw in u for kw in ('MIXED USE', 'R-MF MULTIFAMILY', 'R-1-43', 'R-SL',
+                               'UNDESIGNATED')):
+        return storage_cls("prohibited", 0.78, f"Bluffdale residential/MU zone: {code}")
+
+    # Prohibited — civic/institutional
+    if any(kw in u for kw in ('CI CIVIC', 'CIVIC')):
+        return storage_cls("prohibited", 0.75, f"Bluffdale civic zone: {code}")
+
+    # Conditional — commercial/flex zones
+    if any(kw in u for kw in ('GC-1', 'SD-X', 'SD-C', 'GW-R GATEWAY',
                                'REGIONAL COMMERCIAL', 'NC NEIGHBORHOOD', 'I-O INFILL',
-                               'A-5 AGRICULTURAL', 'R-MF MULTIFAMILY')):
-        return "conditional"
+                               'A-5 AGRICULTURAL', 'SD-R')):
+        return storage_cls("conditional", 0.65, f"Bluffdale commercial/flex zone: {code}")
 
     # Conditional — special districts (could accommodate storage with CUP)
     if u.startswith('SD-'):
-        return "conditional"
+        return storage_cls("conditional", 0.60, f"Bluffdale special district: {code}")
 
-    # Prohibited — residential, civic, open space
-    if any(kw in u for kw in ('R-1-43', 'R-SL', 'CI CIVIC', 'UNDESIGNATED')):
-        return "prohibited"
-
-    logger.warning("[Bluffdale] Unknown code '%s' — conditional", code)
-    return "conditional"
+    logger.warning("[Bluffdale] Unknown code '%s' — prohibited (conservative default)", code)
+    return storage_cls("prohibited", 0.45, f"Bluffdale unknown zone code '{code}' — conservative default")
 
 
 # ── Draper (compound codes) ────────────────────────────────────────────────────
 
-def classify_draper_compound(code: str, existing: dict[str, str]) -> str:
+def classify_draper_compound(code: str, existing: dict[str, str]) -> PerUseClassification:
     """
     Compound codes like 'C-3; RM' — take the most commercially permissive component.
     """
     parts = [p.strip() for p in code.split(';')]
     classifications = [existing.get(p) for p in parts if existing.get(p)]
     if 'permitted' in classifications:
-        return 'permitted'
+        return storage_cls("permitted", 0.70, f"Draper compound zone (most permissive): {code}")
     if 'conditional' in classifications:
-        return 'conditional'
-    return 'prohibited'
+        return storage_cls("conditional", 0.65, f"Draper compound zone (most permissive): {code}")
+    return storage_cls("prohibited", 0.70, f"Draper compound zone: {code}")
 
 
 # ── Runner ─────────────────────────────────────────────────────────────────────
 
-async def insert_new_codes(jur_id: str, name: str, new_entries: dict[str, str]) -> None:
+async def insert_new_codes(jur_id: str, name: str, new_entries: dict[str, PerUseClassification]) -> None:
+    """Insert new zone_use_matrix rows, writing all 4 use columns + classification_source."""
     if not new_entries:
         logger.info("[%s] Nothing to insert", name)
         return
     engine = create_async_engine(DB_URL)
     async with engine.begin() as conn:
-        for zone_code, perm in new_entries.items():
+        for zone_code, cls in new_entries.items():
             await conn.execute(text("""
                 INSERT INTO zone_use_matrix
-                    (jurisdiction_id, zone_code, zone_name, self_storage, confidence, notes)
-                VALUES (:jid, :zc, :zn, :ss, :conf, :notes)
+                    (jurisdiction_id, zone_code, zone_name,
+                     self_storage, mini_warehouse, light_industrial, luxury_garage_condo,
+                     classification_source, confidence, notes)
+                VALUES (:jid, :zc, :zn, :ss, :mw, :li, :lgc, 'rule', :conf, :notes)
                 ON CONFLICT (jurisdiction_id, zone_code) DO NOTHING
             """), {
                 "jid": jur_id,
                 "zc": zone_code,
                 "zn": zone_code,
-                "ss": perm,
-                "conf": 0.7,
-                "notes": "Rule-based classification for variant/missing zone codes",
+                "ss": cls.self_storage,
+                "mw": cls.mini_warehouse,
+                "li": cls.light_industrial,
+                "lgc": cls.luxury_garage_condo,
+                "conf": cls.confidence,
+                "notes": cls.notes,
             })
     logger.info("[%s] Inserted %d new rows", name, len(new_entries))
     await engine.dispose()
@@ -218,8 +216,9 @@ async def main() -> None:
     sandy_unmatched = get_unmatched_codes(SANDY)
     logger.info("[Sandy] %d unmatched codes", len(sandy_unmatched))
     sandy_new = {code: classify_sandy(code) for code in sandy_unmatched}
-    counts = {}
-    for v in sandy_new.values(): counts[v] = counts.get(v, 0) + 1
+    counts: dict[str, int] = {}
+    for v in sandy_new.values():
+        counts[v.self_storage] = counts.get(v.self_storage, 0) + 1
     logger.info("[Sandy] Distribution: %s", counts)
     await insert_new_codes(SANDY, "Sandy", sandy_new)
 
