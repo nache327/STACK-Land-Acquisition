@@ -34,7 +34,8 @@ class Settings(BaseSettings):
         "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer"
     )
     usfws_nwi_url: str = (
-        "https://www.fws.gov/wetlandsmapservice/services/Wetlands/MapServer"
+        # FWS MapServer at fws.gov returns 403; use AGOL-hosted FeatureServer instead
+        "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Wetlands/FeatureServer"
     )
     usgs_3dep_dem_url: str = (
         "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer"

@@ -1,0 +1,194 @@
+"""
+Zoning-district GeoDataFrame → PostGIS ZoningDistrict ingestion.
+
+Mirrors the pattern in services/ingestion.py:
+  - Field-candidate lists (first match wins) handle the NYC / Philadelphia /
+    county differences in attribute naming.
+  - Calls classification.classify_zone_code when the source layer doesn't carry
+    an explicit class attribute.
+
+One zoning layer can contain many small polygons per zone code (e.g., NYC has
+~40k polygons across ~100 distinct codes). We preserve the polygons verbatim
+but compute a stable geom_hash for de-dup.
+"""
+from __future__ import annotations
+
+import hashlib
+import logging
+import math
+import uuid
+from typing import Any
+
+import geopandas as gpd
+from geoalchemy2 import WKTElement
+from shapely import make_valid
+from shapely.geometry import MultiPolygon, Polygon
+from sqlalchemy import delete, insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.zoning_district import ZoneSource, ZoningDistrict
+from app.services.classification import classify_zone_code
+
+logger = logging.getLogger(__name__)
+
+# ── Candidate field-name lists (first match wins) ───────────────────────────
+
+_ZONE_CODE_FIELDS = [
+    "ZONEDIST", "ZONE_DIST", "ZONING", "ZONE", "CODE",
+    "ZONE_CODE", "ZONING_CODE", "zoning", "zonecode",
+    "LONG_CODE", "ZONE_CODE_LABEL", "BASEZONE",
+]
+_ZONE_NAME_FIELDS = [
+    "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
+    "DESCRIPTION", "DESC", "NAME",
+]
+_ZONE_CLASS_FIELDS = [
+    "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
+]
+_FAR_FIELDS = ["MAX_FAR", "FAR", "MaxFAR", "FARCOMM", "FARRES"]
+_HEIGHT_FIELDS = ["MAX_HEIGHT", "HEIGHT_MAX", "BLDG_HT", "MAX_BLDG_HT", "HEIGHT"]
+_DENSITY_FIELDS = ["MAX_DU_ACRE", "DENSITY", "DU_ACRE", "MAX_DENSITY"]
+_MIN_LOT_FIELDS = ["MIN_LOT_AREA", "MIN_LOT_SQFT", "MIN_LOT_SF", "MIN_LOT"]
+
+
+def _first(row: Any, fields: list[str]) -> Any:
+    """Case-insensitive first-match lookup. Tries each candidate field in its
+    original case, lowercase, and uppercase — source layers publish in any of
+    the three (MapPLUTO uses mixed case, Philly OPA uses lowercase, UGRC uses
+    uppercase)."""
+    # Build a case-insensitive row accessor once.
+    if isinstance(row, dict):
+        lookup = {k.lower(): v for k, v in row.items()}
+    elif hasattr(row, "_asdict"):
+        lookup = {k.lower(): v for k, v in row._asdict().items()}
+    elif hasattr(row, "to_dict"):
+        lookup = {k.lower(): v for k, v in row.to_dict().items()}
+    else:
+        lookup = {}
+
+    for f in fields:
+        v = lookup.get(f.lower())
+        if v is not None and str(v).strip() not in ("", "nan", "None"):
+            return v
+    return None
+
+
+def _safe_float(val: Any) -> float | None:
+    try:
+        return float(val) if val is not None else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _normalize_geom(geom: Any) -> Polygon | MultiPolygon | None:
+    if geom is None or geom.is_empty:
+        return None
+    if not geom.is_valid:
+        geom = make_valid(geom)
+    if geom.is_empty:
+        return None
+    if geom.geom_type == "GeometryCollection":
+        polys = [g for g in geom.geoms if g.geom_type in ("Polygon", "MultiPolygon")]
+        if not polys:
+            return None
+        geom = polys[0] if len(polys) == 1 else MultiPolygon(polys)
+    return geom
+
+
+def _geom_hash(geom: Polygon | MultiPolygon) -> str:
+    wkb = geom.wkb
+    return hashlib.sha1(wkb).hexdigest()[:32]
+
+
+def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
+    geom = _normalize_geom(row.geometry)
+    if geom is None:
+        return None
+
+    code = _first(row, _ZONE_CODE_FIELDS)
+    if not code:
+        return None
+    code = str(code).strip()
+
+    zone_name = _first(row, _ZONE_NAME_FIELDS)
+    source_class = _first(row, _ZONE_CLASS_FIELDS)
+    zone_class = classify_zone_code(
+        code,
+        zone_name=str(zone_name) if zone_name else None,
+        source_class=str(source_class) if source_class else None,
+    )
+
+    # Raw attribute snapshot
+    if hasattr(row, "_asdict"):
+        props = {k: v for k, v in row._asdict().items() if k != "geometry"}
+    elif hasattr(row, "to_dict"):
+        props = {k: v for k, v in row.to_dict().items() if k != "geometry"}
+    else:
+        props = {}
+    raw = {k: (str(v) if v is not None else None) for k, v in props.items()}
+
+    return {
+        "jurisdiction_id": jurisdiction_id,
+        "zone_code": code,
+        "zone_name": str(zone_name).strip() if zone_name else None,
+        "zone_class": zone_class,
+        "allowed_uses": None,
+        "max_far": _safe_float(_first(row, _FAR_FIELDS)),
+        "max_height_ft": _safe_float(_first(row, _HEIGHT_FIELDS)),
+        "max_density_dua": _safe_float(_first(row, _DENSITY_FIELDS)),
+        "min_lot_area_sqft": _safe_float(_first(row, _MIN_LOT_FIELDS)),
+        "raw_attributes": raw,
+        "geom": WKTElement(geom.wkt, srid=4326),
+        "centroid": WKTElement(geom.centroid.wkt, srid=4326),
+        "source": ZoneSource.arcgis,
+        "confidence": None,
+        "human_reviewed": False,
+        "geom_hash": _geom_hash(geom),
+    }
+
+
+async def ingest_zoning_districts(
+    gdf: gpd.GeoDataFrame,
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession,
+    replace: bool = True,
+) -> int:
+    """Bulk-insert zoning districts for a jurisdiction. Returns inserted count."""
+    if gdf.empty:
+        logger.warning("Empty zoning GeoDataFrame — nothing to ingest")
+        return 0
+
+    logger.info("Mapping %d zoning GDF rows → ZoningDistrict dicts …", len(gdf))
+    rows: list[dict] = []
+    for row in gdf.itertuples(index=False):
+        mapped = _map_row(row, jurisdiction_id)
+        if mapped is not None:
+            rows.append(mapped)
+
+    skipped = len(gdf) - len(rows)
+    if skipped:
+        logger.warning("Skipped %d zoning rows (null geometry or missing code)", skipped)
+
+    if not rows:
+        logger.error("No usable zoning rows after mapping — aborting")
+        return 0
+
+    if replace:
+        logger.info("Deleting existing zoning_districts for jurisdiction %s …", jurisdiction_id)
+        await db.execute(
+            delete(ZoningDistrict).where(
+                ZoningDistrict.jurisdiction_id == jurisdiction_id
+            )
+        )
+
+    BATCH = 1000
+    total = 0
+    num_batches = math.ceil(len(rows) / BATCH)
+    for i in range(0, len(rows), BATCH):
+        batch = rows[i : i + BATCH]
+        await db.execute(insert(ZoningDistrict), batch)
+        total += len(batch)
+        logger.info("Inserted zoning batch %d/%d (%d districts)", i // BATCH + 1, num_batches, total)
+
+    logger.info("Ingested %d zoning districts for jurisdiction %s", total, jurisdiction_id)
+    return total

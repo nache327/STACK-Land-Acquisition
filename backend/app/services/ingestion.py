@@ -29,21 +29,85 @@ logger = logging.getLogger(__name__)
 
 # ─── Candidate field-name lists (first match wins) ─────────────────────────
 
-_APN_FIELDS = ["PARCEL", "APN", "PARCELNO", "PARCEL_NO", "PARCEL_ID", "PIN"]
-_ADDRESS_FIELDS = ["PROP_LOC", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS", "PARCEL_ADD"]
-_ZONE_FIELDS = ["ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST"]
-_LANDUSE_FIELDS = ["LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS"]
+_APN_FIELDS = [
+    "PARCEL", "APN", "PARCELNO", "PARCEL_NO", "PARCEL_ID", "PIN",
+    # NJ MOD-IV (statewide Parcels_Composite_NJ_WM + county services)
+    "PAMS_PIN", "GIS_PIN", "PIN_NODUP", "pams_pin",
+    # NYC MapPLUTO
+    "BBL", "bbl",
+    # Philadelphia OPA
+    "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID",
+]
+_ADDRESS_FIELDS = [
+    "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS", "PARCEL_ADD",
+    # NYC MapPLUTO
+    "Address", "ADDRESS1",
+    # Philadelphia OPA / NJ Passaic county service
+    "location", "LOCATION", "street_address",
+]
+_ZONE_FIELDS = [
+    "ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST",
+    # NYC MapPLUTO
+    "ZONEDIST", "ZoneDist1",
+    # Philadelphia OPA
+    "zoning",
+]
+_LANDUSE_FIELDS = [
+    "LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS",
+    # NJ MOD-IV building/property description fields
+    "BLDG_CLASS", "BLDG_DESC",
+    # NYC MapPLUTO
+    "LandUse", "LAND_USE_DESC",
+    # Philadelphia OPA
+    "category_code_description", "building_code_description",
+]
 _PROPTYPE_FIELDS = ["PROP_TYPE", "PROPERTY_TYPE", "PROP_CLASS", "PROPTYPE"]
-_ACRES_FIELDS = ["CALC_ACRE", "PARCEL_ACR", "ACRES", "GIS_ACRES", "ACREAGE"]
-_LINK_FIELDS = ["LINK", "COUNTY_LINK", "PARCEL_URL", "URL", "WEB_LINK", "CoParcel_URL"]
+_ACRES_FIELDS = [
+    "CALC_ACRE", "PARCEL_ACR", "ACRES", "GIS_ACRES", "ACREAGE",
+    # NJ Passaic county service uses lot_size
+    "lot_size",
+    # NYC/Philly don't publish acres directly — see _AREA_SQM_FIELDS fallback.
+]
+_IMPROVEMENT_FIELDS = [
+    # NJ MOD-IV statewide
+    "IMPRVT_VAL",
+    # NJ Passaic county service
+    "impr_value",
+    # Generic fallbacks
+    "IMPRVT_VALUE", "IMP_VALUE", "IMPRV_VALUE", "FMV_IMPRV",
+]
+_LINK_FIELDS = [
+    "LINK", "COUNTY_LINK", "PARCEL_URL", "URL", "WEB_LINK", "CoParcel_URL",
+]
 _FLOOD_FIELDS = ["FLOODZONE", "FLOOD_ZONE", "FLD_ZONE", "SFHA"]
+_OWNER_FIELDS = [
+    "OWNER_NAME", "OWNERNAME", "OWNER",
+    # NYC MapPLUTO
+    "OwnerName",
+    # Philadelphia OPA
+    "owner_1", "owner_2",
+]
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
 def _first(row: Any, fields: list[str]) -> Any:
-    """Return the value of the first field that exists and is non-null."""
+    """Return the value of the first field that exists and is non-null.
+
+    Case-insensitive: MapPLUTO publishes fields in mixed case (`ZoneDist1`),
+    Philly OPA in lowercase (`zoning`), UGRC in uppercase (`ZONING`). We
+    normalize both sides to lowercase for lookup.
+    """
+    if isinstance(row, dict):
+        lookup = {k.lower(): v for k, v in row.items()}
+    elif hasattr(row, "_asdict"):
+        lookup = {k.lower(): v for k, v in row._asdict().items()}
+    elif hasattr(row, "to_dict"):
+        lookup = {k.lower(): v for k, v in row.to_dict().items()}
+    else:
+        lookup = {}
+
     for f in fields:
-        v = row.get(f) if isinstance(row, dict) else getattr(row, f, None)
+        v = lookup.get(f.lower())
         if v is not None and str(v).strip() not in ("", "nan", "None"):
             return v
     return None
@@ -57,7 +121,10 @@ def _safe_float(val: Any) -> float | None:
 
 
 _AREA_SQM_FIELDS = ["Shape__Area", "SHAPE__AREA", "shape_Area", "SHAPE_Area"]
+# Square-foot fields used by NYC MapPLUTO (LotArea) and Philadelphia OPA (total_area).
+_AREA_SQFT_FIELDS = ["LotArea", "LOT_AREA", "total_area", "TotalArea", "LOTAREA"]
 _SQM_PER_ACRE = 4046.856
+_SQFT_PER_ACRE = 43_560.0
 
 
 def _resolve_acres(row: Any, geom: Any) -> float | None:
@@ -65,6 +132,9 @@ def _resolve_acres(row: Any, geom: Any) -> float | None:
     v = _safe_float(_first(row, _ACRES_FIELDS))
     if v is not None and v > 0:
         return round(v, 4)
+    sqft = _safe_float(_first(row, _AREA_SQFT_FIELDS))
+    if sqft is not None and sqft > 0:
+        return round(sqft / _SQFT_PER_ACRE, 4)
     sqm = _safe_float(_first(row, _AREA_SQM_FIELDS))
     if sqm is not None and sqm > 0:
         return round(sqm / _SQM_PER_ACRE, 4)
@@ -138,6 +208,7 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         "jurisdiction_id": jurisdiction_id,
         "apn": str(apn),
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
+        "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None,
         "land_use_code": land_use,
         "acres": _resolve_acres(row, geom),
@@ -146,7 +217,7 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         "in_wetland": False,
         "avg_slope_pct": None,
         "has_structure": has_structure,
-        "improvement_value": None,
+        "improvement_value": _safe_float(_first(row, _IMPROVEMENT_FIELDS)),
         "geom": WKTElement(geom.wkt, srid=4326),
         "centroid": WKTElement(geom.centroid.wkt, srid=4326),
         "raw": raw,
