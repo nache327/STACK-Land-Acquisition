@@ -32,46 +32,16 @@ def classify_american_fork(code: str) -> str:
     u = code.strip().upper()
 
     # Industrial / Manufacturing — permitted
+    # §17.6.110 sets explicit storage standards only for I-1; M-1 is same category
     if u in ("I-1", "M-1"):
         return "permitted"
 
-    # General / Community Commercial — conditional
-    if u in ("GC-1", "GC-2", "CC-1", "CC-2", "SC-1"):
-        return "conditional"
-
-    # Transit-Oriented Development — conditional
-    if u == "TOD":
-        return "conditional"
-
-    # Planned Community — conditional
-    if u == "PC":
-        return "conditional"
-
-    # Professional/Industrial — conditional
-    if u == "PI-1":
-        return "conditional"
-
-    # Rural Agricultural — conditional
-    if re.match(r'^RA-', u):
-        return "conditional"
-
-    # Professional Office — conditional (self-storage listed as CUP in Jan 2025 PC minutes)
-    if u.startswith("PO"):
-        return "conditional"
-
-    # Public Facility / Shoreline Preservation — prohibited
-    if u in ("PF", "SP"):
-        return "prohibited"
-
-    # Residential (R1-, R2-, R3-, R4-, PR-) — prohibited
-    if re.match(r'^R[1-4]-', u):
-        return "prohibited"
-    if re.match(r'^PR-', u):
-        return "prohibited"
-
-    # Special / unclassified — conditional (conservative default)
-    logger.warning("[American Fork] Unknown code '%s' — conditional", code)
-    return "conditional"
+    # Everything else — prohibited pending confirmation from use table exhibit
+    # §17.6.110: "only in those zones in which such uses are specifically listed as a
+    # permitted use." Use table (§14.13.080 / §14.15.030) is blank in published PDF.
+    # Cannot confirm any other zone without the actual exhibit. Call AF Planning: 801-763-3060
+    logger.warning("[American Fork] '%s' → prohibited (use table unverified)", code)
+    return "prohibited"
 
 
 def get_zone_codes() -> list[str]:
@@ -106,7 +76,7 @@ async def replace_matrix(classifications: dict[str, str]) -> None:
                 "zc": zone_code,
                 "zn": zone_code,
                 "ss": perm,
-                "notes": "Heuristic from AF zoning code §17.6.110 + Jan 2025 Planning Commission use matrix reference",
+                "notes": "§17.6.110 requires explicit use-table listing. Only I-1/M-1 confirmed. All others prohibited pending human verification (call AF Planning 801-763-3060).",
             })
         logger.info("Inserted %d American Fork matrix rows", len(classifications))
     await engine.dispose()
