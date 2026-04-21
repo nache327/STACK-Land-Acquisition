@@ -288,6 +288,14 @@ export function ZoningChatPanel({
         );
       } finally {
         setIsLoading(false);
+        // If assistant message is still empty after stream ends, show fallback
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId && m.content === ""
+              ? { ...m, content: "No response received. The request may have timed out — try again or paste the ordinance text directly." }
+              : m
+          )
+        );
       }
     },
     [
