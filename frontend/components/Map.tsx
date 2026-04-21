@@ -276,18 +276,19 @@ export default function Map({
         filter: qualFilter ?? ["boolean", true],
         paint: {
           "fill-color": [
-            "match", ["get", "zone_class"],
-            "residential", ZONE_CLASS_COLORS.residential,
-            "commercial", ZONE_CLASS_COLORS.commercial,
-            "industrial", ZONE_CLASS_COLORS.industrial,
-            "mixed_use", ZONE_CLASS_COLORS.mixed_use,
-            "agricultural", ZONE_CLASS_COLORS.agricultural,
-            "open_space", ZONE_CLASS_COLORS.open_space,
-            "special", ZONE_CLASS_COLORS.special,
-            "overlay", ZONE_CLASS_COLORS.overlay,
+            "match", ["get", "storage_permission"],
+            "permitted",    "#10b981",
+            "conditional",  "#f59e0b",
+            "prohibited",   "#6b7280",
             UNCLASSIFIED_PARCEL_COLOR,
           ] as maplibregl.ExpressionSpecification,
-          "fill-opacity": 0.6,
+          "fill-opacity": [
+            "match", ["get", "storage_permission"],
+            "permitted",    0.82,
+            "conditional",  0.45,
+            "prohibited",   0.35,
+            0.45,
+          ] as maplibregl.ExpressionSpecification,
         },
       } as maplibregl.LayerSpecification);
 
