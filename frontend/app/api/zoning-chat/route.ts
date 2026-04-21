@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-export const runtime = "edge"; // 30-second limit on Hobby vs 10-second serverless
 export const maxDuration = 30;
 
 const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -226,20 +225,13 @@ export async function POST(req: NextRequest) {
   // Build extra context blocks for the current user message
   const extraBlocks: Anthropic.ContentBlockParam[] = [];
 
-  // Fetch ordinance URL if provided
+  // URL fetch skipped server-side (Vercel Hobby 10s limit).
+  // Tell Claude the URL was provided so it can reference it in answers.
   if (ordinanceUrl) {
-    try {
-      const ordinanceText = await fetchOrdinanceUrl(ordinanceUrl);
-      extraBlocks.push({
-        type: "text",
-        text: `\n\n--- ORDINANCE TEXT (fetched from ${ordinanceUrl}) ---\n${ordinanceText}\n--- END ORDINANCE TEXT ---`,
-      });
-    } catch (err) {
-      extraBlocks.push({
-        type: "text",
-        text: `\n\n[Note: Could not fetch ordinance URL: ${err instanceof Error ? err.message : String(err)}. The user may paste the text directly or upload a screenshot.]`,
-      });
-    }
+    extraBlocks.push({
+      type: "text",
+      text: `\n\n[The user has provided this ordinance URL for reference: ${ordinanceUrl}. You cannot fetch it directly — ask the user to paste the relevant table or section text if you need specifics. You may still answer general questions about the city's zoning based on your training knowledge.]`,
+    });
   }
 
   // Add pasted text
