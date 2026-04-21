@@ -32,11 +32,16 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def db_engine():
     """
     Session-scoped engine.  Creates all tables (including PostGIS extension)
     once before the test suite and tears them down after.
+
+    loop_scope="session" is required with pytest-asyncio >=0.24 so the engine
+    (and its connection pool) stays on the same event loop across all tests;
+    otherwise function-scoped fixtures pulling on this engine raise
+    RuntimeError: attached to a different loop.
     """
     url = _test_db_url()
     engine = create_async_engine(url, echo=False)
@@ -52,11 +57,12 @@ async def db_engine():
     await engine.dispose()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def db_session(db_engine) -> AsyncSession:
     """
-    Test-scoped session.  Each test runs inside a transaction that is
-    rolled back at the end, so tests are isolated without truncating tables.
+    Test-scoped session (function lifetime, session-scoped event loop).
+    Each test runs inside a transaction that is rolled back at the end,
+    so tests are isolated without truncating tables.
     """
     session_maker = async_sessionmaker(db_engine, expire_on_commit=False)
     async with session_maker() as session:

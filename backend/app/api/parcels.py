@@ -20,10 +20,10 @@ router = APIRouter(tags=["parcels"])
 async def list_parcels(
     jurisdiction_id: uuid.UUID,
     zones: Optional[list[str]] = Query(None),
+    zone_classes: Optional[list[str]] = Query(None),
     min_acres: Optional[float] = Query(None, ge=0),
     max_acres: Optional[float] = Query(None, ge=0),
     exclude_flood: bool = Query(False),
-    exclude_steep: bool = Query(False),
     exclude_wetland: bool = Query(False),
     vacant_only: bool = Query(False),
     page: int = Query(1, ge=1),
@@ -35,16 +35,14 @@ async def list_parcels(
 
     if zones:
         filters.append(Parcel.zoning_code.in_(zones))
+    if zone_classes:
+        filters.append(Parcel.zone_class.in_(zone_classes))
     if min_acres is not None:
         filters.append(Parcel.acres >= min_acres)
     if max_acres is not None:
         filters.append(Parcel.acres <= max_acres)
     if exclude_flood:
         filters.append(Parcel.in_flood_zone == False)  # noqa: E712
-    if exclude_steep:
-        filters.append(
-            (Parcel.avg_slope_pct == None) | (Parcel.avg_slope_pct <= 15.0)  # noqa: E711
-        )
     if exclude_wetland:
         filters.append(Parcel.in_wetland == False)  # noqa: E712
     if vacant_only:
@@ -84,6 +82,24 @@ async def get_zone_summary(
         .order_by(func.count().desc())
     )
     return {row.zoning_code: row.cnt for row in result.all()}
+
+
+@router.get("/jurisdictions/{jurisdiction_id}/parcels/zone-class-summary")
+async def get_zone_class_summary(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Return {zone_class: parcel_count} for all classified parcels in the jurisdiction."""
+    result = await db.execute(
+        select(Parcel.zone_class, func.count().label("cnt"))
+        .where(
+            Parcel.jurisdiction_id == jurisdiction_id,
+            Parcel.zone_class.isnot(None),
+        )
+        .group_by(Parcel.zone_class)
+        .order_by(func.count().desc())
+    )
+    return {str(row.zone_class.value if hasattr(row.zone_class, "value") else row.zone_class): row.cnt for row in result.all()}
 
 
 @router.get("/parcels/{parcel_id}", response_model=ParcelDetail)

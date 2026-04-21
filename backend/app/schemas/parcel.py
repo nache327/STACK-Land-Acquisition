@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.zoning_district import ZoneClass
+
 
 class ParcelRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -15,6 +17,7 @@ class ParcelRead(BaseModel):
     owner_name: str | None
     acres: float | None
     zoning_code: str | None
+    zone_class: ZoneClass | None = None
     land_use_code: str | None
     improvement_value: float | None
     has_structure: bool | None
@@ -40,10 +43,10 @@ class ParcelListResponse(BaseModel):
 
 class ParcelFilter(BaseModel):
     zones: list[str] | None = None
+    zone_classes: list[str] | None = None
     min_acres: float | None = Field(None, ge=0)
     max_acres: float | None = Field(None, ge=0)
     exclude_flood: bool = False
-    exclude_steep: bool = False
     exclude_wetland: bool = False
     vacant_only: bool = False
     bbox: list[float] | None = Field(

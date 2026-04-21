@@ -28,8 +28,15 @@ _WEBMAP_ITEM_RE = re.compile(
     r"[?&/](?:webmap|id)[=/]([a-f0-9]{32})", re.IGNORECASE
 )
 
-_PARCEL_KEYWORDS = ["parcel", "parcels", "cadastral", "ownership", "tax lot"]
-_ZONING_KEYWORDS = ["zoning", "zone district", "land use", "landuse", "general plan"]
+_PARCEL_KEYWORDS = [
+    "parcel", "parcels", "cadastral", "ownership", "tax lot", "pluto", "mappluto",
+    "opa_properties", "opa properties", "property_public",
+]
+_ZONING_KEYWORDS = [
+    "zoning", "zone district", "land use", "landuse", "general plan",
+    "zoning district", "zoning districts", "zone base", "zoning base",
+    "base district", "zoning_base", "zoning overlay", "zoning_districts",
+]
 
 # Layers whose titles contain these strings are almost never the city-wide parcel layer
 _PARCEL_EXCLUDE = [

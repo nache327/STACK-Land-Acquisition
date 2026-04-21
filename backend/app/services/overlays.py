@@ -1,28 +1,29 @@
 """
-Environmental overlay service — Phase 4 full implementation.
+Environmental overlay service.
 
 Computes in_flood_zone and in_wetland flags for all parcels in a jurisdiction
-via spatial join against FEMA NFHL and USFWS NWI ArcGIS FeatureServices.
-
-avg_slope_pct is computed from USGS 3DEP DEM tiles (deferred to Phase 7 —
-requires rasterstats and DEM tile download; stubbed here).
+via spatial join against FEMA NFHL and USFWS NWI ArcGIS FeatureServices, and
+persists the hazard polygons into the `overlays` table for map rendering.
 
 Approach:
   1. Get parcel bbox for the jurisdiction from PostGIS.
   2. Query the overlay ArcGIS service within that bbox.
-  3. Take the unary_union of all returned hazard polygons.
-  4. Bulk-UPDATE parcels where centroid falls within the union geometry.
+  3. Persist polygons into the overlays table (one row per source feature).
+  4. Take the unary_union of all returned hazard polygons.
+  5. Bulk-UPDATE parcels where centroid falls within the union geometry.
 """
 from __future__ import annotations
 
 import logging
 import uuid
 
+from geoalchemy2 import WKTElement
 from shapely.ops import unary_union
-from sqlalchemy import text
+from sqlalchemy import delete, insert, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.models.overlay import Overlay, OverlayType
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +32,10 @@ logger = logging.getLogger(__name__)
 # FEMA Special Flood Hazard Area zone codes (100-year floodplain)
 SFHA_ZONES: frozenset[str] = frozenset({"A", "AE", "AH", "AO", "AR", "V", "VE"})
 
-# Slope threshold for "steep" classification (percent)
-STEEP_SLOPE_PCT: float = 15.0
-
 # FEMA NFHL layer 28 = S_Fld_Haz_Ar (Special Flood Hazard Areas)
 _NFHL_LAYER = 28
-# USFWS NWI layer 1 = Wetlands
-_NWI_LAYER = 1
+# USFWS NWI layer 0 = Wetlands (AGOL USA_Wetlands FeatureServer)
+_NWI_LAYER = 0
 
 
 # ─── Public API ──────────────────────────────────────────────────────────────
@@ -59,8 +57,11 @@ async def apply_flood_overlay(
     layer_url = settings.fema_nfhl_url.rstrip("/") + f"/{_NFHL_LAYER}"
     logger.info("Querying FEMA NFHL flood zones for bbox %s …", bbox)
 
+    # Pre-filter to SFHA zones server-side — reduces page count and avoids HTTP 500
+    # on FEMA's service when paginating all flood zone types over large urban bboxes.
+    sfha_where = "FLD_ZONE IN ('A','AE','AH','AO','AR','V','VE')"
     try:
-        gdf = await _download_bbox_features(layer_url, bbox)
+        gdf = await _download_bbox_features(layer_url, bbox, where=sfha_where)
     except Exception as exc:
         logger.warning("FEMA NFHL query failed (non-fatal): %s", exc)
         return 0
@@ -79,6 +80,15 @@ async def apply_flood_overlay(
 
     if gdf.empty:
         return 0
+
+    # Persist polygons into overlays table (for map rendering via pg_tileserv)
+    await _persist_overlay_polygons(
+        jurisdiction_id=jurisdiction_id,
+        gdf=gdf,
+        overlay_type=OverlayType.flood_sfha,
+        source="FEMA NFHL S_Fld_Haz_Ar",
+        db=db,
+    )
 
     count = await _bulk_flag_by_geometry(
         jurisdiction_id, gdf, column="in_flood_zone", db=db
@@ -112,24 +122,19 @@ async def apply_wetland_overlay(
     if gdf is None or gdf.empty:
         return 0
 
+    await _persist_overlay_polygons(
+        jurisdiction_id=jurisdiction_id,
+        gdf=gdf,
+        overlay_type=OverlayType.wetland_nwi,
+        source="USFWS NWI Wetlands",
+        db=db,
+    )
+
     count = await _bulk_flag_by_geometry(
         jurisdiction_id, gdf, column="in_wetland", db=db
     )
     logger.info("Wetland overlay: %d parcels flagged in %s", count, jurisdiction_id)
     return count
-
-
-async def apply_slope_overlay(
-    jurisdiction_id: uuid.UUID,
-    db: AsyncSession,
-    dem_cache_dir: str = "/tmp/dem_cache",
-) -> int:
-    """
-    Compute per-parcel mean slope % from USGS 3DEP 10 m DEM.
-    Deferred to Phase 7 — requires rasterstats + DEM tile download.
-    """
-    logger.info("Slope overlay deferred to Phase 7 — skipping for jurisdiction %s", jurisdiction_id)
-    return 0
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -158,12 +163,20 @@ async def _get_bbox(
     return (float(row.minx), float(row.miny), float(row.maxx), float(row.maxy))
 
 
-async def _download_bbox_features(url: str, bbox: tuple[float, float, float, float]):
+async def _download_bbox_features(
+    url: str,
+    bbox: tuple[float, float, float, float],
+    where: str = "1=1",
+):
     """
-    Download all features from an ArcGIS FeatureServer within the given bbox.
-    Uses the ArcGIS geometry filter (esriGeometryEnvelope).
+    Paginate through all features from an ArcGIS FeatureServer within the given
+    bbox. Asking for too many records at once returns HTTP 500 from FEMA NFHL
+    over large urban bboxes, so we request 500 per page and loop via
+    resultOffset until the server stops returning features.
+
+    Pass a server-side ``where`` clause to pre-filter features (e.g. SFHA zones
+    only for FEMA) so each page stays well under the server's result limit.
     """
-    import asyncio
     import httpx
     import geopandas as gpd
 
@@ -173,28 +186,57 @@ async def _download_bbox_features(url: str, bbox: tuple[float, float, float, flo
     dy = (maxy - miny) * 0.1
     geom_filter = f"{minx - dx},{miny - dy},{maxx + dx},{maxy + dy}"
 
-    params = {
-        "geometry": geom_filter,
-        "geometryType": "esriGeometryEnvelope",
-        "spatialRel": "esriSpatialRelIntersects",
-        "inSR": "4326",
-        "outSR": "4326",
-        "outFields": "*",
-        "f": "geojson",
-        "resultRecordCount": 2000,
-    }
+    page_size = 500
+    all_features: list[dict] = []
+    offset = 0
     query_url = url.rstrip("/") + "/query"
 
-    async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
-        resp = await client.get(query_url, params=params)
-        resp.raise_for_status()
-        data = resp.json()
+    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        while True:
+            params = {
+                "geometry": geom_filter,
+                "geometryType": "esriGeometryEnvelope",
+                "spatialRel": "esriSpatialRelIntersects",
+                "inSR": "4326",
+                "outSR": "4326",
+                "outFields": "*",
+                "where": where,
+                "f": "geojson",
+                "resultRecordCount": page_size,
+                "resultOffset": offset,
+            }
+            try:
+                resp = await client.get(query_url, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as page_exc:
+                logger.warning(
+                    "Overlay page fetch failed at offset=%d (returning %d features collected so far): %s",
+                    offset, len(all_features), page_exc,
+                )
+                break
 
-    features = data.get("features", [])
-    if not features:
+            batch = data.get("features", [])
+            if not batch:
+                break
+            all_features.extend(batch)
+            logger.info(
+                "Overlay bbox fetch: %d features (offset=%d)",
+                len(all_features), offset,
+            )
+            if len(batch) < page_size:
+                break  # last page
+            offset += page_size
+            # Safety cap: most urban bboxes have <50k features; anything beyond
+            # that is likely a misconfigured query.
+            if offset > 200_000:
+                logger.warning("Overlay page cap hit at offset %d", offset)
+                break
+
+    if not all_features:
         return None
 
-    return gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+    return gpd.GeoDataFrame.from_features(all_features, crs="EPSG:4326")
 
 
 async def _bulk_flag_by_geometry(
@@ -210,10 +252,11 @@ async def _bulk_flag_by_geometry(
     import asyncio
 
     # Build union of overlay polygons.
-    # Simplify to ~10 m precision first — dramatically reduces vertex count and
-    # WKT string size, which is the main source of slowness on large datasets.
+    # Simplify to ~1 m precision — small enough not to misclassify urban parcels
+    # (the 11 m tolerance used previously could shift flood boundaries off
+    # narrow city lots).
     valid_geoms = [
-        g.simplify(0.0001, preserve_topology=True)
+        g.simplify(0.00001, preserve_topology=True)
         for g in gdf.geometry.dropna()
         if g is not None and not g.is_empty
     ]
@@ -238,3 +281,55 @@ async def _bulk_flag_by_geometry(
     )
     await db.flush()
     return result.rowcount
+
+
+async def _persist_overlay_polygons(
+    *,
+    jurisdiction_id: uuid.UUID,
+    gdf,
+    overlay_type: OverlayType,
+    source: str,
+    db: AsyncSession,
+) -> int:
+    """
+    Upsert overlay polygons into the `overlays` table so they can be rendered
+    as map layers via pg_tileserv. Replaces any existing rows of the same type
+    for this jurisdiction.
+    """
+    # Clear prior rows for this (type, jurisdiction) pair
+    await db.execute(
+        delete(Overlay).where(
+            Overlay.jurisdiction_id == jurisdiction_id,
+            Overlay.overlay_type == overlay_type,
+        )
+    )
+
+    rows: list[dict] = []
+    for _, feat in gdf.iterrows():
+        geom = feat.geometry
+        if geom is None or geom.is_empty:
+            continue
+        # Collect non-geom attributes into JSONB
+        attrs = {
+            k: (str(v) if v is not None else None)
+            for k, v in feat.items()
+            if k != "geometry"
+        }
+        rows.append({
+            "jurisdiction_id": jurisdiction_id,
+            "overlay_type": overlay_type,
+            "source": source,
+            "attributes": attrs,
+            "geom": WKTElement(geom.wkt, srid=4326),
+        })
+
+    if not rows:
+        return 0
+
+    await db.execute(insert(Overlay), rows)
+    await db.flush()
+    logger.info(
+        "Persisted %d %s overlay polygons for %s",
+        len(rows), overlay_type.value, jurisdiction_id,
+    )
+    return len(rows)

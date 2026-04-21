@@ -18,12 +18,34 @@ export const JobStatusSchema = z.enum([
   "pending",
   "discovering_layers",
   "downloading_parcels",
+  "downloading_zoning",
   "parsing_ordinance",
   "running_overlays",
   "ready",
   "failed",
 ]);
 export type JobStatus = z.infer<typeof JobStatusSchema>;
+
+export const ZoneClassSchema = z.enum([
+  "residential",
+  "commercial",
+  "industrial",
+  "mixed_use",
+  "agricultural",
+  "open_space",
+  "special",
+  "overlay",
+  "unknown",
+]);
+export type ZoneClass = z.infer<typeof ZoneClassSchema>;
+
+export const CoverageLevelSchema = z.enum([
+  "full",
+  "zoning_only",
+  "parcels_only",
+  "partial",
+]);
+export type CoverageLevel = z.infer<typeof CoverageLevelSchema>;
 
 export const TargetUseSchema = z.enum([
   "self_storage",
@@ -71,6 +93,7 @@ export const ParcelRowSchema = z.object({
   owner_name: z.string().nullable(),
   acres: z.number().nullable(),
   zoning_code: z.string().nullable(),
+  zone_class: ZoneClassSchema.nullable().optional(),
   land_use_code: z.string().nullable(),
   improvement_value: z.number().nullable(),
   has_structure: z.boolean().nullable(),
@@ -141,7 +164,36 @@ export const JurisdictionSchema = z.object({
   parcel_endpoint: z.string().nullable(),
   zoning_endpoint: z.string().nullable(),
   ordinance_url: z.string().nullable(),
+  coverage_level: CoverageLevelSchema.nullable().optional(),
+  bbox: z.array(z.number()).length(4).nullable().optional(),
   last_indexed_at: z.string().datetime().nullable(),
   created_at: z.string().datetime(),
 });
 export type Jurisdiction = z.infer<typeof JurisdictionSchema>;
+
+// ---- zoning district ------------------------------------------------------
+
+export const ZoningDistrictSchema = z.object({
+  id: z.number().int(),
+  jurisdiction_id: z.string().uuid(),
+  zone_code: z.string(),
+  zone_name: z.string().nullable().optional(),
+  zone_class: ZoneClassSchema,
+  allowed_uses: z.array(z.string()).nullable().optional(),
+  max_far: z.number().nullable().optional(),
+  max_height_ft: z.number().nullable().optional(),
+  max_density_dua: z.number().nullable().optional(),
+  min_lot_area_sqft: z.number().nullable().optional(),
+  source: z.enum(["arcgis", "ordinance", "regrid", "manual"]),
+  confidence: z.number().nullable().optional(),
+  human_reviewed: z.boolean(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+export type ZoningDistrict = z.infer<typeof ZoningDistrictSchema>;
+
+export const ZoningDistrictListSchema = z.object({
+  items: z.array(ZoningDistrictSchema),
+  total: z.number().int(),
+});
+export type ZoningDistrictList = z.infer<typeof ZoningDistrictListSchema>;

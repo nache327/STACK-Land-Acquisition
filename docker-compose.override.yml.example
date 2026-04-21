@@ -1,0 +1,13 @@
+# Copy to docker-compose.override.yml (gitignored) when your host has
+# Postgres on 5432 already, or you otherwise need to remap ports.
+#
+# Docker Compose merges this file automatically on `docker compose up`.
+
+services:
+  db:
+    ports:
+      - "5433:5432"
+
+  tileserv:
+    ports:
+      - "7801:7800"

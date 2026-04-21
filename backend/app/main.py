@@ -2,7 +2,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import jurisdictions, ordinances, parcels, shortlist, jobs
+from app.api import (
+    jobs,
+    jurisdictions,
+    ordinances,
+    parcels,
+    shortlist,
+    zoning_districts,
+)
 
 
 @asynccontextmanager
@@ -37,6 +44,7 @@ app.include_router(jurisdictions.router, prefix="/api")
 app.include_router(ordinances.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
 app.include_router(shortlist.router, prefix="/api")
+app.include_router(zoning_districts.router, prefix="/api")
 
 
 @app.get("/health", tags=["meta"])
