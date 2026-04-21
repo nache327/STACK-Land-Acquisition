@@ -8,14 +8,18 @@
 
 import {
   JobSchema,
+  JurisdictionSchema,
   ParcelDetailSchema,
   ParcelListResponseSchema,
   ZoneMatrixResponseSchema,
+  ZoningDistrictListSchema,
   type Job,
   type JobCreate,
+  type Jurisdiction,
   type ParcelDetail,
   type ParcelListResponse,
   type ZoneMatrixResponse,
+  type ZoningDistrictList,
 } from "./schemas";
 
 const BASE_URL =
@@ -112,6 +116,34 @@ export const api = {
     return fetchJSON<Record<string, number>>(
       `/api/jurisdictions/${jurisdictionId}/parcels/zone-summary`
     );
+  },
+
+  async getZoneClassSummary(
+    jurisdictionId: string
+  ): Promise<Record<string, number>> {
+    return fetchJSON<Record<string, number>>(
+      `/api/jurisdictions/${jurisdictionId}/parcels/zone-class-summary`
+    );
+  },
+
+  // ---- jurisdictions / zoning districts ----------------------------------
+
+  async getJurisdiction(jurisdictionId: string): Promise<Jurisdiction> {
+    const raw = await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}`
+    );
+    return JurisdictionSchema.parse(raw);
+  },
+
+  async getZoningDistricts(jurisdictionId: string): Promise<ZoningDistrictList> {
+    const raw = await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/zoning-districts`
+    );
+    return ZoningDistrictListSchema.parse(raw);
+  },
+
+  zoningDistrictsMapUrl(jurisdictionId: string): string {
+    return `${BASE_URL}/api/jurisdictions/${jurisdictionId}/zoning-districts/map`;
   },
 
   // ---- ordinances ---------------------------------------------------------

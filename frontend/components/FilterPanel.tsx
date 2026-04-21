@@ -14,25 +14,27 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { ZONE_CLASS_COLORS, ZONE_CLASS_LABELS } from "@/lib/layers";
+import type { ZoneClass } from "@/lib/schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface FilterState {
   zones: string[];
+  zoneClasses: ZoneClass[];
   minAcres: number | null;
   maxAcres: number | null;
   excludeFlood: boolean;
-  excludeSteep: boolean;
   excludeWetland: boolean;
   vacantOnly: boolean;
 }
 
 export const DEFAULT_FILTERS: FilterState = {
   zones: [],
+  zoneClasses: [],
   minAcres: null,
   maxAcres: null,
   excludeFlood: false,
-  excludeSteep: false,
   excludeWetland: false,
   vacantOnly: false,
 };
@@ -51,6 +53,14 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   const { data: zoneSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ["zone-summary", jurisdictionId],
     queryFn: () => api.getZoneSummary(jurisdictionId!),
+    enabled: !!jurisdictionId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Parcel-based zone-class summary (class → parcel count)
+  const { data: classSummary } = useQuery({
+    queryKey: ["zone-class-summary", jurisdictionId],
+    queryFn: () => api.getZoneClassSummary(jurisdictionId!),
     enabled: !!jurisdictionId,
     staleTime: 5 * 60 * 1000,
   });
@@ -82,14 +92,78 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     }));
   }
 
+  function toggleZoneClass(klass: ZoneClass) {
+    setFilters((prev) => ({
+      ...prev,
+      zoneClasses: prev.zoneClasses.includes(klass)
+        ? prev.zoneClasses.filter((c) => c !== klass)
+        : [...prev.zoneClasses, klass],
+    }));
+  }
+
   const sortedZones = Object.entries(zoneSummary ?? {}).sort((a, b) => b[1] - a[1]);
   // Fall back to ordinance matrix when parcels carry no zoning codes
   const matrixZones = sortedZones.length === 0
     ? (zoneMatrix?.zones ?? []).map((z) => ({ code: z.zone_code, name: z.zone_name, storage: z.self_storage }))
     : [];
 
+  const classEntries = classSummary
+    ? (Object.entries(classSummary) as [ZoneClass, number][])
+        .filter(([c]) => c in ZONE_CLASS_LABELS)
+        .sort((a, b) => b[1] - a[1])
+    : [];
+
   return (
     <div className="space-y-5 p-4 text-sm">
+      {/* ── Zone Class ────────────────────────────────────────────────── */}
+      {classEntries.length > 0 && (
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Zone Class
+            </h3>
+            {filters.zoneClasses.length > 0 && (
+              <button
+                onClick={() => update({ zoneClasses: [] })}
+                className="text-xs text-slate-400 hover:text-slate-600"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="space-y-1">
+            {classEntries.map(([klass, count]) => {
+              const checked = filters.zoneClasses.includes(klass);
+              return (
+                <label
+                  key={klass}
+                  className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleZoneClass(klass)}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-sm"
+                    style={{ backgroundColor: ZONE_CLASS_COLORS[klass] }}
+                  />
+                  <span className="flex-1 text-xs font-medium text-slate-700">
+                    {ZONE_CLASS_LABELS[klass]}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {count.toLocaleString()}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {classEntries.length > 0 && <div className="border-t border-slate-100" />}
+
       {/* ── Zones ─────────────────────────────────────────────────────── */}
       <section>
         <div className="mb-2 flex items-center justify-between">
@@ -222,13 +296,6 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
             checked={filters.excludeFlood}
             onChange={(v) => update({ excludeFlood: v })}
             accent="red"
-          />
-          <Toggle
-            label="Exclude steep slopes"
-            description="Remove parcels >15% grade"
-            checked={filters.excludeSteep}
-            onChange={(v) => update({ excludeSteep: v })}
-            accent="amber"
           />
           <Toggle
             label="Exclude wetlands"

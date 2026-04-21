@@ -10,6 +10,7 @@ import { ParcelTable } from "@/components/ParcelTable";
 import { ParcelDrawer } from "@/components/ParcelDrawer";
 import { FilterPanel, DEFAULT_FILTERS } from "@/components/FilterPanel";
 import type { FilterState } from "@/components/FilterPanel";
+import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
 import { useParcelDetail } from "@/hooks/useParcels";
 import type { ParcelRow } from "@/lib/schemas";
 import { api } from "@/lib/api";
@@ -69,6 +70,11 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const [shortlistName, setShortlistName] = useState("");
   const [shortlistSaved, setShortlistSaved] = useState<string | null>(null); // saved shortlist id
 
+  // Layer visibility (used by Map + LayerControl)
+  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(
+    initialLayerVisibility()
+  );
+
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds(new Set());
@@ -80,10 +86,11 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     page_size: 200,
     vacant_only: filters.vacantOnly,
     exclude_flood: filters.excludeFlood,
-    exclude_steep: filters.excludeSteep,
     exclude_wetland: filters.excludeWetland,
   };
   if (filters.zones.length > 0) listParams.zones = filters.zones;
+  if (filters.zoneClasses.length > 0)
+    listParams.zone_classes = filters.zoneClasses;
   if (filters.minAcres != null) listParams.min_acres = filters.minAcres;
   if (filters.maxAcres != null) listParams.max_acres = filters.maxAcres;
 
@@ -224,6 +231,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
                 setSelectedParcelId(id);
                 setDrawerOpen(true);
               }}
+              visibility={layerVisibility}
+              onVisibilityChange={setLayerVisibility}
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-400">
