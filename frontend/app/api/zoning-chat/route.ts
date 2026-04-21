@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
+export const maxDuration = 30; // seconds (Pro plan only; ignored on Hobby)
+
 const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // ── Domain allowlist for URL fetching ────────────────────────────────────────
@@ -147,7 +149,7 @@ async function fetchOrdinanceUrl(url: string): Promise<string> {
 
   const res = await fetch(url, {
     headers: { "User-Agent": "SiteScout/1.0 ZoningVerifier" },
-    signal: AbortSignal.timeout(12_000),
+    signal: AbortSignal.timeout(7_000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const html = await res.text();
@@ -319,8 +321,8 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       try {
         const response = anthropic.messages.stream({
-          model: "claude-sonnet-4-6",
-          max_tokens: 4096,
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 2048,
           system: SYSTEM_PROMPT,
           messages: claudeMessages,
         });
