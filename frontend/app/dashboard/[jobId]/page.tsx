@@ -15,6 +15,7 @@ import { useParcelDetail } from "@/hooks/useParcels";
 import type { ParcelRow } from "@/lib/schemas";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import { ZoningChatPanel } from "@/components/ZoningChatPanel";
 
 // MapLibre GL JS must not be SSR'd
 const ParcelMap = dynamic(() => import("@/components/Map"), {
@@ -63,6 +64,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const jurisdictionId = job.jurisdiction_id;
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [verifierOpen, setVerifierOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
   // Shortlist selection
@@ -210,6 +212,17 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               Zone Matrix
             </Link>
           )}
+          <button
+            onClick={() => setVerifierOpen((v) => !v)}
+            className={[
+              "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+              verifierOpen
+                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50",
+            ].join(" ")}
+          >
+            🎯 Verify Zoning
+          </button>
         </div>
       </header>
 
@@ -265,7 +278,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       </div>
 
       {/* Parcel drawer */}
-      {drawerOpen && (
+      {drawerOpen && !verifierOpen && (
         <ParcelDrawer
           parcel={parcelDetail ?? null}
           jurisdictionId={jurisdictionId ?? ""}
@@ -276,6 +289,15 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               ? () => toggleShortlist(selectedParcelId)
               : undefined
           }
+        />
+      )}
+
+      {/* Zoning Verifier Chat Panel */}
+      {verifierOpen && (
+        <ZoningChatPanel
+          jurisdictionId={jurisdictionId}
+          cityName={undefined}
+          onClose={() => setVerifierOpen(false)}
         />
       )}
 
