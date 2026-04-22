@@ -200,18 +200,19 @@ export function ZoningChatPanel({
         fetchedOrdinanceTextRef.current = text;
         try {
           const u = new URL(data.url ?? ordinanceUrl);
-          const via = (data.via === "jina" || data.via === "jina-smart") ? " (JS rendered)" : "";
-          setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40) + via);
+          const viaLabel =
+            data.via === "jina" || data.via === "jina-smart" ? " (JS rendered)" :
+            data.via === "jina-partial" ? " (partial)" :
+            data.via === "jina-failed" ? " (table not found — showing DB state)" : "";
+          setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40) + viaLabel);
         } catch {
           setOrdinanceLabel(ordinanceUrl.slice(0, 50));
         }
-        // Auto-trigger comparison — pass text directly to avoid stale closure
-        if (text.length > 500) {
-          sendMessageWithOrdinance(
-            "Analyze this ordinance against the database and report all conflicts.",
-            text,
-          );
-        }
+        // Always auto-trigger analysis — when fetch fails, Claude shows DB state
+        sendMessageWithOrdinance(
+          "Analyze this ordinance against the database and report all conflicts.",
+          text || `[Ordinance URL provided: ${ordinanceUrl} — automatic fetch did not find the Table of Uses section]`,
+        );
       }
     } catch {
       setOrdinanceLabel("Error: could not fetch URL");

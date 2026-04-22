@@ -89,8 +89,9 @@ function hasTableOfUses(text: string): boolean {
 
 async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
   // URLs with query strings or hash fragments must be fully encoded so they arrive
-  // at Jina's server as a single path segment rather than being parsed as Jina's
-  // own query parameters or stripped as a fragment at the HTTP layer.
+  // at Jina's server as a single opaque path segment. Without encoding:
+  //   - '?' causes query params to be parsed as Jina's own parameters (not the target URL's)
+  //   - '#' is stripped at the HTTP layer before reaching Jina's server
   const jinaTarget = (url.includes("?") || url.includes("#"))
     ? encodeURIComponent(url)
     : url;
@@ -98,7 +99,7 @@ async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
     headers: {
       "Accept": "text/plain",
       "X-Return-Format": "text",
-      "X-Wait-For-Selector": "table",  // wait for table element (SPA rendering)
+      "X-Timeout": "25",  // extra time for JS-heavy SPAs to render section content
     },
     signal: AbortSignal.timeout(timeoutMs),
   });
@@ -243,15 +244,9 @@ async function fetchMunicipalCodeOnline(url: string): Promise<{ text: string; ur
 
   const results = await Promise.all(attempts);
 
-  // Prefer one that has a confirmed use table
+  // Only return content if we actually found a use table — no preface/TOC fallbacks
   const best = results.find(r => r?.hasTable);
   if (best) return { text: best.text, url: best.url };
-
-  // Fall back to the longest non-empty result (most content = closest to what we want)
-  const ranked = results
-    .filter((r): r is NonNullable<typeof r> => r !== null && r.len > 500)
-    .sort((a, b) => b.len - a.len);
-  if (ranked.length > 0) return { text: ranked[0].text, url: ranked[0].url };
 
   return null;
 }
