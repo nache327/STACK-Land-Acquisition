@@ -86,6 +86,23 @@ _OWNER_FIELDS = [
     "OwnerName",
     # Philadelphia OPA
     "owner_1", "owner_2",
+    # County assessor / tax roll variants (common across US counties)
+    "TAXPAYER", "TAXPAYER_NM", "TAXPAYERNM", "TAX_PAYER", "TAX_NAME",
+    "TAXPAYER_NAME", "TAXPAYER1", "TAXPAYER_1",
+    # Full-name fields used by many Midwest/Southeast counties
+    "OWN_FULL", "OWN_NAME", "OWN1", "OWN_1", "OWN_NAME1",
+    "OWNER_NAME_1", "OWNER_FULL",
+    # Grantee/deed-based fields
+    "GRANTEE", "GRANTEE_NAME", "DEED_NAME",
+    # Generic party / name fields used in some state-level services
+    "PARTY_1", "PARTY1", "LANDOWNER", "LAND_OWNER",
+    # Regrid normalized field
+    "owner",
+    # Texas / Southeast county variants
+    "PROP_OWNER", "PROPERTY_OWNER", "OWNER_NAM",
+    # Lowercase variants (some county services return lowercase field names)
+    "owner_name", "ownername", "taxpayer", "taxpayer_nm",
+    "grantee", "own_full", "own1",
 ]
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
