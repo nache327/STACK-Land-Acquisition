@@ -60,12 +60,13 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
 
 _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Mixed-use (test before commercial/residential since codes overlap).
-    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT (Downtown)
-    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|dt)[-\s0-9a-z]*$", re.I)),
+    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT (Downtown SLC/Provo)
+    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|dt|d)[-\s0-9a-z]*$", re.I)),
     # Industrial: I-1/I-2, M-1/M-2, LI, HI, H/I (slash variant), IH, IL, IP, IND, IR, ICM
     (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|h[/]i|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z/]*$", re.I)),
     # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
-    (ZoneClass.open_space, re.compile(r"^(os|pf|pr|pl|ci|pz|ps)[-\s0-9a-z]*$", re.I)),
+    # NOS = Natural Open Space; O-S = Open Space (Murray); EUO = Environmental/Open
+    (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|pf|pr|pl|ci|pz|ps|euo)[-\s0-9a-z]*$", re.I)),
     # Special districts — must come BEFORE commercial
     (ZoneClass.special, re.compile(r"^(pc|pud|pd|pdz|spa|pdd|cpd|ssd)[-\s0-9a-z]*$", re.I)),
     # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
@@ -76,10 +77,11 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Agricultural: A-\d, AG
     (ZoneClass.agricultural, re.compile(r"^(ag|a)[-\s0-9a-z]*$", re.I)),
     # Residential: R-\d, RA, RM, RR, RS, RH, R1-1, R6A, TH, SF, MF, FR (Foothill Res.),
-    # HDR/LDR/MDR (High/Low/Medium Density Residential), MR (Multi-Res)
+    # HDR/LDR/MDR (High/Low/Medium Density Residential), MR (Multi-Res),
+    # SR (Standard Residential — SLC/North Salt Lake), F- (Foothill — Cottonwood Heights)
     # Allows decimal in code (R-2.5, FR-2.5) via `[-\s.0-9a-z]*`
     (ZoneClass.residential, re.compile(
-        r"^(fr|hdr|ldr|mdr|mr|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
+        r"^(fr|hdr|ldr|mdr|mr|sr|f|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
     )),
 ]
 
@@ -125,6 +127,14 @@ def classify_zone_code(
     if code and re.search(r"\(", code):
         base = re.sub(r"\s*\(.*\)\s*$", "", code).strip()
         if base and base != code:
+            result = classify_zone_code(base, zone_name, source_class)
+            if result != ZoneClass.unknown:
+                return result
+
+    # Strip "/zc" or "/ZC" suffix used by Millcreek overlay variants: "C-2/zc" → "C-2"
+    if code and re.search(r"/zc\s*$", code, re.I):
+        base = re.sub(r"/zc\s*$", "", code, flags=re.I).strip()
+        if base:
             result = classify_zone_code(base, zone_name, source_class)
             if result != ZoneClass.unknown:
                 return result
