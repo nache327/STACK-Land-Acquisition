@@ -99,7 +99,12 @@ ZONING RULE CORRECTIONS:
 ]
 ---END CORRECTION REPORT---
 
-If the ordinance text does not contain a Table of Uses, say: "The fetched content does not include the Table of Uses. Try loading a more specific section URL (navigate to the Use Matrix chapter in the ordinance website and copy that page's URL)."`;
+WHEN NO USABLE ORDINANCE TEXT IS PROVIDED (URL failed to fetch, or first message):
+- Do NOT ask the user to paste text or navigate websites
+- Instead: immediately produce the database state table, mark every row where classification_source is "rule" as UNVERIFIED, and end with ONE sentence: "Load a URL or paste the Table of Uses above to verify these values against the actual ordinance."
+- If the text starts with "[Could not automatically locate", acknowledge in one sentence then proceed to the database report
+
+IMPORTANT: Never give multi-step instructions asking the user to do manual work. Always output data.`;
 
 // ── HTML stripping ────────────────────────────────────────────────────────────
 function stripHtml(html: string): string {

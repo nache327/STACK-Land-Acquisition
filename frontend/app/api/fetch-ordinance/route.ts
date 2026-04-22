@@ -88,11 +88,18 @@ function hasTableOfUses(text: string): boolean {
 }
 
 async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
-  // Encode '#' as '%23' so the hash fragment is sent to Jina's server rather than
-  // being treated as a fragment of the r.jina.ai request URL (which strips it).
-  const jinaUrl = `https://r.jina.ai/${url.replace(/#/g, "%23")}`;
-  const res = await fetch(jinaUrl, {
-    headers: { "Accept": "text/plain", "X-Return-Format": "text" },
+  // URLs with query strings or hash fragments must be fully encoded so they arrive
+  // at Jina's server as a single path segment rather than being parsed as Jina's
+  // own query parameters or stripped as a fragment at the HTTP layer.
+  const jinaTarget = (url.includes("?") || url.includes("#"))
+    ? encodeURIComponent(url)
+    : url;
+  const res = await fetch(`https://r.jina.ai/${jinaTarget}`, {
+    headers: {
+      "Accept": "text/plain",
+      "X-Return-Format": "text",
+      "X-Wait-For-Selector": "table",  // wait for table element (SPA rendering)
+    },
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`Jina ${res.status}`);
