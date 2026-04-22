@@ -234,11 +234,11 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Add pasted text
+  // Add pasted or pre-fetched ordinance text
   if (pastedText?.trim()) {
     extraBlocks.push({
       type: "text",
-      text: `\n\n--- PASTED ORDINANCE TEXT ---\n${pastedText.slice(0, 60_000)}\n--- END PASTED TEXT ---`,
+      text: `\n\n--- ORDINANCE TEXT (source: ${ordinanceUrl ?? "pasted"}) ---\n${pastedText.slice(0, 60_000)}\n--- END ORDINANCE TEXT ---`,
     });
   }
 

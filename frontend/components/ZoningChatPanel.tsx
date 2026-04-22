@@ -111,6 +111,8 @@ export function ZoningChatPanel({
   const [inputMode, setInputMode] = useState<"url" | "paste">("url");
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [fetchedOrdinanceText, setFetchedOrdinanceText] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [applyStatus, setApplyStatus] = useState<Record<string, string>>({});
 
@@ -178,13 +180,28 @@ export function ZoningChatPanel({
 
   // ── Load ordinance URL ─────────────────────────────────────────────────────
 
-  function handleLoadUrl() {
+  async function handleLoadUrl() {
     if (!ordinanceUrl.trim()) return;
+    setIsFetchingUrl(true);
+    setFetchedOrdinanceText("");
     try {
-      const u = new URL(ordinanceUrl);
-      setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40));
+      const res = await fetch(`/api/fetch-ordinance?url=${encodeURIComponent(ordinanceUrl)}`);
+      const data = await res.json() as { text?: string; error?: string };
+      if (data.error) {
+        setOrdinanceLabel(`Error: ${data.error}`);
+      } else {
+        setFetchedOrdinanceText(data.text ?? "");
+        try {
+          const u = new URL(ordinanceUrl);
+          setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40));
+        } catch {
+          setOrdinanceLabel(ordinanceUrl.slice(0, 50));
+        }
+      }
     } catch {
-      setOrdinanceLabel(ordinanceUrl.slice(0, 50));
+      setOrdinanceLabel("Error: could not fetch URL");
+    } finally {
+      setIsFetchingUrl(false);
     }
   }
 
@@ -232,7 +249,7 @@ export function ZoningChatPanel({
               content: m.content,
             })),
             ordinanceUrl: ordinanceLabel ? ordinanceUrl : undefined,
-            pastedText: inputMode === "paste" ? pastedText : undefined,
+            pastedText: fetchedOrdinanceText || (inputMode === "paste" ? pastedText : undefined),
             images: userMsg.images?.map((img) => ({
               base64: img.base64,
               mediaType: img.mediaType,
@@ -435,9 +452,10 @@ Verified: ${new Date().toISOString().slice(0, 10)}`;
             />
             <button
               onClick={handleLoadUrl}
-              className="shrink-0 rounded bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+              disabled={isFetchingUrl}
+              className="shrink-0 rounded bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
             >
-              Load
+              {isFetchingUrl ? "Loading…" : "Load"}
             </button>
           </div>
         ) : (
