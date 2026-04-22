@@ -68,10 +68,11 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
     # NOS = Natural Open Space; O-S = Open Space (Murray); EUO = Environmental/Open
     # P-F / PF = Public Facility; OW = Open Water
-    (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|p-?f|pr|pl|ci|pz|ps|euo|ow)[-\s0-9a-z]*$", re.I)),
+    # Note: PR excluded here — used for Planned Residential in many Utah cities
+    (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|p-?f|pl|ci|pz|ps|euo|ow)[-\s0-9a-z]*$", re.I)),
     # Special districts — must come BEFORE commercial
-    # P-C = Planned Community (hyphen variant of PC)
-    (ZoneClass.special, re.compile(r"^(p-?c|pud|pd|pdz|spa|pdd|cpd|ssd|sdp)[-\s0-9a-z]*$", re.I)),
+    # P-C = Planned Community; SD = Special District (Sandy, Bluffdale); SDP = Specific Dev Plan
+    (ZoneClass.special, re.compile(r"^(p-?c|pud|pd|pdz|spa|pdd|cpd|ssd|sdp|sd)[-\s0-9a-z]*$", re.I)),
     # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
     # P-O / PO = Professional Office; HBD = Highway Business District
     (ZoneClass.commercial, re.compile(
@@ -83,10 +84,10 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # HDR/LDR/MDR (High/Low/Medium Density Residential), MR (Multi-Res),
     # SR (Standard Residential — SLC/North Salt Lake), F- (Foothill — Cottonwood Heights)
     # HFR = High/Heritage Single Family Res., LSFR = Large Single Family Res. (West Jordan)
-    # HD = High Density Residential
-    # Allows decimal in code (R-2.5, FR-2.5) via `[-\s.0-9a-z]*`
+    # HD = High Density Residential; PR = Planned Residential (American Fork, Cedar Hills)
+    # Allows decimal in code (R-2.5, FR-2.5, PR-2.0) via `[-\s.0-9a-z]*`
     (ZoneClass.residential, re.compile(
-        r"^(hfr|lsfr|fr|hdr|ldr|mdr|mr|sr|hd|f|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
+        r"^(hfr|lsfr|vlsfr|fr|hdr|ldr|vldr|mdr|mr|sr|hd|pr|f|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
     )),
 ]
 
