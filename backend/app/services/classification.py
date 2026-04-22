@@ -21,6 +21,7 @@ from app.models.zoning_district import ZoneClass
 _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
     (ZoneClass.mixed_use, (
         "mixed use", "mixed-use", "cmx", "mu-", "mu ", "tod", "transit oriented",
+        "transit-oriented", "downtown mixed",
     )),
     (ZoneClass.overlay, (
         "overlay", "special purpose", "historic", "flood overlay",
@@ -28,23 +29,30 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
     (ZoneClass.open_space, (
         "open space", "parks", "park", "recreation", "conservation", "forest",
         "greenway", "civic", "institutional", "public facility", "public facilities",
+        "fire station", "pond", "water",
     )),
     (ZoneClass.agricultural, (
         "agricultur", "farm", "rural residential", "rr-",
     )),
     (ZoneClass.industrial, (
         "industrial", "manufactur", "warehouse", "logistics",
+        "sand & gravel", "sand and gravel", "gravel", "mining",
     )),
     (ZoneClass.commercial, (
         "commercial", "business", "office", "retail", "shopping",
+        "professional office", "gateway commercial", "neighborhood commercial",
+        "general commercial", "highway commercial", "town center",
     )),
     (ZoneClass.residential, (
         "residential", "dwelling", "single family", "multifamily", "multi-family",
-        "multi family", "townhouse",
+        "multi family", "townhouse", "townhome", "townhomes",
+        "low density", "high density", "medium density",
+        "senior housing", "village", "estates",
     )),
     (ZoneClass.special, (
         "special district", "pud", "planned unit development", "pdd",
-        "planned development",
+        "planned development", "specific plan", "flex use",
+        "redevelopment", "subarea", "under review",
     )),
 ]
 
@@ -52,23 +60,27 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
 
 _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Mixed-use (test before commercial/residential since codes overlap).
-    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD
-    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m)[-\s0-9a-z]*$", re.I)),
+    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT (Downtown)
+    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|dt)[-\s0-9a-z]*$", re.I)),
     # Industrial: I-1/I-2, M-1/M-2, LI, HI, H/I (slash variant), IH, IL, IP, IND, IR, ICM
     (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|h[/]i|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z/]*$", re.I)),
     # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
     (ZoneClass.open_space, re.compile(r"^(os|pf|pr|pl|ci|pz|ps)[-\s0-9a-z]*$", re.I)),
-    # Special districts — must come BEFORE commercial (PC starts with C... wait no, but before agricultural A)
-    (ZoneClass.special, re.compile(r"^(pc|pud|pd|pdz|spa|pdd|cpd)[-\s0-9a-z]*$", re.I)),
+    # Special districts — must come BEFORE commercial
+    (ZoneClass.special, re.compile(r"^(pc|pud|pd|pdz|spa|pdd|cpd|ssd)[-\s0-9a-z]*$", re.I)),
     # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
+    # P-O / PO = Professional Office; HBD = Highway Business District
     (ZoneClass.commercial, re.compile(
-        r"^(cbd|cb|cc|cg|cn|co|cs|c|nc|gc|hc|lc|sc|tc|rc|of|bp|pbd|oc|ob|b)[-\s0-9a-z]*$", re.I
+        r"^(cbd|cb|cc|cg|cn|co|cs|c|nc|gc|hc|lc|sc|tc|rc|of|bp|pbd|oc|ob|b|p-?o|hbd)[-\s0-9a-z]*$", re.I
     )),
     # Agricultural: A-\d, AG
     (ZoneClass.agricultural, re.compile(r"^(ag|a)[-\s0-9a-z]*$", re.I)),
-    # Residential: R-\d, RA, RM, RR, RS, RH, R1-1, R6A, TH (Townhome), SF, MF
-    # Allows decimal in code (R-2.5) via `[-\s.0-9a-z]*`
-    (ZoneClass.residential, re.compile(r"^(r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I)),
+    # Residential: R-\d, RA, RM, RR, RS, RH, R1-1, R6A, TH, SF, MF, FR (Foothill Res.),
+    # HDR/LDR/MDR (High/Low/Medium Density Residential), MR (Multi-Res)
+    # Allows decimal in code (R-2.5, FR-2.5) via `[-\s.0-9a-z]*`
+    (ZoneClass.residential, re.compile(
+        r"^(fr|hdr|ldr|mdr|mr|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
+    )),
 ]
 
 
@@ -95,11 +107,25 @@ def classify_zone_code(
             if zc.value == normalized:
                 return zc
 
-    # Some counties store multiple zone codes as "NC, GC" or "R1-7, R1-8, R1-10".
-    # Classify the first segment that resolves to something non-unknown.
-    if code and "," in code:
-        for segment in code.split(","):
-            result = classify_zone_code(segment.strip(), zone_name, source_class)
+    # Some counties store multiple zone codes separated by commas or semicolons,
+    # e.g. "NC, GC" or "A5; CC; RM2". Classify the first segment that resolves.
+    if code:
+        for sep in (",", ";"):
+            if sep in code:
+                for segment in code.split(sep):
+                    seg = segment.strip()
+                    if seg:
+                        result = classify_zone_code(seg, zone_name, source_class)
+                        if result != ZoneClass.unknown:
+                            return result
+                break  # tried splitting; fall through to keyword/regex on full code
+
+    # Strip parenthetical suffixes common in Utah: "C-G(ZC)", "R-1-8(INF)", "RM(10)"
+    # Keep the base code for regex matching but pass full code through keywords first.
+    if code and re.search(r"\(", code):
+        base = re.sub(r"\s*\(.*\)\s*$", "", code).strip()
+        if base and base != code:
+            result = classify_zone_code(base, zone_name, source_class)
             if result != ZoneClass.unknown:
                 return result
 

@@ -85,7 +85,7 @@ async def run() -> None:
                 r = await db.execute(text("""
                     UPDATE parcels
                     SET zone_class = :zc
-                    WHERE jurisdiction_id = :jid::uuid
+                    WHERE jurisdiction_id = CAST(:jid AS uuid)
                       AND zoning_code = :code
                       AND (zone_class IS NULL OR zone_class = 'unknown')
                 """), {"zc": zone_class_val, "jid": jid, "code": code})
