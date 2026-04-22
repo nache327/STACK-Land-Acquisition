@@ -1,6 +1,6 @@
 /**
  * Edge function to fetch ordinance content from any URL type.
- * For municipalcodeonline.com SPAs: fetches TOC, finds Table of Uses section,
+ * For municipalcodeonline.com SPAs: fetches base TOC first, finds Table of Uses section,
  * then fetches that specific section. For all other sites: Jina Reader first,
  * direct fetch fallback.
  *
@@ -49,6 +49,8 @@ const TABLE_OF_USES_KEYWORDS = [
   "permitted uses",
   "use table",
   "allowed uses",
+  "schedule of uses",
+  "schedule of permitted",
 ];
 
 function hasTableOfUses(text: string): boolean {
@@ -66,19 +68,18 @@ async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
   return res.text();
 }
 
-// Extract section links from TOC text for municipalcodeonline.com
-function extractSectionUrls(tocText: string, baseUrl: string): string[] {
-  const lower = tocText.toLowerCase();
+// Parse TOC text from municipalcodeonline.com to find table of uses section URLs
+function extractMunicipalCodeSectionUrls(tocText: string, baseUrl: string): string[] {
   const urls: string[] = [];
   const base = baseUrl.split("#")[0];
 
-  // Find section names that likely contain the Table of Uses
+  // Find lines mentioning table of uses in TOC
   const lines = tocText.split("\n");
   for (const line of lines) {
     const lineLower = line.toLowerCase();
     if (TABLE_OF_USES_KEYWORDS.some(k => lineLower.includes(k))) {
-      // Extract the section name from patterns like "11.70.030 Table of Uses"
-      const sectionMatch = line.match(/(\d+\.\d+[\.\d]*)\s+(.+)/);
+      // Pattern: "11.06.030 Table of Uses" or "11.06 Table of Uses"
+      const sectionMatch = line.match(/(\d+\.\d+(?:\.\d+)?)\s+(.+)/);
       if (sectionMatch) {
         const sectionNum = sectionMatch[1];
         const sectionName = sectionMatch[2].trim().toUpperCase().replace(/\s+/g, "_");
@@ -88,18 +89,81 @@ function extractSectionUrls(tocText: string, baseUrl: string): string[] {
     }
   }
 
-  // Also try common patterns for use tables in Utah municipal codes
-  const chapterMatch = baseUrl.match(/#name=(\d+)/);
+  // Also try hash-style links in the TOC text (municipalcodeonline embeds these)
+  const hashRe = /#name=([A-Z0-9_.]+(?:TABLE_OF_USES|USE_MATRIX|PERMITTED_USES|SCHEDULE_OF_USES|USE_TABLE|USE_REGULATIONS)[A-Z0-9_.]*)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = hashRe.exec(tocText)) !== null) {
+    urls.push(`${base}#name=${m[1]}`);
+  }
+
+  return Array.from(new Set(urls));
+}
+
+// For municipalcodeonline.com: fetch the base TOC, then hunt for the Table of Uses section
+async function fetchMunicipalCodeOnline(url: string): Promise<{ text: string; url: string } | null> {
+  const base = url.split("#")[0];
+
+  // Step 1: Fetch the base TOC page to get the chapter/section list
+  let tocText = "";
+  try {
+    tocText = (await jinaFetch(base, 20_000)).slice(0, 300_000);
+  } catch {
+    return null;
+  }
+
+  // Step 2: Try to find table of uses section URLs in the TOC
+  const candidateUrls = extractMunicipalCodeSectionUrls(tocText, base);
+
+  // Step 3: Also generate guesses based on chapter numbering patterns from the URL
+  const chapterMatch = url.match(/#name=(\d+)\./);
   if (chapterMatch) {
     const chapter = chapterMatch[1];
-    for (const keyword of ["TABLE_OF_USES", "TABLE_OF_PERMITTED_USES", "USE_REGULATIONS", "USE_TABLE", "PERMITTED_USES"]) {
-      urls.push(`${base}#name=${chapter}.030_${keyword}`);
-      urls.push(`${base}#name=${chapter}.040_${keyword}`);
-      urls.push(`${base}#name=${chapter}.050_${keyword}`);
+    for (const keyword of [
+      "TABLE_OF_USES",
+      "SCHEDULE_OF_USES",
+      "TABLE_OF_PERMITTED_USES",
+      "USE_REGULATIONS",
+      "USE_TABLE",
+      "PERMITTED_USES",
+      "ALLOWED_USES",
+    ]) {
+      // Try common section numbers within this chapter
+      for (const sub of ["04", "05", "06", "07", "08", "10", "030", "040", "050"]) {
+        candidateUrls.push(`${base}#name=${chapter}.${sub}_${keyword}`);
+      }
     }
   }
 
-  return [...new Set(urls)]; // deduplicate
+  // Also try common top-level chapter patterns for zoning ordinances
+  // Many Utah cities put the use table in chapter 11.06, 17.06, 10.04, etc.
+  for (const chap of ["11.06", "11.07", "11.08", "11.10", "17.06", "17.07", "10.04", "10.06"]) {
+    for (const keyword of ["TABLE_OF_USES", "SCHEDULE_OF_USES", "TABLE_OF_PERMITTED_USES", "USE_REGULATIONS"]) {
+      candidateUrls.push(`${base}#name=${chap}_${keyword}`);
+    }
+  }
+
+  const uniqueUrls = Array.from(new Set(candidateUrls)).slice(0, 12);
+
+  // Step 4: Fetch candidates in parallel, pick the first one with a real use table
+  const attempts = uniqueUrls.map(async (sectionUrl) => {
+    try {
+      const text = (await jinaFetch(sectionUrl, 12_000)).slice(0, 200_000);
+      return { text, url: sectionUrl, hasTable: hasTableOfUses(text) };
+    } catch {
+      return null;
+    }
+  });
+
+  const results = await Promise.all(attempts);
+  const best = results.find(r => r?.hasTable);
+  if (best) return { text: best.text, url: best.url };
+
+  // Step 5: If the TOC itself has the full use table (some sites embed it), return that
+  if (hasTableOfUses(tocText)) {
+    return { text: tocText, url: base };
+  }
+
+  return null;
 }
 
 export async function GET(req: Request) {
@@ -127,6 +191,15 @@ export async function GET(req: Request) {
     );
   }
 
+  // ── Special path: municipalcodeonline.com SPA ─────────────────────────────
+  if (hostname.includes("municipalcodeonline.com")) {
+    const result = await fetchMunicipalCodeOnline(url);
+    if (result) {
+      return Response.json({ text: result.text, url: result.url, via: "jina-smart" });
+    }
+    // Fall through to generic path if special path found nothing
+  }
+
   // ── Step 1: Fetch the given URL via Jina ──────────────────────────────────
   let initialText = "";
   try {
@@ -140,11 +213,10 @@ export async function GET(req: Request) {
     return Response.json({ text: initialText, url, via: "jina" });
   }
 
-  // ── Step 3: Smart section discovery for SPA sites (municipalcodeonline etc)
+  // ── Step 3: Smart section discovery for other SPA sites ──────────────────
   if (initialText.length > 200) {
-    const candidateUrls = extractSectionUrls(initialText, url);
+    const candidateUrls = extractMunicipalCodeSectionUrls(initialText, url);
 
-    // Try up to 4 candidate section URLs in parallel
     const attempts = candidateUrls.slice(0, 4).map(async (sectionUrl) => {
       try {
         const text = (await jinaFetch(sectionUrl, 12_000)).slice(0, 200_000);
@@ -160,7 +232,6 @@ export async function GET(req: Request) {
       return Response.json({ text: best.text, url: best.url, via: "jina-smart" });
     }
 
-    // Return best non-null result even without confirmed table
     const anyResult = results.find(r => r && r.text.length > 500);
     if (anyResult) {
       return Response.json({ text: anyResult.text, url: anyResult.url, via: "jina-smart" });

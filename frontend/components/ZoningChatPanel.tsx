@@ -113,12 +113,16 @@ export function ZoningChatPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [fetchedOrdinanceText, setFetchedOrdinanceText] = useState("");
+  const fetchedOrdinanceTextRef = useRef("");
   const [isDragging, setIsDragging] = useState(false);
   const [applyStatus, setApplyStatus] = useState<Record<string, string>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendMessageRef = useRef<(text: string, checkBackend?: boolean, ordinanceTextOverride?: string) => Promise<void>>(
+    async () => {}
+  );
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -184,26 +188,29 @@ export function ZoningChatPanel({
     if (!ordinanceUrl.trim()) return;
     setIsFetchingUrl(true);
     setFetchedOrdinanceText("");
+    fetchedOrdinanceTextRef.current = "";
     try {
       const res = await fetch(`/api/fetch-ordinance?url=${encodeURIComponent(ordinanceUrl)}`);
-      const data = await res.json() as { text?: string; error?: string; via?: string };
+      const data = await res.json() as { text?: string; error?: string; via?: string; url?: string };
       if (data.error) {
         setOrdinanceLabel(`Error: ${data.error}`);
       } else {
         const text = data.text ?? "";
         setFetchedOrdinanceText(text);
+        fetchedOrdinanceTextRef.current = text;
         try {
-          const u = new URL(ordinanceUrl);
-          const via = data.via === "jina" ? " (JS rendered)" : "";
+          const u = new URL(data.url ?? ordinanceUrl);
+          const via = (data.via === "jina" || data.via === "jina-smart") ? " (JS rendered)" : "";
           setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40) + via);
         } catch {
           setOrdinanceLabel(ordinanceUrl.slice(0, 50));
         }
-        // Auto-trigger comparison as soon as ordinance is loaded
+        // Auto-trigger comparison — pass text directly to avoid stale closure
         if (text.length > 500) {
-          setTimeout(() => {
-            sendMessage("Analyze this ordinance against the database and report all conflicts.");
-          }, 100);
+          sendMessageWithOrdinance(
+            "Analyze this ordinance against the database and report all conflicts.",
+            text,
+          );
         }
       }
     } catch {
@@ -215,8 +222,13 @@ export function ZoningChatPanel({
 
   // ── Send message ───────────────────────────────────────────────────────────
 
+  // Wrapper that injects a specific ordinance text blob (avoids stale closure on auto-trigger)
+  function sendMessageWithOrdinance(text: string, ordinanceText: string) {
+    sendMessageRef.current(text, false, ordinanceText);
+  }
+
   const sendMessage = useCallback(
-    async (text: string, checkBackend = false) => {
+    async (text: string, checkBackend = false, ordinanceTextOverride?: string) => {
       const userText = text.trim();
       if (!userText && attachedImages.length === 0) return;
       if (isLoading) return;
@@ -257,7 +269,7 @@ export function ZoningChatPanel({
               content: m.content,
             })),
             ordinanceUrl: ordinanceLabel ? ordinanceUrl : undefined,
-            pastedText: fetchedOrdinanceText || (inputMode === "paste" ? pastedText : undefined),
+            pastedText: ordinanceTextOverride ?? (fetchedOrdinanceTextRef.current || (inputMode === "paste" ? pastedText : undefined)),
             images: userMsg.images?.map((img) => ({
               base64: img.base64,
               mediaType: img.mediaType,
@@ -310,9 +322,13 @@ export function ZoningChatPanel({
       pastedText,
       inputMode,
       jurisdictionId,
-      fetchedOrdinanceText,
     ]
   );
+
+  // Keep sendMessageRef pointing at the latest sendMessage (used by handleLoadUrl auto-trigger)
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
 
   // ── Apply correction ───────────────────────────────────────────────────────
 
