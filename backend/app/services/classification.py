@@ -95,6 +95,14 @@ def classify_zone_code(
             if zc.value == normalized:
                 return zc
 
+    # Some counties store multiple zone codes as "NC, GC" or "R1-7, R1-8, R1-10".
+    # Classify the first segment that resolves to something non-unknown.
+    if code and "," in code:
+        for segment in code.split(","):
+            result = classify_zone_code(segment.strip(), zone_name, source_class)
+            if result != ZoneClass.unknown:
+                return result
+
     haystacks = [s for s in (code, zone_name, source_class) if s]
     if not haystacks:
         return ZoneClass.unknown
