@@ -60,15 +60,18 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
 
 _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Mixed-use (test before commercial/residential since codes overlap).
-    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT (Downtown SLC/Provo)
-    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|dt|d)[-\s0-9a-z]*$", re.I)),
+    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT/D (Downtown SLC/Provo)
+    # TM = Transit Mixed (Herriman); VC = Village Center (Springville); HDMU = High Density MU
+    (ZoneClass.mixed_use, re.compile(r"^(cmx|hdmu|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|tm|dt|d|vc)[-\s0-9a-z]*$", re.I)),
     # Industrial: I-1/I-2, M-1/M-2, LI, HI, H/I (slash variant), IH, IL, IP, IND, IR, ICM
     (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|h[/]i|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z/]*$", re.I)),
     # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
     # NOS = Natural Open Space; O-S = Open Space (Murray); EUO = Environmental/Open
-    (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|pf|pr|pl|ci|pz|ps|euo)[-\s0-9a-z]*$", re.I)),
+    # P-F / PF = Public Facility; OW = Open Water
+    (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|p-?f|pr|pl|ci|pz|ps|euo|ow)[-\s0-9a-z]*$", re.I)),
     # Special districts — must come BEFORE commercial
-    (ZoneClass.special, re.compile(r"^(pc|pud|pd|pdz|spa|pdd|cpd|ssd)[-\s0-9a-z]*$", re.I)),
+    # P-C = Planned Community (hyphen variant of PC)
+    (ZoneClass.special, re.compile(r"^(p-?c|pud|pd|pdz|spa|pdd|cpd|ssd|sdp)[-\s0-9a-z]*$", re.I)),
     # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
     # P-O / PO = Professional Office; HBD = Highway Business District
     (ZoneClass.commercial, re.compile(
@@ -79,9 +82,11 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Residential: R-\d, RA, RM, RR, RS, RH, R1-1, R6A, TH, SF, MF, FR (Foothill Res.),
     # HDR/LDR/MDR (High/Low/Medium Density Residential), MR (Multi-Res),
     # SR (Standard Residential — SLC/North Salt Lake), F- (Foothill — Cottonwood Heights)
+    # HFR = High/Heritage Single Family Res., LSFR = Large Single Family Res. (West Jordan)
+    # HD = High Density Residential
     # Allows decimal in code (R-2.5, FR-2.5) via `[-\s.0-9a-z]*`
     (ZoneClass.residential, re.compile(
-        r"^(fr|hdr|ldr|mdr|mr|sr|f|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
+        r"^(hfr|lsfr|fr|hdr|ldr|mdr|mr|sr|hd|f|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
     )),
 ]
 
@@ -134,6 +139,14 @@ def classify_zone_code(
     # Strip "/zc" or "/ZC" suffix used by Millcreek overlay variants: "C-2/zc" → "C-2"
     if code and re.search(r"/zc\s*$", code, re.I):
         base = re.sub(r"/zc\s*$", "", code, flags=re.I).strip()
+        if base:
+            result = classify_zone_code(base, zone_name, source_class)
+            if result != ZoneClass.unknown:
+                return result
+
+    # Handle slash-qualified codes: "R-1-10/ML", "RA-1/2" — classify using the prefix
+    if code and "/" in code and "/zc" not in code.lower():
+        base = code.split("/")[0].strip()
         if base:
             result = classify_zone_code(base, zone_name, source_class)
             if result != ZoneClass.unknown:
