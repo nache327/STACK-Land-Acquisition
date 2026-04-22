@@ -303,6 +303,7 @@ export function ZoningChatPanel({
       pastedText,
       inputMode,
       jurisdictionId,
+      fetchedOrdinanceText,
     ]
   );
 
