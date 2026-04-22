@@ -77,14 +77,6 @@ export function ParcelDrawer({
             danger={parcel.in_wetland}
           />
           <Row
-            label="Slope"
-            value={
-              parcel.avg_slope_pct != null
-                ? `${parcel.avg_slope_pct.toFixed(1)}%`
-                : "Unknown"
-            }
-          />
-          <Row
             label="Structure"
             value={
               parcel.has_structure === null

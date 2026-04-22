@@ -30,7 +30,7 @@ export const STAGE_LABELS: Record<string, string> = {
   discovering_layers: "Discovering GIS layers…",
   downloading_parcels: "Downloading parcels…",
   parsing_ordinance: "Parsing zoning ordinance…",
-  running_overlays: "Running flood / slope / wetland overlays…",
+  running_overlays: "Running flood / wetland overlays…",
   ready: "Complete",
   failed: "Failed",
 };
