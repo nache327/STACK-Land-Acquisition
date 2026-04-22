@@ -79,10 +79,32 @@ export async function GET(req: Request) {
     );
   }
 
+  // Try Jina Reader first — handles JavaScript-rendered SPAs (municipalcodeonline, etc.)
+  // Falls back to direct fetch for standard HTML sites.
+  try {
+    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
+      headers: {
+        "Accept": "text/plain",
+        "User-Agent": "SiteScout/1.0 ZoningVerifier",
+      },
+      signal: AbortSignal.timeout(20_000),
+    });
+
+    if (jinaRes.ok) {
+      const text = (await jinaRes.text()).slice(0, 80_000);
+      if (text.length > 200) {
+        return Response.json({ text, url, via: "jina" });
+      }
+    }
+  } catch {
+    // Jina unavailable — fall through to direct fetch
+  }
+
+  // Direct fetch fallback for standard HTML sites
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "SiteScout/1.0 ZoningVerifier" },
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!res.ok) {
@@ -91,7 +113,7 @@ export async function GET(req: Request) {
 
     const html = await res.text();
     const text = stripHtml(html).slice(0, 80_000);
-    return Response.json({ text, url });
+    return Response.json({ text, url, via: "direct" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return Response.json({ error: msg }, { status: 502 });

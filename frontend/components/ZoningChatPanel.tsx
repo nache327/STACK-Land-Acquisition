@@ -186,14 +186,15 @@ export function ZoningChatPanel({
     setFetchedOrdinanceText("");
     try {
       const res = await fetch(`/api/fetch-ordinance?url=${encodeURIComponent(ordinanceUrl)}`);
-      const data = await res.json() as { text?: string; error?: string };
+      const data = await res.json() as { text?: string; error?: string; via?: string };
       if (data.error) {
         setOrdinanceLabel(`Error: ${data.error}`);
       } else {
         setFetchedOrdinanceText(data.text ?? "");
         try {
           const u = new URL(ordinanceUrl);
-          setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40));
+          const via = data.via === "jina" ? " (JS rendered)" : "";
+          setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40) + via);
         } catch {
           setOrdinanceLabel(ordinanceUrl.slice(0, 50));
         }
