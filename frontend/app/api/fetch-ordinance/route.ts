@@ -1,7 +1,8 @@
 /**
- * Edge function to fetch and strip ordinance HTML from allowed domains.
- * Edge runtime = 30s timeout on Vercel Hobby (vs 10s serverless).
- * No Anthropic SDK here — just fetch + HTML strip.
+ * Edge function to fetch ordinance content from any URL type.
+ * For municipalcodeonline.com SPAs: fetches TOC, finds Table of Uses section,
+ * then fetches that specific section. For all other sites: Jina Reader first,
+ * direct fetch fallback.
  *
  * GET /api/fetch-ordinance?url=...
  */
@@ -40,18 +41,65 @@ const ALLOWED_DOMAINS = [
   "generalcode.com",
 ];
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/\s{2,}/g, " ")
-    .trim();
+const TABLE_OF_USES_KEYWORDS = [
+  "table of uses",
+  "table of permitted",
+  "use matrix",
+  "use regulations",
+  "permitted uses",
+  "use table",
+  "allowed uses",
+];
+
+function hasTableOfUses(text: string): boolean {
+  const lower = text.toLowerCase();
+  return TABLE_OF_USES_KEYWORDS.some(k => lower.includes(k)) &&
+    (lower.includes(" p ") || lower.includes("permitted") || lower.includes("conditional"));
+}
+
+async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
+  const res = await fetch(`https://r.jina.ai/${url}`, {
+    headers: { "Accept": "text/plain", "X-Return-Format": "text" },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) throw new Error(`Jina ${res.status}`);
+  return res.text();
+}
+
+// Extract section links from TOC text for municipalcodeonline.com
+function extractSectionUrls(tocText: string, baseUrl: string): string[] {
+  const lower = tocText.toLowerCase();
+  const urls: string[] = [];
+  const base = baseUrl.split("#")[0];
+
+  // Find section names that likely contain the Table of Uses
+  const lines = tocText.split("\n");
+  for (const line of lines) {
+    const lineLower = line.toLowerCase();
+    if (TABLE_OF_USES_KEYWORDS.some(k => lineLower.includes(k))) {
+      // Extract the section name from patterns like "11.70.030 Table of Uses"
+      const sectionMatch = line.match(/(\d+\.\d+[\.\d]*)\s+(.+)/);
+      if (sectionMatch) {
+        const sectionNum = sectionMatch[1];
+        const sectionName = sectionMatch[2].trim().toUpperCase().replace(/\s+/g, "_");
+        urls.push(`${base}#name=${sectionNum}_${sectionName}`);
+        urls.push(`${base}#name=${sectionNum.replace(/\./g, "")}_${sectionName}`);
+      }
+    }
+  }
+
+  // Also try common patterns for use tables in Utah municipal codes
+  const chapterMatch = baseUrl.match(/#name=(\d+)/);
+  if (chapterMatch) {
+    const chapter = chapterMatch[1];
+    for (const keyword of ["TABLE_OF_USES", "TABLE_OF_PERMITTED_USES", "USE_REGULATIONS", "USE_TABLE", "PERMITTED_USES"]) {
+      urls.push(`${base}#name=${chapter}.030_${keyword}`);
+      urls.push(`${base}#name=${chapter}.040_${keyword}`);
+      urls.push(`${base}#name=${chapter}.050_${keyword}`);
+    }
+  }
+
+  return [...new Set(urls)]; // deduplicate
 }
 
 export async function GET(req: Request) {
@@ -74,45 +122,77 @@ export async function GET(req: Request) {
   );
   if (!allowed) {
     return Response.json(
-      { error: `Domain "${hostname}" is not in the allowlist. Paste the text directly instead.` },
+      { error: `Domain "${hostname}" not in allowlist. Try a Municode, amlegal, or ecode360 URL, or paste the text directly.` },
       { status: 403 }
     );
   }
 
-  // Try Jina Reader first — handles JavaScript-rendered SPAs (municipalcodeonline, etc.)
-  // Falls back to direct fetch for standard HTML sites.
+  // ── Step 1: Fetch the given URL via Jina ──────────────────────────────────
+  let initialText = "";
   try {
-    const jinaRes = await fetch(`https://r.jina.ai/${url}`, {
-      headers: {
-        "Accept": "text/plain",
-        "User-Agent": "SiteScout/1.0 ZoningVerifier",
-      },
-      signal: AbortSignal.timeout(20_000),
-    });
-
-    if (jinaRes.ok) {
-      const text = (await jinaRes.text()).slice(0, 200_000);
-      if (text.length > 200) {
-        return Response.json({ text, url, via: "jina" });
-      }
-    }
+    initialText = (await jinaFetch(url, 18_000)).slice(0, 200_000);
   } catch {
-    // Jina unavailable — fall through to direct fetch
+    // Will try fallback below
   }
 
-  // Direct fetch fallback for standard HTML sites
+  // ── Step 2: Check if we already have the Table of Uses ───────────────────
+  if (initialText.length > 500 && hasTableOfUses(initialText)) {
+    return Response.json({ text: initialText, url, via: "jina" });
+  }
+
+  // ── Step 3: Smart section discovery for SPA sites (municipalcodeonline etc)
+  if (initialText.length > 200) {
+    const candidateUrls = extractSectionUrls(initialText, url);
+
+    // Try up to 4 candidate section URLs in parallel
+    const attempts = candidateUrls.slice(0, 4).map(async (sectionUrl) => {
+      try {
+        const text = (await jinaFetch(sectionUrl, 12_000)).slice(0, 200_000);
+        return { text, url: sectionUrl, hasTable: hasTableOfUses(text) };
+      } catch {
+        return null;
+      }
+    });
+
+    const results = await Promise.all(attempts);
+    const best = results.find(r => r?.hasTable);
+    if (best) {
+      return Response.json({ text: best.text, url: best.url, via: "jina-smart" });
+    }
+
+    // Return best non-null result even without confirmed table
+    const anyResult = results.find(r => r && r.text.length > 500);
+    if (anyResult) {
+      return Response.json({ text: anyResult.text, url: anyResult.url, via: "jina-smart" });
+    }
+  }
+
+  // ── Step 4: Return initial text with a note if nothing better found ───────
+  if (initialText.length > 200) {
+    return Response.json({
+      text: initialText + "\n\n[NOTE: Table of Uses section not automatically found. Try navigating to the Table of Uses chapter in the ordinance website and loading that specific page URL.]",
+      url,
+      via: "jina-partial",
+    });
+  }
+
+  // ── Step 5: Direct HTML fallback ─────────────────────────────────────────
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "SiteScout/1.0 ZoningVerifier" },
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(12_000),
     });
-
     if (!res.ok) {
-      return Response.json({ error: `HTTP ${res.status} from source` }, { status: 502 });
+      return Response.json({ error: `HTTP ${res.status}` }, { status: 502 });
     }
-
     const html = await res.text();
-    const text = stripHtml(html).slice(0, 80_000);
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .slice(0, 200_000);
     return Response.json({ text, url, via: "direct" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
