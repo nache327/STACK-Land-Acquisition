@@ -190,13 +190,20 @@ export function ZoningChatPanel({
       if (data.error) {
         setOrdinanceLabel(`Error: ${data.error}`);
       } else {
-        setFetchedOrdinanceText(data.text ?? "");
+        const text = data.text ?? "";
+        setFetchedOrdinanceText(text);
         try {
           const u = new URL(ordinanceUrl);
           const via = data.via === "jina" ? " (JS rendered)" : "";
           setOrdinanceLabel(u.hostname + u.pathname.slice(0, 40) + via);
         } catch {
           setOrdinanceLabel(ordinanceUrl.slice(0, 50));
+        }
+        // Auto-trigger comparison as soon as ordinance is loaded
+        if (text.length > 500) {
+          setTimeout(() => {
+            sendMessage("Analyze this ordinance against the database and report all conflicts.");
+          }, 100);
         }
       }
     } catch {
