@@ -415,8 +415,6 @@ export default function Map({
       const isVacant = props.has_structure === false;
       const hasFlood = props.in_flood_zone === true;
       const hasWetland = props.in_wetland === true;
-      const klass = (props.zone_class as string | undefined) ?? "unknown";
-
       popup
         .setLngLat(e.lngLat)
         .setHTML(
@@ -425,7 +423,6 @@ export default function Map({
             <div>${props.zoning_code ?? "—"} · ${
               props.acres != null ? Number(props.acres).toFixed(2) + " ac" : "—"
             }</div>
-            <div style="color:${ZONE_CLASS_COLORS[klass as keyof typeof ZONE_CLASS_COLORS] ?? "#94a3b8"};font-weight:500">${klass}</div>
             ${isVacant ? '<div style="color:#059669;font-weight:500">Vacant</div>' : ""}
             ${hasFlood ? '<div style="color:#dc2626;font-weight:500">⚠ Flood zone</div>' : ""}
             ${hasWetland ? '<div style="color:#2563eb;font-weight:500">⚠ Wetland</div>' : ""}
