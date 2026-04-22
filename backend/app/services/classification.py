@@ -27,7 +27,7 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
     )),
     (ZoneClass.open_space, (
         "open space", "parks", "park", "recreation", "conservation", "forest",
-        "greenway",
+        "greenway", "civic", "institutional", "public facility", "public facilities",
     )),
     (ZoneClass.agricultural, (
         "agricultur", "farm", "rural residential", "rr-",
@@ -52,21 +52,23 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
 
 _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Mixed-use (test before commercial/residential since codes overlap).
-    # The trailing `[-\s0-9a-z]*` covers NYC-style suffixes ("R6A"), Philly
-    # ("CMX-3"), and multi-part numeric codes ("C4-6A", "M1-1").
-    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd)[-\s0-9a-z]*$", re.I)),
-    # Industrial: I-1/I-2, M-1/M-2 (incl. NYC M1-1, M2-3), LI, HI, IH, IL, IP, IND, IR, ICM
-    (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z]*$", re.I)),
-    # Commercial: C-\d (incl. NYC C1-2 / C4-6A), CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d
+    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD
+    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m)[-\s0-9a-z]*$", re.I)),
+    # Industrial: I-1/I-2, M-1/M-2, LI, HI, H/I (slash variant), IH, IL, IP, IND, IR, ICM
+    (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|h[/]i|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z/]*$", re.I)),
+    # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
+    (ZoneClass.open_space, re.compile(r"^(os|pf|pr|pl|ci|pz|ps)[-\s0-9a-z]*$", re.I)),
+    # Special districts — must come BEFORE commercial (PC starts with C... wait no, but before agricultural A)
+    (ZoneClass.special, re.compile(r"^(pc|pud|pd|pdz|spa|pdd|cpd)[-\s0-9a-z]*$", re.I)),
+    # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
     (ZoneClass.commercial, re.compile(
         r"^(cbd|cb|cc|cg|cn|co|cs|c|nc|gc|hc|lc|sc|tc|rc|of|bp|pbd|oc|ob|b)[-\s0-9a-z]*$", re.I
     )),
     # Agricultural: A-\d, AG
     (ZoneClass.agricultural, re.compile(r"^(ag|a)[-\s0-9a-z]*$", re.I)),
-    # Open space / public facilities: OS, PF, PR, PL
-    (ZoneClass.open_space, re.compile(r"^(os|pf|pr|pl)[-\s0-9a-z]*$", re.I)),
-    # Residential: R-\d, RM, RR, RS, RH, RA, R1-1, R6A, R8X, etc.
-    (ZoneClass.residential, re.compile(r"^r[-\s0-9a-z]*$", re.I)),
+    # Residential: R-\d, RA, RM, RR, RS, RH, R1-1, R6A, TH (Townhome), SF, MF
+    # Allows decimal in code (R-2.5) via `[-\s.0-9a-z]*`
+    (ZoneClass.residential, re.compile(r"^(r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I)),
 ]
 
 
