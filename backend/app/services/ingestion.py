@@ -22,6 +22,7 @@ from sqlalchemy import delete, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.parcel import Parcel
+from app.services.classification import classify_zone_code
 from app.services.overlays import SFHA_ZONES
 from app.services.vacancy import is_vacant_by_landuse
 
@@ -221,12 +222,16 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         props = {}
     raw = {k: str(v) if v is not None else None for k, v in props.items()}
 
+    zoning_code_val = str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None
+    zone_class_val = classify_zone_code(zoning_code_val).value if zoning_code_val else None
+
     return {
         "jurisdiction_id": jurisdiction_id,
         "apn": str(apn),
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
-        "zoning_code": str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None,
+        "zoning_code": zoning_code_val,
+        "zone_class": zone_class_val,
         "land_use_code": land_use,
         "acres": _resolve_acres(row, geom),
         "county_link": str(lk).strip() if (lk := _first(row, _LINK_FIELDS)) else None,
