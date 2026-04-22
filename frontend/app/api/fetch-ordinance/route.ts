@@ -88,7 +88,10 @@ function hasTableOfUses(text: string): boolean {
 }
 
 async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
-  const res = await fetch(`https://r.jina.ai/${url}`, {
+  // Encode '#' as '%23' so the hash fragment is sent to Jina's server rather than
+  // being treated as a fragment of the r.jina.ai request URL (which strips it).
+  const jinaUrl = `https://r.jina.ai/${url.replace(/#/g, "%23")}`;
+  const res = await fetch(jinaUrl, {
     headers: { "Accept": "text/plain", "X-Return-Format": "text" },
     signal: AbortSignal.timeout(timeoutMs),
   });
