@@ -13,6 +13,88 @@
  */
 export const runtime = "edge";
 
+const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// ── Structured PDF result type ────────────────────────────────────────────────
+
+interface StructuredPdfResult {
+  uses: Record<string, Record<string, string>>;
+  zone_columns: string[];
+  confidence: number;
+  method: string;
+  warnings: string[];
+}
+
+// ── PDF detection ─────────────────────────────────────────────────────────────
+
+function isPdfUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.pathname.toLowerCase().endsWith(".pdf");
+  } catch {
+    return false;
+  }
+}
+
+// Convert structured PDF result to a human-readable markdown table
+function structuredResultToText(result: StructuredPdfResult, sourceUrl: string): string {
+  const { uses, zone_columns } = result;
+  if (zone_columns.length === 0 || Object.keys(uses).length === 0) {
+    return "[PDF parsed but no Table of Uses rows found — try pasting the text directly]";
+  }
+
+  const lines: string[] = [
+    `Table of Uses — extracted from PDF (method: ${result.method}, confidence: ${(result.confidence * 100).toFixed(0)}%)`,
+    `Source: ${sourceUrl}`,
+    "",
+    "NOTE: Blank = PROHIBITED per ordinance rule (uses not listed as P or C are prohibited)",
+    "",
+    `| Use | ${zone_columns.join(" | ")} |`,
+    `|-----|${zone_columns.map(() => "---").join("|")}|`,
+  ];
+
+  for (const [useName, perms] of Object.entries(uses)) {
+    const cells = zone_columns.map((z) => {
+      const v = perms[z];
+      if (v === "permitted") return "P";
+      if (v === "conditional") return "C";
+      return "—";
+    });
+    lines.push(`| ${useName} | ${cells.join(" | ")} |`);
+  }
+
+  lines.push("");
+  lines.push("P = Permitted   C = Conditional   — = Prohibited");
+
+  if (result.warnings.length > 0) {
+    lines.push("", `Warnings: ${result.warnings.join("; ")}`);
+  }
+
+  return lines.join("\n");
+}
+
+// ── PDF fetch via backend parser ──────────────────────────────────────────────
+
+async function fetchPdfViaBackend(
+  url: string,
+): Promise<{ text: string; structuredTable: StructuredPdfResult; via: string } | null> {
+  try {
+    const res = await fetch(`${BACKEND}/api/parse-pdf-table`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(55_000),
+    });
+    if (!res.ok) return null;
+    const result = await res.json() as StructuredPdfResult;
+    const text = structuredResultToText(result, url);
+    const via = result.confidence >= 0.65 ? "pdf-structured" : "pdf-low-confidence";
+    return { text, structuredTable: result, via };
+  } catch {
+    return null;
+  }
+}
+
 const ALLOWED_DOMAINS = [
   "codelibrary.amlegal.com",
   "library.municode.com",
@@ -276,6 +358,20 @@ export async function GET(req: Request) {
       { error: `Domain "${hostname}" not in allowlist. Try a Municode, amlegal, or ecode360 URL, or paste the text directly.` },
       { status: 403 }
     );
+  }
+
+  // ── PDF: coordinate-based parser + Claude Vision fallback ────────────────
+  if (isPdfUrl(url)) {
+    const pdfResult = await fetchPdfViaBackend(url);
+    if (pdfResult) {
+      return Response.json({
+        text: pdfResult.text,
+        structuredTable: pdfResult.structuredTable,
+        url,
+        via: pdfResult.via,
+      });
+    }
+    // Backend unreachable — fall through to Jina (best-effort for PDFs)
   }
 
   // ── municipalcodeonline.com: dedicated multi-step path ────────────────────

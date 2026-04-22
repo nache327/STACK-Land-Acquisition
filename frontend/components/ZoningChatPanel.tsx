@@ -114,6 +114,8 @@ export function ZoningChatPanel({
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [fetchedOrdinanceText, setFetchedOrdinanceText] = useState("");
   const fetchedOrdinanceTextRef = useRef("");
+  const [structuredTable, setStructuredTable] = useState<Record<string, unknown> | null>(null);
+  const structuredTableRef = useRef<Record<string, unknown> | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [applyStatus, setApplyStatus] = useState<Record<string, string>>({});
 
@@ -189,18 +191,35 @@ export function ZoningChatPanel({
     setIsFetchingUrl(true);
     setFetchedOrdinanceText("");
     fetchedOrdinanceTextRef.current = "";
+    setStructuredTable(null);
+    structuredTableRef.current = null;
     try {
       const res = await fetch(`/api/fetch-ordinance?url=${encodeURIComponent(ordinanceUrl)}`);
-      const data = await res.json() as { text?: string; error?: string; via?: string; url?: string };
+      const data = await res.json() as {
+        text?: string;
+        error?: string;
+        via?: string;
+        url?: string;
+        structuredTable?: Record<string, unknown>;
+      };
       if (data.error) {
         setOrdinanceLabel(`Error: ${data.error}`);
       } else {
         const text = data.text ?? "";
         setFetchedOrdinanceText(text);
         fetchedOrdinanceTextRef.current = text;
+
+        // Capture structured table if PDF was parsed
+        if (data.structuredTable) {
+          setStructuredTable(data.structuredTable);
+          structuredTableRef.current = data.structuredTable;
+        }
+
         try {
           const u = new URL(data.url ?? ordinanceUrl);
           const viaLabel =
+            data.via === "pdf-structured" ? " (PDF parsed)" :
+            data.via === "pdf-low-confidence" ? " (PDF — low confidence, verify manually)" :
             data.via === "jina" || data.via === "jina-smart" ? " (JS rendered)" :
             data.via === "jina-partial" ? " (partial)" :
             data.via === "jina-failed" ? " (table not found — showing DB state)" : "";
@@ -208,7 +227,6 @@ export function ZoningChatPanel({
         } catch {
           setOrdinanceLabel(ordinanceUrl.slice(0, 50));
         }
-        // Always auto-trigger analysis — when fetch fails, Claude shows DB state
         sendMessageWithOrdinance(
           "Analyze this ordinance against the database and report all conflicts.",
           text || `[Ordinance URL provided: ${ordinanceUrl} — automatic fetch did not find the Table of Uses section]`,
@@ -277,6 +295,7 @@ export function ZoningChatPanel({
             })),
             jurisdictionId,
             checkBackend: checkBackend || userText.toLowerCase().includes("check backend"),
+            structuredTable: structuredTableRef.current ?? undefined,
           }),
         });
 
@@ -323,6 +342,7 @@ export function ZoningChatPanel({
       pastedText,
       inputMode,
       jurisdictionId,
+      structuredTable,
     ]
   );
 

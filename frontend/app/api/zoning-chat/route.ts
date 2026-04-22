@@ -99,6 +99,13 @@ ZONING RULE CORRECTIONS:
 ]
 ---END CORRECTION REPORT---
 
+WHEN STRUCTURED_TABLE DATA IS PROVIDED:
+- This means the PDF was parsed with coordinate analysis — the P/C/blank values are EXACT, not interpreted from text.
+- Do NOT try to re-read column positions from the raw text. Trust the structured data completely.
+- Compare each use row directly against the database: for each zone in structured_table.uses, look up that zone in the database and compare the values.
+- "permitted" in structured_table = P in the ordinance. "conditional" = C. Any zone NOT listed under a use = prohibited.
+- Generate the CONFLICTS FOUND table immediately with high confidence.
+
 WHEN NO USABLE ORDINANCE TEXT IS PROVIDED (URL failed to fetch, or first message):
 - Do NOT ask the user to paste text or navigate websites
 - Instead: immediately produce the database state table, mark every row where classification_source is "rule" as UNVERIFIED, and end with ONE sentence: "Load a URL or paste the Table of Uses above to verify these values against the actual ordinance."
@@ -197,6 +204,13 @@ export async function POST(req: NextRequest) {
     productType?: string;
     jurisdictionId?: string;
     checkBackend?: boolean;
+    structuredTable?: {
+      uses: Record<string, Record<string, string>>;
+      zone_columns: string[];
+      confidence: number;
+      method: string;
+      warnings: string[];
+    };
   };
 
   try {
@@ -212,6 +226,7 @@ export async function POST(req: NextRequest) {
     images,
     jurisdictionId,
     checkBackend,
+    structuredTable,
   } = body;
 
   // Build extra context blocks for the current user message
@@ -231,6 +246,14 @@ export async function POST(req: NextRequest) {
     extraBlocks.push({
       type: "text",
       text: `\n\n--- ORDINANCE TEXT (source: ${ordinanceUrl ?? "pasted"}) ---\n${pastedText.slice(0, 150_000)}\n--- END ORDINANCE TEXT ---`,
+    });
+  }
+
+  // Structured PDF table — pre-extracted with coordinate analysis, high confidence
+  if (structuredTable && Object.keys(structuredTable.uses).length > 0) {
+    extraBlocks.push({
+      type: "text",
+      text: `\n\n--- STRUCTURED_TABLE (pre-extracted from PDF, method: ${structuredTable.method}, confidence: ${(structuredTable.confidence * 100).toFixed(0)}%) ---\nZone columns: ${structuredTable.zone_columns.join(", ")}\n${JSON.stringify(structuredTable.uses, null, 2)}\n\nINSTRUCTION: Use this structured data as the authoritative source for what the ordinance says. Each key is a use name, each value maps zone_code → "permitted" | "conditional". Any zone NOT present under a use means PROHIBITED for that use. Compare directly against the database — do not try to re-parse raw text.\n--- END STRUCTURED_TABLE ---`,
     });
   }
 
