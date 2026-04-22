@@ -15,7 +15,7 @@ describe("HomePage", () => {
   it("renders heading", () => {
     render(<HomePage />);
     expect(
-      screen.getByRole("heading", { name: /zoning finder/i })
+      screen.getByRole("heading", { name: /find every parcel/i })
     ).toBeInTheDocument();
   });
 
@@ -33,7 +33,7 @@ describe("HomePage", () => {
     expect(screen.getByRole("button", { name: /self.storage/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mini.warehouse/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /light industrial/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /luxury garage/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /garage condos/i })).toBeInTheDocument();
   });
 
   it("renders submit button", () => {
