@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
   if (pastedText?.trim()) {
     extraBlocks.push({
       type: "text",
-      text: `\n\n--- ORDINANCE TEXT (source: ${ordinanceUrl ?? "pasted"}) ---\n${pastedText.slice(0, 60_000)}\n--- END ORDINANCE TEXT ---`,
+      text: `\n\n--- ORDINANCE TEXT (source: ${ordinanceUrl ?? "pasted"}) ---\n${pastedText.slice(0, 150_000)}\n--- END ORDINANCE TEXT ---`,
     });
   }
 
@@ -312,7 +312,7 @@ export async function POST(req: NextRequest) {
   try {
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages: claudeMessages,
     });

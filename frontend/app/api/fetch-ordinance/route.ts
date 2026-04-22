@@ -91,7 +91,7 @@ export async function GET(req: Request) {
     });
 
     if (jinaRes.ok) {
-      const text = (await jinaRes.text()).slice(0, 80_000);
+      const text = (await jinaRes.text()).slice(0, 200_000);
       if (text.length > 200) {
         return Response.json({ text, url, via: "jina" });
       }
