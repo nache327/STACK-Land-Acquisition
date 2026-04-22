@@ -10,9 +10,13 @@ Fix: update the short-code entries to correct values, delete the long-name dupli
 import asyncio
 import logging
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

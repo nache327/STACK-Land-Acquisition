@@ -37,16 +37,16 @@ export default function DashboardPage({ params }: Props) {
 
   if (isLoading || !job) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <span className="text-sm text-slate-400">Loading…</span>
+      <div className="flex min-h-screen items-center justify-center bg-[#070d1a]">
+        <span className="text-sm text-slate-500">Loading…</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-red-600">Failed to load job: {String(error)}</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#070d1a]">
+        <p className="text-sm text-red-400">Failed to load job: {String(error)}</p>
       </div>
     );
   }
@@ -188,26 +188,33 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      {/* Top bar */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+      {/* Top bar — dark chrome */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-5">
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-slate-900 hover:text-emerald-600"
-          >
-            Zoning Finder
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-lg bg-blue-600 shadow-md shadow-blue-900/50 transition-opacity group-hover:opacity-90">
+              <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+                <rect x="5" y="5" width="11" height="11" rx="2" fill="white" opacity="0.95" />
+                <rect x="20" y="5" width="11" height="11" rx="2" fill="white" opacity="0.45" />
+                <rect x="5" y="20" width="11" height="11" rx="2" fill="white" opacity="0.45" />
+                <rect x="20" y="20" width="11" height="11" rx="2" fill="white" opacity="0.95" />
+              </svg>
+            </div>
+            <span className="text-sm font-bold text-white tracking-tight">ParcelLogic</span>
           </Link>
-          <span className="text-slate-300">/</span>
+          <div className="h-4 w-px bg-slate-700" />
           <span className="text-sm text-slate-500">Dashboard</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-            {parcelList?.total?.toLocaleString() ?? "…"} parcels
-          </span>
+          {parcelList?.total != null && (
+            <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-300">
+              {parcelList.total.toLocaleString()} parcels
+            </span>
+          )}
           {jurisdictionId && (
             <Link
               href={`/ordinance/${jurisdictionId}`}
-              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white"
             >
               Zone Matrix
             </Link>
@@ -215,21 +222,21 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           <button
             onClick={() => setVerifierOpen((v) => !v)}
             className={[
-              "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+              "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
               verifierOpen
-                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                ? "border-blue-500/50 bg-blue-600/20 text-blue-300"
+                : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:text-white",
             ].join(" ")}
           >
-            🎯 Verify Zoning
+            ◎ Zoning Verifier
           </button>
         </div>
       </header>
 
       {/* Three-pane body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: filter panel */}
-        <aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-200 bg-white">
+        {/* Left: filter panel — dark sidebar */}
+        <aside className="dark-scroll w-64 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-950">
           <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
         </aside>
 
@@ -263,7 +270,10 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         >
           {tableLoading ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Loading parcels…
+              <span className="flex items-center gap-2">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-blue-500" />
+                Loading parcels…
+              </span>
             </div>
           ) : (
             <ParcelTable
@@ -301,36 +311,36 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         />
       )}
 
-      {/* Shortlist action bar — appears when parcels are checked */}
+      {/* Shortlist action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex h-14 shrink-0 items-center gap-3 border-t border-slate-200 bg-white px-4 shadow-md">
-          <span className="text-sm font-medium text-slate-700">
-            {selectedIds.size} parcel{selectedIds.size !== 1 ? "s" : ""} selected
+        <div className="flex h-14 shrink-0 items-center gap-3 border-t border-slate-800 bg-slate-950 px-5">
+          <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-300">
+            {selectedIds.size} selected
           </span>
           <div className="flex flex-1 items-center gap-2">
             <input
               type="text"
               value={shortlistName}
               onChange={(e) => setShortlistName(e.target.value)}
-              placeholder="Name your shortlist…"
-              className="w-56 rounded-md border border-slate-200 px-3 py-1.5 text-sm placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+              placeholder="Name this shortlist…"
+              className="w-52 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
             />
             <button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
             >
               {saveMutation.isPending ? "Saving…" : "Save & Export CSV"}
             </button>
             {saveMutation.isError && (
-              <span className="text-xs text-red-600">
+              <span className="text-xs text-red-400">
                 {(saveMutation.error as Error)?.message}
               </span>
             )}
             {shortlistSaved && (
               <a
                 href={api.shortlistExportUrl(shortlistSaved)}
-                className="text-xs text-emerald-600 underline"
+                className="text-xs text-blue-400 underline"
                 download
               >
                 Download again
@@ -338,12 +348,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             )}
           </div>
           <button
-            onClick={() => {
-              setSelectedIds(new Set());
-              setShortlistSaved(null);
-              setShortlistName("");
-            }}
-            className="text-xs text-slate-400 hover:text-slate-600"
+            onClick={() => { setSelectedIds(new Set()); setShortlistSaved(null); setShortlistName(""); }}
+            className="text-xs text-slate-500 hover:text-slate-300 transition"
           >
             Clear
           </button>
