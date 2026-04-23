@@ -128,7 +128,7 @@ export const CitationSchema = z.object({
   quote: z.string(),
 });
 
-export const ClassificationSourceSchema = z.enum(["llm", "rule", "human", "unclear"]);
+export const ClassificationSourceSchema = z.enum(["llm", "rule", "human", "unclear", "llm_low_confidence", "llm_rule"]);
 export type ClassificationSource = z.infer<typeof ClassificationSourceSchema>;
 
 export const ZoneRowSchema = z.object({
