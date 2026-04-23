@@ -375,6 +375,31 @@ export async function GET(req: Request) {
     // Backend unreachable — fall through to Jina (best-effort for PDFs)
   }
 
+  // ── municipal.codes / municode: Cloudflare + React SPA — proxy to Railway backend (Playwright) ──
+  if (hostname.includes("municipal.codes") || hostname.includes("municode.com")) {
+    try {
+      const res = await fetch(`${BACKEND}/api/ordinances/fetch-text?url=${encodeURIComponent(url)}`, {
+        signal: AbortSignal.timeout(55_000),
+      });
+      if (res.ok) {
+        const data = await res.json() as { text: string; section_count: number; error?: string };
+        if (data.text && data.text.length > 200) {
+          return Response.json({ text: data.text, url, via: "backend-playwright" });
+        }
+      }
+    } catch { /* fall through to Jina */ }
+    // Jina fallback — may still work if Cloudflare allows it
+    try {
+      const text = (await jinaFetch(url, 20_000)).slice(0, 200_000);
+      if (text.length > 300) return Response.json({ text, url, via: "jina" });
+    } catch { /* fall through */ }
+    return Response.json({
+      text: "[Could not fetch this URL — the site requires a real browser (Cloudflare protection). Paste the relevant section text directly into the chat.]",
+      url,
+      via: "failed",
+    });
+  }
+
   // ── municipalcodeonline.com: dedicated multi-step path ────────────────────
   if (hostname.includes("municipalcodeonline.com")) {
     const result = await fetchMunicipalCodeOnline(url);

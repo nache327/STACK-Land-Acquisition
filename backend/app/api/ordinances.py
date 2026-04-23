@@ -143,6 +143,32 @@ async def test_fetch(url: str) -> dict:
         return {"error": str(exc), "section_count": 0}
 
 
+@router.get("/ordinances/fetch-text")
+async def fetch_ordinance_text(url: str) -> dict:
+    """
+    Fetch ordinance text from a URL using the full backend fetcher (Playwright for
+    JS-rendered / Cloudflare-protected sites like municipal.codes and municode).
+    Returns combined text suitable for passing to Claude.
+    Called by the Next.js fetch-ordinance edge function for sites it can't reach.
+    """
+    from app.services.ordinance_fetcher import fetch_from_url, _MAX_ORDINANCE_CHARS
+    try:
+        sections = await fetch_from_url(url)
+        if not sections:
+            return {"text": "", "section_count": 0, "error": "No sections found"}
+        combined = "\n\n".join(
+            f"[Section {s.section_id}: {s.heading}]\n{s.text}"
+            for s in sections
+        )[:_MAX_ORDINANCE_CHARS]
+        return {
+            "text": combined,
+            "section_count": len(sections),
+            "total_chars": len(combined),
+        }
+    except Exception as exc:
+        return {"text": "", "section_count": 0, "error": str(exc)}
+
+
 async def _run_parse(jurisdiction_id: uuid.UUID, ordinance_url: str) -> None:
     """Background wrapper — creates its own DB session."""
     from app.db import async_session_maker

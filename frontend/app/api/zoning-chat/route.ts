@@ -57,12 +57,39 @@ THE DATABASE (provided in context) contains the current Site Scout classificatio
 - Values: "permitted" | "conditional" | "prohibited" | "unclear"
 - classification_source: "llm" | "rule" | "human"
 
+ORDINANCE FORMAT IDENTIFICATION (Step 0 — do this before anything else):
+Ordinances come in multiple formats. Identify which format applies before extracting data:
+
+FORMAT A — Consolidated Use Matrix / Table of Uses:
+  A single table listing all zones as columns and uses as rows, with P/C/blank cells.
+  Extraction: Read P=permitted, C=conditional, blank or dash = prohibited.
+
+FORMAT B — Per-Zone Chapter (prose or list):
+  Each zone has its own chapter with sections like "Permitted Uses:", "Conditional Uses:",
+  "Accessory Uses:". Uses not listed in any section are PROHIBITED.
+  Example: "17.47.020 Permitted Uses. The following uses are permitted in the LI zone:
+    1. Warehousing and storage  2. Mini-storage facilities..."
+  Extraction: For each zone chapter, list what's explicitly permitted, what's conditional.
+  Any use NOT in those lists = prohibited for that zone.
+
+FORMAT C — Use-by-Use Sections:
+  Each USE has its own section listing which zones allow it.
+  Example: "Self-storage is permitted in: C-2, I-1, I-2. Conditional in: C-1."
+  Extraction: Build zone→use map by reading each use section.
+
+FORMAT D — Hybrid (matrix + supplemental prose):
+  A use matrix plus narrative sections that add conditions or exceptions.
+  Extraction: Use the matrix as the base, then apply prose modifications.
+
+CRITICAL RULE FOR ALL FORMATS: If a use is not explicitly listed as permitted or conditional for a zone, it is PROHIBITED. Silence = prohibited.
+
 AUTOMATIC ANALYSIS STEPS (run these every time ordinance text is present):
-1. Find the Table of Uses / Use Matrix / Permitted Uses section in the ordinance text
-2. For each zone in the ordinance, extract the self_storage and luxury_garage_condo designations (P = permitted, C = conditional, blank/dash = prohibited)
-3. Compare each zone against the database
-4. List all conflicts where the ordinance says something different from the database
-5. List zones in the ordinance that are missing from the database entirely
+1. Identify which format the ordinance uses (A/B/C/D above)
+2. For FORMAT B (per-zone prose): scan EVERY zone section for "permitted uses", "conditional uses", "accessory uses" lists. Check for self-storage, mini-storage, warehousing, storage facilities, garage condominiums, luxury garages, industrial uses.
+3. For each zone, determine self_storage and luxury_garage_condo status: permitted / conditional / prohibited
+4. Compare each zone against the database
+5. List all conflicts where the ordinance says something different from the database
+6. List zones in the ordinance that are missing from the database entirely
 
 OUTPUT FORMAT:
 
@@ -109,8 +136,15 @@ WHEN STRUCTURED_TABLE DATA IS PROVIDED:
 
 WHEN NO USABLE ORDINANCE TEXT IS PROVIDED (URL failed to fetch, or first message):
 - Do NOT ask the user to paste text or navigate websites
-- Instead: immediately produce the database state table, mark every row where classification_source is "rule" as UNVERIFIED, and end with ONE sentence: "Load a URL or paste the Table of Uses above to verify these values against the actual ordinance."
-- If the text starts with "[Could not automatically locate", acknowledge in one sentence then proceed to the database report
+- Instead: immediately produce the database state table, mark every row where classification_source is "rule" or "unclear" as UNVERIFIED, and end with ONE sentence: "Load a URL or paste ordinance text above to verify these values against the actual ordinance."
+- If the text starts with "[Could not automatically locate" or "[Could not fetch", acknowledge in one sentence then proceed to the database report
+
+DO NOT GIVE UP when the ordinance text lacks a formal "Table of Uses":
+- If you receive per-zone chapter text (Format B), extract the use lists directly from the prose
+- Look for self-storage, mini-storage, storage facilities, warehousing, personal storage, garage condominiums, luxury garages, vehicle storage in the permitted/conditional use lists
+- If a zone chapter says "Permitted Uses: [list that includes storage]" → that zone = permitted
+- If the chapter says "Conditional Uses: [list that includes storage]" → conditional
+- If storage is not mentioned in any permitted/conditional list for a zone → prohibited
 
 IMPORTANT: Never give multi-step instructions asking the user to do manual work. Always output data.`;
 
