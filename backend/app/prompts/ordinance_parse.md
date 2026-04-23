@@ -221,14 +221,66 @@ Return **ONLY** valid JSON — no preamble, no markdown fences, no explanation. 
 
 ---
 
+---
+
+### Example 4 — Multi-header HTML table (two header rows)
+
+**Ordinance excerpt (converted to markdown by the fetcher):**
+```
+| Parking Group | Permitted Primary Uses | Residential | | Commercial | | Industrial | |
+|---|---|---|---|---|---|---|---|
+| (Zone code row) | | R-1 | R-2 | CG | CG-S | LI | LI-W |
+| 6300 | Vault Security Storage – Mini-Storage | N | N | N | P | P | N |
+| 6300 | Mini-Warehouse | N | N | N | N | P | N |
+```
+
+**Analysis:** Two header rows detected. First row = category labels (ignore for column mapping). Second row = zone codes. Column mapping: col 0 = R-1, col 1 = R-2, col 2 = CG, col 3 = CG-S, col 4 = LI, col 5 = LI-W. Self Storage row: R-1=N, R-2=N, CG=N, CG-S=**P**, LI=**P**, LI-W=N.
+
+**Expected output:**
+```json
+{
+  "zones": [
+    {"code": "R-1", "self_storage": "prohibited", "mini_warehouse": "prohibited", "light_industrial": "prohibited", "luxury_garage_condo": "prohibited", "confidence": 0.97},
+    {"code": "R-2", "self_storage": "prohibited", "mini_warehouse": "prohibited", "light_industrial": "prohibited", "luxury_garage_condo": "prohibited", "confidence": 0.97},
+    {"code": "CG",  "self_storage": "prohibited", "mini_warehouse": "prohibited", "light_industrial": "prohibited", "luxury_garage_condo": "prohibited", "confidence": 0.95},
+    {"code": "CG-S","self_storage": "permitted",  "mini_warehouse": "prohibited", "light_industrial": "prohibited", "luxury_garage_condo": "permitted",  "confidence": 0.97},
+    {"code": "LI",  "self_storage": "permitted",  "mini_warehouse": "permitted",  "light_industrial": "permitted",  "luxury_garage_condo": "permitted",  "confidence": 0.97},
+    {"code": "LI-W","self_storage": "prohibited", "mini_warehouse": "prohibited", "light_industrial": "prohibited", "luxury_garage_condo": "prohibited", "confidence": 0.97}
+  ],
+  "unknown_zones": [],
+  "parser_warnings": []
+}
+```
+
+---
+
 ## Land Use Tables
 
-Many ordinances use a **consolidated Land Use Table** — a matrix where rows are uses and columns are zoning districts (or vice versa). If you see such a table:
-
-- Each cell typically contains `P` (permitted), `C` or `CUP` (conditional), `—` or blank or `X` (prohibited), or `N/A`.
-- Read across the row for your target use to get each zone's permission.
-- A blank cell in a land use table means **prohibited** (not unclear), because land use tables are exhaustive lists.
+### Single-header tables
+- `P` = permitted by right
+- `C` or `CUP` = conditional use permit required
+- blank, `N`, `—`, `X`, or `N/A` = **prohibited** (use tables are exhaustive; silence is prohibition)
 - Table headers may abbreviate zone codes — match them to the `known zone codes` list provided.
+
+### Multi-header tables (TWO header rows) — CRITICAL
+Some ordinances spread zone information across **two header rows**: the first row contains category labels (e.g., "Residential", "Commercial", "Industrial") and the second row contains the actual zone codes (e.g., "R-1", "CG", "CG-S", "LI", "LI-W"). Example:
+
+```
+| Parking Group | Permitted Primary Uses | Residential        | Commercial *            | Industrial  |
+|               |                        | (R1-12, R1-20, R3) | RMU-W | RMU-E | CG | CG-S | LI | LI-W |
+| 6300 | Vault Security Storage – Mini-Storage | N | N | N | N | P | N | P |
+```
+
+**Rule: The LAST header row before data rows contains the actual zone codes.**
+
+Step-by-step for multi-header tables:
+1. Identify ALL rows that appear before the first data row. The LAST of these is the zone-code row.
+2. Assign column indices (0-based, left to right) from the zone-code row only. Ignore category-label rows.
+3. For each data row: read the cell at each stored column index.
+4. State your column mapping explicitly before classifying (e.g., "col 0=R1-12, col 1=RMU-W, col 2=CG, col 3=CG-S, col 4=LI, col 5=LI-W").
+
+### Markdown tables from HTML conversion
+When ordinance tables are rendered as markdown (using `|`), the `---` separator line appears after the **first** header row only. If zone codes appear in a **second row after the separator**, that second row is the true column header — re-assign column indices from it before reading data rows.
 
 ## Instructions
 

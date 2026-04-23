@@ -26,10 +26,12 @@ class UsePermission(str, enum.Enum):
 
 
 class ClassificationSource(str, enum.Enum):
-    llm = "llm"        # Claude parsed ordinance text
-    rule = "rule"      # Rule-based fallback classifier
-    human = "human"    # Human override via PATCH endpoint
-    unclear = "unclear"  # Origin unknown (legacy rows)
+    llm = "llm"                          # Claude parsed ordinance text, confidence >= 0.70
+    rule = "rule"                        # Rule-based fallback classifier only
+    human = "human"                      # Human override via PATCH endpoint
+    unclear = "unclear"                  # Origin unknown (legacy rows)
+    llm_low_confidence = "llm_low_confidence"  # Claude parsed but confidence < 0.70
+    llm_rule = "llm_rule"                # Claude parsed; unclear slots filled by rule classifier
 
 
 class ZoneUseMatrix(Base):

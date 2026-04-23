@@ -97,6 +97,22 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
                       ✓
                     </span>
                   )}
+                  {!zone.human_reviewed && zone.classification_source === "llm_low_confidence" && (
+                    <span
+                      title="Low-confidence LLM result (< 70%) — verify against ordinance"
+                      className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700"
+                    >
+                      ~verify
+                    </span>
+                  )}
+                  {!zone.human_reviewed && zone.classification_source === "llm_rule" && (
+                    <span
+                      title="LLM parsed; unclear slots filled by rule classifier"
+                      className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-600"
+                    >
+                      ~partial
+                    </span>
+                  )}
                   {!zone.human_reviewed && zone.classification_source === "rule" && (
                     <span
                       title="Rule-based classification — not yet verified against ordinance text"

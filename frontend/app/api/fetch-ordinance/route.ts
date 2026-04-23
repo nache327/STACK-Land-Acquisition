@@ -327,9 +327,19 @@ async function fetchMunicipalCodeOnline(url: string): Promise<{ text: string; ur
 
   const results = await Promise.all(attempts);
 
-  // Only return content if we actually found a use table — no preface/TOC fallbacks
+  // Prefer a use-table result; fall back to longest result with any content
   const best = results.find(r => r?.hasTable);
   if (best) return { text: best.text, url: best.url };
+
+  const longest = results
+    .filter(r => r !== null && (r?.len ?? 0) > 300)
+    .sort((a, b) => (b?.len ?? 0) - (a?.len ?? 0))[0];
+  if (longest) {
+    return {
+      text: longest.text + "\n\n[FORMAT: Prose format — no use matrix keyword found. Read Permitted/Conditional Use lists per zone.]",
+      url: longest.url,
+    };
+  }
 
   return null;
 }
@@ -419,32 +429,35 @@ export async function GET(req: Request) {
     initialText = (await jinaFetch(url, 18_000)).slice(0, 200_000);
   } catch { /* try fallback below */ }
 
-  if (initialText.length > 500 && hasTableOfUses(initialText)) {
-    return Response.json({ text: initialText, url, via: "jina" });
-  }
-
   if (initialText.length > 200) {
+    // Always annotate the format so Claude knows what to expect
+    const formatHint = hasTableOfUses(initialText)
+      ? "\n\n[FORMAT: Use matrix detected — zone codes appear as columns with P/C/N cells]"
+      : "\n\n[FORMAT: Prose format — each zone district may be described in separate sections with Permitted/Conditional Use lists]";
+
+    // If it looks like a TOC, try to find a deeper section link first
     const candidateUrls = extractSectionUrls(initialText, url);
-    const attempts = candidateUrls.slice(0, 4).map(async (sectionUrl) => {
-      try {
-        const text = (await jinaFetch(sectionUrl, 12_000)).slice(0, 200_000);
-        return { text, url: sectionUrl, hasTable: hasTableOfUses(text) };
-      } catch { return null; }
-    });
-    const results = await Promise.all(attempts);
-    const best = results.find(r => r?.hasTable);
-    if (best) return Response.json({ text: best.text, url: best.url, via: "jina-smart" });
+    if (candidateUrls.length > 0) {
+      const attempts = candidateUrls.slice(0, 4).map(async (sectionUrl) => {
+        try {
+          const text = (await jinaFetch(sectionUrl, 12_000)).slice(0, 200_000);
+          return { text, url: sectionUrl, hasTable: hasTableOfUses(text), len: text.length };
+        } catch { return null; }
+      });
+      const results = await Promise.all(attempts);
+      // Prefer a result with a use table; fall back to longest result
+      const best = results.find(r => r?.hasTable)
+        ?? results.filter(r => r !== null).sort((a, b) => (b?.len ?? 0) - (a?.len ?? 0))[0];
+      if (best && best.text.length > 300) {
+        const hint = hasTableOfUses(best.text)
+          ? "\n\n[FORMAT: Use matrix detected]"
+          : "\n\n[FORMAT: Prose format — read Permitted/Conditional Use lists per zone]";
+        return Response.json({ text: best.text + hint, url: best.url, via: "jina-smart" });
+      }
+    }
 
-    const anyResult = results.find(r => r && r.text.length > 500);
-    if (anyResult) return Response.json({ text: anyResult.text, url: anyResult.url, via: "jina-smart" });
-  }
-
-  if (initialText.length > 200) {
-    return Response.json({
-      text: initialText + "\n\n[NOTE: Table of Uses section not automatically found. Try navigating to the Table of Uses chapter in the ordinance website and copying that URL.]",
-      url,
-      via: "jina-partial",
-    });
+    // Return whatever we fetched — never block on missing use-table keywords
+    return Response.json({ text: initialText + formatHint, url, via: "jina" });
   }
 
   // ── Direct HTML fallback ──────────────────────────────────────────────────

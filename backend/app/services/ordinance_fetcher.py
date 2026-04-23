@@ -64,6 +64,15 @@ _ZONE_CODE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Link text / href patterns that indicate an appendix or use-table page
+_APPENDIX_LINK_RE = re.compile(
+    r"\b(appendix|use[-\s]?table|table[-\s]of[-\s]uses?|permitted[-\s]uses?"
+    r"|land[-\s]use[-\s]table|use[-\s]matrix|schedule[-\s]of[-\s]uses?)\b",
+    re.IGNORECASE,
+)
+# municipal.codes appendix paths begin with /Code/Ax (e.g. /Code/AxA, /Code/AxA-Table)
+_MUNI_CODES_APPENDIX_RE = re.compile(r"/Code/Ax", re.IGNORECASE)
+
 # Section number patterns — handles many US ordinance formats:
 #   "9-13-040", "9.13.040", "18.35.020(B)"  (three-part numeric)
 #   "14.25", "18.35"                          (two-part numeric)
@@ -185,18 +194,32 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             html = await page.content()
             soup = BeautifulSoup(html, "lxml")
 
-            # For municipal.codes: detect a chapter-listing / TOC page and crawl sub-pages.
-            # A listing page has few words of actual ordinance text but many chapter links.
+            # For municipal.codes: detect chapter-listing / TOC page → crawl sub-pages.
+            # _crawl_chapter_links now runs appendix discovery (Phase A) first.
             if ".municipal.codes" in url and _is_listing_page(soup, url):
                 sections = await _crawl_chapter_links(page, soup, url)
                 if sections:
                     return sections
 
-            # Single-page extraction path (also runs as fallback after empty crawl)
+            # Non-listing page: check for appendix links even on content pages
+            # (handles case where user lands on a chapter page, not the TOC)
+            appendix_urls = _find_appendix_links(soup, url)
+            if appendix_urls:
+                for aurl in appendix_urls[:3]:
+                    try:
+                        secs = await _fetch_page_sections(page, aurl)
+                        has_matrix = any(
+                            re.search(r"\|\s*[PCN]\s*\|", s.text, re.I) for s in secs
+                        )
+                        if secs and has_matrix:
+                            return secs
+                    except Exception:
+                        continue
+
+            # Single-page extraction — reuse _fetch_page_sections logic
             for noise in soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
                 noise.decompose()
 
-            # Try table-aware extraction first (preserves use matrix structure)
             tables_md = _extract_tables_as_markdown(soup)
             if tables_md:
                 import copy
@@ -205,7 +228,6 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
                     t.decompose()
                 prose = soup_copy.get_text(separator="\n", strip=True)
                 combined_text = f"{prose}\n\n--- USE MATRIX TABLES ---\n\n{tables_md}"
-                # Use the full ordinance limit for table pages — don't truncate at section limit
                 if len(combined_text) > 200:
                     return [OrdinanceSection(
                         section_id="use_matrix",
@@ -243,84 +265,156 @@ def _is_listing_page(soup: BeautifulSoup, url: str) -> bool:
     return word_count < 600 and link_count >= 5
 
 
+def _find_appendix_links(soup: BeautifulSoup, base_url: str) -> list[str]:
+    """
+    Scan all links on a page for appendix / use-table indicators.
+    Returns deduplicated absolute URLs on the same host, appendix links only.
+
+    Two signals:
+      1. Link text or href matches _APPENDIX_LINK_RE (generic keyword match)
+      2. For municipal.codes: href path matches /Code/Ax* pattern
+    """
+    from urllib.parse import urljoin, urlparse
+    parsed_base = urlparse(base_url)
+    found: list[str] = []
+    seen: set[str] = set()
+
+    for a in soup.find_all("a", href=True):
+        href = a["href"].split("#")[0]
+        full = urljoin(base_url, href)
+        p = urlparse(full)
+        if p.netloc != parsed_base.netloc:
+            continue
+        if full in seen:
+            continue
+        link_text = a.get_text(strip=True)
+        is_appendix = (
+            _APPENDIX_LINK_RE.search(link_text)
+            or _APPENDIX_LINK_RE.search(href)
+            or _MUNI_CODES_APPENDIX_RE.search(p.path)
+        )
+        if is_appendix:
+            seen.add(full)
+            found.append(full)
+
+    return found
+
+
+async def _fetch_page_sections(page, url: str) -> list[OrdinanceSection]:
+    """
+    Fetch a single page with Playwright and extract OrdinanceSection objects.
+    Shared by both appendix and chapter crawl paths.
+    """
+    try:
+        await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+    except Exception:
+        pass
+    try:
+        await page.wait_for_selector("article, main", timeout=6_000)
+    except Exception:
+        pass
+
+    ch_html = await page.content()
+    ch_soup = BeautifulSoup(ch_html, "lxml")
+    for noise in ch_soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
+        noise.decompose()
+
+    # Table-aware extraction first (preserves use matrix column structure)
+    tables_md = _extract_tables_as_markdown(ch_soup)
+    if tables_md:
+        import copy
+        soup_copy = copy.copy(ch_soup)
+        for t in soup_copy.find_all("table"):
+            t.decompose()
+        prose = soup_copy.get_text(separator="\n", strip=True)
+        combined = f"{prose}\n\n--- USE MATRIX TABLES ---\n\n{tables_md}"
+        return [OrdinanceSection(
+            section_id=url.rstrip("/").split("/")[-1],
+            heading="Use Matrix / Table of Permitted Uses",
+            text=combined[:_MAX_ORDINANCE_CHARS],
+            district_codes=_find_district_codes(combined),
+        )]
+
+    ch_text = ch_soup.get_text(separator="\n", strip=True)
+    if not re.search(
+        r"\b(permitted|conditional|prohibited|allowed use|use matrix|storage|warehouse)\b",
+        ch_text, re.I,
+    ):
+        return []
+
+    sections = _split_into_sections(ch_text)
+    if not sections and len(ch_text) > 200:
+        chapter_id = url.rstrip("/").split("/")[-1]
+        h = ch_soup.find(re.compile(r"^h[1-3]$"))
+        heading = h.get_text(strip=True) if h else chapter_id
+        sections = [OrdinanceSection(
+            section_id=chapter_id,
+            heading=heading,
+            text=ch_text[:_MAX_SECTION_CHARS],
+            district_codes=_find_district_codes(ch_text),
+        )]
+    return sections
+
+
 async def _crawl_chapter_links(page, soup: BeautifulSoup, base_url: str) -> list[OrdinanceSection]:
     """
-    Given a listing/TOC page, follow each chapter link and accumulate sections
-    that contain use-regulation content.
+    Given a listing/TOC page, follow links to collect ordinance sections.
 
-    Strategy:
-      - Collect links that go one level deeper than the current URL path
-        (e.g. /Code/17 → /Code/17.04, /Code/17.42, …)
-      - Skip sub-section links (too deep) to avoid hundreds of tiny pages
-      - Only keep pages that mention permitted/conditional/prohibited uses
-      - Cap at 30 chapters; reuse the same browser context so the Cloudflare
-        cookie is already valid and subsequent loads are fast (~2–5 s each)
+    Phase A: appendix / use-table links fetched FIRST (highest priority).
+      If any appendix page contains a P/C/N use matrix, return ONLY those
+      sections — no need to dilute the clean matrix with 80k chars of prose.
+
+    Phase B: chapter-level links (one path segment deeper than base_path).
+      Only runs if Phase A found no usable table.
     """
     from urllib.parse import urljoin, urlparse
 
     parsed_base = urlparse(base_url)
     base_path = parsed_base.path.rstrip("/")
 
-    # Collect unique chapter-level links (one path segment deeper than base_path)
+    # ── Phase A: appendix / use-table pages ───────────────────────────────────
+    appendix_urls = _find_appendix_links(soup, base_url)
+    appendix_sections: list[OrdinanceSection] = []
+    for aurl in appendix_urls[:5]:
+        try:
+            secs = await _fetch_page_sections(page, aurl)
+            appendix_sections.extend(secs)
+        except Exception:
+            continue
+
+    # If appendix contained a real use matrix (has P/C/N table cells), return it
+    # immediately — don't add noisy chapter prose on top of a clean matrix.
+    has_use_matrix = any(
+        re.search(r"\|\s*[PCN]\s*\|", s.text, re.I)
+        or "use matrix" in s.heading.lower()
+        for s in appendix_sections
+    )
+    if has_use_matrix:
+        return appendix_sections
+
+    # ── Phase B: chapter-level links ──────────────────────────────────────────
+    seen: set[str] = {u for u in appendix_urls}
     chapter_urls: list[str] = []
-    seen: set[str] = set()
     for a in soup.find_all("a", href=True):
         full = urljoin(base_url, a["href"].split("#")[0])
         p = urlparse(full)
         if p.netloc != parsed_base.netloc:
             continue
         candidate_path = p.path.rstrip("/")
-        # Must start with base_path + "." and have no further "/" after that
         if not candidate_path.startswith(base_path + "."):
             continue
-        remainder = candidate_path[len(base_path) + 1:]  # e.g. "42" or "42.010"
+        remainder = candidate_path[len(base_path) + 1:]
         if "." in remainder:
-            continue  # skip sub-section links (/Code/17.42.010)
+            continue
         if full not in seen:
             seen.add(full)
             chapter_urls.append(full)
 
-    all_sections: list[OrdinanceSection] = []
+    all_sections: list[OrdinanceSection] = list(appendix_sections)
     for chapter_url in chapter_urls[:30]:
         try:
-            try:
-                await page.goto(chapter_url, wait_until="domcontentloaded", timeout=30_000)
-            except Exception:
-                pass
-            try:
-                await page.wait_for_selector("article, main", timeout=6_000)
-            except Exception:
-                pass
-
-            ch_html = await page.content()
-            ch_soup = BeautifulSoup(ch_html, "lxml")
-
-            for noise in ch_soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
-                noise.decompose()
-
-            ch_text = ch_soup.get_text(separator="\n", strip=True)
-
-            # Only keep chapters with actual use-regulation language
-            if not re.search(
-                r"\b(permitted|conditional|prohibited|allowed use|use matrix|storage|warehouse)\b",
-                ch_text, re.I,
-            ):
-                continue
-
-            sections = _split_into_sections(ch_text)
-            if not sections and len(ch_text) > 200:
-                # Page has relevant text but no parseable section numbers —
-                # return as one blob with the chapter code as the section id
-                chapter_id = chapter_url.rstrip("/").split("/")[-1]
-                h = ch_soup.find(re.compile(r"^h[1-3]$"))
-                heading = h.get_text(strip=True) if h else chapter_id
-                sections = [OrdinanceSection(
-                    section_id=chapter_id,
-                    heading=heading,
-                    text=ch_text[:_MAX_SECTION_CHARS],
-                    district_codes=_find_district_codes(ch_text),
-                )]
-            all_sections.extend(sections)
+            secs = await _fetch_page_sections(page, chapter_url)
+            all_sections.extend(secs)
         except Exception:
             continue
 

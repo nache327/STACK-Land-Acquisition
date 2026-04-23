@@ -83,8 +83,25 @@ async def trigger_parse(
             seen[zone.code] = zone
     deduped_zones = list(seen.values())
 
+    _LLM_CONF_THRESHOLD = 0.70
+
     # Upsert zones — insert or update existing row for the same (jurisdiction_id, zone_code)
     for zone in deduped_zones:
+        notes_str = zone.notes or ""
+        if notes_str.startswith("[rule-fallback:"):
+            from app.models.zone_use_matrix import ClassificationSource
+            source = ClassificationSource.rule
+        elif notes_str.startswith("[llm+rule:"):
+            from app.models.zone_use_matrix import ClassificationSource
+            source = ClassificationSource.llm_rule
+        elif (zone.confidence or 0.0) < _LLM_CONF_THRESHOLD:
+            from app.models.zone_use_matrix import ClassificationSource
+            source = ClassificationSource.llm_low_confidence
+        else:
+            from app.models.zone_use_matrix import ClassificationSource
+            source = ClassificationSource.llm
+
+        citations_val = [c.model_dump() for c in zone.citations] if zone.citations else None
         stmt = pg_insert(ZoneUseMatrix).values(
             jurisdiction_id=jurisdiction_id,
             zone_code=zone.code,
@@ -93,9 +110,10 @@ async def trigger_parse(
             mini_warehouse=zone.mini_warehouse,
             light_industrial=zone.light_industrial,
             luxury_garage_condo=zone.luxury_garage_condo,
-            citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
+            citations=citations_val,
             confidence=zone.confidence,
             notes=zone.notes,
+            classification_source=source,
         ).on_conflict_do_update(
             constraint="uq_zone_matrix",
             set_=dict(
@@ -104,11 +122,16 @@ async def trigger_parse(
                 mini_warehouse=zone.mini_warehouse,
                 light_industrial=zone.light_industrial,
                 luxury_garage_condo=zone.luxury_garage_condo,
-                citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
+                citations=citations_val,
                 confidence=zone.confidence,
                 notes=zone.notes,
+                classification_source=source,
             ),
-            where=ZoneUseMatrix.confidence < zone.confidence,
+            where=(
+                (ZoneUseMatrix.human_reviewed == False) &
+                (ZoneUseMatrix.classification_source != ClassificationSource.human) &
+                (ZoneUseMatrix.confidence < zone.confidence)
+            ),
         )
         await db.execute(stmt)
     j.ordinance_url = url

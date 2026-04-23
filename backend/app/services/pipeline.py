@@ -560,9 +560,22 @@ async def _parse_and_save_ordinance(
             seen[zone.code] = zone
     deduped_zones = list(seen.values())
 
+    _LLM_CONF_THRESHOLD = 0.70
+
     # Upsert zone matrix rows — LLM output overwrites rule-based rows but never
     # overwrites human-reviewed rows or prior LLM rows marked human.
     for zone in deduped_zones:
+        # Determine fine-grained classification source
+        notes_str = zone.notes or ""
+        if notes_str.startswith("[rule-fallback:"):
+            source = ClassificationSource.rule
+        elif notes_str.startswith("[llm+rule:"):
+            source = ClassificationSource.llm_rule
+        elif (zone.confidence or 0.0) < _LLM_CONF_THRESHOLD:
+            source = ClassificationSource.llm_low_confidence
+        else:
+            source = ClassificationSource.llm
+
         citations_val = [c.model_dump() for c in zone.citations] if zone.citations else None
         stmt = pg_insert(ZoneUseMatrix).values(
             jurisdiction_id=jurisdiction.id,
@@ -575,7 +588,7 @@ async def _parse_and_save_ordinance(
             citations=citations_val,
             confidence=zone.confidence,
             notes=zone.notes,
-            classification_source=ClassificationSource.llm,
+            classification_source=source,
         ).on_conflict_do_update(
             constraint="uq_zone_matrix",
             set_=dict(
@@ -587,11 +600,12 @@ async def _parse_and_save_ordinance(
                 citations=citations_val,
                 confidence=zone.confidence,
                 notes=zone.notes,
-                classification_source=ClassificationSource.llm,
+                classification_source=source,
             ),
             where=(
                 (ZoneUseMatrix.human_reviewed == False) &
-                (ZoneUseMatrix.classification_source != ClassificationSource.human)
+                (ZoneUseMatrix.classification_source != ClassificationSource.human) &
+                (ZoneUseMatrix.confidence < zone.confidence)
             ),
         )
         await db.execute(stmt)
