@@ -470,11 +470,16 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
     pending_section_urls: list[str] = []
     seen_pending: set[str] = set()
 
-    def _collect_permitted_section_links(soup: BeautifulSoup, page_url: str) -> list[str]:
+    def _collect_chapter_section_links(soup: BeautifulSoup, page_url: str) -> list[str]:
         """
-        On a TOC-only chapter page, scan the section body and right nav for
-        links to sub-section pages that discuss permitted/conditional uses.
-        Returns absolute URLs within the same title boundary.
+        On a TOC-only chapter page, collect ALL sub-section links — not just
+        those with "permitted" in the text.  Content filtering happens later
+        in _extract_content (which already skips non-zoning pages).
+
+        Looks in:
+          1. div.codenav__section-body — inline TOC links
+          2. div.codenav__right       — right-sidebar section list (SSR-rendered)
+        Both containers are checked; duplicates are suppressed via seen_pending.
         """
         collected: list[str] = []
         for container_sel in ("div.codenav__section-body", "div.codenav__right"):
@@ -494,17 +499,26 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
                     continue
                 if stop_at and n >= stop_at:
                     continue
-                link_text = a.get_text(strip=True)
-                if re.search(
-                    r"permitted|conditional.*use|accessory.*use|land\s*use",
-                    link_text, re.I,
-                ):
-                    if full not in seen_pending:
-                        seen_pending.add(full)
-                        collected.append(full)
+                if full not in seen_pending:
+                    seen_pending.add(full)
+                    collected.append(full)
         return collected
 
-    # Navigate to parent title first to start walk from the beginning of the title
+    # Always extract content from the initial page first — the user may have
+    # navigated directly to a rich section page (e.g. "Permitted Uses" for C-G).
+    # This is kept even when we later walk from the parent title, so we never
+    # silently discard content the user explicitly loaded.
+    init_body_el = initial_soup.find("div", class_="codenav__section-body")
+    init_body_len = len(init_body_el.get_text(strip=True)) if init_body_el else 0
+    if init_body_len < 3000:
+        pending_section_urls.extend(
+            _collect_chapter_section_links(initial_soup, initial_url)
+        )
+    else:
+        all_sections.extend(_extract_content(initial_soup, initial_url))
+        seen_pending.add(initial_url)  # don't re-fetch via pending
+
+    # Navigate to parent title to walk from the beginning of the title
     if parent_num:
         parent_url = f"{parsed.scheme}://{parsed.netloc}{base_dir}/0-0-0-{parent_num}"
         try:
@@ -517,14 +531,6 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
         current_url = parent_url
     else:
         # Already at title level or no parent found — start from initial page
-        body_el = initial_soup.find("div", class_="codenav__section-body")
-        body_len = len(body_el.get_text(strip=True)) if body_el else 0
-        if body_len < 3000:
-            pending_section_urls.extend(
-                _collect_permitted_section_links(initial_soup, initial_url)
-            )
-        else:
-            all_sections.extend(_extract_content(initial_soup, initial_url))
         current_soup = initial_soup
         current_url = initial_url
 
@@ -556,7 +562,7 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
         body_len = len(body_el.get_text(strip=True)) if body_el else 0
         if body_len < 3000:
             pending_section_urls.extend(
-                _collect_permitted_section_links(next_soup, nurl)
+                _collect_chapter_section_links(next_soup, nurl)
             )
         else:
             all_sections.extend(_extract_content(next_soup, nurl))
@@ -565,7 +571,7 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
         current_url = nurl
 
     # Fetch section pages collected from TOC-only chapter pages
-    for surl in pending_section_urls[:30]:
+    for surl in pending_section_urls[:50]:
         try:
             await page.goto(surl, wait_until="load", timeout=45_000)
         except Exception:
