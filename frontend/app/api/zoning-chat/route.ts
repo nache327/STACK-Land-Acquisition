@@ -17,6 +17,7 @@ const ALLOWED_DOMAINS = [
   "codelibrary.amlegal.com",
   "library.municode.com",
   "ecode360.com",
+  "municipal.codes",
   "sterlingcodifiers.com",
   "codepublishing.com",
   "lehi-ut.gov",

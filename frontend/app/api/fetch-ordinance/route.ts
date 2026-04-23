@@ -99,6 +99,7 @@ const ALLOWED_DOMAINS = [
   "codelibrary.amlegal.com",
   "library.municode.com",
   "ecode360.com",
+  "municipal.codes",
   "sterlingcodifiers.com",
   "codepublishing.com",
   "municipalcodeonline.com",
@@ -355,7 +356,7 @@ export async function GET(req: Request) {
   );
   if (!allowed) {
     return Response.json(
-      { error: `Domain "${hostname}" not in allowlist. Try a Municode, amlegal, or ecode360 URL, or paste the text directly.` },
+      { error: `Domain "${hostname}" not in allowlist. Try a Municode, municipal.codes, amlegal, or ecode360 URL, or paste the text directly.` },
       { status: 403 }
     );
   }
