@@ -197,10 +197,16 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             html = await page.content()
             soup = BeautifulSoup(html, "lxml")
 
-            # For municipal.codes and amlegal.com: detect TOC page → crawl sub-pages.
-            # _crawl_chapter_links runs appendix discovery (Phase A) first.
-            if (".municipal.codes" in url or "amlegal.com" in url) and _is_listing_page(soup, url):
+            # For municipal.codes: detect TOC page → crawl sub-pages.
+            if ".municipal.codes" in url and _is_listing_page(soup, url):
                 sections = await _crawl_chapter_links(page, soup, url)
+                if sections:
+                    return sections
+
+            # For amlegal.com: walk Next Doc links within the parent title.
+            # Title boundaries are derived from the left sidebar node IDs.
+            if "amlegal.com" in url:
+                sections = await _crawl_amlegal_chapters(page, soup, url)
                 if sections:
                     return sections
 
@@ -359,6 +365,222 @@ async def _fetch_page_sections(page, url: str) -> list[OrdinanceSection]:
     return sections
 
 
+async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url: str) -> list[OrdinanceSection]:
+    """
+    For codelibrary.amlegal.com: navigate to the parent title page and walk
+    'Next Doc' links forward, collecting content until we cross into the next title.
+
+    Strategy:
+      1. Extract all title-level node IDs from div.codenav__left-inner
+      2. Find parent title (largest title node ID < current node ID)
+      3. Navigate to that parent title URL
+      4. Walk Next Doc forward; stop when node ID >= next-title boundary
+    """
+    from urllib.parse import urljoin, urlparse
+
+    def _amlegal_node_num(url_str: str) -> int | None:
+        """Return the integer portion of an amlegal 0-0-0-NNNNN node ID."""
+        m = re.search(r"/(\d+-\d+-\d+-(\d+))(?:[#?]|$)", url_str)
+        return int(m.group(2)) if m else None
+
+    def _next_doc_url(soup: BeautifulSoup, base: str) -> str | None:
+        for div in soup.select("div.bottom-right__doc.bottom-right--right"):
+            a = div.find("a", href=True)
+            if a:
+                return urljoin(base, a["href"])
+        return None
+
+    def _extract_content(soup: BeautifulSoup, page_url: str) -> list[OrdinanceSection]:
+        """Extract zoning sections from an already-loaded amlegal page soup.
+        amlegal renders all chapter sections inside div.codenav__section-body.
+        """
+        import copy as _copy
+
+        section_body = soup.find("div", class_="codenav__section-body")
+        if not section_body:
+            return []
+
+        s = _copy.copy(section_body)
+        # Strip share/download/print/bookmark noise (non-content UI elements)
+        for noise in s.find_all(class_=re.compile(r"share|download|bookmark|print|button", re.I)):
+            noise.decompose()
+        for noise in s.find_all("button"):
+            noise.decompose()
+
+        tables_md = _extract_tables_as_markdown(s)
+        if tables_md:
+            s2 = _copy.copy(s)
+            for t in s2.find_all("table"):
+                t.decompose()
+            prose = s2.get_text(separator="\n", strip=True)
+            combined = f"{prose}\n\n--- USE MATRIX TABLES ---\n\n{tables_md}"
+            return [OrdinanceSection(
+                section_id=page_url.rstrip("/").split("/")[-1],
+                heading="Use Matrix / Table of Permitted Uses",
+                text=combined[:_MAX_ORDINANCE_CHARS],
+                district_codes=_find_district_codes(combined),
+            )]
+
+        ch_text = s.get_text(separator="\n", strip=True)
+        if not re.search(
+            r"\b(permitted|conditional|prohibited|allowed use|storage|warehouse|zone(?:s|d)?|district)\b",
+            ch_text, re.I,
+        ):
+            return []
+
+        sections = _split_into_sections(ch_text)
+        if not sections and len(ch_text) > 200:
+            chapter_id = page_url.rstrip("/").split("/")[-1]
+            heading_el = s.find(re.compile(r"^h[1-3]$"))
+            heading = heading_el.get_text(strip=True) if heading_el else chapter_id
+            sections = [OrdinanceSection(
+                section_id=chapter_id,
+                heading=heading,
+                text=ch_text[:_MAX_ORDINANCE_CHARS],
+                district_codes=_find_district_codes(ch_text),
+            )]
+        return sections
+
+    parsed = urlparse(initial_url)
+    base_dir = "/".join(parsed.path.rstrip("/").split("/")[:-1])
+    current_num = _amlegal_node_num(initial_url) or 0
+
+    # Gather title-level node IDs from the left sidebar
+    title_nums: list[int] = []
+    left_nav = initial_soup.select_one("div.codenav__left-inner")
+    if left_nav:
+        for a in left_nav.find_all("a", href=True):
+            href = a["href"]
+            if not href.startswith(base_dir + "/"):
+                href = urljoin(initial_url, href)
+            n = _amlegal_node_num(href)
+            if n:
+                text = a.get_text(strip=True).upper()
+                if text.startswith(("TITLE ", "PART ", "ARTICLE ")):
+                    title_nums.append(n)
+    title_nums = sorted(set(title_nums))
+
+    # Parent title: largest title node < current
+    parent_num = max((n for n in title_nums if n < current_num), default=None)
+    # Stop boundary: smallest title node > current
+    stop_at = min((n for n in title_nums if n > current_num), default=None)
+
+    all_sections: list[OrdinanceSection] = []
+    # Section URLs from TOC-only chapter pages to fetch after the main walk
+    pending_section_urls: list[str] = []
+    seen_pending: set[str] = set()
+
+    def _collect_permitted_section_links(soup: BeautifulSoup, page_url: str) -> list[str]:
+        """
+        On a TOC-only chapter page, scan the section body and right nav for
+        links to sub-section pages that discuss permitted/conditional uses.
+        Returns absolute URLs within the same title boundary.
+        """
+        collected: list[str] = []
+        for container_sel in ("div.codenav__section-body", "div.codenav__right"):
+            container = soup.select_one(container_sel)
+            if not container:
+                continue
+            for a in container.find_all("a", href=True):
+                href = a["href"].split("#")[0]
+                full = urljoin(page_url, href)
+                p = urlparse(full)
+                if p.netloc != parsed.netloc:
+                    continue
+                if not _AMLEGAL_NODE_RE.match(p.path.rstrip("/")):
+                    continue
+                n = _amlegal_node_num(full)
+                if n is None:
+                    continue
+                if stop_at and n >= stop_at:
+                    continue
+                link_text = a.get_text(strip=True)
+                if re.search(
+                    r"permitted|conditional.*use|accessory.*use|land\s*use",
+                    link_text, re.I,
+                ):
+                    if full not in seen_pending:
+                        seen_pending.add(full)
+                        collected.append(full)
+        return collected
+
+    # Navigate to parent title first to start walk from the beginning of the title
+    if parent_num:
+        parent_url = f"{parsed.scheme}://{parsed.netloc}{base_dir}/0-0-0-{parent_num}"
+        try:
+            await page.goto(parent_url, wait_until="load", timeout=45_000)
+        except Exception:
+            pass
+        parent_html = await page.content()
+        parent_soup = BeautifulSoup(parent_html, "lxml")
+        current_soup = parent_soup
+        current_url = parent_url
+    else:
+        # Already at title level or no parent found — start from initial page
+        body_el = initial_soup.find("div", class_="codenav__section-body")
+        body_len = len(body_el.get_text(strip=True)) if body_el else 0
+        if body_len < 3000:
+            pending_section_urls.extend(
+                _collect_permitted_section_links(initial_soup, initial_url)
+            )
+        else:
+            all_sections.extend(_extract_content(initial_soup, initial_url))
+        current_soup = initial_soup
+        current_url = initial_url
+
+    # Walk Next Doc forward within the title
+    for _ in range(40):
+        nurl = _next_doc_url(current_soup, current_url)
+        if not nurl:
+            break
+        next_num = _amlegal_node_num(nurl)
+        if stop_at and next_num and next_num >= stop_at:
+            break
+
+        try:
+            await page.goto(nurl, wait_until="load", timeout=45_000)
+        except Exception:
+            try:
+                await page.goto(nurl, wait_until="commit", timeout=30_000)
+                await page.wait_for_timeout(2_000)
+            except Exception:
+                break
+
+        html = await page.content()
+        next_soup = BeautifulSoup(html, "lxml")
+
+        # Detect TOC-only chapter pages (small body = just a list of section links).
+        # Instead of collecting the barren TOC text, queue the "permitted uses"
+        # section pages found in the body and right nav for separate fetching.
+        body_el = next_soup.find("div", class_="codenav__section-body")
+        body_len = len(body_el.get_text(strip=True)) if body_el else 0
+        if body_len < 3000:
+            pending_section_urls.extend(
+                _collect_permitted_section_links(next_soup, nurl)
+            )
+        else:
+            all_sections.extend(_extract_content(next_soup, nurl))
+
+        current_soup = next_soup
+        current_url = nurl
+
+    # Fetch section pages collected from TOC-only chapter pages
+    for surl in pending_section_urls[:30]:
+        try:
+            await page.goto(surl, wait_until="load", timeout=45_000)
+        except Exception:
+            try:
+                await page.goto(surl, wait_until="commit", timeout=30_000)
+                await page.wait_for_timeout(2_000)
+            except Exception:
+                continue
+        html = await page.content()
+        sec_soup = BeautifulSoup(html, "lxml")
+        all_sections.extend(_extract_content(sec_soup, surl))
+
+    return all_sections
+
+
 async def _crawl_chapter_links(page, soup: BeautifulSoup, base_url: str) -> list[OrdinanceSection]:
     """
     Given a listing/TOC page, follow links to collect ordinance sections.
@@ -403,7 +625,18 @@ async def _crawl_chapter_links(page, soup: BeautifulSoup, base_url: str) -> list
     # For amlegal: parent dir is everything before the last path segment (the node ID)
     amlegal_parent = "/".join(base_path.split("/")[:-1]) if is_amlegal else ""
 
-    for a in soup.find_all("a", href=True):
+    # For amlegal: only search links in the main content area (not the sidebar nav
+    # which lists ALL city titles). A copy avoids mutating the caller's soup.
+    if is_amlegal:
+        import copy as _copy
+        content_soup = _copy.copy(soup)
+        for noise in content_soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='nav'], [class*='toc']"):
+            noise.decompose()
+        link_source = content_soup
+    else:
+        link_source = soup
+
+    for a in link_source.find_all("a", href=True):
         full = urljoin(base_url, a["href"].split("#")[0])
         p = urlparse(full)
         if p.netloc != parsed_base.netloc:
