@@ -164,6 +164,13 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
     "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
     "lehi":          _ugrc("Parcels_Utah", "Lehi",          "Lehi, UT",          "Utah"),
+    "lindon": JurisdictionConfig(
+        name="Lindon, UT", state="UT", county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Lindon'",
+        ordinance_url="https://lindon.municipal.codes/Code/17",
+    ),
     "american fork": _ugrc("Parcels_Utah", "American Fork", "American Fork, UT", "Utah"),
     "eagle mountain": _ugrc("Parcels_Utah", "Eagle Mountain", "Eagle Mountain, UT", "Utah"),
     "pleasant grove": _ugrc("Parcels_Utah", "Pleasant Grove", "Pleasant Grove, UT", "Utah"),

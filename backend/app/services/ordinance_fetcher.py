@@ -90,10 +90,11 @@ async def fetch_from_url(url: str) -> list[OrdinanceSection]:
     Raises RuntimeError if the URL cannot be fetched.
     """
     source = detect_source_type(url)
-    if source == "municode":
-        return await _fetch_municode(url)
+    if source in ("municipal_codes", "municode"):
+        # These are JS SPAs / Cloudflare-protected — need a real browser.
+        return await _fetch_with_playwright(url)
     elif source == "ecode360":
-        return await _fetch_generic(url)   # fallback until Phase 5 Playwright
+        return await _fetch_generic(url)
     else:
         return await _fetch_generic(url)
 
@@ -120,8 +121,10 @@ async def fetch_from_pdf(pdf_path: Path) -> list[OrdinanceSection]:
 
 
 def detect_source_type(url: str) -> str:
-    """Return 'municode' | 'ecode360' | 'american_legal' | 'generic'."""
+    """Return 'municipal_codes' | 'municode' | 'ecode360' | 'american_legal' | 'generic'."""
     u = url.lower()
+    if ".municipal.codes" in u:
+        return "municipal_codes"
     if "municode.com" in u:
         return "municode"
     if "ecode360.com" in u:
@@ -133,37 +136,77 @@ def detect_source_type(url: str) -> str:
 
 # ─── Source-specific fetchers ────────────────────────────────────────────────
 
-async def _fetch_municode(url: str) -> list[OrdinanceSection]:
+async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
     """
-    Fetch from Municode.  Their site is a React SPA so the initial HTML may
-    not include content.  We attempt to scrape what we can; Phase 5 will use
-    Playwright to execute the JavaScript.
+    Fetch a JS-rendered or Cloudflare-protected ordinance page using Playwright.
+
+    Required for:
+      - municipal.codes  (Cloudflare managed challenge + React SPA)
+      - library.municode.com  (React SPA, no SSR content)
+
+    Falls back to a clear error if Playwright / Chromium is not installed.
     """
-    async with httpx.AsyncClient(
-        follow_redirects=True, timeout=30.0, headers=_BROWSER_HEADERS
-    ) as client:
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        raise RuntimeError(
+            "Playwright is not installed — required for this ordinance source.  "
+            "Run: pip install playwright && playwright install chromium\n"
+            "Workaround: upload a PDF of the zoning chapter instead."
+        )
+
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True)
         try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise RuntimeError(f"Cannot reach Municode URL ({exc})") from exc
-
-        soup = BeautifulSoup(resp.text, "lxml")
-
-        # Municode sometimes includes readable content in <script type="application/ld+json">
-        # or in inline server-rendered HTML
-        sections = _extract_zoning_sections_from_soup(soup)
-
-        if not sections:
-            raise RuntimeError(
-                "Municode page did not return parseable HTML content.  "
-                "This usually means the page is JavaScript-only.  "
-                "Workarounds: (1) upload a PDF of the zoning chapter, "
-                "(2) paste the direct chapter URL, or "
-                "(3) wait for Phase 5 (Playwright support)."
+            ctx = await browser.new_context(
+                user_agent=_BROWSER_HEADERS["User-Agent"],
+                locale="en-US",
             )
+            page = await ctx.new_page()
 
+            # Navigate and wait for network to settle (JS rendering + Cloudflare challenge)
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=60_000)
+            except Exception:
+                # networkidle can time out on slow sites; grab whatever rendered
+                pass
+
+            # For municipal.codes / Municode, content lands in article or section tags
+            for selector in ("article", "main", "[class*='chapter']", "[class*='content']"):
+                try:
+                    await page.wait_for_selector(selector, timeout=8_000)
+                    break
+                except Exception:
+                    continue
+
+            html = await page.content()
+        finally:
+            await browser.close()
+
+    soup = BeautifulSoup(html, "lxml")
+
+    # Remove nav / sidebar noise before extracting text
+    for noise in soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
+        noise.decompose()
+
+    sections = _extract_zoning_sections_from_soup(soup)
+    if sections:
         return sections
+
+    text = soup.get_text(separator="\n", strip=True)
+    sections = _split_into_sections(text)
+    if sections:
+        return sections
+
+    raise RuntimeError(
+        f"Playwright loaded {url!r} but found no parseable ordinance content.  "
+        "Try uploading a PDF of the zoning chapter instead."
+    )
+
+
+async def _fetch_municode(url: str) -> list[OrdinanceSection]:
+    """Kept for reference — now routed through _fetch_with_playwright."""
+    return await _fetch_with_playwright(url)
 
 
 async def _fetch_generic(url: str) -> list[OrdinanceSection]:
