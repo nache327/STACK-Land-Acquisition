@@ -16,6 +16,7 @@ from typing import Any
 
 import geopandas as gpd
 from geoalchemy2 import WKTElement
+from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
 from sqlalchemy import delete, insert
@@ -138,24 +139,46 @@ def _safe_float(val: Any) -> float | None:
         return None
 
 
-_AREA_SQM_FIELDS = ["Shape__Area", "SHAPE__AREA", "shape_Area", "SHAPE_Area"]
 # Square-foot fields used by NYC MapPLUTO (LotArea) and Philadelphia OPA (total_area).
 _AREA_SQFT_FIELDS = ["LotArea", "LOT_AREA", "total_area", "TotalArea", "LOTAREA"]
 _SQM_PER_ACRE = 4046.856
 _SQFT_PER_ACRE = 43_560.0
 
+# WGS84 ellipsoid for geodetic area calculation. geometry_area_perimeter() takes
+# a Shapely geometry in lon/lat degrees and returns area in square meters.
+_geod = Geod(ellps="WGS84")
+
+
+def _geom_acres(geom: Any) -> float | None:
+    """Compute acreage from a WGS84 Shapely geometry using geodetic area on the ellipsoid."""
+    try:
+        area_sqm, _ = _geod.geometry_area_perimeter(geom)
+        area_sqm = abs(area_sqm)
+        if area_sqm > 0:
+            return round(area_sqm / _SQM_PER_ACRE, 4)
+    except Exception:
+        pass
+    return None
+
 
 def _resolve_acres(row: Any, geom: Any) -> float | None:
-    """Return parcel acreage, preferring explicit fields then Shape__Area (sq m)."""
+    """Return parcel acreage.
+
+    Priority:
+      1. Explicit acres field from source (assessor value, already in acres).
+      2. Explicit square-foot field (NYC LotArea, Philly total_area).
+      3. Geodetic area from the WGS84 geometry — always correct regardless of
+         source CRS, replacing the old Shape__Area fallback whose units were
+         ambiguous (sq ft vs sq m depending on the native layer CRS).
+    """
     v = _safe_float(_first(row, _ACRES_FIELDS))
     if v is not None and v > 0:
         return round(v, 4)
     sqft = _safe_float(_first(row, _AREA_SQFT_FIELDS))
     if sqft is not None and sqft > 0:
         return round(sqft / _SQFT_PER_ACRE, 4)
-    sqm = _safe_float(_first(row, _AREA_SQM_FIELDS))
-    if sqm is not None and sqm > 0:
-        return round(sqm / _SQM_PER_ACRE, 4)
+    if geom is not None:
+        return _geom_acres(geom)
     return None
 
 
