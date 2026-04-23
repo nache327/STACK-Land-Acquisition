@@ -72,6 +72,9 @@ _APPENDIX_LINK_RE = re.compile(
 )
 # municipal.codes appendix paths begin with /Code/Ax (e.g. /Code/AxA, /Code/AxA-Table)
 _MUNI_CODES_APPENDIX_RE = re.compile(r"/Code/Ax", re.IGNORECASE)
+# amlegal.com chapter page paths: /codes/{city}/{version}/{code}/{node-id}
+# where node-id is four dash-separated numbers like 0-0-0-22474
+_AMLEGAL_NODE_RE = re.compile(r"^/codes/[^/]+/[^/]+/[^/]+/\d+-\d+-\d+-\d+$")
 
 # Section number patterns — handles many US ordinance formats:
 #   "9-13-040", "9.13.040", "18.35.020(B)"  (three-part numeric)
@@ -99,8 +102,8 @@ async def fetch_from_url(url: str) -> list[OrdinanceSection]:
     Raises RuntimeError if the URL cannot be fetched.
     """
     source = detect_source_type(url)
-    if source in ("municipal_codes", "municode"):
-        # These are JS SPAs / Cloudflare-protected — need a real browser.
+    if source in ("municipal_codes", "municode", "american_legal"):
+        # JS SPAs / Cloudflare-protected — need a real browser.
         return await _fetch_with_playwright(url)
     elif source == "ecode360":
         return await _fetch_generic(url)
@@ -194,9 +197,9 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             html = await page.content()
             soup = BeautifulSoup(html, "lxml")
 
-            # For municipal.codes: detect chapter-listing / TOC page → crawl sub-pages.
-            # _crawl_chapter_links now runs appendix discovery (Phase A) first.
-            if ".municipal.codes" in url and _is_listing_page(soup, url):
+            # For municipal.codes and amlegal.com: detect TOC page → crawl sub-pages.
+            # _crawl_chapter_links runs appendix discovery (Phase A) first.
+            if (".municipal.codes" in url or "amlegal.com" in url) and _is_listing_page(soup, url):
                 sections = await _crawl_chapter_links(page, soup, url)
                 if sections:
                     return sections
@@ -395,17 +398,34 @@ async def _crawl_chapter_links(page, soup: BeautifulSoup, base_url: str) -> list
     # ── Phase B: chapter-level links ──────────────────────────────────────────
     seen: set[str] = {u for u in appendix_urls}
     chapter_urls: list[str] = []
+
+    is_amlegal = "amlegal.com" in parsed_base.netloc
+    # For amlegal: parent dir is everything before the last path segment (the node ID)
+    amlegal_parent = "/".join(base_path.split("/")[:-1]) if is_amlegal else ""
+
     for a in soup.find_all("a", href=True):
         full = urljoin(base_url, a["href"].split("#")[0])
         p = urlparse(full)
         if p.netloc != parsed_base.netloc:
             continue
         candidate_path = p.path.rstrip("/")
-        if not candidate_path.startswith(base_path + "."):
-            continue
-        remainder = candidate_path[len(base_path) + 1:]
-        if "." in remainder:
-            continue
+
+        if is_amlegal:
+            # amlegal: sibling node IDs in the same code directory
+            if not _AMLEGAL_NODE_RE.match(candidate_path):
+                continue
+            if not candidate_path.startswith(amlegal_parent + "/"):
+                continue
+            if candidate_path == base_path:
+                continue  # skip the TOC page itself
+        else:
+            # municipal.codes: chapter links are base_path.XX (one level deeper)
+            if not candidate_path.startswith(base_path + "."):
+                continue
+            remainder = candidate_path[len(base_path) + 1:]
+            if "." in remainder:
+                continue
+
         if full not in seen:
             seen.add(full)
             chapter_urls.append(full)

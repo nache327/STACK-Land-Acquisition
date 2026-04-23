@@ -385,8 +385,8 @@ export async function GET(req: Request) {
     // Backend unreachable — fall through to Jina (best-effort for PDFs)
   }
 
-  // ── municipal.codes / municode: Cloudflare + React SPA — proxy to Railway backend (Playwright) ──
-  if (hostname.includes("municipal.codes") || hostname.includes("municode.com")) {
+  // ── municipal.codes / municode / amlegal: JS SPAs — proxy to Railway backend (Playwright) ──
+  if (hostname.includes("municipal.codes") || hostname.includes("municode.com") || hostname.includes("amlegal.com")) {
     try {
       const res = await fetch(`${BACKEND}/api/ordinances/fetch-text?url=${encodeURIComponent(url)}`, {
         signal: AbortSignal.timeout(55_000),
