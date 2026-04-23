@@ -196,6 +196,24 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             for noise in soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
                 noise.decompose()
 
+            # Try table-aware extraction first (preserves use matrix structure)
+            tables_md = _extract_tables_as_markdown(soup)
+            if tables_md:
+                import copy
+                soup_copy = copy.copy(soup)
+                for t in soup_copy.find_all("table"):
+                    t.decompose()
+                prose = soup_copy.get_text(separator="\n", strip=True)
+                combined_text = f"{prose}\n\n--- USE MATRIX TABLES ---\n\n{tables_md}"
+                # Use the full ordinance limit for table pages — don't truncate at section limit
+                if len(combined_text) > 200:
+                    return [OrdinanceSection(
+                        section_id="use_matrix",
+                        heading="Use Matrix / Table of Permitted Uses",
+                        text=combined_text[:_MAX_ORDINANCE_CHARS],
+                        district_codes=_find_district_codes(combined_text),
+                    )]
+
             sections = _extract_zoning_sections_from_soup(soup)
             if sections:
                 return sections
@@ -350,10 +368,59 @@ async def _fetch_generic(url: str) -> list[OrdinanceSection]:
 
 # ─── HTML / text extraction helpers ─────────────────────────────────────────
 
+def _table_to_markdown(table) -> str:
+    """
+    Convert a BeautifulSoup <table> element to a markdown table string,
+    preserving zone-column / use-row relationships for use matrices.
+    Returns empty string if the table has no usable rows.
+    """
+    rows_out: list[list[str]] = []
+    for tr in table.find_all("tr"):
+        cells = [td.get_text(separator=" ", strip=True) for td in tr.find_all(["th", "td"])]
+        if cells:
+            rows_out.append(cells)
+
+    if not rows_out:
+        return ""
+
+    # Normalize column count
+    max_cols = max(len(r) for r in rows_out)
+    rows_out = [r + [""] * (max_cols - len(r)) for r in rows_out]
+
+    lines: list[str] = []
+    for i, row in enumerate(rows_out):
+        lines.append("| " + " | ".join(row) + " |")
+        if i == 0:
+            lines.append("|" + "|".join(["---"] * max_cols) + "|")
+
+    return "\n".join(lines)
+
+
+def _extract_tables_as_markdown(soup: BeautifulSoup) -> str:
+    """
+    Find all <table> elements that look like use matrices (≥3 columns, ≥4 rows)
+    and return them as concatenated markdown tables.
+    """
+    parts: list[str] = []
+    for table in soup.find_all("table"):
+        rows = table.find_all("tr")
+        if len(rows) < 4:
+            continue
+        first_row_cells = rows[0].find_all(["th", "td"])
+        if len(first_row_cells) < 3:
+            continue
+        md = _table_to_markdown(table)
+        if md:
+            parts.append(md)
+    return "\n\n".join(parts)
+
+
 def _extract_zoning_sections_from_soup(soup: BeautifulSoup) -> list[OrdinanceSection]:
     """
     Find the main content element and extract zoning district sections.
     Looks for common content wrapper IDs/classes.
+    If the page contains HTML tables (use matrices), convert them to markdown
+    first so zone-column relationships are preserved.
     """
     # Try common content containers
     main = (
@@ -366,7 +433,20 @@ def _extract_zoning_sections_from_soup(soup: BeautifulSoup) -> list[OrdinanceSec
     if not main:
         return []
 
-    text = main.get_text(separator="\n", strip=True)
+    # Check for use-matrix tables and preserve their structure as markdown
+    tables_md = _extract_tables_as_markdown(main)
+
+    if tables_md:
+        # Combine table markdown with surrounding prose text (headings, notes)
+        # Remove table elements from soup copy so get_text() doesn't double-count
+        import copy
+        main_copy = copy.copy(main)
+        for t in main_copy.find_all("table"):
+            t.decompose()
+        prose = main_copy.get_text(separator="\n", strip=True)
+        text = f"{prose}\n\n--- USE MATRIX TABLES ---\n\n{tables_md}"
+    else:
+        text = main.get_text(separator="\n", strip=True)
 
     # Only worth parsing if it has substantial zoning content
     if len(text) < 200:
