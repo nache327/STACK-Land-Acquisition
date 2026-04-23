@@ -144,6 +144,11 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
       - municipal.codes  (Cloudflare managed challenge + React SPA)
       - library.municode.com  (React SPA, no SSR content)
 
+    For municipal.codes, if the initial URL is a chapter-listing page (Title-level
+    index like /Code/17), automatically crawls each zone chapter link to find the
+    actual use tables.  The first page load passes the Cloudflare cookie, so
+    subsequent pages in the same browser context are fast.
+
     Falls back to a clear error if Playwright / Chromium is not installed.
     """
     try:
@@ -164,14 +169,12 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             )
             page = await ctx.new_page()
 
-            # Navigate and wait for network to settle (JS rendering + Cloudflare challenge)
+            # First load — may trigger Cloudflare challenge; wait for full render
             try:
                 await page.goto(url, wait_until="networkidle", timeout=60_000)
             except Exception:
-                # networkidle can time out on slow sites; grab whatever rendered
                 pass
 
-            # For municipal.codes / Municode, content lands in article or section tags
             for selector in ("article", "main", "[class*='chapter']", "[class*='content']"):
                 try:
                     await page.wait_for_selector(selector, timeout=8_000)
@@ -180,28 +183,130 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
                     continue
 
             html = await page.content()
+            soup = BeautifulSoup(html, "lxml")
+
+            # For municipal.codes: detect a chapter-listing / TOC page and crawl sub-pages.
+            # A listing page has few words of actual ordinance text but many chapter links.
+            if ".municipal.codes" in url and _is_listing_page(soup, url):
+                sections = await _crawl_chapter_links(page, soup, url)
+                if sections:
+                    return sections
+
+            # Single-page extraction path (also runs as fallback after empty crawl)
+            for noise in soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
+                noise.decompose()
+
+            sections = _extract_zoning_sections_from_soup(soup)
+            if sections:
+                return sections
+
+            text = soup.get_text(separator="\n", strip=True)
+            sections = _split_into_sections(text)
+            if sections:
+                return sections
+
         finally:
             await browser.close()
-
-    soup = BeautifulSoup(html, "lxml")
-
-    # Remove nav / sidebar noise before extracting text
-    for noise in soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
-        noise.decompose()
-
-    sections = _extract_zoning_sections_from_soup(soup)
-    if sections:
-        return sections
-
-    text = soup.get_text(separator="\n", strip=True)
-    sections = _split_into_sections(text)
-    if sections:
-        return sections
 
     raise RuntimeError(
         f"Playwright loaded {url!r} but found no parseable ordinance content.  "
         "Try uploading a PDF of the zoning chapter instead."
     )
+
+
+def _is_listing_page(soup: BeautifulSoup, url: str) -> bool:
+    """
+    Return True if this page is a table-of-contents / chapter index rather than
+    actual ordinance content.  Heuristic: very short visible text + several links.
+    """
+    text = soup.get_text(separator=" ", strip=True)
+    word_count = len(text.split())
+    link_count = len(soup.find_all("a", href=True))
+    return word_count < 600 and link_count >= 5
+
+
+async def _crawl_chapter_links(page, soup: BeautifulSoup, base_url: str) -> list[OrdinanceSection]:
+    """
+    Given a listing/TOC page, follow each chapter link and accumulate sections
+    that contain use-regulation content.
+
+    Strategy:
+      - Collect links that go one level deeper than the current URL path
+        (e.g. /Code/17 → /Code/17.04, /Code/17.42, …)
+      - Skip sub-section links (too deep) to avoid hundreds of tiny pages
+      - Only keep pages that mention permitted/conditional/prohibited uses
+      - Cap at 30 chapters; reuse the same browser context so the Cloudflare
+        cookie is already valid and subsequent loads are fast (~2–5 s each)
+    """
+    from urllib.parse import urljoin, urlparse
+
+    parsed_base = urlparse(base_url)
+    base_path = parsed_base.path.rstrip("/")
+
+    # Collect unique chapter-level links (one path segment deeper than base_path)
+    chapter_urls: list[str] = []
+    seen: set[str] = set()
+    for a in soup.find_all("a", href=True):
+        full = urljoin(base_url, a["href"].split("#")[0])
+        p = urlparse(full)
+        if p.netloc != parsed_base.netloc:
+            continue
+        candidate_path = p.path.rstrip("/")
+        # Must start with base_path + "." and have no further "/" after that
+        if not candidate_path.startswith(base_path + "."):
+            continue
+        remainder = candidate_path[len(base_path) + 1:]  # e.g. "42" or "42.010"
+        if "." in remainder:
+            continue  # skip sub-section links (/Code/17.42.010)
+        if full not in seen:
+            seen.add(full)
+            chapter_urls.append(full)
+
+    all_sections: list[OrdinanceSection] = []
+    for chapter_url in chapter_urls[:30]:
+        try:
+            try:
+                await page.goto(chapter_url, wait_until="domcontentloaded", timeout=30_000)
+            except Exception:
+                pass
+            try:
+                await page.wait_for_selector("article, main", timeout=6_000)
+            except Exception:
+                pass
+
+            ch_html = await page.content()
+            ch_soup = BeautifulSoup(ch_html, "lxml")
+
+            for noise in ch_soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
+                noise.decompose()
+
+            ch_text = ch_soup.get_text(separator="\n", strip=True)
+
+            # Only keep chapters with actual use-regulation language
+            if not re.search(
+                r"\b(permitted|conditional|prohibited|allowed use|use matrix|storage|warehouse)\b",
+                ch_text, re.I,
+            ):
+                continue
+
+            sections = _split_into_sections(ch_text)
+            if not sections and len(ch_text) > 200:
+                # Page has relevant text but no parseable section numbers —
+                # return as one blob with the chapter code as the section id
+                chapter_id = chapter_url.rstrip("/").split("/")[-1]
+                h = ch_soup.find(re.compile(r"^h[1-3]$"))
+                heading = h.get_text(strip=True) if h else chapter_id
+                sections = [OrdinanceSection(
+                    section_id=chapter_id,
+                    heading=heading,
+                    text=ch_text[:_MAX_SECTION_CHARS],
+                    district_codes=_find_district_codes(ch_text),
+                )]
+            all_sections.extend(sections)
+        except Exception:
+            continue
+
+    return all_sections
 
 
 async def _fetch_municode(url: str) -> list[OrdinanceSection]:
