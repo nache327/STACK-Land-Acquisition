@@ -259,6 +259,48 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         ),
     ),
 
+    # ── Allentown, PA ────────────────────────────────────────────────────────
+    # City_Landuse FeatureServer: WARDACCTNO=APN, PROPERTYADDR=address.
+    # ZONE_CODE is an integer land-use code; actual zoning district text codes
+    # (e.g. R-L, C-1) come from the separate CityZoning FeatureServer via
+    # spatial join (zoning_polygon_endpoint).
+    "allentown": JurisdictionConfig(
+        name="Allentown, PA",
+        state="PA",
+        county="Lehigh",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/City_Landuse/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/CityZoning/FeatureServer/0"
+        ),
+        ordinance_url=(
+            "https://www.allentownpa.gov/Portals/0/files/Departments"
+            "/PlanningZoning/Zoning%20Ordinance.pdf"
+        ),
+    ),
+    "allentown, pa": JurisdictionConfig(
+        name="Allentown, PA",
+        state="PA",
+        county="Lehigh",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/City_Landuse/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/CityZoning/FeatureServer/0"
+        ),
+        ordinance_url=(
+            "https://www.allentownpa.gov/Portals/0/files/Departments"
+            "/PlanningZoning/Zoning%20Ordinance.pdf"
+        ),
+    ),
+
     # ── New Jersey counties ───────────────────────────────────────────────────
     # Source: NJOGIS Parcels_Composite_NJ_WM — MOD-IV statewide composite.
     # Filtered per county via COUNTY='<NAME>' (uppercase full county name).

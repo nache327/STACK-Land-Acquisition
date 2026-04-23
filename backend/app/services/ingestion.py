@@ -39,6 +39,8 @@ _APN_FIELDS = [
     "BBL", "bbl",
     # Philadelphia OPA
     "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID",
+    # Allentown PA City_Landuse service
+    "WARDACCTNO",
 ]
 _ADDRESS_FIELDS = [
     "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS", "PARCEL_ADD",
@@ -46,6 +48,8 @@ _ADDRESS_FIELDS = [
     "Address", "ADDRESS1",
     # Philadelphia OPA / NJ Passaic county service
     "location", "LOCATION", "street_address",
+    # Allentown PA City_Landuse service
+    "PROPERTYADDR",
 ]
 _ZONE_FIELDS = [
     "ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST",
@@ -53,6 +57,8 @@ _ZONE_FIELDS = [
     "ZONEDIST", "ZoneDist1",
     # Philadelphia OPA
     "zoning",
+    # Allentown PA CityZoning service
+    "ZONINGCODE",
 ]
 _LANDUSE_FIELDS = [
     "LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS",
