@@ -10,7 +10,6 @@ import { ParcelTable } from "@/components/ParcelTable";
 import { ParcelDrawer } from "@/components/ParcelDrawer";
 import { FilterPanel, DEFAULT_FILTERS } from "@/components/FilterPanel";
 import type { FilterState } from "@/components/FilterPanel";
-import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
 import { useParcelDetail } from "@/hooks/useParcels";
 import type { ParcelRow } from "@/lib/schemas";
 import { api } from "@/lib/api";
@@ -71,11 +70,6 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [shortlistName, setShortlistName] = useState("");
   const [shortlistSaved, setShortlistSaved] = useState<string | null>(null); // saved shortlist id
-
-  // Layer visibility (used by Map + LayerControl)
-  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(
-    initialLayerVisibility()
-  );
 
   // Clear selection when filters change
   useEffect(() => {
@@ -251,8 +245,6 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
                 setSelectedParcelId(id);
                 setDrawerOpen(true);
               }}
-              visibility={layerVisibility}
-              onVisibilityChange={setLayerVisibility}
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-400">

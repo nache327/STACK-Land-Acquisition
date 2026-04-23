@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useParcelMapLayer } from "@/hooks/useParcels";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
 import type { FilterState } from "@/components/FilterPanel";
-import { LayerControl, type LayerVisibility } from "@/components/LayerControl";
+import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
 import { LAYER_REGISTRY, ZONE_CLASS_COLORS } from "@/lib/layers";
 
 // ─── Satellite base style ─────────────────────────────────────────────────────
@@ -92,8 +92,8 @@ interface MapProps {
   filters: FilterState;
   selectedParcelId?: number | null;
   onParcelClick?: (parcelId: number) => void;
-  visibility: LayerVisibility;
-  onVisibilityChange: (next: LayerVisibility) => void;
+  visibility?: LayerVisibility;
+  onVisibilityChange?: (next: LayerVisibility) => void;
 }
 
 const PARCEL_SOURCE = "parcels";
@@ -116,7 +116,7 @@ export default function Map({
   filters,
   selectedParcelId,
   onParcelClick,
-  visibility,
+  visibility = initialLayerVisibility(),
   onVisibilityChange,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -462,7 +462,6 @@ export default function Map({
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
-      <LayerControl visibility={visibility} onChange={onVisibilityChange} />
     </div>
   );
 }
