@@ -169,7 +169,7 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         parcel_source=ParcelSource.city_gis,
         parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
         where_clause="PARCEL_CITY='Lindon'",
-        ordinance_url="https://lindon.municipal.codes/Code/17",
+        ordinance_url="https://lindon.municipal.codes/Code/AxA-Table",
     ),
     "american fork": _ugrc("Parcels_Utah", "American Fork", "American Fork, UT", "Utah"),
     "eagle mountain": _ugrc("Parcels_Utah", "Eagle Mountain", "Eagle Mountain, UT", "Utah"),

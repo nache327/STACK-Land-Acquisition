@@ -53,7 +53,11 @@ logger = logging.getLogger(__name__)
 
 JURISDICTION_NAME = "Lindon, UT"
 
-# The 10 Lindon Title 17 chapters that contain use regulations
+# Primary source: the complete use matrix appendix (Appendix A — Table of Permitted Uses)
+# This is the authoritative table with all zones as columns and uses as rows.
+USE_MATRIX_URL = "https://lindon.municipal.codes/Code/AxA-Table"
+
+# Supplemental chapters kept as fallback / additional context
 CHAPTER_URLS = [
     "https://lindon.municipal.codes/Code/17.41",  # Residential zones
     "https://lindon.municipal.codes/Code/17.42",  # MU – Multiple Use
@@ -76,8 +80,8 @@ BROWSER_UA = (
 
 async def fetch_all_chapters() -> list[OrdinanceSection]:
     """
-    Open one Playwright browser session, load all chapters in sequence,
-    and return their text as OrdinanceSection objects.
+    Open one Playwright browser session, load the use matrix appendix first
+    (primary source), then each chapter as supplemental context.
 
     The first page load solves the Cloudflare challenge; subsequent loads
     in the same context reuse the cf_clearance cookie and are much faster.
@@ -96,6 +100,43 @@ async def fetch_all_chapters() -> list[OrdinanceSection]:
         ctx = await browser.new_context(user_agent=BROWSER_UA, locale="en-US")
         page = await ctx.new_page()
 
+        # ── Primary: use matrix appendix (has all zones × uses in one table) ───
+        logger.info("Fetching use matrix: %s …", USE_MATRIX_URL)
+        try:
+            await page.goto(USE_MATRIX_URL, wait_until="networkidle", timeout=60_000)
+        except Exception:
+            pass
+        for selector in ("article", "main", "table"):
+            try:
+                await page.wait_for_selector(selector, timeout=8_000)
+                break
+            except Exception:
+                continue
+        html = await page.content()
+        from app.services.ordinance_fetcher import _extract_tables_as_markdown, _find_district_codes
+        import copy
+        from bs4 import BeautifulSoup as _BS
+        soup = _BS(html, "lxml")
+        for noise in soup.select("nav, header, footer, aside, [class*='sidebar'], [class*='toc']"):
+            noise.decompose()
+        tables_md = _extract_tables_as_markdown(soup)
+        if tables_md:
+            soup_copy = copy.copy(soup)
+            for t in soup_copy.find_all("table"):
+                t.decompose()
+            prose = soup_copy.get_text(separator="\n", strip=True)
+            table_text = f"{prose}\n\n--- USE MATRIX TABLES ---\n\n{tables_md}"
+            all_sections.append(OrdinanceSection(
+                section_id="AxA-Table",
+                heading="Appendix A — Table of Permitted Uses",
+                text=table_text[:_MAX_ORDINANCE_CHARS],
+                district_codes=_find_district_codes(table_text),
+            ))
+            logger.info("  Use matrix: %d chars, %d district codes", len(table_text), len(all_sections[0].district_codes))
+        else:
+            logger.warning("  No tables found in use matrix page — falling back to chapter-only mode")
+
+        # ── Supplemental: individual zone chapters ─────────────────────────────
         for url in CHAPTER_URLS:
             logger.info("Fetching %s …", url)
             try:
