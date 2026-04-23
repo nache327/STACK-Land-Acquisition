@@ -510,7 +510,8 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
     # silently discard content the user explicitly loaded.
     init_body_el = initial_soup.find("div", class_="codenav__section-body")
     init_body_len = len(init_body_el.get_text(strip=True)) if init_body_el else 0
-    if init_body_len < 3000:
+    init_has_table = bool(init_body_el and init_body_el.find("table"))
+    if init_body_len < 3000 and not init_has_table:
         pending_section_urls.extend(
             _collect_chapter_section_links(initial_soup, initial_url)
         )
@@ -556,11 +557,13 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
         next_soup = BeautifulSoup(html, "lxml")
 
         # Detect TOC-only chapter pages (small body = just a list of section links).
-        # Instead of collecting the barren TOC text, queue the "permitted uses"
-        # section pages found in the body and right nav for separate fetching.
+        # IMPORTANT: measure text length only — pages that are mostly HTML tables
+        # (e.g. use matrices) will have short plain-text but rich table content.
+        # Check for tables before deciding this is a barren TOC page.
         body_el = next_soup.find("div", class_="codenav__section-body")
         body_len = len(body_el.get_text(strip=True)) if body_el else 0
-        if body_len < 3000:
+        has_table = bool(body_el and body_el.find("table"))
+        if body_len < 3000 and not has_table:
             pending_section_urls.extend(
                 _collect_chapter_section_links(next_soup, nurl)
             )
