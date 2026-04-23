@@ -44,8 +44,11 @@ from app.services.classification import classify_zone_code
         ("TOD-1",       ZoneClass.mixed_use),
         # ── Open space / parks ──
         ("OS",          ZoneClass.open_space),
-        ("PR-1",        ZoneClass.open_space),
+        ("NOS",         ZoneClass.open_space),   # Natural Open Space
         ("PF",          ZoneClass.open_space),
+        # ── Planned Residential (Utah PR codes are residential, not open space) ──
+        ("PR-1",        ZoneClass.residential),
+        ("PR-2.0",      ZoneClass.residential),  # American Fork
         # ── Agricultural ──
         ("A-1",         ZoneClass.agricultural),
         ("AG",          ZoneClass.agricultural),
