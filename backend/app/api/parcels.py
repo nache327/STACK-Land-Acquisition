@@ -17,32 +17,45 @@ from app.schemas.parcel import ParcelDetail, ParcelFilter, ParcelListResponse, P
 router = APIRouter(tags=["parcels"])
 
 
+# Sources that have actually read the ordinance — earn green/amber colors on the map.
+# "rule" = pattern-matched guess only; those render purple (unclear) until verified.
+_VERIFIED_SOURCES = ["llm", "llm_low_confidence", "llm_rule", "human"]
+
 _storage_perm_expr = case(
+    # Verified permitted (LLM or human source)
     (
-        or_(
-            ZoneUseMatrix.self_storage == UsePermission.permitted,
-            ZoneUseMatrix.mini_warehouse == UsePermission.permitted,
-            ZoneUseMatrix.luxury_garage_condo == UsePermission.permitted,
+        and_(
+            ZoneUseMatrix.classification_source.in_(_VERIFIED_SOURCES),
+            or_(
+                ZoneUseMatrix.self_storage == UsePermission.permitted,
+                ZoneUseMatrix.mini_warehouse == UsePermission.permitted,
+                ZoneUseMatrix.luxury_garage_condo == UsePermission.permitted,
+            ),
         ),
         "permitted",
     ),
+    # Verified conditional (LLM or human source)
     (
-        or_(
-            ZoneUseMatrix.self_storage == UsePermission.conditional,
-            ZoneUseMatrix.mini_warehouse == UsePermission.conditional,
-            ZoneUseMatrix.luxury_garage_condo == UsePermission.conditional,
+        and_(
+            ZoneUseMatrix.classification_source.in_(_VERIFIED_SOURCES),
+            or_(
+                ZoneUseMatrix.self_storage == UsePermission.conditional,
+                ZoneUseMatrix.mini_warehouse == UsePermission.conditional,
+                ZoneUseMatrix.luxury_garage_condo == UsePermission.conditional,
+            ),
         ),
         "conditional",
     ),
+    # Verified prohibited (LLM/human, no positive uses)
     (
-        or_(
-            ZoneUseMatrix.self_storage == UsePermission.unclear,
-            ZoneUseMatrix.mini_warehouse == UsePermission.unclear,
-            ZoneUseMatrix.luxury_garage_condo == UsePermission.unclear,
+        and_(
+            ZoneUseMatrix.classification_source.in_(_VERIFIED_SOURCES),
+            ZoneUseMatrix.zone_code.isnot(None),
         ),
-        "unclear",
+        "prohibited",
     ),
-    (ZoneUseMatrix.zone_code.isnot(None), "prohibited"),
+    # Zone in matrix but unverified (rule-based, unclear values, or unknown source)
+    (ZoneUseMatrix.zone_code.isnot(None), "unclear"),
     else_="unclassified",
 ).label("storage_permission")
 
