@@ -214,7 +214,12 @@ export default function Map({
           tileservUrl: TILESERV_URL,
           apiBaseUrl: API_BASE_URL,
         })) {
-          map.addLayer(spec);
+          // Respect defaultVisible — add hidden layers as "none" so they never
+          // flash visible before the visibility effect runs.
+          const specWithVisibility = layer.defaultVisible
+            ? spec
+            : { ...spec, layout: { ...(spec.layout ?? {}), visibility: "none" as const } };
+          map.addLayer(specWithVisibility);
         }
       }
     };
@@ -264,7 +269,7 @@ export default function Map({
         source: PARCEL_SOURCE,
         ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
         ...(jFilter ? { filter: jFilter } : {}),
-        paint: { "fill-color": "#0f172a", "fill-opacity": 0.25 },
+        paint: { "fill-color": "#0f172a", "fill-opacity": 0.12 },
       } as maplibregl.LayerSpecification);
 
       const qualFilter = buildQualifyingFilter(filtersRef.current);
@@ -284,10 +289,10 @@ export default function Map({
           ] as maplibregl.ExpressionSpecification,
           "fill-opacity": [
             "match", ["get", "storage_permission"],
-            "permitted",    0.82,
-            "conditional",  0.45,
-            "prohibited",   0.35,
-            0.45,
+            "permitted",    0.50,
+            "conditional",  0.35,
+            "prohibited",   0.20,
+            0.30,
           ] as maplibregl.ExpressionSpecification,
         },
       } as maplibregl.LayerSpecification);
