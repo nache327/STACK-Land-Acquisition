@@ -5,10 +5,12 @@ GET  /api/jobs/:id   — poll job status
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models.job import Job, JobStatus
+from app.models.jurisdiction import Jurisdiction
 from app.schemas.job import JobCreate, JobRead
 from app.services.pipeline import run_job_pipeline
 
@@ -21,6 +23,31 @@ async def create_job(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> Job:
+    # If the jurisdiction name matches an already-indexed city, return the most
+    # recent ready job for it rather than re-running the full pipeline.
+    name_query = payload.jurisdiction.strip().split(",")[0].strip().lower()
+    existing_jur = await db.execute(
+        select(Jurisdiction).where(
+            text("LOWER(name) = :n")
+        ).params(n=name_query)
+    )
+    jurisdiction = existing_jur.scalar_one_or_none()
+
+    if jurisdiction is not None and jurisdiction.last_indexed_at is not None:
+        # Find the most recent ready job for this jurisdiction
+        existing_job = await db.execute(
+            select(Job)
+            .where(
+                Job.status == JobStatus.ready,
+                text("(progress->>'jurisdiction_id') = :jid").params(jid=str(jurisdiction.id)),
+            )
+            .order_by(Job.updated_at.desc())
+            .limit(1)
+        )
+        ready_job = existing_job.scalar_one_or_none()
+        if ready_job is not None:
+            return ready_job
+
     job = Job(
         jurisdiction_input=payload.jurisdiction,
         ordinance_url=payload.ordinance_url,
