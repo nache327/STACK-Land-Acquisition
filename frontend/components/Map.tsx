@@ -269,7 +269,7 @@ export default function Map({
         source: PARCEL_SOURCE,
         ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
         ...(jFilter ? { filter: jFilter } : {}),
-        paint: { "fill-color": "#0f172a", "fill-opacity": 0.12 },
+        paint: { "fill-color": "#0f172a", "fill-opacity": 0.08 },
       } as maplibregl.LayerSpecification);
 
       const qualFilter = buildQualifyingFilter(filtersRef.current);
@@ -294,10 +294,10 @@ export default function Map({
           ] as maplibregl.ExpressionSpecification,
           "fill-opacity": [
             "match", ["get", "storage_permission"],
-            "permitted",    0.50,
-            "conditional",  0.35,
-            "prohibited",   0.20,
-            0.30,
+            "permitted",    0.40,
+            "conditional",  0.30,
+            "prohibited",   0.10,
+            0.15,
           ] as maplibregl.ExpressionSpecification,
         },
       } as maplibregl.LayerSpecification);
