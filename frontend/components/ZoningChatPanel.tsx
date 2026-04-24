@@ -304,14 +304,21 @@ export function ZoningChatPanel({
           throw new Error((errData as { error?: string }).error ?? `API error ${res.status}`);
         }
 
-        const data = await res.json() as { text?: string; error?: string };
-        if (data.error) throw new Error(data.error);
-        const fullText = data.text ?? "";
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: fullText } : m
-          )
-        );
+        // Stream the response — update the message bubble as chunks arrive
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value, { stream: true });
+          const snapshot = fullText;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: snapshot } : m
+            )
+          );
+        }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "Request failed";
         setMessages((prev) =>
