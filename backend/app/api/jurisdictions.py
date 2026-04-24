@@ -140,15 +140,24 @@ async def get_parcels_map_layer(
                             'in_wetland',        p.in_wetland,
                             'address',           p.address,
                             'storage_permission', CASE
-                                WHEN zum.self_storage    = 'permitted'
-                                  OR zum.mini_warehouse  = 'permitted'
-                                  OR zum.luxury_garage_condo = 'permitted'
+                                -- Verified permitted (LLM or human source)
+                                WHEN zum.classification_source IN ('llm','llm_low_confidence','llm_rule','human')
+                                 AND (zum.self_storage = 'permitted'
+                                   OR zum.mini_warehouse = 'permitted'
+                                   OR zum.luxury_garage_condo = 'permitted')
                                 THEN 'permitted'
-                                WHEN zum.self_storage    = 'conditional'
-                                  OR zum.mini_warehouse  = 'conditional'
-                                  OR zum.luxury_garage_condo = 'conditional'
+                                -- Verified conditional (LLM or human source)
+                                WHEN zum.classification_source IN ('llm','llm_low_confidence','llm_rule','human')
+                                 AND (zum.self_storage = 'conditional'
+                                   OR zum.mini_warehouse = 'conditional'
+                                   OR zum.luxury_garage_condo = 'conditional')
                                 THEN 'conditional'
-                                WHEN zum.zone_code IS NOT NULL THEN 'prohibited'
+                                -- Verified prohibited (LLM/human, no positive uses)
+                                WHEN zum.classification_source IN ('llm','llm_low_confidence','llm_rule','human')
+                                 AND zum.zone_code IS NOT NULL
+                                THEN 'prohibited'
+                                -- Zone in matrix but unverified (rule-based or unknown source)
+                                WHEN zum.zone_code IS NOT NULL THEN 'unclear'
                                 ELSE 'unclassified'
                             END
                         )
