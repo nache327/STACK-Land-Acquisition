@@ -152,7 +152,13 @@ async def get_parcels_map_layer(
                                    OR zum.mini_warehouse = 'conditional'
                                    OR zum.luxury_garage_condo = 'conditional')
                                 THEN 'conditional'
-                                -- Verified prohibited (LLM/human, no positive uses)
+                                -- Verified but has unclear use values — don't collapse to prohibited
+                                WHEN zum.classification_source IN ('llm','human')
+                                 AND (zum.self_storage = 'unclear'
+                                   OR zum.mini_warehouse = 'unclear'
+                                   OR zum.luxury_garage_condo = 'unclear')
+                                THEN 'unclear'
+                                -- Verified prohibited (LLM/human, all uses explicitly prohibited)
                                 WHEN zum.classification_source IN ('llm','human')
                                  AND zum.zone_code IS NOT NULL
                                 THEN 'prohibited'

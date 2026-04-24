@@ -46,7 +46,19 @@ _storage_perm_expr = case(
         ),
         "conditional",
     ),
-    # Verified prohibited (LLM/human, no positive uses)
+    # Verified but has unclear use values — don't collapse to prohibited
+    (
+        and_(
+            ZoneUseMatrix.classification_source.in_(_VERIFIED_SOURCES),
+            or_(
+                ZoneUseMatrix.self_storage == UsePermission.unclear,
+                ZoneUseMatrix.mini_warehouse == UsePermission.unclear,
+                ZoneUseMatrix.luxury_garage_condo == UsePermission.unclear,
+            ),
+        ),
+        "unclear",
+    ),
+    # Verified prohibited (LLM/human, all uses are explicitly prohibited)
     (
         and_(
             ZoneUseMatrix.classification_source.in_(_VERIFIED_SOURCES),
