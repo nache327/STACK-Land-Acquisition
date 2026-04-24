@@ -2,13 +2,17 @@
 
 /**
  * Side panel that slides in when a parcel is clicked.
- * Phase 7: adds shortlist toggle + keyboard navigation hint.
+ * Includes Three-Layer Zoning Verification Engine.
  */
 
+import { useEffect } from "react";
 import type { ParcelDetail } from "@/lib/schemas";
+import { useVerification } from "@/hooks/useVerification";
+import { VerificationPanel } from "./VerificationPanel";
 
 interface ParcelDrawerProps {
   parcel: ParcelDetail | null;
+  jurisdictionId: string;
   onClose: () => void;
   isInShortlist?: boolean;
   onToggleShortlist?: () => void;
@@ -16,14 +20,30 @@ interface ParcelDrawerProps {
 
 export function ParcelDrawer({
   parcel,
+  jurisdictionId,
   onClose,
   isInShortlist = false,
   onToggleShortlist,
 }: ParcelDrawerProps) {
+  const { state, layer1Loading, layer3Loading, error, runLayer1, runLayer3, reset } =
+    useVerification({
+      apn: parcel?.apn ?? "",
+      zoneCode: parcel?.zoning_code ?? null,
+      jurisdictionId,
+    });
+
+  // Auto-run Layer 1 when drawer opens with a new parcel
+  useEffect(() => {
+    if (parcel?.zoning_code) {
+      runLayer1();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parcel?.apn]);
+
   if (!parcel) return null;
 
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 w-[420px] overflow-y-auto border-l border-slate-200 bg-white shadow-xl">
+    <aside className="fixed inset-y-0 right-0 z-50 w-[440px] overflow-y-auto border-l border-slate-200 bg-white shadow-xl">
       <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <h2 className="font-semibold text-slate-900">Parcel Detail</h2>
         <div className="flex items-center gap-2">
@@ -39,6 +59,7 @@ export function ParcelDrawer({
       </header>
 
       <div className="space-y-4 p-4">
+        {/* Parcel attributes */}
         <dl className="space-y-3 text-sm">
           <Row label="APN" value={parcel.apn} mono />
           <Row label="Address" value={parcel.address} />
@@ -56,14 +77,6 @@ export function ParcelDrawer({
             danger={parcel.in_wetland}
           />
           <Row
-            label="Slope"
-            value={
-              parcel.avg_slope_pct != null
-                ? `${parcel.avg_slope_pct.toFixed(1)}%`
-                : "Unknown"
-            }
-          />
-          <Row
             label="Structure"
             value={
               parcel.has_structure === null
@@ -75,9 +88,18 @@ export function ParcelDrawer({
           />
         </dl>
 
+        {/* Three-Layer Verification */}
+        <VerificationPanel
+          state={state}
+          layer1Loading={layer1Loading}
+          layer3Loading={layer3Loading}
+          error={error}
+          onRunLayer3={runLayer3}
+          onReset={reset}
+        />
+
         {/* Actions */}
         <div className="space-y-2 pt-1">
-          {/* Shortlist toggle */}
           {onToggleShortlist && (
             <button
               onClick={onToggleShortlist}
@@ -92,7 +114,6 @@ export function ParcelDrawer({
             </button>
           )}
 
-          {/* County GIS link */}
           {parcel.county_link && (
             <a
               href={parcel.county_link}
@@ -104,7 +125,6 @@ export function ParcelDrawer({
             </a>
           )}
 
-          {/* Copy CSV row */}
           <button
             onClick={() => {
               const csv = [

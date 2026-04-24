@@ -26,7 +26,7 @@ const PERMISSION_COLORS: Record<Permission, string> = {
   permitted: "bg-emerald-100 text-emerald-800 border-emerald-300",
   conditional: "bg-amber-100 text-amber-800 border-amber-300",
   prohibited: "bg-red-100 text-red-800 border-red-300",
-  unclear: "bg-slate-100 text-slate-500 border-slate-200",
+  unclear: "bg-violet-100 text-violet-700 border-violet-300",
 };
 
 const PERMISSION_LABELS: Record<Permission, string> = {
@@ -95,6 +95,30 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
                       className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700"
                     >
                       ✓
+                    </span>
+                  )}
+                  {!zone.human_reviewed && zone.classification_source === "llm_low_confidence" && (
+                    <span
+                      title="Low-confidence LLM result (< 70%) — verify against ordinance"
+                      className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700"
+                    >
+                      ~verify
+                    </span>
+                  )}
+                  {!zone.human_reviewed && zone.classification_source === "llm_rule" && (
+                    <span
+                      title="LLM parsed; unclear slots filled by rule classifier"
+                      className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-600"
+                    >
+                      ~partial
+                    </span>
+                  )}
+                  {!zone.human_reviewed && zone.classification_source === "rule" && (
+                    <span
+                      title="Rule-based classification — not yet verified against ordinance text"
+                      className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+                    >
+                      ⚠
                     </span>
                   )}
                 </div>
@@ -186,7 +210,7 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
           <span className="font-semibold text-red-700">X</span> Prohibited
         </span>
         <span>
-          <span className="font-semibold text-slate-500">?</span> Unclear
+          <span className="font-semibold text-violet-600">?</span> Unclear
         </span>
         <span className="text-slate-300">·</span>
         <span>Click any cell to override</span>

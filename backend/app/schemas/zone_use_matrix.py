@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.zone_use_matrix import UsePermission
+from app.models.zone_use_matrix import ClassificationSource, UsePermission
 
 
 class CitationSchema(BaseModel):
@@ -27,6 +27,7 @@ class ZoneUseMatrixRead(BaseModel):
     confidence: float | None
     human_reviewed: bool
     notes: str | None
+    classification_source: ClassificationSource
     created_at: datetime
     updated_at: datetime
 
@@ -38,6 +39,18 @@ class ZoneUseMatrixUpdate(BaseModel):
     light_industrial: UsePermission | None = None
     luxury_garage_condo: UsePermission | None = None
     notes: str | None = None
+
+
+class ZoneUseMatrixCreate(BaseModel):
+    """Create a new zone row (e.g. from Apply Correction ADD action)."""
+    zone_code: str
+    zone_name: str | None = None
+    self_storage: UsePermission = UsePermission.unclear
+    mini_warehouse: UsePermission = UsePermission.unclear
+    light_industrial: UsePermission = UsePermission.unclear
+    luxury_garage_condo: UsePermission = UsePermission.unclear
+    classification_source: ClassificationSource = ClassificationSource.unclear
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
 
 class ZoneMatrixResponse(BaseModel):

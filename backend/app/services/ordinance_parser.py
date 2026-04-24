@@ -29,6 +29,7 @@ from pydantic import ValidationError
 
 from app.config import settings
 from app.schemas.zone_use_matrix import ParserOutput, ParserZoneResult
+from app.services.zone_classifier import classify_by_zone_character
 
 logger = logging.getLogger(__name__)
 
@@ -138,24 +139,26 @@ async def parse_ordinance_sections(
             last_error = str(exc)
             logger.warning("Claude parse attempt %d failed: %s", attempt + 1, exc)
 
-    # ── Both attempts failed — fallback ────────────────────────────────────
+    # ── Both attempts failed — use zone_classifier instead of all-unclear ──
     logger.error("Parser failed for %s after 2 attempts: %s", jurisdiction_name, last_error)
-    fallback_zones = [
-        ParserZoneResult(
-            code=code,
-            self_storage="unclear",
-            mini_warehouse="unclear",
-            light_industrial="unclear",
-            luxury_garage_condo="unclear",
-            confidence=0.0,
-            notes=f"Parser failed: {last_error}",
-        )
-        for code in known_zone_codes
-    ]
+    fallback_zones = []
+    for code in known_zone_codes:
+        rule = classify_by_zone_character(code)
+        d = {
+            "code": code,
+            "self_storage": rule.self_storage,
+            "mini_warehouse": rule.mini_warehouse,
+            "light_industrial": rule.light_industrial,
+            "luxury_garage_condo": rule.luxury_garage_condo,
+            "confidence": rule.confidence,
+            "notes": f"[rule-fallback: LLM parse failed after 2 attempts] {rule.notes or ''}",
+        }
+        d = _apply_luxury_garage_inference(d)
+        fallback_zones.append(ParserZoneResult.model_validate(d))
     return ParserOutput(
         zones=fallback_zones,
         unknown_zones=[],
-        parser_warnings=[f"Parser failed after 2 attempts: {last_error}"],
+        parser_warnings=[f"Parser failed after 2 attempts: {last_error}. Used rule-based classifier for all zones."],
     )
 
 
@@ -214,13 +217,59 @@ def _validate_parser_output(raw_json: str) -> ParserOutput:
     return ParserOutput.model_validate(data)
 
 
+_CONFIDENCE_FLOOR = 0.70  # Below this, fill "unclear" slots with zone_classifier
+
+
+def _apply_zone_classifier_floor(zones: list[ParserZoneResult]) -> list[ParserZoneResult]:
+    """
+    For any zone where confidence < _CONFIDENCE_FLOOR OR any use column = "unclear",
+    apply classify_by_zone_character() to fill the unclear slots.
+
+    Rules:
+    - Never overrides a concrete LLM value (permitted / conditional / prohibited).
+    - Only fills slots that are "unclear".
+    - Re-applies luxury_garage_condo inference after filling.
+    - Tags notes with "[llm+rule: ...]" when the rule classifier was used.
+    """
+    result: list[ParserZoneResult] = []
+    for zone in zones:
+        has_unclear = any(
+            getattr(zone, use) == "unclear"
+            for use in ("self_storage", "mini_warehouse", "light_industrial", "luxury_garage_condo")
+        )
+        is_low_conf = (zone.confidence or 0.0) < _CONFIDENCE_FLOOR
+
+        if not has_unclear and not is_low_conf:
+            result.append(zone)
+            continue
+
+        rule = classify_by_zone_character(zone.code)
+        rule_used = False
+        d = zone.model_dump()
+
+        for use_key in ("self_storage", "mini_warehouse", "light_industrial"):
+            if d.get(use_key) == "unclear":
+                d[use_key] = getattr(rule, use_key)
+                rule_used = True
+
+        # Re-apply luxury_garage_condo inference with resolved values
+        d = _apply_luxury_garage_inference(d)
+
+        if rule_used:
+            d["notes"] = f"[llm+rule: zone_classifier filled unclear slots] {d.get('notes') or ''}"
+
+        result.append(ParserZoneResult.model_validate(d))
+    return result
+
+
 def _build_output(raw_json: str) -> ParserOutput:
-    """Parse, validate, and apply the luxury_garage_condo inference rule."""
+    """Parse, validate, apply inference rule, and apply zone_classifier floor."""
     output = _validate_parser_output(raw_json)
     fixed = [
         ParserZoneResult.model_validate(_apply_luxury_garage_inference(z.model_dump()))
         for z in output.zones
     ]
+    fixed = _apply_zone_classifier_floor(fixed)
     return ParserOutput(
         zones=fixed,
         unknown_zones=output.unknown_zones,

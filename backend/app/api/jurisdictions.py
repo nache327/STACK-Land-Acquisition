@@ -2,6 +2,7 @@
 GET  /api/jurisdictions                         — list known jurisdictions
 GET  /api/jurisdictions/:id                     — single jurisdiction
 GET  /api/jurisdictions/:id/zones               — zone→use matrix
+GET  /api/jurisdictions/:id/zones/:code         — single zone row (for Layer 3 verification)
 PATCH /api/jurisdictions/:id/zones/:code        — human override
 GET  /api/jurisdictions/:id/parcels/map         — GeoJSON FeatureCollection for MapLibre
 """
@@ -14,10 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models.jurisdiction import Jurisdiction
-from app.models.zone_use_matrix import ZoneUseMatrix
+from app.models.zone_use_matrix import ZoneUseMatrix, ClassificationSource
 from app.schemas.jurisdiction import JurisdictionList, JurisdictionRead
 from app.schemas.zone_use_matrix import (
     ZoneMatrixResponse,
+    ZoneUseMatrixCreate,
     ZoneUseMatrixRead,
     ZoneUseMatrixUpdate,
 )
@@ -57,6 +59,58 @@ async def get_zone_matrix(
     return {"zones": zones, "unknown_zones": [], "parser_warnings": []}
 
 
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/zones",
+    response_model=ZoneUseMatrixRead,
+    status_code=201,
+)
+async def create_zone(
+    jurisdiction_id: uuid.UUID,
+    payload: ZoneUseMatrixCreate,
+    db: AsyncSession = Depends(get_db),
+) -> ZoneUseMatrix:
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+    existing = await db.execute(
+        select(ZoneUseMatrix).where(
+            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+            ZoneUseMatrix.zone_code == payload.zone_code,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=409, detail="Zone already exists")
+    zone = ZoneUseMatrix(
+        jurisdiction_id=jurisdiction_id,
+        **payload.model_dump(),
+    )
+    db.add(zone)
+    await db.flush()
+    await db.refresh(zone)
+    return zone
+
+
+@router.get(
+    "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
+    response_model=ZoneUseMatrixRead,
+)
+async def get_zone(
+    jurisdiction_id: uuid.UUID,
+    zone_code: str,
+    db: AsyncSession = Depends(get_db),
+) -> ZoneUseMatrix:
+    result = await db.execute(
+        select(ZoneUseMatrix).where(
+            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+            ZoneUseMatrix.zone_code == zone_code,
+        )
+    )
+    zone = result.scalar_one_or_none()
+    if zone is None:
+        raise HTTPException(status_code=404, detail="Zone not found")
+    return zone
+
+
 @router.patch(
     "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
     response_model=ZoneUseMatrixRead,
@@ -80,6 +134,7 @@ async def update_zone(
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(zone, field, value)
     zone.human_reviewed = True
+    zone.classification_source = ClassificationSource.human
     await db.flush()
     await db.refresh(zone)
     return zone
@@ -118,14 +173,25 @@ async def get_parcels_map_layer(
                             'in_wetland',        p.in_wetland,
                             'address',           p.address,
                             'storage_permission', CASE
-                                WHEN zum.self_storage    = 'permitted'
-                                  OR zum.mini_warehouse  = 'permitted'
+                                -- Any use permitted — show green regardless of source
+                                WHEN zum.self_storage = 'permitted'
+                                  OR zum.mini_warehouse = 'permitted'
                                   OR zum.luxury_garage_condo = 'permitted'
                                 THEN 'permitted'
-                                WHEN zum.self_storage    = 'conditional'
-                                  OR zum.mini_warehouse  = 'conditional'
+                                -- Any use conditional — show amber regardless of source
+                                WHEN zum.self_storage = 'conditional'
+                                  OR zum.mini_warehouse = 'conditional'
                                   OR zum.luxury_garage_condo = 'conditional'
                                 THEN 'conditional'
+                                -- Both primary storage uses prohibited — show gray even if lgc is unclear
+                                WHEN zum.self_storage = 'prohibited'
+                                 AND zum.mini_warehouse = 'prohibited'
+                                THEN 'prohibited'
+                                -- Primary storage use is unclear — show purple
+                                WHEN zum.self_storage = 'unclear'
+                                  OR zum.mini_warehouse = 'unclear'
+                                THEN 'unclear'
+                                -- Zone in matrix, all uses explicitly prohibited
                                 WHEN zum.zone_code IS NOT NULL THEN 'prohibited'
                                 ELSE 'unclassified'
                             END
@@ -146,10 +212,13 @@ async def get_parcels_map_layer(
     result = await db.execute(sql, {"jid": jurisdiction_id})
     row = result.one_or_none()
 
+    headers = {"Cache-Control": "no-store"}
+
     if row is None or row.fc is None:
         return JSONResponse(
             content={"type": "FeatureCollection", "features": []},
             media_type="application/geo+json",
+            headers=headers,
         )
 
-    return JSONResponse(content=row.fc, media_type="application/geo+json")
+    return JSONResponse(content=row.fc, media_type="application/geo+json", headers=headers)

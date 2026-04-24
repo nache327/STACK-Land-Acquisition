@@ -16,12 +16,15 @@ from typing import Any
 
 import geopandas as gpd
 from geoalchemy2 import WKTElement
+from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
-from sqlalchemy import delete, insert
+from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.parcel import Parcel
+from app.services.classification import classify_zone_code
 from app.services.overlays import SFHA_ZONES
 from app.services.vacancy import is_vacant_by_landuse
 
@@ -38,6 +41,8 @@ _APN_FIELDS = [
     "BBL", "bbl",
     # Philadelphia OPA
     "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID",
+    # Allentown PA City_Landuse service
+    "WARDACCTNO",
 ]
 _ADDRESS_FIELDS = [
     "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS", "PARCEL_ADD",
@@ -46,6 +51,8 @@ _ADDRESS_FIELDS = [
     "Address", "ADDRESS1",
     # Philadelphia OPA / NJ Passaic county service
     "location", "LOCATION", "street_address",
+    # Allentown PA City_Landuse service
+    "PROPERTYADDR",
 ]
 _ZONE_FIELDS = [
     "ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST",
@@ -53,6 +60,8 @@ _ZONE_FIELDS = [
     "ZONEDIST", "ZoneDist1",
     # Philadelphia OPA
     "zoning",
+    # Allentown PA CityZoning service
+    "ZONINGCODE",
 ]
 _LANDUSE_FIELDS = [
     "LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS",
@@ -88,6 +97,23 @@ _OWNER_FIELDS = [
     "OwnerName",
     # Philadelphia OPA
     "owner_1", "owner_2",
+    # County assessor / tax roll variants (common across US counties)
+    "TAXPAYER", "TAXPAYER_NM", "TAXPAYERNM", "TAX_PAYER", "TAX_NAME",
+    "TAXPAYER_NAME", "TAXPAYER1", "TAXPAYER_1",
+    # Full-name fields used by many Midwest/Southeast counties
+    "OWN_FULL", "OWN_NAME", "OWN1", "OWN_1", "OWN_NAME1",
+    "OWNER_NAME_1", "OWNER_FULL",
+    # Grantee/deed-based fields
+    "GRANTEE", "GRANTEE_NAME", "DEED_NAME",
+    # Generic party / name fields used in some state-level services
+    "PARTY_1", "PARTY1", "LANDOWNER", "LAND_OWNER",
+    # Regrid normalized field
+    "owner",
+    # Texas / Southeast county variants
+    "PROP_OWNER", "PROPERTY_OWNER", "OWNER_NAM",
+    # Lowercase variants (some county services return lowercase field names)
+    "owner_name", "ownername", "taxpayer", "taxpayer_nm",
+    "grantee", "own_full", "own1",
 ]
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -126,7 +152,6 @@ def _safe_float(val: Any) -> float | None:
         return None
 
 
-_AREA_SQM_FIELDS = ["Shape__Area", "SHAPE__AREA", "shape_Area", "SHAPE_Area"]
 # Square-foot fields used by NYC MapPLUTO (LotArea) and Philadelphia OPA (total_area).
 _AREA_SQFT_FIELDS = [
     "LotArea", "LOT_AREA", "total_area", "TotalArea", "LOTAREA",
@@ -135,18 +160,41 @@ _AREA_SQFT_FIELDS = [
 _SQM_PER_ACRE = 4046.856
 _SQFT_PER_ACRE = 43_560.0
 
+# WGS84 ellipsoid for geodetic area calculation. geometry_area_perimeter() takes
+# a Shapely geometry in lon/lat degrees and returns area in square meters.
+_geod = Geod(ellps="WGS84")
+
+
+def _geom_acres(geom: Any) -> float | None:
+    """Compute acreage from a WGS84 Shapely geometry using geodetic area on the ellipsoid."""
+    try:
+        area_sqm, _ = _geod.geometry_area_perimeter(geom)
+        area_sqm = abs(area_sqm)
+        if area_sqm > 0:
+            return round(area_sqm / _SQM_PER_ACRE, 4)
+    except Exception:
+        pass
+    return None
+
 
 def _resolve_acres(row: Any, geom: Any) -> float | None:
-    """Return parcel acreage, preferring explicit fields then Shape__Area (sq m)."""
+    """Return parcel acreage.
+
+    Priority:
+      1. Explicit acres field from source (assessor value, already in acres).
+      2. Explicit square-foot field (NYC LotArea, Philly total_area).
+      3. Geodetic area from the WGS84 geometry — always correct regardless of
+         source CRS, replacing the old Shape__Area fallback whose units were
+         ambiguous (sq ft vs sq m depending on the native layer CRS).
+    """
     v = _safe_float(_first(row, _ACRES_FIELDS))
     if v is not None and v > 0:
         return round(v, 4)
     sqft = _safe_float(_first(row, _AREA_SQFT_FIELDS))
     if sqft is not None and sqft > 0:
         return round(sqft / _SQFT_PER_ACRE, 4)
-    sqm = _safe_float(_first(row, _AREA_SQM_FIELDS))
-    if sqm is not None and sqm > 0:
-        return round(sqm / _SQM_PER_ACRE, 4)
+    if geom is not None:
+        return _geom_acres(geom)
     return None
 
 
@@ -213,12 +261,16 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         props = {}
     raw = {k: str(v) if v is not None else None for k, v in props.items()}
 
+    zoning_code_val = str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None
+    zone_class_val = classify_zone_code(zoning_code_val).value if zoning_code_val else None
+
     return {
         "jurisdiction_id": jurisdiction_id,
         "apn": str(apn),
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
-        "zoning_code": str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None,
+        "zoning_code": zoning_code_val,
+        "zone_class": zone_class_val,
         "land_use_code": land_use,
         "acres": _resolve_acres(row, geom),
         "county_link": str(lk).strip() if (lk := _first(row, _LINK_FIELDS)) else None,
@@ -239,7 +291,6 @@ async def ingest_parcels(
     gdf: gpd.GeoDataFrame,
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
-    replace: bool = True,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -268,20 +319,31 @@ async def ingest_parcels(
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
 
-    if replace:
-        logger.info("Deleting existing parcels for jurisdiction %s …", jurisdiction_id)
-        await db.execute(
-            delete(Parcel).where(Parcel.jurisdiction_id == jurisdiction_id)
-        )
-
     BATCH = 2000
     total_inserted = 0
     num_batches = math.ceil(len(rows) / BATCH)
+
+    # Upsert: on conflict (jurisdiction_id, apn) update all mutable fields.
+    # This replaces the old delete-then-insert pattern that caused duplicates
+    # when two pipeline runs overlapped or a setup script ran before the pipeline.
+    update_cols = {
+        c.key: getattr(pg_insert(Parcel).excluded, c.key)
+        for c in Parcel.__table__.columns
+        if c.key not in ("id", "jurisdiction_id", "apn", "created_at")
+    }
     for i in range(0, len(rows), BATCH):
         batch = rows[i : i + BATCH]
-        await db.execute(insert(Parcel), batch)
+        stmt = (
+            pg_insert(Parcel)
+            .values(batch)
+            .on_conflict_do_update(
+                constraint="uq_parcels_jurisdiction_apn",
+                set_=update_cols,
+            )
+        )
+        await db.execute(stmt)
         total_inserted += len(batch)
-        logger.info("Inserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
+        logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id

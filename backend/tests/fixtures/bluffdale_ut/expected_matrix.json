@@ -1,0 +1,76 @@
+{
+  "_comment": "Hand-labeled ground truth for Bluffdale UT zone_use_matrix. Zone codes confirmed against Bluffdale Municipal Code Title 10 (Zoning).",
+  "_source": "https://bluffdale.com/171/Zoning",
+  "zones": [
+    {
+      "code": "I-1",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "I-1 Light Industrial",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "GC-1",
+      "self_storage": "conditional",
+      "mini_warehouse": "conditional",
+      "light_industrial": "conditional",
+      "luxury_garage_condo": "conditional"
+    },
+    {
+      "code": "GC-1 General Commercial",
+      "self_storage": "conditional",
+      "mini_warehouse": "conditional",
+      "light_industrial": "conditional",
+      "luxury_garage_condo": "conditional"
+    },
+    {
+      "code": "Commercial Storage",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "CI",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted"
+    },
+    {
+      "code": "Mixed Use",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    },
+    {
+      "code": "MU",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    },
+    {
+      "code": "R-MF Multifamily",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    },
+    {
+      "code": "R-1-43",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited"
+    }
+  ]
+}

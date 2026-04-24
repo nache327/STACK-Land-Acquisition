@@ -170,6 +170,13 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
     "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
     "lehi":          _ugrc("Parcels_Utah", "Lehi",          "Lehi, UT",          "Utah"),
+    "lindon": JurisdictionConfig(
+        name="Lindon, UT", state="UT", county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Lindon'",
+        ordinance_url="https://lindon.municipal.codes/Code/AxA-Table",
+    ),
     "american fork": _ugrc("Parcels_Utah", "American Fork", "American Fork, UT", "Utah"),
     "eagle mountain": _ugrc("Parcels_Utah", "Eagle Mountain", "Eagle Mountain, UT", "Utah"),
     "pleasant grove": _ugrc("Parcels_Utah", "Pleasant Grove", "Pleasant Grove, UT", "Utah"),
@@ -330,6 +337,48 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         zoning_polygon_endpoint=None,
     ),
 
+    # ── Allentown, PA ────────────────────────────────────────────────────────
+    # City_Landuse FeatureServer: WARDACCTNO=APN, PROPERTYADDR=address.
+    # ZONE_CODE is an integer land-use code; actual zoning district text codes
+    # (e.g. R-L, C-1) come from the separate CityZoning FeatureServer via
+    # spatial join (zoning_polygon_endpoint).
+    "allentown": JurisdictionConfig(
+        name="Allentown, PA",
+        state="PA",
+        county="Lehigh",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/City_Landuse/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/CityZoning/FeatureServer/0"
+        ),
+        ordinance_url=(
+            "https://www.allentownpa.gov/Portals/0/files/Departments"
+            "/PlanningZoning/Zoning%20Ordinance.pdf"
+        ),
+    ),
+    "allentown, pa": JurisdictionConfig(
+        name="Allentown, PA",
+        state="PA",
+        county="Lehigh",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/City_Landuse/FeatureServer/0"
+        ),
+        zoning_polygon_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services"
+            "/CityZoning/FeatureServer/0"
+        ),
+        ordinance_url=(
+            "https://www.allentownpa.gov/Portals/0/files/Departments"
+            "/PlanningZoning/Zoning%20Ordinance.pdf"
+        ),
+    ),
+
     # ── New Jersey counties ───────────────────────────────────────────────────
     # Source: NJOGIS Parcels_Composite_NJ_WM — MOD-IV statewide composite.
     # Filtered per county via COUNTY='<NAME>' (uppercase full county name).
@@ -484,7 +533,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     )
     await db.commit()
     logger.info("Ingesting parcels into PostGIS …")
-    count = await ingest_parcels(gdf, jurisdiction.id, db, replace=True)
+    count = await ingest_parcels(gdf, jurisdiction.id, db)
 
     # Update last_indexed_at + compute bbox from ingested parcels
     from datetime import datetime, timezone
@@ -594,9 +643,9 @@ async def _parse_and_save_ordinance(
     """
     from datetime import datetime, timezone
 
-    from sqlalchemy import delete
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    from app.models.zone_use_matrix import ZoneUseMatrix
+    from app.models.zone_use_matrix import ClassificationSource, ZoneUseMatrix
     from app.services.ordinance_fetcher import fetch_from_url
     from app.services.ordinance_parser import parse_ordinance_sections
 
@@ -636,13 +685,24 @@ async def _parse_and_save_ordinance(
             seen[zone.code] = zone
     deduped_zones = list(seen.values())
 
-    # Replace existing matrix rows for this jurisdiction
-    await db.execute(
-        delete(ZoneUseMatrix).where(ZoneUseMatrix.jurisdiction_id == jurisdiction.id)
-    )
+    _LLM_CONF_THRESHOLD = 0.70
 
+    # Upsert zone matrix rows — LLM output overwrites rule-based rows but never
+    # overwrites human-reviewed rows or prior LLM rows marked human.
     for zone in deduped_zones:
-        db.add(ZoneUseMatrix(
+        # Determine fine-grained classification source
+        notes_str = zone.notes or ""
+        if notes_str.startswith("[rule-fallback:"):
+            source = ClassificationSource.rule
+        elif notes_str.startswith("[llm+rule:"):
+            source = ClassificationSource.llm_rule
+        elif (zone.confidence or 0.0) < _LLM_CONF_THRESHOLD:
+            source = ClassificationSource.llm_low_confidence
+        else:
+            source = ClassificationSource.llm
+
+        citations_val = [c.model_dump() for c in zone.citations] if zone.citations else None
+        stmt = pg_insert(ZoneUseMatrix).values(
             jurisdiction_id=jurisdiction.id,
             zone_code=zone.code,
             zone_name=zone.name,
@@ -650,10 +710,30 @@ async def _parse_and_save_ordinance(
             mini_warehouse=zone.mini_warehouse,
             light_industrial=zone.light_industrial,
             luxury_garage_condo=zone.luxury_garage_condo,
-            citations=[c.model_dump() for c in zone.citations] if zone.citations else None,
+            citations=citations_val,
             confidence=zone.confidence,
             notes=zone.notes,
-        ))
+            classification_source=source,
+        ).on_conflict_do_update(
+            constraint="uq_zone_matrix",
+            set_=dict(
+                zone_name=zone.name,
+                self_storage=zone.self_storage,
+                mini_warehouse=zone.mini_warehouse,
+                light_industrial=zone.light_industrial,
+                luxury_garage_condo=zone.luxury_garage_condo,
+                citations=citations_val,
+                confidence=zone.confidence,
+                notes=zone.notes,
+                classification_source=source,
+            ),
+            where=(
+                (ZoneUseMatrix.human_reviewed == False) &
+                (ZoneUseMatrix.classification_source != ClassificationSource.human) &
+                (ZoneUseMatrix.confidence < zone.confidence)
+            ),
+        )
+        await db.execute(stmt)
 
     jurisdiction.ordinance_url = ordinance_url
     await db.flush()

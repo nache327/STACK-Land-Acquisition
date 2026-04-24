@@ -31,7 +31,7 @@ export const STAGE_LABELS: Record<string, string> = {
   downloading_parcels: "Downloading parcels…",
   downloading_zoning: "Downloading zoning…",
   parsing_ordinance: "Parsing zoning ordinance…",
-  running_overlays: "Running flood / slope / wetland overlays…",
+  running_overlays: "Running flood / wetland overlays…",
   ready: "Complete",
   failed: "Failed",
 };

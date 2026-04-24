@@ -101,6 +101,7 @@ export const ParcelRowSchema = z.object({
   avg_slope_pct: z.number().nullable(),
   in_wetland: z.boolean(),
   county_link: z.string().nullable(),
+  storage_permission: z.string().nullable().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });
@@ -185,6 +186,9 @@ export const CitationSchema = z.object({
   quote: z.string(),
 });
 
+export const ClassificationSourceSchema = z.enum(["llm", "rule", "human", "unclear", "llm_low_confidence", "llm_rule"]);
+export type ClassificationSource = z.infer<typeof ClassificationSourceSchema>;
+
 export const ZoneRowSchema = z.object({
   id: z.number().int(),
   jurisdiction_id: z.string().uuid(),
@@ -198,6 +202,7 @@ export const ZoneRowSchema = z.object({
   confidence: z.number().nullable(),
   human_reviewed: z.boolean(),
   notes: z.string().nullable(),
+  classification_source: ClassificationSourceSchema.optional().default("unclear"),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

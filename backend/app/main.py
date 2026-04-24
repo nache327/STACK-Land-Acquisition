@@ -7,6 +7,7 @@ from app.api import (
     jurisdictions,
     ordinances,
     parcels,
+    pdf_parser,
     shortlist,
     zoning_districts,
 )
@@ -43,6 +44,7 @@ app.include_router(jobs.router, prefix="/api")
 app.include_router(jurisdictions.router, prefix="/api")
 app.include_router(ordinances.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
+app.include_router(pdf_parser.router, prefix="/api")
 app.include_router(shortlist.router, prefix="/api")
 app.include_router(zoning_districts.router, prefix="/api")
 

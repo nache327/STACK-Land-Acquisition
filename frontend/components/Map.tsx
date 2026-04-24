@@ -94,6 +94,7 @@ export default function Map({
             acres: parcel.acres,
             zoning_code: parcel.zoning_code,
             zone_class: parcel.zone_class ?? "unknown",
+            storage_permission: parcel.storage_permission ?? "unclassified",
             storage_allowed: parcel.storage_allowed,
             storage_conditional: parcel.storage_conditional,
             in_flood_zone: parcel.in_flood_zone,
@@ -129,6 +130,7 @@ export default function Map({
     });
 
     mapRef.current = map;
+
     return () => {
       tooltipRef.current?.remove();
       map.remove();
@@ -151,6 +153,7 @@ export default function Map({
       ],
       { padding: 40, maxZoom: 14, duration: 800 }
     );
+
     hasFitRef.current = jurisdictionId;
   }, [bounds, jurisdictionId]);
 
@@ -163,7 +166,9 @@ export default function Map({
         if (layer.id === "parcels") continue;
 
         for (const mapLayerId of layer.mapLayerIds) {
-          if (map.getLayer(mapLayerId)) map.removeLayer(mapLayerId);
+          if (map.getLayer(mapLayerId)) {
+            map.removeLayer(mapLayerId);
+          }
         }
 
         const source = layer.source({
@@ -171,9 +176,12 @@ export default function Map({
           tileservUrl: TILESERV_URL,
           apiBaseUrl: API_BASE_URL,
         });
+
         if (!source) continue;
 
-        if (map.getSource(source.id)) map.removeSource(source.id);
+        if (map.getSource(source.id)) {
+          map.removeSource(source.id);
+        }
 
         if (source.type === "vector") {
           map.addSource(source.id, {
@@ -183,7 +191,10 @@ export default function Map({
             maxzoom: source.maxzoom,
           });
         } else {
-          map.addSource(source.id, { type: "geojson", data: source.data });
+          map.addSource(source.id, {
+            type: "geojson",
+            data: source.data,
+          });
         }
 
         for (const spec of layer.layers({
@@ -191,7 +202,17 @@ export default function Map({
           tileservUrl: TILESERV_URL,
           apiBaseUrl: API_BASE_URL,
         })) {
-          map.addLayer(spec);
+          const specWithVisibility = layer.defaultVisible
+            ? spec
+            : {
+                ...spec,
+                layout: {
+                  ...(spec.layout ?? {}),
+                  visibility: "none" as const,
+                },
+              };
+
+          map.addLayer(specWithVisibility);
         }
       }
     };
@@ -208,7 +229,10 @@ export default function Map({
     if (!map) return;
 
     const upsertParcelLayers = () => {
-      const existingSource = map.getSource(PARCEL_SOURCE) as maplibregl.GeoJSONSource | undefined;
+      const existingSource = map.getSource(PARCEL_SOURCE) as
+        | maplibregl.GeoJSONSource
+        | undefined;
+
       if (existingSource) {
         existingSource.setData(parcelCollection);
       } else {
@@ -230,18 +254,30 @@ export default function Map({
             paint: {
               "fill-color": [
                 "match",
-                ["coalesce", ["get", "zone_class"], "unknown"],
-                "residential", ZONE_CLASS_COLORS.residential,
-                "commercial", ZONE_CLASS_COLORS.commercial,
-                "industrial", ZONE_CLASS_COLORS.industrial,
-                "mixed_use", ZONE_CLASS_COLORS.mixed_use,
-                "agricultural", ZONE_CLASS_COLORS.agricultural,
-                "open_space", ZONE_CLASS_COLORS.open_space,
-                "special", ZONE_CLASS_COLORS.special,
-                "overlay", ZONE_CLASS_COLORS.overlay,
+                ["get", "storage_permission"],
+                "permitted",
+                "#10b981",
+                "conditional",
+                "#f59e0b",
+                "unclear",
+                "#a78bfa",
+                "prohibited",
+                "#6b7280",
                 UNCLASSIFIED_PARCEL_COLOR,
               ],
-              "fill-opacity": 0.6,
+              "fill-opacity": [
+                "match",
+                ["get", "storage_permission"],
+                "permitted",
+                0.65,
+                "conditional",
+                0.55,
+                "unclear",
+                0.6,
+                "prohibited",
+                0.25,
+                0.15,
+              ],
             },
           },
           beforeId
@@ -308,6 +344,7 @@ export default function Map({
 
       for (const mapLayerId of layer.mapLayerIds) {
         if (!map.getLayer(mapLayerId)) continue;
+
         map.setLayoutProperty(
           mapLayerId,
           "visibility",
@@ -315,7 +352,9 @@ export default function Map({
         );
 
         try {
-          const type = (map.getLayer(mapLayerId) as maplibregl.LayerSpecification)?.type;
+          const type = (map.getLayer(mapLayerId) as maplibregl.LayerSpecification)
+            ?.type;
+
           if (type === "fill") {
             map.setPaintProperty(mapLayerId, "fill-opacity", state.opacity);
           } else if (type === "line") {
@@ -334,6 +373,7 @@ export default function Map({
 
     const handleMoveEnd = () => {
       const nextBounds = map.getBounds();
+
       onBoundsChange([
         nextBounds.getWest(),
         nextBounds.getSouth(),
@@ -343,6 +383,7 @@ export default function Map({
     };
 
     map.on("moveend", handleMoveEnd);
+
     return () => {
       map.off("moveend", handleMoveEnd);
     };
@@ -361,8 +402,10 @@ export default function Map({
     const handleClick = (event: maplibregl.MapMouseEvent) => {
       const feature = queryParcelFeatures(event.point)[0];
       if (!feature) return;
+
       const rawId = feature.properties?.parcel_id;
       const parcelId = typeof rawId === "number" ? rawId : Number(rawId);
+
       if (Number.isFinite(parcelId)) {
         onParcelClick?.(parcelId);
       }
@@ -370,6 +413,7 @@ export default function Map({
 
     const handleMouseMove = (event: maplibregl.MapMouseEvent) => {
       const feature = queryParcelFeatures(event.point)[0];
+
       if (!feature) {
         popup.remove();
         map.getCanvas().style.cursor = "";
@@ -378,13 +422,23 @@ export default function Map({
 
       const props = feature.properties ?? {};
       const zoneClass = String(props.zone_class ?? "unknown");
-      const storageLabel = props.storage_allowed
-        ? "Permitted"
-        : props.storage_conditional
-          ? "Conditional"
-          : "Not allowed";
+      const storagePermission = String(
+        props.storage_permission ?? "unclassified"
+      );
+
+      const storageLabel =
+        storagePermission === "permitted"
+          ? "Storage permitted"
+          : storagePermission === "conditional"
+            ? "Storage conditional"
+            : storagePermission === "unclear"
+              ? "Storage unclear"
+              : storagePermission === "prohibited"
+                ? "Storage prohibited"
+                : "Storage unclassified";
 
       map.getCanvas().style.cursor = "pointer";
+
       popup
         .setLngLat(event.lngLat)
         .setHTML(
@@ -394,11 +448,26 @@ export default function Map({
             <div>${props.zoning_code ?? "—"} · ${
               props.acres != null ? Number(props.acres).toFixed(2) + " ac" : "—"
             }</div>
-            <div style="color:${ZONE_CLASS_COLORS[zoneClass as keyof typeof ZONE_CLASS_COLORS] ?? UNCLASSIFIED_PARCEL_COLOR};font-weight:500">${zoneClass}</div>
+            <div style="color:${
+              ZONE_CLASS_COLORS[zoneClass as keyof typeof ZONE_CLASS_COLORS] ??
+              UNCLASSIFIED_PARCEL_COLOR
+            };font-weight:500">${zoneClass}</div>
             <div>${storageLabel}</div>
-            ${props.has_structure === false ? '<div style="color:#059669;font-weight:500">Vacant</div>' : ""}
-            ${props.in_flood_zone === true ? '<div style="color:#dc2626;font-weight:500">Flood zone</div>' : ""}
-            ${props.in_wetland === true ? '<div style="color:#0891b2;font-weight:500">Wetland</div>' : ""}
+            ${
+              props.has_structure === false
+                ? '<div style="color:#059669;font-weight:500">Vacant</div>'
+                : ""
+            }
+            ${
+              props.in_flood_zone === true
+                ? '<div style="color:#dc2626;font-weight:500">Flood zone</div>'
+                : ""
+            }
+            ${
+              props.in_wetland === true
+                ? '<div style="color:#0891b2;font-weight:500">Wetland</div>'
+                : ""
+            }
           </div>`
         )
         .addTo(map);
@@ -412,6 +481,7 @@ export default function Map({
     map.on("click", handleClick);
     map.on("mousemove", handleMouseMove);
     map.on("mouseout", handleMouseLeave);
+
     return () => {
       map.off("click", handleClick);
       map.off("mousemove", handleMouseMove);
@@ -422,12 +492,15 @@ export default function Map({
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+
       <LayerControl visibility={visibility} onChange={onVisibilityChange} />
+
       {isLoading && (
         <div className="absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow">
           Updating parcels…
         </div>
       )}
+
       {!isLoading && parcels.length === 0 && (
         <div className="absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow">
           No parcels match the current filters.

@@ -95,6 +95,21 @@ export function ParcelTable({
         </span>
       ),
     }),
+    columnHelper.accessor("storage_permission", {
+      header: "Storage",
+      cell: (info) => {
+        const v = info.getValue();
+        if (v === "permitted")
+          return <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Permitted</span>;
+        if (v === "conditional")
+          return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Conditional</span>;
+        if (v === "unclear")
+          return <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-600">Unclear</span>;
+        if (v === "prohibited")
+          return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Prohibited</span>;
+        return <span className="text-slate-300 text-xs">—</span>;
+      },
+    }),
     columnHelper.accessor("acres", {
       header: "Acres",
       cell: (info) =>

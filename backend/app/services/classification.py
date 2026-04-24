@@ -21,30 +21,38 @@ from app.models.zoning_district import ZoneClass
 _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
     (ZoneClass.mixed_use, (
         "mixed use", "mixed-use", "cmx", "mu-", "mu ", "tod", "transit oriented",
+        "transit-oriented", "downtown mixed",
     )),
     (ZoneClass.overlay, (
         "overlay", "special purpose", "historic", "flood overlay",
     )),
     (ZoneClass.open_space, (
         "open space", "parks", "park", "recreation", "conservation", "forest",
-        "greenway",
+        "greenway", "civic", "institutional", "public facility", "public facilities",
+        "fire station", "pond", "water",
     )),
     (ZoneClass.agricultural, (
         "agricultur", "farm", "rural residential", "rr-",
     )),
     (ZoneClass.industrial, (
         "industrial", "manufactur", "warehouse", "logistics",
+        "sand & gravel", "sand and gravel", "gravel", "mining",
     )),
     (ZoneClass.commercial, (
         "commercial", "business", "office", "retail", "shopping",
+        "professional office", "gateway commercial", "neighborhood commercial",
+        "general commercial", "highway commercial", "town center",
     )),
     (ZoneClass.residential, (
         "residential", "dwelling", "single family", "multifamily", "multi-family",
-        "multi family", "townhouse",
+        "multi family", "townhouse", "townhome", "townhomes",
+        "low density", "high density", "medium density",
+        "senior housing", "village", "estates",
     )),
     (ZoneClass.special, (
         "special district", "pud", "planned unit development", "pdd",
-        "planned development",
+        "planned development", "specific plan", "flex use",
+        "redevelopment", "subarea", "under review",
     )),
 ]
 
@@ -52,21 +60,35 @@ _KEYWORD_RULES: list[tuple[ZoneClass, tuple[str, ...]]] = [
 
 _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Mixed-use (test before commercial/residential since codes overlap).
-    # The trailing `[-\s0-9a-z]*` covers NYC-style suffixes ("R6A"), Philly
-    # ("CMX-3"), and multi-part numeric codes ("C4-6A", "M1-1").
-    (ZoneClass.mixed_use, re.compile(r"^(cmx|mu|mx|tod|muo|mrd)[-\s0-9a-z]*$", re.I)),
-    # Industrial: I-1/I-2, M-1/M-2 (incl. NYC M1-1, M2-3), LI, HI, IH, IL, IP, IND, IR, ICM
-    (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z]*$", re.I)),
-    # Commercial: C-\d (incl. NYC C1-2 / C4-6A), CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d
+    # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT/D (Downtown SLC/Provo)
+    # TM = Transit Mixed (Herriman); VC = Village Center (Springville); HDMU = High Density MU
+    (ZoneClass.mixed_use, re.compile(r"^(cmx|hdmu|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|tm|dt|d|vc)[-\s0-9a-z]*$", re.I)),
+    # Industrial: I-1/I-2, M-1/M-2, LI, HI, H/I (slash variant), IH, IL, IP, IND, IR, ICM
+    (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|h[/]i|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z/]*$", re.I)),
+    # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
+    # NOS = Natural Open Space; O-S = Open Space (Murray); EUO = Environmental/Open
+    # P-F / PF = Public Facility; OW = Open Water
+    # Note: PR excluded here — used for Planned Residential in many Utah cities
+    (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|p-?f|pl|ci|pz|ps|euo|ow)[-\s0-9a-z]*$", re.I)),
+    # Special districts — must come BEFORE commercial
+    # P-C = Planned Community; SD = Special District (Sandy, Bluffdale); SDP = Specific Dev Plan
+    (ZoneClass.special, re.compile(r"^(p-?c|pud|pd|pdz|spa|pdd|cpd|ssd|sdp|sd)[-\s0-9a-z]*$", re.I)),
+    # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
+    # P-O / PO = Professional Office; HBD = Highway Business District
     (ZoneClass.commercial, re.compile(
-        r"^(cbd|cb|cc|cg|cn|co|cs|c|nc|gc|hc|lc|sc|tc|rc|of|bp|pbd|oc|ob|b)[-\s0-9a-z]*$", re.I
+        r"^(cbd|cb|cc|cg|cn|co|cs|c|nc|gc|hc|lc|sc|tc|rc|of|bp|pbd|oc|ob|b|p-?o|hbd)[-\s0-9a-z]*$", re.I
     )),
     # Agricultural: A-\d, AG
     (ZoneClass.agricultural, re.compile(r"^(ag|a)[-\s0-9a-z]*$", re.I)),
-    # Open space / public facilities: OS, PF, PR, PL
-    (ZoneClass.open_space, re.compile(r"^(os|pf|pr|pl)[-\s0-9a-z]*$", re.I)),
-    # Residential: R-\d, RM, RR, RS, RH, RA, R1-1, R6A, R8X, etc.
-    (ZoneClass.residential, re.compile(r"^r[-\s0-9a-z]*$", re.I)),
+    # Residential: R-\d, RA, RM, RR, RS, RH, R1-1, R6A, TH, SF, MF, FR (Foothill Res.),
+    # HDR/LDR/MDR (High/Low/Medium Density Residential), MR (Multi-Res),
+    # SR (Standard Residential — SLC/North Salt Lake), F- (Foothill — Cottonwood Heights)
+    # HFR = High/Heritage Single Family Res., LSFR = Large Single Family Res. (West Jordan)
+    # HD = High Density Residential; PR = Planned Residential (American Fork, Cedar Hills)
+    # Allows decimal in code (R-2.5, FR-2.5, PR-2.0) via `[-\s.0-9a-z]*`
+    (ZoneClass.residential, re.compile(
+        r"^(hfr|lsfr|vlsfr|fr|hdr|ldr|vldr|mdr|mr|sr|hd|pr|f|r|th|sf|mf|rm|rr|rs|rh)[-\s.0-9a-z]*$", re.I
+    )),
 ]
 
 
@@ -92,6 +114,44 @@ def classify_zone_code(
         for zc in ZoneClass:
             if zc.value == normalized:
                 return zc
+
+    # Some counties store multiple zone codes separated by commas or semicolons,
+    # e.g. "NC, GC" or "A5; CC; RM2". Classify the first segment that resolves.
+    if code:
+        for sep in (",", ";"):
+            if sep in code:
+                for segment in code.split(sep):
+                    seg = segment.strip()
+                    if seg:
+                        result = classify_zone_code(seg, zone_name, source_class)
+                        if result != ZoneClass.unknown:
+                            return result
+                break  # tried splitting; fall through to keyword/regex on full code
+
+    # Strip parenthetical suffixes common in Utah: "C-G(ZC)", "R-1-8(INF)", "RM(10)"
+    # Keep the base code for regex matching but pass full code through keywords first.
+    if code and re.search(r"\(", code):
+        base = re.sub(r"\s*\(.*\)\s*$", "", code).strip()
+        if base and base != code:
+            result = classify_zone_code(base, zone_name, source_class)
+            if result != ZoneClass.unknown:
+                return result
+
+    # Strip "/zc" or "/ZC" suffix used by Millcreek overlay variants: "C-2/zc" → "C-2"
+    if code and re.search(r"/zc\s*$", code, re.I):
+        base = re.sub(r"/zc\s*$", "", code, flags=re.I).strip()
+        if base:
+            result = classify_zone_code(base, zone_name, source_class)
+            if result != ZoneClass.unknown:
+                return result
+
+    # Handle slash-qualified codes: "R-1-10/ML", "RA-1/2" — classify using the prefix
+    if code and "/" in code and "/zc" not in code.lower():
+        base = code.split("/")[0].strip()
+        if base:
+            result = classify_zone_code(base, zone_name, source_class)
+            if result != ZoneClass.unknown:
+                return result
 
     haystacks = [s for s in (code, zone_name, source_class) if s]
     if not haystacks:

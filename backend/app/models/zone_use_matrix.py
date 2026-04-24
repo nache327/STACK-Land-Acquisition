@@ -25,6 +25,15 @@ class UsePermission(str, enum.Enum):
     unclear = "unclear"
 
 
+class ClassificationSource(str, enum.Enum):
+    llm = "llm"                          # Claude parsed ordinance text, confidence >= 0.70
+    rule = "rule"                        # Rule-based fallback classifier only
+    human = "human"                      # Human override via PATCH endpoint
+    unclear = "unclear"                  # Origin unknown (legacy rows)
+    llm_low_confidence = "llm_low_confidence"  # Claude parsed but confidence < 0.70
+    llm_rule = "llm_rule"                # Claude parsed; unclear slots filled by rule classifier
+
+
 class ZoneUseMatrix(Base):
     __tablename__ = "zone_use_matrix"
     __table_args__ = (
@@ -67,6 +76,13 @@ class ZoneUseMatrix(Base):
     confidence: Mapped[float | None] = mapped_column(Numeric(4, 3), nullable=True)
     human_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     notes: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+
+    classification_source: Mapped[ClassificationSource] = mapped_column(
+        Enum(ClassificationSource, name="classification_source_enum"),
+        nullable=False,
+        default=ClassificationSource.unclear,
+        server_default="unclear",
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

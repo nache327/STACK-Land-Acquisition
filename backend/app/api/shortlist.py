@@ -9,13 +9,15 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models.parcel import Parcel
 from app.models.shortlist import Shortlist
+from app.models.zone_use_matrix import ZoneUseMatrix
 from app.schemas.shortlist import ShortlistCreate, ShortlistRead
+from app.api.parcels import _storage_perm_expr, _zum_join
 
 router = APIRouter(tags=["shortlists"])
 
@@ -55,33 +57,46 @@ async def export_shortlist_csv(
     if not sl.parcel_ids:
         raise HTTPException(status_code=422, detail="Shortlist has no parcels.")
 
+    from app.models.zone_use_matrix import ZoneUseMatrix as _ZUM
     result = await db.execute(
-        select(Parcel).where(Parcel.id.in_(sl.parcel_ids))
+        select(Parcel, _storage_perm_expr,
+               _ZUM.self_storage, _ZUM.luxury_garage_condo,
+               _ZUM.classification_source, _ZUM.confidence)
+        .outerjoin(_ZUM, _zum_join)
+        .where(Parcel.id.in_(sl.parcel_ids))
     )
-    parcels = result.scalars().all()
+    rows = result.all()
 
     output = io.StringIO()
     writer = csv.DictWriter(
         output,
         fieldnames=[
             "apn", "address", "owner_name", "acres",
-            "zoning_code", "in_flood_zone", "avg_slope_pct", "in_wetland",
-            "improvement_value", "has_structure", "county_link",
+            "zoning_code", "storage_permission",
+            "self_storage", "luxury_garage_condo",
+            "classification_source", "confidence",
+            "in_flood_zone", "in_wetland", "has_structure",
+            "improvement_value", "county_link",
         ],
     )
     writer.writeheader()
-    for p in parcels:
+    for row in rows:
+        p = row[0]
         writer.writerow({
             "apn": p.apn,
             "address": p.address or "",
             "owner_name": p.owner_name or "",
             "acres": p.acres,
             "zoning_code": p.zoning_code or "",
+            "storage_permission": row[1] or "unclassified",
+            "self_storage": str(row[2].value) if row[2] else "",
+            "luxury_garage_condo": str(row[3].value) if row[3] else "",
+            "classification_source": str(row[4].value) if row[4] else "",
+            "confidence": row[5] or "",
             "in_flood_zone": p.in_flood_zone,
-            "avg_slope_pct": p.avg_slope_pct,
             "in_wetland": p.in_wetland,
-            "improvement_value": p.improvement_value,
             "has_structure": p.has_structure,
+            "improvement_value": p.improvement_value,
             "county_link": p.county_link or "",
         })
 

@@ -41,9 +41,14 @@ dependencies = [
     "pypdf>=4.2.0",
     "pdfplumber>=0.11.2",
 
-    # HTML / web scraping (for Municode / eCode360)
+    # HTML / web scraping (for Municode / eCode360 / municipal.codes)
     "beautifulsoup4>=4.12.3",
     "lxml>=5.2.2",
+
+    # Browser automation — required for JS-rendered ordinance sources
+    # (municipal.codes, Municode React SPA, Cloudflare-protected sites).
+    # After install: playwright install chromium
+    "playwright>=1.44.0",
 ]
 
 [project.optional-dependencies]
@@ -57,11 +62,9 @@ dev = [
     "respx>=0.21.1",
 ]
 
-# Playwright (used only in arcgis_discovery service — heavy dep, install separately)
-# pip install playwright && playwright install chromium
-discovery = [
-    "playwright>=1.44.0",
-]
+# Playwright is now a main dependency — see above.
+# The discovery extra is kept for backwards compatibility.
+discovery = []
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

@@ -101,7 +101,7 @@ const ZONING_DISTRICTS: LayerDef = {
   title: "Zoning Districts",
   description: "Zoning-polygon boundaries, colored by class",
   category: "data",
-  defaultVisible: true,
+  defaultVisible: false,
   defaultOpacity: 0.45,
   source: ({ jurisdictionId, tileservUrl, apiBaseUrl }) =>
     tileservUrl
