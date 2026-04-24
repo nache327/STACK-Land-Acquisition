@@ -455,7 +455,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     )
     await db.commit()
     logger.info("Ingesting parcels into PostGIS …")
-    count = await ingest_parcels(gdf, jurisdiction.id, db, replace=True)
+    count = await ingest_parcels(gdf, jurisdiction.id, db)
 
     # Update last_indexed_at + compute bbox from ingested parcels
     from datetime import datetime, timezone

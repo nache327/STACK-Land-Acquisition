@@ -19,7 +19,8 @@ from geoalchemy2 import WKTElement
 from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
-from sqlalchemy import delete, insert
+from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.parcel import Parcel
@@ -281,7 +282,6 @@ async def ingest_parcels(
     gdf: gpd.GeoDataFrame,
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
-    replace: bool = True,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -308,20 +308,31 @@ async def ingest_parcels(
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
 
-    if replace:
-        logger.info("Deleting existing parcels for jurisdiction %s …", jurisdiction_id)
-        await db.execute(
-            delete(Parcel).where(Parcel.jurisdiction_id == jurisdiction_id)
-        )
-
     BATCH = 2000
     total_inserted = 0
     num_batches = math.ceil(len(rows) / BATCH)
+
+    # Upsert: on conflict (jurisdiction_id, apn) update all mutable fields.
+    # This replaces the old delete-then-insert pattern that caused duplicates
+    # when two pipeline runs overlapped or a setup script ran before the pipeline.
+    update_cols = {
+        c.key: getattr(pg_insert(Parcel).excluded, c.key)
+        for c in Parcel.__table__.columns
+        if c.key not in ("id", "jurisdiction_id", "apn", "created_at")
+    }
     for i in range(0, len(rows), BATCH):
         batch = rows[i : i + BATCH]
-        await db.execute(insert(Parcel), batch)
+        stmt = (
+            pg_insert(Parcel)
+            .values(batch)
+            .on_conflict_do_update(
+                constraint="uq_parcels_jurisdiction_apn",
+                set_=update_cols,
+            )
+        )
+        await db.execute(stmt)
         total_inserted += len(batch)
-        logger.info("Inserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
+        logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id
