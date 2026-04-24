@@ -162,6 +162,7 @@ export const CandidateParcelRowSchema = z.object({
   zone_class: ZoneClassSchema.nullable().optional(),
   storage_allowed: z.boolean(),
   storage_conditional: z.boolean(),
+  storage_permission: z.string().nullable().optional(),
   in_flood_zone: z.boolean(),
   in_wetland: z.boolean(),
   has_structure: z.boolean().nullable(),
