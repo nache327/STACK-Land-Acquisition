@@ -64,7 +64,8 @@ function extractCorrectionReport(text: string): string | null {
 
 function parseCorrectionJson(report: string): CorrectionEntry[] {
   try {
-    const match = report.match(/\[[\s\S]*?\]/);
+    // Match a JSON array that contains objects — skips [City Name, State] placeholders
+    const match = report.match(/\[\s*\{[\s\S]*?\}\s*\]/);
     if (!match) return [];
     return JSON.parse(match[0]);
   } catch {
