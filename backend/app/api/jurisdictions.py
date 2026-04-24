@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models.jurisdiction import Jurisdiction
-from app.models.zone_use_matrix import ZoneUseMatrix
+from app.models.zone_use_matrix import ZoneUseMatrix, ClassificationSource
 from app.schemas.jurisdiction import JurisdictionList, JurisdictionRead
 from app.schemas.zone_use_matrix import (
     ZoneMatrixResponse,
@@ -102,6 +102,7 @@ async def update_zone(
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(zone, field, value)
     zone.human_reviewed = True
+    zone.classification_source = ClassificationSource.human
     await db.flush()
     await db.refresh(zone)
     return zone
