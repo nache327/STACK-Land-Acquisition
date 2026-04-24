@@ -301,7 +301,7 @@ export default function Map({
             "match", ["get", "storage_permission"],
             "permitted",    0.65,
             "conditional",  0.55,
-            "prohibited",   0.10,
+            "prohibited",   0.25,
             0.15,
           ] as maplibregl.ExpressionSpecification,
         },
