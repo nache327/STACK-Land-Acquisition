@@ -10,7 +10,7 @@ Approach:
   2. Query the overlay ArcGIS service within that bbox.
   3. Persist polygons into the overlays table (one row per source feature).
   4. Take the unary_union of all returned hazard polygons.
-  5. Bulk-UPDATE parcels where centroid falls within the union geometry.
+  5. Bulk-UPDATE parcels where parcel geometry intersects the union geometry.
 """
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from shapely.ops import unary_union
 from sqlalchemy import delete, insert, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.arcgis_bbox import download_bbox_features, get_parcel_bbox
 from app.config import settings
 from app.models.overlay import Overlay, OverlayType
 
@@ -49,7 +50,7 @@ async def apply_flood_overlay(
     Sets in_flood_zone = TRUE on matching parcels.
     Returns number of parcels updated.
     """
-    bbox = await _get_bbox(jurisdiction_id, db)
+    bbox = await get_parcel_bbox(jurisdiction_id, db)
     if bbox is None:
         logger.warning("No parcel bbox for jurisdiction %s — skipping flood overlay", jurisdiction_id)
         return 0
@@ -61,7 +62,7 @@ async def apply_flood_overlay(
     # on FEMA's service when paginating all flood zone types over large urban bboxes.
     sfha_where = "FLD_ZONE IN ('A','AE','AH','AO','AR','V','VE')"
     try:
-        gdf = await _download_bbox_features(layer_url, bbox, where=sfha_where)
+        gdf = await download_bbox_features(layer_url, bbox, where=sfha_where)
     except Exception as exc:
         logger.warning("FEMA NFHL query failed (non-fatal): %s", exc)
         return 0
@@ -106,7 +107,7 @@ async def apply_wetland_overlay(
     Sets in_wetland = TRUE on matching parcels.
     Returns number of parcels updated.
     """
-    bbox = await _get_bbox(jurisdiction_id, db)
+    bbox = await get_parcel_bbox(jurisdiction_id, db)
     if bbox is None:
         return 0
 
@@ -114,7 +115,7 @@ async def apply_wetland_overlay(
     logger.info("Querying USFWS NWI wetlands for bbox %s …", bbox)
 
     try:
-        gdf = await _download_bbox_features(layer_url, bbox)
+        gdf = await download_bbox_features(layer_url, bbox)
     except Exception as exc:
         logger.warning("USFWS NWI query failed (non-fatal): %s", exc)
         return 0
@@ -139,106 +140,6 @@ async def apply_wetland_overlay(
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async def _get_bbox(
-    jurisdiction_id: uuid.UUID,
-    db: AsyncSession,
-) -> tuple[float, float, float, float] | None:
-    """Return (minX, minY, maxX, maxY) bounding box of all parcels in EPSG:4326."""
-    result = await db.execute(
-        text("""
-            SELECT
-                ST_XMin(ST_Extent(geom)) AS minx,
-                ST_YMin(ST_Extent(geom)) AS miny,
-                ST_XMax(ST_Extent(geom)) AS maxx,
-                ST_YMax(ST_Extent(geom)) AS maxy
-            FROM parcels
-            WHERE jurisdiction_id = :jid
-              AND geom IS NOT NULL
-        """),
-        {"jid": jurisdiction_id},
-    )
-    row = result.one_or_none()
-    if row is None or row.minx is None:
-        return None
-    return (float(row.minx), float(row.miny), float(row.maxx), float(row.maxy))
-
-
-async def _download_bbox_features(
-    url: str,
-    bbox: tuple[float, float, float, float],
-    where: str = "1=1",
-):
-    """
-    Paginate through all features from an ArcGIS FeatureServer within the given
-    bbox. Asking for too many records at once returns HTTP 500 from FEMA NFHL
-    over large urban bboxes, so we request 500 per page and loop via
-    resultOffset until the server stops returning features.
-
-    Pass a server-side ``where`` clause to pre-filter features (e.g. SFHA zones
-    only for FEMA) so each page stays well under the server's result limit.
-    """
-    import httpx
-    import geopandas as gpd
-
-    minx, miny, maxx, maxy = bbox
-    # Add 10% buffer so edge-parcels don't miss overlapping flood/wetland zones
-    dx = (maxx - minx) * 0.1
-    dy = (maxy - miny) * 0.1
-    geom_filter = f"{minx - dx},{miny - dy},{maxx + dx},{maxy + dy}"
-
-    page_size = 500
-    all_features: list[dict] = []
-    offset = 0
-    query_url = url.rstrip("/") + "/query"
-
-    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-        while True:
-            params = {
-                "geometry": geom_filter,
-                "geometryType": "esriGeometryEnvelope",
-                "spatialRel": "esriSpatialRelIntersects",
-                "inSR": "4326",
-                "outSR": "4326",
-                "outFields": "*",
-                "where": where,
-                "f": "geojson",
-                "resultRecordCount": page_size,
-                "resultOffset": offset,
-            }
-            try:
-                resp = await client.get(query_url, params=params)
-                resp.raise_for_status()
-                data = resp.json()
-            except Exception as page_exc:
-                logger.warning(
-                    "Overlay page fetch failed at offset=%d (returning %d features collected so far): %s",
-                    offset, len(all_features), page_exc,
-                )
-                break
-
-            batch = data.get("features", [])
-            if not batch:
-                break
-            all_features.extend(batch)
-            logger.info(
-                "Overlay bbox fetch: %d features (offset=%d)",
-                len(all_features), offset,
-            )
-            if len(batch) < page_size:
-                break  # last page
-            offset += page_size
-            # Safety cap: most urban bboxes have <50k features; anything beyond
-            # that is likely a misconfigured query.
-            if offset > 200_000:
-                logger.warning("Overlay page cap hit at offset %d", offset)
-                break
-
-    if not all_features:
-        return None
-
-    return gpd.GeoDataFrame.from_features(all_features, crs="EPSG:4326")
-
-
 async def _bulk_flag_by_geometry(
     jurisdiction_id: uuid.UUID,
     gdf,
@@ -246,15 +147,11 @@ async def _bulk_flag_by_geometry(
     db: AsyncSession,
 ) -> int:
     """
-    Update parcels.{column} = TRUE for all parcels whose centroid falls within
+    Update parcels.{column} = TRUE for all parcels whose geometry intersects
     the union of the provided GeoDataFrame geometries.
     """
     import asyncio
 
-    # Build union of overlay polygons.
-    # Simplify to ~1 m precision — small enough not to misclassify urban parcels
-    # (the 11 m tolerance used previously could shift flood boundaries off
-    # narrow city lots).
     valid_geoms = [
         g.simplify(0.00001, preserve_topology=True)
         for g in gdf.geometry.dropna()
@@ -263,24 +160,28 @@ async def _bulk_flag_by_geometry(
     if not valid_geoms:
         return 0
 
-    union = unary_union(valid_geoms)
-    if union is None or union.is_empty:
-        return 0
+    total = 0
+    batch_size = 250
+    for offset in range(0, len(valid_geoms), batch_size):
+        union = unary_union(valid_geoms[offset : offset + batch_size])
+        if union is None or union.is_empty:
+            continue
 
-    wkt = union.wkt
+        result = await db.execute(
+            text(f"""
+                UPDATE parcels
+                SET {column} = TRUE
+                WHERE jurisdiction_id = :jid
+                  AND geom IS NOT NULL
+                  AND COALESCE({column}, FALSE) IS DISTINCT FROM TRUE
+                  AND ST_Intersects(geom, ST_GeomFromText(:geom, 4326))
+            """),
+            {"jid": jurisdiction_id, "geom": union.wkt},
+        )
+        total += result.rowcount or 0
 
-    result = await db.execute(
-        text(f"""
-            UPDATE parcels
-            SET {column} = TRUE
-            WHERE jurisdiction_id = :jid
-              AND centroid IS NOT NULL
-              AND ST_Within(centroid, ST_GeomFromText(:geom, 4326))
-        """),
-        {"jid": jurisdiction_id, "geom": wkt},
-    )
     await db.flush()
-    return result.rowcount
+    return total
 
 
 async def _persist_overlay_polygons(

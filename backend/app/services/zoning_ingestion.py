@@ -34,13 +34,13 @@ logger = logging.getLogger(__name__)
 # ── Candidate field-name lists (first match wins) ───────────────────────────
 
 _ZONE_CODE_FIELDS = [
-    "ZONEDIST", "ZONE_DIST", "ZONING", "ZONE", "CODE",
+    "ZONEDIST", "ZONE_DIST", "ZONING", "ZONINGCODE", "TYPE", "ZONE", "CODE",
     "ZONE_CODE", "ZONING_CODE", "zoning", "zonecode",
     "LONG_CODE", "ZONE_CODE_LABEL", "BASEZONE",
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
-    "DESCRIPTION", "DESC", "NAME",
+    "DESCRIPTION", "DESC", "NAME", "CODE_DEF",
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
@@ -70,6 +70,10 @@ def _first(row: Any, fields: list[str]) -> Any:
         v = lookup.get(f.lower())
         if v is not None and str(v).strip() not in ("", "nan", "None"):
             return v
+        for key, candidate in lookup.items():
+            if key.rsplit(".", 1)[-1] == f.lower():
+                if candidate is not None and str(candidate).strip() not in ("", "nan", "None"):
+                    return candidate
     return None
 
 
@@ -160,7 +164,9 @@ async def ingest_zoning_districts(
 
     logger.info("Mapping %d zoning GDF rows → ZoningDistrict dicts …", len(gdf))
     rows: list[dict] = []
-    for row in gdf.itertuples(index=False):
+    # iterrows preserves the original ArcGIS field names. itertuples sanitizes
+    # dotted names like "GIS.landbase1_Zoning.ZONINGCODE" and breaks mapping.
+    for _, row in gdf.iterrows():
         mapped = _map_row(row, jurisdiction_id)
         if mapped is not None:
             rows.append(mapped)

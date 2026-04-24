@@ -3,13 +3,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useParcelMapLayer } from "@/hooks/useParcels";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
-import type { FilterState } from "@/components/FilterPanel";
-import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
+import { LayerControl, type LayerVisibility } from "@/components/LayerControl";
 import { LAYER_REGISTRY, ZONE_CLASS_COLORS } from "@/lib/layers";
-
-// ─── Satellite base style ─────────────────────────────────────────────────────
+import type { CandidateParcelRow } from "@/lib/schemas";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -43,95 +40,73 @@ const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-// ─── Filter builder for parcels layer ─────────────────────────────────────────
-
-function buildQualifyingFilter(
-  filters: FilterState
-): maplibregl.FilterSpecification | null {
-  const conditions: maplibregl.ExpressionSpecification[] = [];
-
-  if (filters.vacantOnly) {
-    conditions.push(["!=", ["get", "has_structure"], true] as maplibregl.ExpressionSpecification);
-  }
-  if (filters.excludeFlood) {
-    conditions.push(["!=", ["get", "in_flood_zone"], true] as maplibregl.ExpressionSpecification);
-  }
-  if (filters.excludeWetland) {
-    conditions.push(["!=", ["get", "in_wetland"], true] as maplibregl.ExpressionSpecification);
-  }
-  if (filters.zones.length > 0) {
-    conditions.push(
-      ["in", ["get", "zoning_code"], ["literal", filters.zones]] as maplibregl.ExpressionSpecification
-    );
-  }
-  if (filters.zoneClasses && filters.zoneClasses.length > 0) {
-    conditions.push(
-      ["in", ["get", "zone_class"], ["literal", filters.zoneClasses]] as maplibregl.ExpressionSpecification
-    );
-  }
-  if (filters.storagePermissions && filters.storagePermissions.length > 0) {
-    conditions.push(
-      ["in", ["get", "storage_permission"], ["literal", filters.storagePermissions]] as maplibregl.ExpressionSpecification
-    );
-  }
-  if (filters.minAcres != null) {
-    conditions.push(
-      [">=", ["to-number", ["get", "acres"]], filters.minAcres] as maplibregl.ExpressionSpecification
-    );
-  }
-  if (filters.maxAcres != null) {
-    conditions.push(
-      ["<=", ["to-number", ["get", "acres"]], filters.maxAcres] as maplibregl.ExpressionSpecification
-    );
-  }
-
-  if (conditions.length === 0) return null;
-  if (conditions.length === 1) return conditions[0] as unknown as maplibregl.FilterSpecification;
-  return ["all", ...conditions] as unknown as maplibregl.FilterSpecification;
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
 interface MapProps {
   jurisdictionId: string;
-  filters: FilterState;
+  parcels: CandidateParcelRow[];
+  isLoading?: boolean;
   selectedParcelId?: number | null;
   onParcelClick?: (parcelId: number) => void;
-  visibility?: LayerVisibility;
-  onVisibilityChange?: (next: LayerVisibility) => void;
+  onBoundsChange?: (bbox: [number, number, number, number]) => void;
+  visibility: LayerVisibility;
+  onVisibilityChange: (next: LayerVisibility) => void;
 }
 
 const PARCEL_SOURCE = "parcels";
-const PARCEL_DIM = "parcels-dim";
 const PARCEL_FILL = "parcels-fill";
 const PARCEL_LINE = "parcels-line";
 const PARCEL_SELECTED = "parcels-selected";
-
-// Fallback color for parcels that lack a zone_class value (e.g., jurisdictions
-// without a zoning polygon layer, or parcels outside any district).
 const UNCLASSIFIED_PARCEL_COLOR = "#94a3b8";
-
 const TILESERV_URL = process.env.NEXT_PUBLIC_TILESERV_URL ?? null;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-// Center of the continental US — used when we have no jurisdiction bbox yet.
 const DEFAULT_CENTER: [number, number] = [-98.5, 39.5];
+
+const OVERLAY_LAYER_IDS = ["overlay-flood-fill", "overlay-wetland-fill"];
 
 export default function Map({
   jurisdictionId,
-  filters,
+  parcels,
+  isLoading = false,
   selectedParcelId,
   onParcelClick,
-  visibility = initialLayerVisibility(),
+  onBoundsChange,
+  visibility,
   onVisibilityChange,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const tooltipRef = useRef<maplibregl.Popup | null>(null);
+  const hasFitRef = useRef<string | null>(null);
 
-  const { data: geojson } = useParcelMapLayer(jurisdictionId);
   const { data: bounds } = useJurisdictionBounds(jurisdictionId);
 
-  // ── Initialise map ────────────────────────────────────────────────────────
+  const parcelCollection = useMemo<GeoJSON.FeatureCollection>(() => {
+    return {
+      type: "FeatureCollection",
+      features: parcels
+        .filter((parcel) => parcel.geom)
+        .map((parcel) => ({
+          type: "Feature" as const,
+          id: parcel.parcel_id,
+          properties: {
+            parcel_id: parcel.parcel_id,
+            apn: parcel.apn,
+            address: parcel.address,
+            acres: parcel.acres,
+            zoning_code: parcel.zoning_code,
+            zone_class: parcel.zone_class ?? "unknown",
+            storage_permission: parcel.storage_permission ?? "unclassified",
+            storage_allowed: parcel.storage_allowed,
+            storage_conditional: parcel.storage_conditional,
+            in_flood_zone: parcel.in_flood_zone,
+            in_wetland: parcel.in_wetland,
+            has_structure: parcel.has_structure,
+            is_viable: parcel.is_viable,
+          },
+          geometry: parcel.geom as unknown as GeoJSON.Geometry,
+        })),
+    };
+  }, [parcels]);
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -155,18 +130,22 @@ export default function Map({
     });
 
     mapRef.current = map;
+
     return () => {
       tooltipRef.current?.remove();
       map.remove();
       mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Fit to jurisdiction bbox once available ──────────────────────────────
+  useEffect(() => {
+    hasFitRef.current = null;
+  }, [jurisdictionId]);
+
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !bounds) return;
+    if (!map || !bounds || hasFitRef.current === jurisdictionId) return;
+
     map.fitBounds(
       [
         [bounds[0], bounds[1]],
@@ -174,44 +153,48 @@ export default function Map({
       ],
       { padding: 40, maxZoom: 14, duration: 800 }
     );
-  }, [bounds]);
 
-  const jurisdictionIdRef = useRef(jurisdictionId);
-  jurisdictionIdRef.current = jurisdictionId;
-  const filtersRef = useRef(filters);
-  filtersRef.current = filters;
+    hasFitRef.current = jurisdictionId;
+  }, [bounds, jurisdictionId]);
 
-  // ── Add registry layers (zoning + overlays) ──────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !jurisdictionId) return;
 
     const addRegistryLayers = () => {
       for (const layer of LAYER_REGISTRY) {
-        // parcels source is managed below; skip it here
         if (layer.id === "parcels") continue;
 
-        const src = layer.source({
+        for (const mapLayerId of layer.mapLayerIds) {
+          if (map.getLayer(mapLayerId)) {
+            map.removeLayer(mapLayerId);
+          }
+        }
+
+        const source = layer.source({
           jurisdictionId,
           tileservUrl: TILESERV_URL,
           apiBaseUrl: API_BASE_URL,
         });
 
-        // Remove stale source/layers if reusing map
-        for (const mlId of layer.mapLayerIds) {
-          if (map.getLayer(mlId)) map.removeLayer(mlId);
-        }
-        if (map.getSource(src.id)) map.removeSource(src.id);
+        if (!source) continue;
 
-        if (src.type === "vector") {
-          map.addSource(src.id, {
+        if (map.getSource(source.id)) {
+          map.removeSource(source.id);
+        }
+
+        if (source.type === "vector") {
+          map.addSource(source.id, {
             type: "vector",
-            tiles: src.tiles,
-            minzoom: src.minzoom,
-            maxzoom: src.maxzoom,
+            tiles: source.tiles,
+            minzoom: source.minzoom,
+            maxzoom: source.maxzoom,
           });
         } else {
-          map.addSource(src.id, { type: "geojson", data: src.data });
+          map.addSource(source.id, {
+            type: "geojson",
+            data: source.data,
+          });
         }
 
         for (const spec of layer.layers({
@@ -219,11 +202,16 @@ export default function Map({
           tileservUrl: TILESERV_URL,
           apiBaseUrl: API_BASE_URL,
         })) {
-          // Respect defaultVisible — add hidden layers as "none" so they never
-          // flash visible before the visibility effect runs.
           const specWithVisibility = layer.defaultVisible
             ? spec
-            : { ...spec, layout: { ...(spec.layout ?? {}), visibility: "none" as const } };
+            : {
+                ...spec,
+                layout: {
+                  ...(spec.layout ?? {}),
+                  visibility: "none" as const,
+                },
+              };
+
           map.addLayer(specWithVisibility);
         }
       }
@@ -236,259 +224,288 @@ export default function Map({
     }
   }, [jurisdictionId]);
 
-  // ── Parcel source + layers (kept dynamic: filter-driven paint) ───────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || (!TILESERV_URL && !geojson)) return;
+    if (!map) return;
 
-    const addParcelLayers = () => {
-      for (const id of [PARCEL_SELECTED, PARCEL_LINE, PARCEL_FILL, PARCEL_DIM]) {
-        if (map.getLayer(id)) map.removeLayer(id);
-      }
-      if (map.getSource(PARCEL_SOURCE)) map.removeSource(PARCEL_SOURCE);
+    const upsertParcelLayers = () => {
+      const existingSource = map.getSource(PARCEL_SOURCE) as
+        | maplibregl.GeoJSONSource
+        | undefined;
 
-      const sourceLayer = TILESERV_URL ? "parcels" : undefined;
-
-      if (TILESERV_URL) {
-        map.addSource(PARCEL_SOURCE, {
-          type: "vector",
-          tiles: [`${TILESERV_URL}/public.parcels/{z}/{x}/{y}.pbf`],
-          minzoom: 10,
-          maxzoom: 22,
-        });
+      if (existingSource) {
+        existingSource.setData(parcelCollection);
       } else {
         map.addSource(PARCEL_SOURCE, {
           type: "geojson",
-          data: geojson!,
+          data: parcelCollection,
           generateId: false,
         });
       }
 
-      const jFilter: maplibregl.FilterSpecification | null = TILESERV_URL
-        ? ["==", ["get", "jurisdiction_id"], jurisdictionIdRef.current ?? ""]
-        : null;
+      const beforeId = OVERLAY_LAYER_IDS.find((layerId) => map.getLayer(layerId));
 
-      map.addLayer({
-        id: PARCEL_DIM,
-        type: "fill",
-        source: PARCEL_SOURCE,
-        ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
-        ...(jFilter ? { filter: jFilter } : {}),
-        paint: { "fill-color": "#0f172a", "fill-opacity": 0.08 },
-      } as maplibregl.LayerSpecification);
+      if (!map.getLayer(PARCEL_FILL)) {
+        map.addLayer(
+          {
+            id: PARCEL_FILL,
+            type: "fill",
+            source: PARCEL_SOURCE,
+            paint: {
+              "fill-color": [
+                "match",
+                ["get", "storage_permission"],
+                "permitted",
+                "#10b981",
+                "conditional",
+                "#f59e0b",
+                "unclear",
+                "#a78bfa",
+                "prohibited",
+                "#6b7280",
+                UNCLASSIFIED_PARCEL_COLOR,
+              ],
+              "fill-opacity": [
+                "match",
+                ["get", "storage_permission"],
+                "permitted",
+                0.65,
+                "conditional",
+                0.55,
+                "unclear",
+                0.6,
+                "prohibited",
+                0.25,
+                0.15,
+              ],
+            },
+          },
+          beforeId
+        );
+      }
 
-      const qualFilter = buildQualifyingFilter(filtersRef.current);
-      // Combine jurisdiction scope + qualifying filters. Without jFilter here,
-      // the tileserver would color parcels from every jurisdiction in the DB.
-      const fillFilter = (jFilter
-        ? qualFilter ? ["all", jFilter, qualFilter] : jFilter
-        : qualFilter ?? ["boolean", true]) as maplibregl.FilterSpecification;
-      map.addLayer({
-        id: PARCEL_FILL,
-        type: "fill",
-        source: PARCEL_SOURCE,
-        ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
-        filter: fillFilter,
-        paint: {
-          "fill-color": [
-            "match", ["get", "storage_permission"],
-            "permitted",    "#10b981",
-            "conditional",  "#f59e0b",
-            "unclear",      "#a78bfa",
-            "prohibited",   "#6b7280",
-            UNCLASSIFIED_PARCEL_COLOR,
-          ] as maplibregl.ExpressionSpecification,
-          "fill-opacity": [
-            "match", ["get", "storage_permission"],
-            "permitted",    0.65,
-            "conditional",  0.55,
-            "unclear",      0.60,
-            "prohibited",   0.25,
-            0.15,
-          ] as maplibregl.ExpressionSpecification,
-        },
-      } as maplibregl.LayerSpecification);
+      if (!map.getLayer(PARCEL_LINE)) {
+        map.addLayer(
+          {
+            id: PARCEL_LINE,
+            type: "line",
+            source: PARCEL_SOURCE,
+            paint: {
+              "line-color": "#ffffff",
+              "line-width": 0.6,
+              "line-opacity": 0.5,
+            },
+          },
+          beforeId
+        );
+      }
 
-      map.addLayer({
-        id: PARCEL_LINE,
-        type: "line",
-        source: PARCEL_SOURCE,
-        ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
-        ...(jFilter ? { filter: jFilter } : {}),
-        paint: { "line-color": "#ffffff", "line-width": 0.4, "line-opacity": 0.3 },
-      } as maplibregl.LayerSpecification);
-
-      map.addLayer({
-        id: PARCEL_SELECTED,
-        type: "fill",
-        source: PARCEL_SOURCE,
-        ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
-        paint: { "fill-color": "#fbbf24", "fill-opacity": 0.85 },
-        filter: ["==", ["id"], -1],
-      } as maplibregl.LayerSpecification);
-
-      // Fit bounds for GeoJSON fallback (vector tiles use jurisdiction bbox)
-      if (!TILESERV_URL && geojson && geojson.features.length > 0 && !bounds) {
-        let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
-        for (const f of geojson.features) {
-          if (!f.geometry) continue;
-          for (const [lng, lat] of flattenCoords(f.geometry as GeoJSON.Geometry)) {
-            if (lng < minLng) minLng = lng;
-            if (lat < minLat) minLat = lat;
-            if (lng > maxLng) maxLng = lng;
-            if (lat > maxLat) maxLat = lat;
-          }
-        }
-        if (isFinite(minLng)) {
-          map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-            padding: 40, maxZoom: 14,
-          });
-        }
+      if (!map.getLayer(PARCEL_SELECTED)) {
+        map.addLayer({
+          id: PARCEL_SELECTED,
+          type: "line",
+          source: PARCEL_SOURCE,
+          paint: {
+            "line-color": "#fbbf24",
+            "line-width": 2,
+            "line-opacity": 1,
+          },
+          filter: ["==", ["get", "parcel_id"], -1],
+        });
       }
     };
 
     if (map.isStyleLoaded()) {
-      addParcelLayers();
+      upsertParcelLayers();
     } else {
-      map.once("load", addParcelLayers);
+      map.once("load", upsertParcelLayers);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geojson]);
+  }, [parcelCollection]);
 
-  // ── Update parcel qualifying filter when filters change ──────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.getLayer(PARCEL_FILL)) return;
-    const jFilter: maplibregl.FilterSpecification | null = TILESERV_URL
-      ? ["==", ["get", "jurisdiction_id"], jurisdictionId]
-      : null;
-    const qualFilter = buildQualifyingFilter(filters);
-    const combined = (jFilter
-      ? qualFilter ? ["all", jFilter, qualFilter] : jFilter
-      : qualFilter ?? ["boolean", true]) as maplibregl.FilterSpecification;
-    map.setFilter(PARCEL_FILL, combined);
-  }, [filters, jurisdictionId]);
+    if (!map || !map.getLayer(PARCEL_SELECTED)) return;
 
-  // ── Apply visibility + opacity from LayerControl ─────────────────────────
+    map.setFilter(
+      PARCEL_SELECTED,
+      selectedParcelId != null
+        ? ["==", ["get", "parcel_id"], selectedParcelId]
+        : ["==", ["get", "parcel_id"], -1]
+    );
+  }, [selectedParcelId]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+
     for (const layer of LAYER_REGISTRY) {
       const state = visibility[layer.id];
       if (!state) continue;
-      for (const mlId of layer.mapLayerIds) {
-        if (!map.getLayer(mlId)) continue;
+
+      for (const mapLayerId of layer.mapLayerIds) {
+        if (!map.getLayer(mapLayerId)) continue;
+
         map.setLayoutProperty(
-          mlId,
+          mapLayerId,
           "visibility",
           state.visible ? "visible" : "none"
         );
+
+        try {
+          const type = (map.getLayer(mapLayerId) as maplibregl.LayerSpecification)
+            ?.type;
+
+          if (type === "fill") {
+            map.setPaintProperty(mapLayerId, "fill-opacity", state.opacity);
+          } else if (type === "line") {
+            map.setPaintProperty(mapLayerId, "line-opacity", state.opacity);
+          }
+        } catch {
+          // Layer may not be mounted yet.
+        }
       }
     }
   }, [visibility]);
 
-  // ── Click + hover handlers on parcels layer ──────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    const onClick = (e: maplibregl.MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: [PARCEL_FILL, PARCEL_DIM],
-      });
-      if (features.length > 0) {
-        const id = features[0].properties?.id as number | undefined;
-        if (id !== undefined) onParcelClick?.(id);
-      }
+    if (!map || !onBoundsChange) return;
+
+    const handleMoveEnd = () => {
+      const nextBounds = map.getBounds();
+
+      onBoundsChange([
+        nextBounds.getWest(),
+        nextBounds.getSouth(),
+        nextBounds.getEast(),
+        nextBounds.getNorth(),
+      ]);
     };
-    map.on("click", PARCEL_FILL, onClick);
-    map.on("click", PARCEL_DIM, onClick);
+
+    map.on("moveend", handleMoveEnd);
+
     return () => {
-      map.off("click", PARCEL_FILL, onClick);
-      map.off("click", PARCEL_DIM, onClick);
+      map.off("moveend", handleMoveEnd);
     };
-  }, [onParcelClick]);
+  }, [onBoundsChange]);
 
   useEffect(() => {
     const map = mapRef.current;
     const popup = tooltipRef.current;
     if (!map || !popup) return;
 
-    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: [PARCEL_FILL, PARCEL_DIM],
+    const queryParcelFeatures = (point: maplibregl.Point) =>
+      map.queryRenderedFeatures(point, {
+        layers: [PARCEL_SELECTED, PARCEL_FILL, PARCEL_LINE],
       });
-      if (features.length === 0) {
+
+    const handleClick = (event: maplibregl.MapMouseEvent) => {
+      const feature = queryParcelFeatures(event.point)[0];
+      if (!feature) return;
+
+      const rawId = feature.properties?.parcel_id;
+      const parcelId = typeof rawId === "number" ? rawId : Number(rawId);
+
+      if (Number.isFinite(parcelId)) {
+        onParcelClick?.(parcelId);
+      }
+    };
+
+    const handleMouseMove = (event: maplibregl.MapMouseEvent) => {
+      const feature = queryParcelFeatures(event.point)[0];
+
+      if (!feature) {
         popup.remove();
         map.getCanvas().style.cursor = "";
         return;
       }
+
+      const props = feature.properties ?? {};
+      const zoneClass = String(props.zone_class ?? "unknown");
+      const storagePermission = String(
+        props.storage_permission ?? "unclassified"
+      );
+
+      const storageLabel =
+        storagePermission === "permitted"
+          ? "Storage permitted"
+          : storagePermission === "conditional"
+            ? "Storage conditional"
+            : storagePermission === "unclear"
+              ? "Storage unclear"
+              : storagePermission === "prohibited"
+                ? "Storage prohibited"
+                : "Storage unclassified";
+
       map.getCanvas().style.cursor = "pointer";
-      const props = features[0].properties ?? {};
-      const isVacant = props.has_structure === false;
-      const hasFlood = props.in_flood_zone === true;
-      const hasWetland = props.in_wetland === true;
+
       popup
-        .setLngLat(e.lngLat)
+        .setLngLat(event.lngLat)
         .setHTML(
           `<div style="font-size:12px;line-height:1.5">
             <div style="font-family:monospace;font-weight:700">${props.apn ?? "—"}</div>
+            <div>${props.address ?? "No address"}</div>
             <div>${props.zoning_code ?? "—"} · ${
               props.acres != null ? Number(props.acres).toFixed(2) + " ac" : "—"
             }</div>
-            ${isVacant ? '<div style="color:#059669;font-weight:500">Vacant</div>' : ""}
-            ${hasFlood ? '<div style="color:#dc2626;font-weight:500">⚠ Flood zone</div>' : ""}
-            ${hasWetland ? '<div style="color:#2563eb;font-weight:500">⚠ Wetland</div>' : ""}
+            <div style="color:${
+              ZONE_CLASS_COLORS[zoneClass as keyof typeof ZONE_CLASS_COLORS] ??
+              UNCLASSIFIED_PARCEL_COLOR
+            };font-weight:500">${zoneClass}</div>
+            <div>${storageLabel}</div>
+            ${
+              props.has_structure === false
+                ? '<div style="color:#059669;font-weight:500">Vacant</div>'
+                : ""
+            }
+            ${
+              props.in_flood_zone === true
+                ? '<div style="color:#dc2626;font-weight:500">Flood zone</div>'
+                : ""
+            }
+            ${
+              props.in_wetland === true
+                ? '<div style="color:#0891b2;font-weight:500">Wetland</div>'
+                : ""
+            }
           </div>`
         )
         .addTo(map);
     };
 
-    const onMouseLeave = () => {
+    const handleMouseLeave = () => {
       popup.remove();
       map.getCanvas().style.cursor = "";
     };
 
-    map.on("mousemove", PARCEL_FILL, onMouseMove);
-    map.on("mousemove", PARCEL_DIM, onMouseMove);
-    map.on("mouseleave", PARCEL_FILL, onMouseLeave);
-    map.on("mouseleave", PARCEL_DIM, onMouseLeave);
-    return () => {
-      map.off("mousemove", PARCEL_FILL, onMouseMove);
-      map.off("mousemove", PARCEL_DIM, onMouseMove);
-      map.off("mouseleave", PARCEL_FILL, onMouseLeave);
-      map.off("mouseleave", PARCEL_DIM, onMouseLeave);
-    };
-  }, []);
+    map.on("click", handleClick);
+    map.on("mousemove", handleMouseMove);
+    map.on("mouseout", handleMouseLeave);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.getLayer(PARCEL_SELECTED)) return;
-    map.setFilter(
-      PARCEL_SELECTED,
-      selectedParcelId != null
-        ? ["==", ["get", "id"], selectedParcelId]
-        : ["==", ["id"], -1]
-    );
-  }, [selectedParcelId]);
+    return () => {
+      map.off("click", handleClick);
+      map.off("mousemove", handleMouseMove);
+      map.off("mouseout", handleMouseLeave);
+    };
+  }, [onParcelClick]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+
+      <LayerControl visibility={visibility} onChange={onVisibilityChange} />
+
+      {isLoading && (
+        <div className="absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow">
+          Updating parcels…
+        </div>
+      )}
+
+      {!isLoading && parcels.length === 0 && (
+        <div className="absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow">
+          No parcels match the current filters.
+        </div>
+      )}
     </div>
   );
-}
-
-// ─── Geometry helpers ─────────────────────────────────────────────────────────
-
-function flattenCoords(geometry: GeoJSON.Geometry): [number, number][] {
-  switch (geometry.type) {
-    case "Point": return [geometry.coordinates as [number, number]];
-    case "MultiPoint":
-    case "LineString": return geometry.coordinates as [number, number][];
-    case "MultiLineString":
-    case "Polygon": return (geometry.coordinates as [number, number][][]).flat();
-    case "MultiPolygon": return (geometry.coordinates as [number, number][][][]).flat(2);
-    case "GeometryCollection": return geometry.geometries.flatMap(flattenCoords);
-    default: return [];
-  }
 }

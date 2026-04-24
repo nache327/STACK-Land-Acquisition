@@ -29,6 +29,7 @@ export const STAGE_LABELS: Record<string, string> = {
   pending: "Queuing job…",
   discovering_layers: "Discovering GIS layers…",
   downloading_parcels: "Downloading parcels…",
+  downloading_zoning: "Downloading zoning…",
   parsing_ordinance: "Parsing zoning ordinance…",
   running_overlays: "Running flood / wetland overlays…",
   ready: "Complete",
@@ -39,6 +40,7 @@ export const STAGE_LABELS: Record<string, string> = {
 export const PIPELINE_STEPS: JobStatus[] = [
   "discovering_layers",
   "downloading_parcels",
+  "downloading_zoning",
   "parsing_ordinance",
   "running_overlays",
   "ready",

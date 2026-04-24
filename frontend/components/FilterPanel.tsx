@@ -4,14 +4,16 @@
  * Left-side filter panel on the dashboard — Phase 4 full implementation.
  *
  * Controls:
- *   - Zone checkboxes (with parcel counts)
+ *   - Search by APN/address
+ *   - Storage permission checkboxes
+ *   - Zone checkboxes with parcel counts
  *   - Min / max acreage inputs
- *   - Toggles: Vacant Only, Exclude Flood, Exclude Steep, Exclude Wetland
+ *   - Toggles: Vacant Only, Exclude Flood, Exclude Wetland
  *
  * Manages its own local state; fires onChange on every change.
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ZONE_CLASS_COLORS, ZONE_CLASS_LABELS } from "@/lib/layers";
@@ -19,9 +21,15 @@ import type { ZoneClass } from "@/lib/schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type StoragePermission = "permitted" | "conditional" | "unclear" | "prohibited" | "unclassified";
+export type StoragePermission =
+  | "permitted"
+  | "conditional"
+  | "unclear"
+  | "prohibited"
+  | "unclassified";
 
 export interface FilterState {
+  search: string;
   storagePermissions: StoragePermission[];
   zones: string[];
   zoneClasses: ZoneClass[];
@@ -33,6 +41,7 @@ export interface FilterState {
 }
 
 export const DEFAULT_FILTERS: FilterState = {
+  search: "",
   storagePermissions: [],
   zones: [],
   zoneClasses: [],
@@ -53,7 +62,10 @@ interface FilterPanelProps {
 export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
-  // Parcel-based zone summary (zone code → parcel count)
+  useEffect(() => {
+    setFilters(DEFAULT_FILTERS);
+  }, [jurisdictionId]);
+
   const { data: zoneSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ["zone-summary", jurisdictionId],
     queryFn: () => api.getZoneSummary(jurisdictionId!),
@@ -61,7 +73,6 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Parcel-based zone-class summary (class → parcel count)
   const { data: classSummary } = useQuery({
     queryKey: ["zone-class-summary", jurisdictionId],
     queryFn: () => api.getZoneClassSummary(jurisdictionId!),
@@ -69,7 +80,6 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Ordinance matrix — always fetch in parallel; shown when parcels have no zone codes
   const { data: zoneMatrix, isLoading: matrixLoading } = useQuery({
     queryKey: ["zone-matrix", jurisdictionId],
     queryFn: () => api.getZoneMatrix(jurisdictionId!),
@@ -77,10 +87,9 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Propagate changes upward
   useEffect(() => {
     onChange(filters);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   function update(patch: Partial<FilterState>) {
@@ -115,10 +124,15 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   }
 
   const sortedZones = Object.entries(zoneSummary ?? {}).sort((a, b) => b[1] - a[1]);
-  // Fall back to ordinance matrix when parcels carry no zoning codes
-  const matrixZones = sortedZones.length === 0
-    ? (zoneMatrix?.zones ?? []).map((z) => ({ code: z.zone_code, name: z.zone_name, storage: z.self_storage }))
-    : [];
+
+  const matrixZones =
+    sortedZones.length === 0
+      ? (zoneMatrix?.zones ?? []).map((z) => ({
+          code: z.zone_code,
+          name: z.zone_name,
+          storage: z.self_storage,
+        }))
+      : [];
 
   const classEntries = classSummary
     ? (Object.entries(classSummary) as [ZoneClass, number][])
@@ -128,10 +142,27 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
 
   return (
     <div className="space-y-5 p-4 text-sm">
+      {/* ── Search ─────────────────────────────────────────────────────── */}
+      <section>
+        <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          Search
+        </h3>
+        <input
+          type="text"
+          value={filters.search}
+          onChange={(e) => update({ search: e.target.value })}
+          placeholder="APN or address"
+          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+        />
+      </section>
+
+      <div className="border-t border-slate-800" />
 
       {/* ── DATA section header ───────────────────────────────────────── */}
       <div className="pt-1">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">Data</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+          Data
+        </p>
       </div>
 
       {/* ── Storage Use ───────────────────────────────────────────────── */}
@@ -143,7 +174,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
           {filters.storagePermissions.length > 0 && (
             <button
               onClick={() => update({ storagePermissions: [] })}
-              className="text-[10px] text-slate-600 hover:text-slate-400 transition"
+              className="text-[10px] text-slate-600 transition hover:text-slate-400"
             >
               Clear
             </button>
@@ -152,10 +183,10 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
         <div className="space-y-0.5">
           {(
             [
-              { value: "permitted",     label: "Permitted",    dot: "bg-emerald-500" },
-              { value: "conditional",   label: "Conditional",  dot: "bg-amber-400" },
-              { value: "unclear",       label: "Unclear",      dot: "bg-violet-400" },
-              { value: "prohibited",    label: "Prohibited",   dot: "bg-slate-400" },
+              { value: "permitted", label: "Permitted", dot: "bg-emerald-500" },
+              { value: "conditional", label: "Conditional", dot: "bg-amber-400" },
+              { value: "unclear", label: "Unclear", dot: "bg-violet-400" },
+              { value: "prohibited", label: "Prohibited", dot: "bg-slate-400" },
             ] as { value: StoragePermission; label: string; dot: string }[]
           ).map(({ value, label, dot }) => {
             const checked = filters.storagePermissions.includes(value);
@@ -171,10 +202,12 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggleStoragePermission(value)}
-                  className="h-3 w-3 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                  className="h-3 w-3 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                 />
-                <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${dot}`} />
-                <span className="flex-1 text-xs font-medium text-slate-300">{label}</span>
+                <span className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
+                <span className="flex-1 text-xs font-medium text-slate-300">
+                  {label}
+                </span>
               </label>
             );
           })}
@@ -193,7 +226,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
             {filters.zoneClasses.length > 0 && (
               <button
                 onClick={() => update({ zoneClasses: [] })}
-                className="text-[10px] text-slate-600 hover:text-slate-400 transition"
+                className="text-[10px] text-slate-600 transition hover:text-slate-400"
               >
                 Clear
               </button>
@@ -214,10 +247,10 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleZoneClass(klass)}
-                    className="h-3 w-3 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                    className="h-3 w-3 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                   />
                   <span
-                    className="inline-block h-2 w-2 rounded-sm flex-shrink-0"
+                    className="inline-block h-2 w-2 flex-shrink-0 rounded-sm"
                     style={{ backgroundColor: ZONE_CLASS_COLORS[klass] }}
                   />
                   <span className="flex-1 text-xs font-medium text-slate-300">
@@ -244,7 +277,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
           {filters.zones.length > 0 && (
             <button
               onClick={() => update({ zones: [] })}
-              className="text-[10px] text-slate-600 hover:text-slate-400 transition"
+              className="text-[10px] text-slate-600 transition hover:text-slate-400"
             >
               Clear
             </button>
@@ -252,7 +285,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
         </div>
 
         {sortedZones.length > 0 ? (
-          <div className="dark-scroll space-y-0.5 max-h-52 overflow-y-auto pr-1">
+          <div className="dark-scroll max-h-52 space-y-0.5 overflow-y-auto pr-1">
             {sortedZones.map(([code, count]) => {
               const checked = filters.zones.includes(code);
               return (
@@ -267,19 +300,21 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleZone(code)}
-                    className="h-3 w-3 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                    className="h-3 w-3 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                   />
                   <span className="flex-1 font-mono text-xs font-medium text-slate-300">
                     {code}
                   </span>
-                  <span className="text-[10px] tabular-nums text-slate-600">{count.toLocaleString()}</span>
+                  <span className="text-[10px] tabular-nums text-slate-600">
+                    {count.toLocaleString()}
+                  </span>
                 </label>
               );
             })}
           </div>
         ) : matrixZones.length > 0 ? (
-          <div className="dark-scroll space-y-0.5 max-h-52 overflow-y-auto pr-1">
-            {matrixZones.map(({ code, name, storage }) => {
+          <div className="dark-scroll max-h-52 space-y-0.5 overflow-y-auto pr-1">
+            {matrixZones.map(({ code, storage }) => {
               const checked = filters.zones.includes(code);
               return (
                 <label
@@ -293,7 +328,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleZone(code)}
-                    className="h-3 w-3 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                    className="h-3 w-3 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                   />
                   <span className="flex-1 font-mono text-xs font-medium text-slate-300">
                     {code}
@@ -350,7 +385,9 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
       <div className="border-t border-slate-800" />
 
       {/* ── Overlays section header ───────────────────────────────────── */}
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">Overlays</p>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+        Overlays
+      </p>
 
       {/* ── Toggles ───────────────────────────────────────────────────── */}
       <section className="space-y-1">
@@ -419,7 +456,6 @@ function Toggle({
       onClick={() => onChange(!checked)}
       className="flex w-full items-start gap-3 text-left"
     >
-      {/* Toggle pill */}
       <span
         className={[
           "mt-0.5 inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors",

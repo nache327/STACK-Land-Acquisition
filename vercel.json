@@ -1,6 +1,9 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "outputDirectory": ".next"
+  "git": {
+    "deploymentEnabled": false
+  },
+  "github": {
+    "enabled": false,
+    "silent": true
+  }
 }

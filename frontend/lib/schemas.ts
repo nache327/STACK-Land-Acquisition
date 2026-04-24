@@ -122,6 +122,64 @@ export const ParcelListResponseSchema = z.object({
 });
 export type ParcelListResponse = z.infer<typeof ParcelListResponseSchema>;
 
+export const ParcelSearchSortSchema = z.enum([
+  "acres_desc",
+  "acres_asc",
+  "apn_asc",
+  "address_asc",
+]);
+export type ParcelSearchSort = z.infer<typeof ParcelSearchSortSchema>;
+
+export const CandidateParcelSearchFiltersSchema = z.object({
+  zones: z.array(z.string()).optional(),
+  zone_classes: z.array(ZoneClassSchema).optional(),
+  min_acres: z.number().nullable().optional(),
+  max_acres: z.number().nullable().optional(),
+  vacant_only: z.boolean().default(false),
+  exclude_flood: z.boolean().default(false),
+  exclude_wetland: z.boolean().default(false),
+});
+export type CandidateParcelSearchFilters = z.infer<typeof CandidateParcelSearchFiltersSchema>;
+
+export const CandidateParcelSearchRequestSchema = z.object({
+  jurisdiction_id: z.string().uuid(),
+  target_use: z.literal("self_storage"),
+  filters: CandidateParcelSearchFiltersSchema.default({}),
+  bbox: z.array(z.number()).length(4).nullable().optional(),
+  search: z.string().nullable().optional(),
+  page: z.number().int().min(1).default(1),
+  page_size: z.number().int().min(1).max(5000).default(100),
+  sort: ParcelSearchSortSchema.default("acres_desc"),
+});
+export type CandidateParcelSearchRequest = z.infer<typeof CandidateParcelSearchRequestSchema>;
+
+export const CandidateParcelRowSchema = z.object({
+  parcel_id: z.number().int(),
+  apn: z.string(),
+  address: z.string().nullable(),
+  acres: z.number().nullable(),
+  zoning_code: z.string().nullable().optional(),
+  zone_class: ZoneClassSchema.nullable().optional(),
+  storage_allowed: z.boolean(),
+  storage_conditional: z.boolean(),
+  storage_permission: z.string().nullable().optional(),
+  in_flood_zone: z.boolean(),
+  in_wetland: z.boolean(),
+  has_structure: z.boolean().nullable(),
+  is_viable: z.boolean(),
+  violation_reasons: z.array(z.string()),
+  geom: z.record(z.unknown()).nullable().optional(),
+});
+export type CandidateParcelRow = z.infer<typeof CandidateParcelRowSchema>;
+
+export const CandidateParcelSearchResponseSchema = z.object({
+  items: z.array(CandidateParcelRowSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  page_size: z.number().int(),
+});
+export type CandidateParcelSearchResponse = z.infer<typeof CandidateParcelSearchResponseSchema>;
+
 // ---- zone use matrix ------------------------------------------------------
 
 export const CitationSchema = z.object({

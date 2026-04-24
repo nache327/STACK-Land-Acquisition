@@ -7,8 +7,11 @@
  */
 
 import {
+  CandidateParcelSearchResponseSchema,
   JobSchema,
   JurisdictionSchema,
+  type CandidateParcelSearchRequest,
+  type CandidateParcelSearchResponse,
   ParcelDetailSchema,
   ParcelListResponseSchema,
   ZoneMatrixResponseSchema,
@@ -87,6 +90,16 @@ export const api = {
   async getParcel(parcelId: number): Promise<ParcelDetail> {
     const raw = await fetchJSON<unknown>(`/api/parcels/${parcelId}`);
     return ParcelDetailSchema.parse(raw);
+  },
+
+  async searchParcels(
+    payload: CandidateParcelSearchRequest
+  ): Promise<CandidateParcelSearchResponse> {
+    const raw = await fetchJSON<unknown>("/api/parcels/search", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return CandidateParcelSearchResponseSchema.parse(raw);
   },
 
   // ---- zones --------------------------------------------------------------

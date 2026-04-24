@@ -3,22 +3,36 @@ GET /api/jurisdictions/:id/parcels — filtered parcel list (Phase 2+)
 GET /api/parcels/:id               — single parcel detail (drawer)
 """
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func, and_, case, or_
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
 
 from app.db import get_db
 from app.models.parcel import Parcel
 from app.models.zone_use_matrix import ZoneUseMatrix, UsePermission
-from app.schemas.parcel import ParcelDetail, ParcelFilter, ParcelListResponse, ParcelRead
+from app.schemas.parcel import (
+    CandidateParcelSearchRequest,
+    CandidateParcelSearchResponse,
+    ParcelDetail,
+    ParcelListResponse,
+    ParcelRead,
+)
+from app.services.candidate_search import search_candidate_parcels
 
 router = APIRouter(tags=["parcels"])
 
 
+@router.post("/parcels/search", response_model=CandidateParcelSearchResponse)
+async def candidate_parcel_search(
+    payload: CandidateParcelSearchRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CandidateParcelSearchResponse:
+    return await search_candidate_parcels(payload, db)
+
+
 _storage_perm_expr = case(
-    # Any use permitted — show green regardless of source
     (
         or_(
             ZoneUseMatrix.self_storage == UsePermission.permitted,
@@ -27,7 +41,6 @@ _storage_perm_expr = case(
         ),
         "permitted",
     ),
-    # Any use conditional — show amber regardless of source
     (
         or_(
             ZoneUseMatrix.self_storage == UsePermission.conditional,
@@ -36,7 +49,6 @@ _storage_perm_expr = case(
         ),
         "conditional",
     ),
-    # Both primary storage uses prohibited — show gray even if lgc is unclear
     (
         and_(
             ZoneUseMatrix.self_storage == UsePermission.prohibited,
@@ -44,7 +56,6 @@ _storage_perm_expr = case(
         ),
         "prohibited",
     ),
-    # Primary storage use is unclear — show purple
     (
         or_(
             ZoneUseMatrix.self_storage == UsePermission.unclear,
@@ -52,7 +63,6 @@ _storage_perm_expr = case(
         ),
         "unclear",
     ),
-    # Zone in matrix, all uses explicitly prohibited
     (ZoneUseMatrix.zone_code.isnot(None), "prohibited"),
     else_="unclassified",
 ).label("storage_permission")
@@ -78,8 +88,7 @@ async def list_parcels(
     page_size: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    filters = []
-    filters.append(Parcel.jurisdiction_id == jurisdiction_id)
+    filters = [Parcel.jurisdiction_id == jurisdiction_id]
 
     if zones:
         filters.append(Parcel.zoning_code.in_(zones))
@@ -90,13 +99,12 @@ async def list_parcels(
     if max_acres is not None:
         filters.append(Parcel.acres <= max_acres)
     if exclude_flood:
-        filters.append(Parcel.in_flood_zone == False)  # noqa: E712
+        filters.append(Parcel.in_flood_zone.is_(False))
     if exclude_wetland:
-        filters.append(Parcel.in_wetland == False)  # noqa: E712
+        filters.append(Parcel.in_wetland.is_(False))
     if vacant_only:
-        filters.append(Parcel.has_structure == False)  # noqa: E712
+        filters.append(Parcel.has_structure.is_(False))
 
-    # storage_permissions filter: requires the JOIN to be present even for count
     having_storage = None
     if storage_permissions:
         having_storage = _storage_perm_expr.in_(storage_permissions)
@@ -106,6 +114,7 @@ async def list_parcels(
         .outerjoin(ZoneUseMatrix, _zum_join)
         .where(and_(*filters))
     )
+
     if having_storage is not None:
         base_q = base_q.where(having_storage)
 
@@ -122,6 +131,7 @@ async def list_parcels(
         ParcelRead.model_validate(row[0]).model_copy(update={"storage_permission": row[1]})
         for row in rows
     ]
+
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
@@ -158,7 +168,10 @@ async def get_zone_class_summary(
         .group_by(Parcel.zone_class)
         .order_by(func.count().desc())
     )
-    return {str(row.zone_class.value if hasattr(row.zone_class, "value") else row.zone_class): row.cnt for row in result.all()}
+    return {
+        str(row.zone_class.value if hasattr(row.zone_class, "value") else row.zone_class): row.cnt
+        for row in result.all()
+    }
 
 
 @router.get("/parcels/{parcel_id}", response_model=ParcelDetail)
