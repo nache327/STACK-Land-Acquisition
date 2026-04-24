@@ -294,8 +294,8 @@ export default function Map({
           ] as maplibregl.ExpressionSpecification,
           "fill-opacity": [
             "match", ["get", "storage_permission"],
-            "permitted",    0.40,
-            "conditional",  0.30,
+            "permitted",    0.55,
+            "conditional",  0.45,
             "prohibited",   0.10,
             0.15,
           ] as maplibregl.ExpressionSpecification,
