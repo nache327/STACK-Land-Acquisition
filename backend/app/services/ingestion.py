@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 _APN_FIELDS = [
     "PARCEL", "APN", "PARCELNO", "PARCEL_NO", "PARCEL_ID", "PIN",
+    "SERIAL", "Serial", "serial",
     # NJ MOD-IV (statewide Parcels_Composite_NJ_WM + county services)
     "PAMS_PIN", "GIS_PIN", "PIN_NODUP", "pams_pin",
     # NYC MapPLUTO
@@ -40,6 +41,7 @@ _APN_FIELDS = [
 ]
 _ADDRESS_FIELDS = [
     "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS", "PARCEL_ADD",
+    "PROPERTY_ADDRESS_1", "property_address_1",
     # NYC MapPLUTO
     "Address", "ADDRESS1",
     # Philadelphia OPA / NJ Passaic county service
@@ -110,6 +112,10 @@ def _first(row: Any, fields: list[str]) -> Any:
         v = lookup.get(f.lower())
         if v is not None and str(v).strip() not in ("", "nan", "None"):
             return v
+        for key, candidate in lookup.items():
+            if key.rsplit(".", 1)[-1] == f.lower():
+                if candidate is not None and str(candidate).strip() not in ("", "nan", "None"):
+                    return candidate
     return None
 
 
@@ -122,7 +128,10 @@ def _safe_float(val: Any) -> float | None:
 
 _AREA_SQM_FIELDS = ["Shape__Area", "SHAPE__AREA", "shape_Area", "SHAPE_Area"]
 # Square-foot fields used by NYC MapPLUTO (LotArea) and Philadelphia OPA (total_area).
-_AREA_SQFT_FIELDS = ["LotArea", "LOT_AREA", "total_area", "TotalArea", "LOTAREA"]
+_AREA_SQFT_FIELDS = [
+    "LotArea", "LOT_AREA", "total_area", "TotalArea", "LOTAREA",
+    "Shape_Area", "SHAPE_AREA", "shape_area",
+]
 _SQM_PER_ACRE = 4046.856
 _SQFT_PER_ACRE = 43_560.0
 
@@ -244,7 +253,9 @@ async def ingest_parcels(
 
     logger.info("Mapping %d GDF rows → Parcel dicts …", len(gdf))
     rows: list[dict] = []
-    for row in gdf.itertuples(index=False):
+    # iterrows preserves the original ArcGIS field names. itertuples sanitizes
+    # dotted names like "SHAPE.AREA" and breaks field matching.
+    for _, row in gdf.iterrows():
         mapped = _map_row(row, jurisdiction_id)
         if mapped is not None:
             rows.append(mapped)

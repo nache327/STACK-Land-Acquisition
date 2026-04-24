@@ -10,6 +10,7 @@ interface JobProgressProps {
 const STEP_ICONS: Record<string, string> = {
   discovering_layers: "🔍",
   downloading_parcels: "⬇",
+  downloading_zoning: "🧭",
   parsing_ordinance: "📄",
   running_overlays: "🗺",
   ready: "✓",

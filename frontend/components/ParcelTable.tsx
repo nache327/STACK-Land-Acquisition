@@ -1,29 +1,19 @@
 "use client";
 
-/**
- * Right-side sortable parcel table with row selection for shortlisting.
- *
- * Phase 7: adds checkbox column and selection state.
- */
-
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   useReactTable,
-  type SortingState,
 } from "@tanstack/react-table";
-import { useState } from "react";
-import type { ParcelRow } from "@/lib/schemas";
+import type { CandidateParcelRow } from "@/lib/schemas";
 
-const columnHelper = createColumnHelper<ParcelRow>();
+const columnHelper = createColumnHelper<CandidateParcelRow>();
 
 interface ParcelTableProps {
-  parcels: ParcelRow[];
-  onRowClick?: (parcel: ParcelRow) => void;
+  parcels: CandidateParcelRow[];
+  onRowClick?: (parcel: CandidateParcelRow) => void;
   selectedId?: number | null;
-  /** IDs checked for shortlist */
   selectedIds?: Set<number>;
   onSelectionChange?: (ids: Set<number>) => void;
 }
@@ -35,26 +25,21 @@ export function ParcelTable({
   selectedIds = new Set(),
   onSelectionChange,
 }: ParcelTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-
-  // ── Select all visible parcels ────────────────────────────────────────────
-  const allVisibleIds = parcels.map((p) => p.id);
+  const allVisibleIds = parcels.map((parcel) => parcel.parcel_id);
   const allChecked =
-    allVisibleIds.length > 0 &&
-    allVisibleIds.every((id) => selectedIds.has(id));
-  const someChecked = !allChecked && allVisibleIds.some((id) => selectedIds.has(id));
+    allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
+  const someChecked =
+    !allChecked && allVisibleIds.some((id) => selectedIds.has(id));
 
   function toggleAll() {
     if (!onSelectionChange) return;
+    const next = new Set(selectedIds);
     if (allChecked) {
-      const next = new Set(selectedIds);
       allVisibleIds.forEach((id) => next.delete(id));
-      onSelectionChange(next);
     } else {
-      const next = new Set(selectedIds);
       allVisibleIds.forEach((id) => next.add(id));
-      onSelectionChange(next);
     }
+    onSelectionChange(next);
   }
 
   function toggleOne(id: number, e: React.MouseEvent) {
@@ -66,9 +51,7 @@ export function ParcelTable({
     onSelectionChange(next);
   }
 
-  // ── Columns ───────────────────────────────────────────────────────────────
   const columns = [
-    // Checkbox column
     columnHelper.display({
       id: "select",
       header: () => (
@@ -86,9 +69,9 @@ export function ParcelTable({
       cell: ({ row }) => (
         <input
           type="checkbox"
-          checked={selectedIds.has(row.original.id)}
+          checked={selectedIds.has(row.original.parcel_id)}
           onChange={() => {}}
-          onClick={(e) => toggleOne(row.original.id, e)}
+          onClick={(e) => toggleOne(row.original.parcel_id, e)}
           className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
           aria-label={`Select parcel ${row.original.apn}`}
         />
@@ -97,9 +80,7 @@ export function ParcelTable({
     }),
     columnHelper.accessor("apn", {
       header: "APN",
-      cell: (info) => (
-        <span className="font-mono text-xs">{info.getValue()}</span>
-      ),
+      cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
     }),
     columnHelper.accessor("address", {
       header: "Address",
@@ -119,6 +100,28 @@ export function ParcelTable({
       cell: (info) =>
         info.getValue() != null ? info.getValue()!.toFixed(2) : "—",
     }),
+    columnHelper.display({
+      id: "storage",
+      header: "Storage",
+      cell: ({ row }) => {
+        if (row.original.storage_allowed) {
+          return <span className="text-xs font-medium text-emerald-700">Permitted</span>;
+        }
+        if (row.original.storage_conditional) {
+          return <span className="text-xs font-medium text-amber-700">Conditional</span>;
+        }
+        return <span className="text-xs text-slate-400">No</span>;
+      },
+    }),
+    columnHelper.accessor("is_viable", {
+      header: "Viable",
+      cell: (info) =>
+        info.getValue() ? (
+          <span className="text-xs font-medium text-emerald-700">Yes</span>
+        ) : (
+          <span className="text-xs font-medium text-amber-700">Review</span>
+        ),
+    }),
     columnHelper.accessor("in_flood_zone", {
       header: "Flood",
       cell: (info) =>
@@ -133,10 +136,7 @@ export function ParcelTable({
   const table = useReactTable({
     data: parcels,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   if (parcels.length === 0) {
@@ -151,27 +151,15 @@ export function ParcelTable({
     <div className="overflow-auto">
       <table className="w-full text-sm">
         <thead className="sticky top-0 border-b border-slate-200 bg-white">
-          {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id}>
-              {hg.headers.map((header) => (
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  onClick={
-                    header.id === "select"
-                      ? undefined
-                      : header.column.getToggleSortingHandler()
-                  }
-                  className={[
-                    "px-3 py-2 text-left text-xs font-medium text-slate-500",
-                    header.id !== "select"
-                      ? "cursor-pointer select-none hover:text-slate-900"
-                      : "",
-                  ].join(" ")}
+                  className="px-3 py-2 text-left text-xs font-medium text-slate-500"
                   style={{ width: header.id === "select" ? 36 : undefined }}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
-                  {header.column.getIsSorted() === "asc" && " ↑"}
-                  {header.column.getIsSorted() === "desc" && " ↓"}
                 </th>
               ))}
             </tr>
@@ -179,14 +167,14 @@ export function ParcelTable({
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => {
-            const isSelected = selectedIds.has(row.original.id);
+            const isSelected = selectedIds.has(row.original.parcel_id);
             return (
               <tr
                 key={row.id}
                 onClick={() => onRowClick?.(row.original)}
                 className={[
                   "cursor-pointer border-b border-slate-100 hover:bg-slate-50",
-                  selectedId === row.original.id ? "bg-emerald-50" : "",
+                  selectedId === row.original.parcel_id ? "bg-emerald-50" : "",
                   isSelected ? "bg-emerald-50/50" : "",
                 ].join(" ")}
               >

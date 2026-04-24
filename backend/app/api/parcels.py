@@ -3,17 +3,31 @@ GET /api/jurisdictions/:id/parcels — filtered parcel list (Phase 2+)
 GET /api/parcels/:id               — single parcel detail (drawer)
 """
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
 
 from app.db import get_db
 from app.models.parcel import Parcel
-from app.schemas.parcel import ParcelDetail, ParcelFilter, ParcelListResponse
+from app.schemas.parcel import (
+    CandidateParcelSearchRequest,
+    CandidateParcelSearchResponse,
+    ParcelDetail,
+    ParcelListResponse,
+)
+from app.services.candidate_search import search_candidate_parcels
 
 router = APIRouter(tags=["parcels"])
+
+
+@router.post("/parcels/search", response_model=CandidateParcelSearchResponse)
+async def candidate_parcel_search(
+    payload: CandidateParcelSearchRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CandidateParcelSearchResponse:
+    return await search_candidate_parcels(payload, db)
 
 
 @router.get("/jurisdictions/{jurisdiction_id}/parcels", response_model=ParcelListResponse)
@@ -42,11 +56,11 @@ async def list_parcels(
     if max_acres is not None:
         filters.append(Parcel.acres <= max_acres)
     if exclude_flood:
-        filters.append(Parcel.in_flood_zone == False)  # noqa: E712
+        filters.append(Parcel.in_flood_zone.is_(False))
     if exclude_wetland:
-        filters.append(Parcel.in_wetland == False)  # noqa: E712
+        filters.append(Parcel.in_wetland.is_(False))
     if vacant_only:
-        filters.append(Parcel.has_structure == False)  # noqa: E712
+        filters.append(Parcel.has_structure.is_(False))
 
     count_q = select(func.count()).select_from(Parcel).where(and_(*filters))
     total_result = await db.execute(count_q)

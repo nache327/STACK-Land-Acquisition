@@ -56,3 +56,4 @@ docker-compose.override.yml
 *.tif
 *.geojson.cache
 /data/
+/tmp/

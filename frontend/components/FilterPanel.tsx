@@ -20,6 +20,7 @@ import type { ZoneClass } from "@/lib/schemas";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface FilterState {
+  search: string;
   zones: string[];
   zoneClasses: ZoneClass[];
   minAcres: number | null;
@@ -30,6 +31,7 @@ export interface FilterState {
 }
 
 export const DEFAULT_FILTERS: FilterState = {
+  search: "",
   zones: [],
   zoneClasses: [],
   minAcres: null,
@@ -48,6 +50,10 @@ interface FilterPanelProps {
 
 export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
+  useEffect(() => {
+    setFilters(DEFAULT_FILTERS);
+  }, [jurisdictionId]);
 
   // Parcel-based zone summary (zone code → parcel count)
   const { data: zoneSummary, isLoading: summaryLoading } = useQuery({
@@ -115,6 +121,21 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
 
   return (
     <div className="space-y-5 p-4 text-sm">
+      <section>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Search
+        </h3>
+        <input
+          type="text"
+          value={filters.search}
+          onChange={(e) => update({ search: e.target.value })}
+          placeholder="APN or address"
+          className="w-full rounded border border-slate-200 px-3 py-2 text-sm placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+        />
+      </section>
+
+      <div className="border-t border-slate-100" />
+
       {/* ── Zone Class ────────────────────────────────────────────────── */}
       {classEntries.length > 0 && (
         <section>

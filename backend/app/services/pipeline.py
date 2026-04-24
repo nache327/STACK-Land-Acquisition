@@ -31,6 +31,12 @@ from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource
 from app.models.parcel import Parcel
 from app.services.arcgis_query import download_all_features
 from app.services.ingestion import ingest_parcels
+from app.services.matrix_bootstrap import bootstrap_zone_use_matrix
+from app.services.spatial_backfill import (
+    backfill_parcel_zoning_from_districts,
+    refresh_jurisdiction_bbox,
+    refresh_jurisdiction_coverage_level,
+)
 from app.services.zoning_ingestion import ingest_zoning_districts
 
 logger = logging.getLogger(__name__)
@@ -169,7 +175,30 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "pleasant grove": _ugrc("Parcels_Utah", "Pleasant Grove", "Pleasant Grove, UT", "Utah"),
     "springville":   _ugrc("Parcels_Utah", "Springville",   "Springville, UT",   "Utah"),
     "spanish fork":  _ugrc("Parcels_Utah", "Spanish Fork",  "Spanish Fork, UT",  "Utah"),
-    "payson":        _ugrc("Parcels_Utah", "Payson",        "Payson, UT",        "Utah"),
+    "payson": JurisdictionConfig(
+        name="Payson, UT",
+        state="UT",
+        county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Payson'",
+        zoning_polygon_endpoint=(
+            "https://services8.arcgis.com/osUxz0Iq5jAvotbH/arcgis/rest"
+            "/services/Zoning/FeatureServer/2"
+        ),
+    ),
+    "payson, ut": JurisdictionConfig(
+        name="Payson, UT",
+        state="UT",
+        county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Payson'",
+        zoning_polygon_endpoint=(
+            "https://services8.arcgis.com/osUxz0Iq5jAvotbH/arcgis/rest"
+            "/services/Zoning/FeatureServer/2"
+        ),
+    ),
     # ── Weber County (Parcels_Weber) ─────────────────────────────────────────
     "ogden": _ugrc("Parcels_Weber", "Ogden", "Ogden, UT", "Weber"),
     "roy":   _ugrc("Parcels_Weber", "Roy",   "Roy, UT",   "Weber"),
@@ -250,6 +279,55 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
             "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
             "/services/Zoning_BaseDistricts/FeatureServer/0"
         ),
+    ),
+    "allentown": JurisdictionConfig(
+        name="Allentown, PA",
+        state="PA",
+        county="Lehigh",
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=(
+            "https://gis.dep.pa.gov/depgisprd/rest/services/Parcels/PA_Parcels/MapServer/0"
+        ),
+        where_clause="CITY='ALLENTOWN' AND COUNTY_NAME='LEHIGH'",
+        zoning_polygon_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services/CityZoning/MapServer/0"
+        ),
+    ),
+    "allentown, pa": JurisdictionConfig(
+        name="Allentown, PA",
+        state="PA",
+        county="Lehigh",
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=(
+            "https://gis.dep.pa.gov/depgisprd/rest/services/Parcels/PA_Parcels/MapServer/0"
+        ),
+        where_clause="CITY='ALLENTOWN' AND COUNTY_NAME='LEHIGH'",
+        zoning_polygon_endpoint=(
+            "https://gisportal.allentownpa.gov/server/rest/services/CityZoning/MapServer/0"
+        ),
+    ),
+    "park city": JurisdictionConfig(
+        name="Park City, UT",
+        state="UT",
+        county="Summit",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://cityworks.parkcity.org/arcgis/rest/services/Parcels/MapServer/0"
+        ),
+        # Park City exposes parcels directly, but a production-grade zoning layer
+        # still needs manual confirmation; recovery tooling handles candidate
+        # source discovery separately instead of silently ingesting the wrong data.
+        zoning_polygon_endpoint=None,
+    ),
+    "park city, ut": JurisdictionConfig(
+        name="Park City, UT",
+        state="UT",
+        county="Summit",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=(
+            "https://cityworks.parkcity.org/arcgis/rest/services/Parcels/MapServer/0"
+        ),
+        zoning_polygon_endpoint=None,
     ),
 
     # ── New Jersey counties ───────────────────────────────────────────────────
@@ -411,7 +489,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # Update last_indexed_at + compute bbox from ingested parcels
     from datetime import datetime, timezone
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
-    await _refresh_jurisdiction_bbox(jurisdiction, db)
+    await refresh_jurisdiction_bbox(jurisdiction, db)
     await db.flush()
 
     # ── Step 3a: download + ingest zoning polygons (non-fatal) ───────────
@@ -432,18 +510,23 @@ async def _run(db: AsyncSession, job: Job) -> None:
             zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
             await db.commit()
 
-            # Denormalize zone_class onto parcels via centroid-in-polygon spatial join.
-            updated = await _backfill_parcel_zone_class(jurisdiction.id, db)
+            updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
             logger.info("zone_class backfill updated %d parcels", updated)
             await db.commit()
         except Exception as exc:
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
             await db.rollback()
 
-    # Record coverage state so the UI can flag partial jurisdictions
-    jurisdiction.coverage_level = _coverage_level(
-        parcel_count=count, zoning_count=zoning_count
+    seeded_matrix = await bootstrap_zone_use_matrix(
+        jurisdiction.id,
+        db,
+        missing_only=True,
     )
+    if seeded_matrix:
+        logger.info("Bootstrapped %d zone_use_matrix rows", seeded_matrix)
+        await db.commit()
+
+    await refresh_jurisdiction_coverage_level(jurisdiction, db)
     await db.flush()
 
     # ── Step 3b: apply overlays (flood + wetland, non-fatal) ─────────────
@@ -671,65 +754,13 @@ def _build_regrid_path(geo: Any) -> str:
 async def _refresh_jurisdiction_bbox(
     jurisdiction: Jurisdiction, db: AsyncSession
 ) -> None:
-    """
-    Compute [minLng, minLat, maxLng, maxLat] from the parcel set and store it
-    on the jurisdiction row so the frontend can fit-bounds without hard-coding
-    a center.
-    """
-    result = await db.execute(
-        text("""
-            SELECT
-                ST_XMin(ST_Extent(geom)) AS minx,
-                ST_YMin(ST_Extent(geom)) AS miny,
-                ST_XMax(ST_Extent(geom)) AS maxx,
-                ST_YMax(ST_Extent(geom)) AS maxy
-            FROM parcels
-            WHERE jurisdiction_id = :jid AND geom IS NOT NULL
-        """),
-        {"jid": jurisdiction.id},
-    )
-    row = result.one_or_none()
-    if row is None or row.minx is None:
-        return
-    jurisdiction.bbox = [
-        float(row.minx), float(row.miny),
-        float(row.maxx), float(row.maxy),
-    ]
+    await refresh_jurisdiction_bbox(jurisdiction, db)
 
 
 async def _backfill_parcel_zone_class(
     jurisdiction_id: uuid.UUID, db: AsyncSession
 ) -> int:
-    """
-    Populate parcels.zone_class via centroid-in-polygon spatial join against
-    zoning_districts. Uses a LATERAL subquery with LIMIT 1 so Postgres bails
-    out after the first matching zoning polygon per parcel — cuts NYC-scale
-    runtime (856k parcels × 5.4k polygons) from ~30 min to ~2 min by avoiding
-    the nested-loop cross product.
-    """
-    result = await db.execute(
-        text("""
-            UPDATE parcels p
-            SET zone_class = matched.zone_class
-            FROM (
-                SELECT p2.id AS parcel_id, zd.zone_class
-                FROM parcels p2
-                CROSS JOIN LATERAL (
-                    SELECT zone_class
-                    FROM zoning_districts zd
-                    WHERE zd.jurisdiction_id = :jid
-                      AND zd.geom IS NOT NULL
-                      AND ST_Contains(zd.geom, p2.centroid)
-                    LIMIT 1
-                ) zd
-                WHERE p2.jurisdiction_id = :jid
-                  AND p2.centroid IS NOT NULL
-            ) matched
-            WHERE p.id = matched.parcel_id
-        """),
-        {"jid": jurisdiction_id},
-    )
-    return result.rowcount or 0
+    return await backfill_parcel_zoning_from_districts(jurisdiction_id, db)
 
 
 def _coverage_level(

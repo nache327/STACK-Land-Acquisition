@@ -1,18 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useJobPoller } from "@/hooks/useJobPoller";
-import { useParcelList } from "@/hooks/useParcels";
+import { useCandidateParcelSearch, useParcelDetail } from "@/hooks/useParcels";
+import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
 import { JobProgress } from "@/components/JobProgress";
 import { ParcelTable } from "@/components/ParcelTable";
 import { ParcelDrawer } from "@/components/ParcelDrawer";
 import { FilterPanel, DEFAULT_FILTERS } from "@/components/FilterPanel";
 import type { FilterState } from "@/components/FilterPanel";
 import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
-import { useParcelDetail } from "@/hooks/useParcels";
-import type { ParcelRow } from "@/lib/schemas";
+import type { CandidateParcelRow, CandidateParcelSearchRequest } from "@/lib/schemas";
 import { api } from "@/lib/api";
 import Link from "next/link";
 
@@ -29,6 +29,11 @@ const ParcelMap = dynamic(() => import("@/components/Map"), {
 interface Props {
   params: { jobId: string };
 }
+
+type MapBBox = [number, number, number, number] | null;
+
+const TABLE_PAGE_SIZE = 100;
+const MAP_PAGE_SIZE = 5000;
 
 export default function DashboardPage({ params }: Props) {
   const { jobId } = params;
@@ -64,6 +69,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [page, setPage] = useState(1);
+  const [bbox, setBBox] = useState<MapBBox>(null);
 
   // Shortlist selection
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -74,40 +81,69 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(
     initialLayerVisibility()
   );
+  const { data: jurisdictionBounds } = useJurisdictionBounds(jurisdictionId);
 
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds(new Set());
   }, [filters]);
 
-  // Build query params from filter state
-  const listParams: Record<string, string | number | boolean | string[]> = {
-    page: 1,
-    page_size: 200,
-    vacant_only: filters.vacantOnly,
-    exclude_flood: filters.excludeFlood,
-    exclude_wetland: filters.excludeWetland,
-  };
-  if (filters.zones.length > 0) listParams.zones = filters.zones;
-  if (filters.zoneClasses.length > 0)
-    listParams.zone_classes = filters.zoneClasses;
-  if (filters.minAcres != null) listParams.min_acres = filters.minAcres;
-  if (filters.maxAcres != null) listParams.max_acres = filters.maxAcres;
+  useEffect(() => {
+    if (!jurisdictionBounds || bbox) return;
+    setBBox(jurisdictionBounds as [number, number, number, number]);
+  }, [bbox, jurisdictionBounds]);
 
-  const { data: parcelList, isLoading: tableLoading } = useParcelList(
-    jurisdictionId,
-    listParams
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [filters, bbox]);
+
+  const activeBbox = bbox ?? (jurisdictionBounds as [number, number, number, number] | null) ?? null;
+
+  const basePayload = useMemo<CandidateParcelSearchRequest | null>(() => {
+    if (!jurisdictionId) return null;
+    return {
+      jurisdiction_id: jurisdictionId,
+      target_use: "self_storage",
+      filters: {
+        ...(filters.zones.length > 0 ? { zones: filters.zones } : {}),
+        ...(filters.zoneClasses.length > 0 ? { zone_classes: filters.zoneClasses } : {}),
+        ...(filters.minAcres != null ? { min_acres: filters.minAcres } : {}),
+        ...(filters.maxAcres != null ? { max_acres: filters.maxAcres } : {}),
+        vacant_only: filters.vacantOnly,
+        exclude_flood: filters.excludeFlood,
+        exclude_wetland: filters.excludeWetland,
+      },
+      bbox: activeBbox,
+      search: filters.search.trim() || null,
+      page: 1,
+      page_size: TABLE_PAGE_SIZE,
+      sort: "acres_desc",
+    };
+  }, [activeBbox, filters, jurisdictionId]);
+
+  const tablePayload = useMemo<CandidateParcelSearchRequest | null>(() => {
+    if (!basePayload) return null;
+    return { ...basePayload, page, page_size: TABLE_PAGE_SIZE };
+  }, [basePayload, page]);
+
+  const mapPayload = useMemo<CandidateParcelSearchRequest | null>(() => {
+    if (!basePayload) return null;
+    return { ...basePayload, page: 1, page_size: MAP_PAGE_SIZE };
+  }, [basePayload]);
+
+  const { data: parcelList, isLoading: tableLoading } = useCandidateParcelSearch(tablePayload);
+  const { data: mapResults, isLoading: mapLoading } = useCandidateParcelSearch(mapPayload);
 
   const { data: parcelDetail } = useParcelDetail(drawerOpen ? selectedParcelId : null);
 
   const parcels = parcelList?.items ?? [];
+  const mapParcels = mapResults?.items ?? [];
 
   // ── Keyboard navigation ───────────────────────────────────────────────────
   const navigateParcel = useCallback(
     (direction: "up" | "down") => {
       if (parcels.length === 0) return;
-      const currentIdx = parcels.findIndex((p) => p.id === selectedParcelId);
+      const currentIdx = parcels.findIndex((p) => p.parcel_id === selectedParcelId);
       let nextIdx: number;
       if (currentIdx === -1) {
         nextIdx = direction === "down" ? 0 : parcels.length - 1;
@@ -117,7 +153,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             ? Math.min(currentIdx + 1, parcels.length - 1)
             : Math.max(currentIdx - 1, 0);
       }
-      setSelectedParcelId(parcels[nextIdx].id);
+      setSelectedParcelId(parcels[nextIdx].parcel_id);
       setDrawerOpen(true);
     },
     [parcels, selectedParcelId]
@@ -163,7 +199,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       return api.createShortlist({
         jurisdiction_id: jurisdictionId,
         name: shortlistName.trim() || `Shortlist ${new Date().toLocaleDateString()}`,
-        filters: filters as unknown as Record<string, unknown>,
+        filters: (tablePayload ?? {}) as unknown as Record<string, unknown>,
         parcel_ids: Array.from(selectedIds),
       });
     },
@@ -179,10 +215,12 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   });
 
   // ── Parcel click ──────────────────────────────────────────────────────────
-  function handleParcelClick(parcel: ParcelRow) {
-    setSelectedParcelId(parcel.id);
+  function handleParcelClick(parcel: CandidateParcelRow) {
+    setSelectedParcelId(parcel.parcel_id);
     setDrawerOpen(true);
   }
+
+  const totalPages = parcelList ? Math.max(1, Math.ceil(parcelList.total / parcelList.page_size)) : 1;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -225,12 +263,14 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           {jurisdictionId ? (
             <ParcelMap
               jurisdictionId={jurisdictionId}
-              filters={filters}
+              parcels={mapParcels}
+              isLoading={mapLoading}
               selectedParcelId={selectedParcelId}
               onParcelClick={(id) => {
                 setSelectedParcelId(id);
                 setDrawerOpen(true);
               }}
+              onBoundsChange={setBBox}
               visibility={layerVisibility}
               onVisibilityChange={setLayerVisibility}
             />
@@ -244,7 +284,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         {/* Right: parcel table (hidden when drawer is open) */}
         <aside
           className={[
-            "w-[420px] shrink-0 overflow-y-auto border-l border-slate-200 bg-white transition-all",
+            "flex w-[420px] shrink-0 flex-col overflow-hidden border-l border-slate-200 bg-white transition-all",
             drawerOpen ? "hidden" : "",
           ].join(" ")}
         >
@@ -253,13 +293,38 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               Loading parcels…
             </div>
           ) : (
-            <ParcelTable
-              parcels={parcels}
-              onRowClick={handleParcelClick}
-              selectedId={selectedParcelId}
-              selectedIds={selectedIds}
-              onSelectionChange={setSelectedIds}
-            />
+            <>
+              <div className="flex-1 overflow-y-auto">
+                <ParcelTable
+                  parcels={parcels}
+                  onRowClick={handleParcelClick}
+                  selectedId={selectedParcelId}
+                  selectedIds={selectedIds}
+                  onSelectionChange={setSelectedIds}
+                />
+              </div>
+              <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    disabled={page <= 1}
+                    className="rounded border border-slate-200 px-2.5 py-1 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    disabled={page >= totalPages}
+                    className="rounded border border-slate-200 px-2.5 py-1 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </aside>
       </div>

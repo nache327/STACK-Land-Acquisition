@@ -61,7 +61,7 @@ export interface LayerDef {
   // Opacity UI default (0–1)
   defaultOpacity: number;
   // MapLibre source spec factory — receives jurisdiction context.
-  source: (ctx: LayerContext) => LayerSourceSpec;
+  source: (ctx: LayerContext) => LayerSourceSpec | null;
   // One or more MapLibre layer specs (fill + line, fill + extrusion, etc.).
   layers: (ctx: LayerContext) => LayerSpecification[];
   // MapLibre layer IDs owned by this logical layer; toggles flip visibility
@@ -183,7 +183,7 @@ const PARCELS: LayerDef = {
     sourceLayer: "parcels",
   }),
   layers: () => [],
-  mapLayerIds: ["parcels-dim", "parcels-fill", "parcels-line", "parcels-selected"],
+  mapLayerIds: ["parcels-fill", "parcels-line", "parcels-selected"],
 };
 
 // FEMA flood zones — pg_tileserv serves the overlays_flood_sfha view.
@@ -194,7 +194,7 @@ const OVERLAY_FLOOD: LayerDef = {
   category: "overlay",
   defaultVisible: false,
   defaultOpacity: 0.4,
-  source: ({ tileservUrl, apiBaseUrl, jurisdictionId }) =>
+  source: ({ tileservUrl, jurisdictionId }) =>
     tileservUrl
       ? {
           id: "overlay-flood",
@@ -206,11 +206,7 @@ const OVERLAY_FLOOD: LayerDef = {
           minzoom: 6,
           maxzoom: 22,
         }
-      : {
-          id: "overlay-flood",
-          type: "geojson",
-          data: `${apiBaseUrl}/api/overlays/flood_sfha/map?jurisdiction_id=${jurisdictionId}`,
-        },
+      : null,
   layers: ({ tileservUrl }) => {
     const sourceLayer = tileservUrl
       ? { "source-layer": "overlays_flood_sfha" }
@@ -239,7 +235,7 @@ const OVERLAY_WETLAND: LayerDef = {
   category: "overlay",
   defaultVisible: false,
   defaultOpacity: 0.4,
-  source: ({ tileservUrl, apiBaseUrl, jurisdictionId }) =>
+  source: ({ tileservUrl, jurisdictionId }) =>
     tileservUrl
       ? {
           id: "overlay-wetland",
@@ -251,11 +247,7 @@ const OVERLAY_WETLAND: LayerDef = {
           minzoom: 6,
           maxzoom: 22,
         }
-      : {
-          id: "overlay-wetland",
-          type: "geojson",
-          data: `${apiBaseUrl}/api/overlays/wetland_nwi/map?jurisdiction_id=${jurisdictionId}`,
-        },
+      : null,
   layers: ({ tileservUrl }) => {
     const sourceLayer = tileservUrl
       ? { "source-layer": "overlays_wetland_nwi" }
