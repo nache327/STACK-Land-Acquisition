@@ -275,9 +275,9 @@ export default function Map({
       const qualFilter = buildQualifyingFilter(filtersRef.current);
       // Combine jurisdiction scope + qualifying filters. Without jFilter here,
       // the tileserver would color parcels from every jurisdiction in the DB.
-      const fillFilter: maplibregl.FilterSpecification = jFilter
+      const fillFilter = (jFilter
         ? qualFilter ? ["all", jFilter, qualFilter] : jFilter
-        : qualFilter ?? ["boolean", true];
+        : qualFilter ?? ["boolean", true]) as maplibregl.FilterSpecification;
       map.addLayer({
         id: PARCEL_FILL,
         type: "fill",
@@ -356,9 +356,9 @@ export default function Map({
       ? ["==", ["get", "jurisdiction_id"], jurisdictionId]
       : null;
     const qualFilter = buildQualifyingFilter(filters);
-    const combined: maplibregl.FilterSpecification = jFilter
+    const combined = (jFilter
       ? qualFilter ? ["all", jFilter, qualFilter] : jFilter
-      : qualFilter ?? ["boolean", true];
+      : qualFilter ?? ["boolean", true]) as maplibregl.FilterSpecification;
     map.setFilter(PARCEL_FILL, combined);
   }, [filters, jurisdictionId]);
 
