@@ -34,6 +34,14 @@ _storage_perm_expr = case(
         ),
         "conditional",
     ),
+    (
+        or_(
+            ZoneUseMatrix.self_storage == UsePermission.unclear,
+            ZoneUseMatrix.mini_warehouse == UsePermission.unclear,
+            ZoneUseMatrix.luxury_garage_condo == UsePermission.unclear,
+        ),
+        "unclear",
+    ),
     (ZoneUseMatrix.zone_code.isnot(None), "prohibited"),
     else_="unclassified",
 ).label("storage_permission")

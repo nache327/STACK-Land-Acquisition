@@ -19,7 +19,7 @@ import type { ZoneClass } from "@/lib/schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type StoragePermission = "permitted" | "conditional" | "prohibited" | "unclassified";
+export type StoragePermission = "permitted" | "conditional" | "unclear" | "prohibited" | "unclassified";
 
 export interface FilterState {
   storagePermissions: StoragePermission[];
@@ -154,6 +154,7 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
             [
               { value: "permitted",     label: "Permitted",    dot: "bg-emerald-500" },
               { value: "conditional",   label: "Conditional",  dot: "bg-amber-400" },
+              { value: "unclear",       label: "Unclear",      dot: "bg-violet-400" },
               { value: "prohibited",    label: "Prohibited",   dot: "bg-slate-400" },
             ] as { value: StoragePermission; label: string; dot: string }[]
           ).map(({ value, label, dot }) => {
