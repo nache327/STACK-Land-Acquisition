@@ -19,7 +19,10 @@ import type { ZoneClass } from "@/lib/schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type StoragePermission = "permitted" | "conditional" | "prohibited" | "unclassified";
+
 export interface FilterState {
+  storagePermissions: StoragePermission[];
   zones: string[];
   zoneClasses: ZoneClass[];
   minAcres: number | null;
@@ -30,6 +33,7 @@ export interface FilterState {
 }
 
 export const DEFAULT_FILTERS: FilterState = {
+  storagePermissions: [],
   zones: [],
   zoneClasses: [],
   minAcres: null,
@@ -101,6 +105,15 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     }));
   }
 
+  function toggleStoragePermission(perm: StoragePermission) {
+    setFilters((prev) => ({
+      ...prev,
+      storagePermissions: prev.storagePermissions.includes(perm)
+        ? prev.storagePermissions.filter((p) => p !== perm)
+        : [...prev.storagePermissions, perm],
+    }));
+  }
+
   const sortedZones = Object.entries(zoneSummary ?? {}).sort((a, b) => b[1] - a[1]);
   // Fall back to ordinance matrix when parcels carry no zoning codes
   const matrixZones = sortedZones.length === 0
@@ -120,6 +133,54 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
       <div className="pt-1">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">Data</p>
       </div>
+
+      {/* ── Storage Use ───────────────────────────────────────────────── */}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            Storage Use
+          </h3>
+          {filters.storagePermissions.length > 0 && (
+            <button
+              onClick={() => update({ storagePermissions: [] })}
+              className="text-[10px] text-slate-600 hover:text-slate-400 transition"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="space-y-0.5">
+          {(
+            [
+              { value: "permitted",     label: "Permitted",    dot: "bg-emerald-500" },
+              { value: "conditional",   label: "Conditional",  dot: "bg-amber-400" },
+              { value: "prohibited",    label: "Prohibited",   dot: "bg-slate-400" },
+            ] as { value: StoragePermission; label: string; dot: string }[]
+          ).map(({ value, label, dot }) => {
+            const checked = filters.storagePermissions.includes(value);
+            return (
+              <label
+                key={value}
+                className={[
+                  "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition",
+                  checked ? "bg-slate-800" : "hover:bg-slate-800/50",
+                ].join(" ")}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleStoragePermission(value)}
+                  className="h-3 w-3 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                />
+                <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${dot}`} />
+                <span className="flex-1 text-xs font-medium text-slate-300">{label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="border-t border-slate-800" />
 
       {/* ── Zone Class ────────────────────────────────────────────────── */}
       {classEntries.length > 0 && (

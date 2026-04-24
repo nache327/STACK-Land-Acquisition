@@ -5,15 +5,43 @@ GET /api/parcels/:id               — single parcel detail (drawer)
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, case, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.db import get_db
 from app.models.parcel import Parcel
-from app.schemas.parcel import ParcelDetail, ParcelFilter, ParcelListResponse
+from app.models.zone_use_matrix import ZoneUseMatrix, UsePermission
+from app.schemas.parcel import ParcelDetail, ParcelFilter, ParcelListResponse, ParcelRead
 
 router = APIRouter(tags=["parcels"])
+
+
+_storage_perm_expr = case(
+    (
+        or_(
+            ZoneUseMatrix.self_storage == UsePermission.permitted,
+            ZoneUseMatrix.mini_warehouse == UsePermission.permitted,
+            ZoneUseMatrix.luxury_garage_condo == UsePermission.permitted,
+        ),
+        "permitted",
+    ),
+    (
+        or_(
+            ZoneUseMatrix.self_storage == UsePermission.conditional,
+            ZoneUseMatrix.mini_warehouse == UsePermission.conditional,
+            ZoneUseMatrix.luxury_garage_condo == UsePermission.conditional,
+        ),
+        "conditional",
+    ),
+    (ZoneUseMatrix.zone_code.isnot(None), "prohibited"),
+    else_="unclassified",
+).label("storage_permission")
+
+_zum_join = and_(
+    ZoneUseMatrix.jurisdiction_id == Parcel.jurisdiction_id,
+    ZoneUseMatrix.zone_code == Parcel.zoning_code,
+)
 
 
 @router.get("/jurisdictions/{jurisdiction_id}/parcels", response_model=ParcelListResponse)
@@ -21,6 +49,7 @@ async def list_parcels(
     jurisdiction_id: uuid.UUID,
     zones: Optional[list[str]] = Query(None),
     zone_classes: Optional[list[str]] = Query(None),
+    storage_permissions: Optional[list[str]] = Query(None),
     min_acres: Optional[float] = Query(None, ge=0),
     max_acres: Optional[float] = Query(None, ge=0),
     exclude_flood: bool = Query(False),
@@ -48,22 +77,33 @@ async def list_parcels(
     if vacant_only:
         filters.append(Parcel.has_structure == False)  # noqa: E712
 
-    count_q = select(func.count()).select_from(Parcel).where(and_(*filters))
+    # storage_permissions filter: requires the JOIN to be present even for count
+    having_storage = None
+    if storage_permissions:
+        having_storage = _storage_perm_expr.in_(storage_permissions)
+
+    base_q = (
+        select(Parcel, _storage_perm_expr)
+        .outerjoin(ZoneUseMatrix, _zum_join)
+        .where(and_(*filters))
+    )
+    if having_storage is not None:
+        base_q = base_q.where(having_storage)
+
+    count_q = select(func.count()).select_from(base_q.subquery())
     total_result = await db.execute(count_q)
     total = total_result.scalar_one()
 
     offset = (page - 1) * page_size
-    q = (
-        select(Parcel)
-        .where(and_(*filters))
-        .order_by(Parcel.acres.desc().nullslast())
-        .offset(offset)
-        .limit(page_size)
-    )
+    q = base_q.order_by(Parcel.acres.desc().nullslast()).offset(offset).limit(page_size)
     result = await db.execute(q)
-    parcels = result.scalars().all()
+    rows = result.all()
 
-    return {"items": parcels, "total": total, "page": page, "page_size": page_size}
+    items = [
+        ParcelRead.model_validate(row[0]).model_copy(update={"storage_permission": row[1]})
+        for row in rows
+    ]
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/jurisdictions/{jurisdiction_id}/parcels/zone-summary")

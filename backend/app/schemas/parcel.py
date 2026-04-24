@@ -25,6 +25,7 @@ class ParcelRead(BaseModel):
     avg_slope_pct: float | None
     in_wetland: bool
     county_link: str | None
+    storage_permission: str | None = None
     created_at: datetime
     updated_at: datetime
 

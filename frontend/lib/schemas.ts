@@ -101,6 +101,7 @@ export const ParcelRowSchema = z.object({
   avg_slope_pct: z.number().nullable(),
   in_wetland: z.boolean(),
   county_link: z.string().nullable(),
+  storage_permission: z.string().nullable().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

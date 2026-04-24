@@ -87,6 +87,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   if (filters.zones.length > 0) listParams.zones = filters.zones;
   if (filters.zoneClasses.length > 0)
     listParams.zone_classes = filters.zoneClasses;
+  if (filters.storagePermissions.length > 0)
+    listParams.storage_permissions = filters.storagePermissions;
   if (filters.minAcres != null) listParams.min_acres = filters.minAcres;
   if (filters.maxAcres != null) listParams.max_acres = filters.maxAcres;
 

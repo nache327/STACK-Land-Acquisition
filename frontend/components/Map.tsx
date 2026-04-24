@@ -69,6 +69,11 @@ function buildQualifyingFilter(
       ["in", ["get", "zone_class"], ["literal", filters.zoneClasses]] as maplibregl.ExpressionSpecification
     );
   }
+  if (filters.storagePermissions && filters.storagePermissions.length > 0) {
+    conditions.push(
+      ["in", ["get", "storage_permission"], ["literal", filters.storagePermissions]] as maplibregl.ExpressionSpecification
+    );
+  }
   if (filters.minAcres != null) {
     conditions.push(
       [">=", ["to-number", ["get", "acres"]], filters.minAcres] as maplibregl.ExpressionSpecification
