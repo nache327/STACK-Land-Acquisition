@@ -141,19 +141,19 @@ async def get_parcels_map_layer(
                             'address',           p.address,
                             'storage_permission', CASE
                                 -- Verified permitted (LLM or human source)
-                                WHEN zum.classification_source IN ('llm','llm_low_confidence','llm_rule','human')
+                                WHEN zum.classification_source IN ('llm','human')
                                  AND (zum.self_storage = 'permitted'
                                    OR zum.mini_warehouse = 'permitted'
                                    OR zum.luxury_garage_condo = 'permitted')
                                 THEN 'permitted'
                                 -- Verified conditional (LLM or human source)
-                                WHEN zum.classification_source IN ('llm','llm_low_confidence','llm_rule','human')
+                                WHEN zum.classification_source IN ('llm','human')
                                  AND (zum.self_storage = 'conditional'
                                    OR zum.mini_warehouse = 'conditional'
                                    OR zum.luxury_garage_condo = 'conditional')
                                 THEN 'conditional'
                                 -- Verified prohibited (LLM/human, no positive uses)
-                                WHEN zum.classification_source IN ('llm','llm_low_confidence','llm_rule','human')
+                                WHEN zum.classification_source IN ('llm','human')
                                  AND zum.zone_code IS NOT NULL
                                 THEN 'prohibited'
                                 -- Zone in matrix but unverified (rule-based or unknown source)

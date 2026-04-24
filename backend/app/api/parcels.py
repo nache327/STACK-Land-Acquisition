@@ -19,7 +19,7 @@ router = APIRouter(tags=["parcels"])
 
 # Sources that have actually read the ordinance — earn green/amber colors on the map.
 # "rule" = pattern-matched guess only; those render purple (unclear) until verified.
-_VERIFIED_SOURCES = ["llm", "llm_low_confidence", "llm_rule", "human"]
+_VERIFIED_SOURCES = ["llm", "human"]
 
 _storage_perm_expr = case(
     # Verified permitted (LLM or human source)
