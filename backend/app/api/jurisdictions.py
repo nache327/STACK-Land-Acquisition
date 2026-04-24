@@ -19,6 +19,7 @@ from app.models.zone_use_matrix import ZoneUseMatrix, ClassificationSource
 from app.schemas.jurisdiction import JurisdictionList, JurisdictionRead
 from app.schemas.zone_use_matrix import (
     ZoneMatrixResponse,
+    ZoneUseMatrixCreate,
     ZoneUseMatrixRead,
     ZoneUseMatrixUpdate,
 )
@@ -56,6 +57,37 @@ async def get_zone_matrix(
     )
     zones = result.scalars().all()
     return {"zones": zones, "unknown_zones": [], "parser_warnings": []}
+
+
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/zones",
+    response_model=ZoneUseMatrixRead,
+    status_code=201,
+)
+async def create_zone(
+    jurisdiction_id: uuid.UUID,
+    payload: ZoneUseMatrixCreate,
+    db: AsyncSession = Depends(get_db),
+) -> ZoneUseMatrix:
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+    existing = await db.execute(
+        select(ZoneUseMatrix).where(
+            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+            ZoneUseMatrix.zone_code == payload.zone_code,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=409, detail="Zone already exists")
+    zone = ZoneUseMatrix(
+        jurisdiction_id=jurisdiction_id,
+        **payload.model_dump(),
+    )
+    db.add(zone)
+    await db.flush()
+    await db.refresh(zone)
+    return zone
 
 
 @router.get(

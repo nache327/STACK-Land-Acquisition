@@ -12,11 +12,21 @@ const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 // ── Correction schema ─────────────────────────────────────────────────────────
 interface ZoneCorrection {
   zone: string;
-  use: string; // "self_storage" | "mini_warehouse" | "luxury_garage_condo" | "light_industrial"
-  correct_value: string; // "permitted" | "conditional" | "prohibited"
+  use?: string; // "self_storage" | "mini_warehouse" | "luxury_garage_condo" | "light_industrial"
+  correct_value?: string; // "permitted" | "conditional" | "prohibited"
   current_value?: string;
   evidence?: string;
-  action: "UPDATE";
+  reason?: string;
+  note?: string;
+  display_name?: string;
+  zone_name?: string;
+  self_storage?: string;
+  mini_warehouse?: string;
+  light_industrial?: string;
+  luxury_garage_condo?: string;
+  classification_source?: string;
+  confidence?: string | number;
+  action: "UPDATE" | "DELETE" | "ADD";
 }
 
 // Map use field names from correction report to DB column names
@@ -66,33 +76,40 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validate and group corrections by zone_code
-  const grouped: Record<string, Record<string, string>> = {};
+  // Validate and group corrections by action type
+  const updates: Record<string, Record<string, string>> = {};
+  const adds: ZoneCorrection[] = [];
+  const deletes: string[] = [];
 
   for (const c of corrections) {
-    if (!c.zone || !c.use || !c.action || c.action !== "UPDATE") continue;
+    if (!c.zone || !c.action) continue;
 
-    const column = USE_TO_COLUMN[c.use];
-    if (!column) continue;
-
-    const value = normalizeValue(c.correct_value ?? "");
-    if (!VALID_VALUES.has(value)) continue;
-
-    if (!grouped[c.zone]) grouped[c.zone] = {};
-    grouped[c.zone][column] = value;
+    if (c.action === "DELETE") {
+      deletes.push(c.zone);
+    } else if (c.action === "ADD") {
+      adds.push(c);
+    } else if (c.action === "UPDATE") {
+      if (!c.use) continue;
+      const column = USE_TO_COLUMN[c.use];
+      if (!column) continue;
+      const value = normalizeValue(c.correct_value ?? "");
+      if (!VALID_VALUES.has(value)) continue;
+      if (!updates[c.zone]) updates[c.zone] = {};
+      updates[c.zone][column] = value;
+    }
   }
 
-  if (Object.keys(grouped).length === 0) {
+  if (Object.keys(updates).length === 0 && adds.length === 0 && deletes.length === 0) {
     return NextResponse.json(
       { error: "No valid corrections found after validation" },
       { status: 400 }
     );
   }
 
-  // Apply each zone correction via PATCH
-  const results: Array<{ zone: string; status: "ok" | "error"; detail?: string }> = [];
+  const results: Array<{ zone: string; action: string; status: "ok" | "skipped" | "error"; detail?: string }> = [];
 
-  for (const [zoneCode, fields] of Object.entries(grouped)) {
+  // ── UPDATES ──
+  for (const [zoneCode, fields] of Object.entries(updates)) {
     try {
       const url = `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}`;
       const patch = {
@@ -101,27 +118,47 @@ export async function POST(req: NextRequest) {
         human_reviewed: true,
         notes: `Verified via Site Scout Zoning Chat. Source: ${source ?? "user session"}. Date: ${verifiedDate ?? new Date().toISOString().slice(0, 10)}.`,
       };
-
-      const res = await fetch(url, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-        signal: AbortSignal.timeout(8_000),
-      });
-
+      const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch), signal: AbortSignal.timeout(8_000) });
       if (res.ok) {
-        results.push({ zone: zoneCode, status: "ok" });
+        results.push({ zone: zoneCode, action: "UPDATE", status: "ok" });
       } else {
         const text = await res.text();
-        results.push({ zone: zoneCode, status: "error", detail: `${res.status}: ${text.slice(0, 200)}` });
+        results.push({ zone: zoneCode, action: "UPDATE", status: "error", detail: `${res.status}: ${text.slice(0, 200)}` });
       }
     } catch (err) {
-      results.push({
-        zone: zoneCode,
-        status: "error",
-        detail: err instanceof Error ? err.message : String(err),
-      });
+      results.push({ zone: zoneCode, action: "UPDATE", status: "error", detail: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  // ── ADDITIONS ──
+  for (const c of adds) {
+    try {
+      const url = `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones`;
+      const body = {
+        zone_code: c.zone,
+        zone_name: c.display_name ?? c.zone_name ?? c.zone,
+        self_storage: c.self_storage ?? "unclear",
+        mini_warehouse: c.mini_warehouse ?? "unclear",
+        light_industrial: c.light_industrial ?? "unclear",
+        luxury_garage_condo: c.luxury_garage_condo ?? "unclear",
+        classification_source: c.classification_source ?? "rule",
+        confidence: c.confidence ? parseFloat(String(c.confidence)) : 0.0,
+      };
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(8_000) });
+      if (res.ok) {
+        results.push({ zone: c.zone, action: "ADD", status: "ok" });
+      } else {
+        const text = await res.text();
+        results.push({ zone: c.zone, action: "ADD", status: "error", detail: `${res.status}: ${text.slice(0, 200)}` });
+      }
+    } catch (err) {
+      results.push({ zone: c.zone, action: "ADD", status: "error", detail: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  // ── DELETES — skipped (destructive: would orphan real parcels) ──
+  for (const zoneCode of deletes) {
+    results.push({ zone: zoneCode, action: "DELETE", status: "skipped", detail: "DELETE skipped — use Zone Matrix to manually remove if needed" });
   }
 
   const succeeded = results.filter((r) => r.status === "ok").length;

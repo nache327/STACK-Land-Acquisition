@@ -63,14 +63,19 @@ function extractCorrectionReport(text: string): string | null {
 }
 
 function parseCorrectionJson(report: string): CorrectionEntry[] {
-  try {
-    // Match a JSON array that contains objects — skips [City Name, State] placeholders
-    const match = report.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-    if (!match) return [];
-    return JSON.parse(match[0]);
-  } catch {
-    return [];
+  // Extract ALL JSON arrays of objects from the report and combine them
+  const results: CorrectionEntry[] = [];
+  const regex = /\[\s*\{[\s\S]*?\}\s*\]/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(report)) !== null) {
+    try {
+      const parsed = JSON.parse(match[0]);
+      if (Array.isArray(parsed)) results.push(...parsed);
+    } catch {
+      // skip malformed arrays
+    }
   }
+  return results;
 }
 
 function fileToBase64(file: File): Promise<string> {

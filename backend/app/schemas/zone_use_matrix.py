@@ -41,6 +41,18 @@ class ZoneUseMatrixUpdate(BaseModel):
     notes: str | None = None
 
 
+class ZoneUseMatrixCreate(BaseModel):
+    """Create a new zone row (e.g. from Apply Correction ADD action)."""
+    zone_code: str
+    zone_name: str | None = None
+    self_storage: UsePermission = UsePermission.unclear
+    mini_warehouse: UsePermission = UsePermission.unclear
+    light_industrial: UsePermission = UsePermission.unclear
+    luxury_garage_condo: UsePermission = UsePermission.unclear
+    classification_source: ClassificationSource = ClassificationSource.unclear
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
 class ZoneMatrixResponse(BaseModel):
     zones: list[ZoneUseMatrixRead]
     unknown_zones: list[str] = []
