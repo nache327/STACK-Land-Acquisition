@@ -300,8 +300,10 @@ export function ZoningChatPanel({
         });
 
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error((errData as { error?: string }).error ?? `API error ${res.status}`);
+          const errText = await res.text().catch(() => "");
+          let errMsg = `API error ${res.status}`;
+          try { errMsg = (JSON.parse(errText) as { error?: string }).error ?? errMsg; } catch { /* not JSON — use status code */ }
+          throw new Error(errMsg);
         }
 
         // Stream the response — update the message bubble as chunks arrive
