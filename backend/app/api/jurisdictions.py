@@ -173,30 +173,26 @@ async def get_parcels_map_layer(
                             'in_wetland',        p.in_wetland,
                             'address',           p.address,
                             'storage_permission', CASE
-                                -- Verified permitted (LLM or human source)
-                                WHEN zum.classification_source IN ('llm','human')
-                                 AND (zum.self_storage = 'permitted'
-                                   OR zum.mini_warehouse = 'permitted'
-                                   OR zum.luxury_garage_condo = 'permitted')
+                                -- Any use permitted — show green regardless of source
+                                WHEN zum.self_storage = 'permitted'
+                                  OR zum.mini_warehouse = 'permitted'
+                                  OR zum.luxury_garage_condo = 'permitted'
                                 THEN 'permitted'
-                                -- Verified conditional (LLM or human source)
-                                WHEN zum.classification_source IN ('llm','human')
-                                 AND (zum.self_storage = 'conditional'
-                                   OR zum.mini_warehouse = 'conditional'
-                                   OR zum.luxury_garage_condo = 'conditional')
+                                -- Any use conditional — show amber regardless of source
+                                WHEN zum.self_storage = 'conditional'
+                                  OR zum.mini_warehouse = 'conditional'
+                                  OR zum.luxury_garage_condo = 'conditional'
                                 THEN 'conditional'
-                                -- Verified but has unclear use values — don't collapse to prohibited
-                                WHEN zum.classification_source IN ('llm','human')
-                                 AND (zum.self_storage = 'unclear'
-                                   OR zum.mini_warehouse = 'unclear'
-                                   OR zum.luxury_garage_condo = 'unclear')
-                                THEN 'unclear'
-                                -- Verified prohibited (LLM/human, all uses explicitly prohibited)
-                                WHEN zum.classification_source IN ('llm','human')
-                                 AND zum.zone_code IS NOT NULL
+                                -- Both primary storage uses prohibited — show gray even if lgc is unclear
+                                WHEN zum.self_storage = 'prohibited'
+                                 AND zum.mini_warehouse = 'prohibited'
                                 THEN 'prohibited'
-                                -- Zone in matrix but unverified (rule-based or unknown source)
-                                WHEN zum.zone_code IS NOT NULL THEN 'unclear'
+                                -- Primary storage use is unclear — show purple
+                                WHEN zum.self_storage = 'unclear'
+                                  OR zum.mini_warehouse = 'unclear'
+                                THEN 'unclear'
+                                -- Zone in matrix, all uses explicitly prohibited
+                                WHEN zum.zone_code IS NOT NULL THEN 'prohibited'
                                 ELSE 'unclassified'
                             END
                         )
