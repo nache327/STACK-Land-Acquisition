@@ -273,12 +273,17 @@ export default function Map({
       } as maplibregl.LayerSpecification);
 
       const qualFilter = buildQualifyingFilter(filtersRef.current);
+      // Combine jurisdiction scope + qualifying filters. Without jFilter here,
+      // the tileserver would color parcels from every jurisdiction in the DB.
+      const fillFilter: maplibregl.FilterSpecification = jFilter
+        ? qualFilter ? ["all", jFilter, qualFilter] : jFilter
+        : qualFilter ?? ["boolean", true];
       map.addLayer({
         id: PARCEL_FILL,
         type: "fill",
         source: PARCEL_SOURCE,
         ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
-        filter: qualFilter ?? ["boolean", true],
+        filter: fillFilter,
         paint: {
           "fill-color": [
             "match", ["get", "storage_permission"],
@@ -347,9 +352,15 @@ export default function Map({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.getLayer(PARCEL_FILL)) return;
-    const f = buildQualifyingFilter(filters);
-    map.setFilter(PARCEL_FILL, f ?? ["boolean", true]);
-  }, [filters]);
+    const jFilter: maplibregl.FilterSpecification | null = TILESERV_URL
+      ? ["==", ["get", "jurisdiction_id"], jurisdictionId]
+      : null;
+    const qualFilter = buildQualifyingFilter(filters);
+    const combined: maplibregl.FilterSpecification = jFilter
+      ? qualFilter ? ["all", jFilter, qualFilter] : jFilter
+      : qualFilter ?? ["boolean", true];
+    map.setFilter(PARCEL_FILL, combined);
+  }, [filters, jurisdictionId]);
 
   // ── Apply visibility + opacity from LayerControl ─────────────────────────
   useEffect(() => {
