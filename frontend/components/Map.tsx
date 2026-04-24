@@ -376,17 +376,6 @@ export default function Map({
           "visibility",
           state.visible ? "visible" : "none"
         );
-        // Apply opacity to whichever paint property this layer supports
-        try {
-          const type = (map.getLayer(mlId) as maplibregl.LayerSpecification)?.type;
-          if (type === "fill") {
-            map.setPaintProperty(mlId, "fill-opacity", state.opacity);
-          } else if (type === "line") {
-            map.setPaintProperty(mlId, "line-opacity", state.opacity);
-          }
-        } catch {
-          /* no-op — layer may not yet be added */
-        }
       }
     }
   }, [visibility]);
