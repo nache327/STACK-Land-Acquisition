@@ -27,15 +27,12 @@ const DISCOVERY_SOURCE_LABELS: Record<string, string> = {
 
 export function JobProgress({ job }: JobProgressProps) {
   const currentIdx = stepIndex(job.status as any);
-  const parcelsDownloaded = (job.progress as any)?.parcels_downloaded as
-    | number
-    | undefined;
-  const parcelsTotal = (job.progress as any)?.parcels_total as
-    | number
-    | undefined;
-  const discoverySource = (job.progress as any)?.discovery_source as
-    | string
-    | undefined;
+  const parcelsDownloaded = (job.progress as any)?.parcels_downloaded as number | undefined;
+  const parcelsTotal = (job.progress as any)?.parcels_total as number | undefined;
+  const parcelsIngested = (job.progress as any)?.parcels_ingested as number | undefined;
+  const parcelsIngestedTotal = (job.progress as any)?.parcels_ingested_total as number | undefined;
+  const pipelineStep = (job.progress as any)?.step as string | undefined;
+  const discoverySource = (job.progress as any)?.discovery_source as string | undefined;
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#070d1a] px-4">
@@ -100,12 +97,19 @@ export function JobProgress({ job }: JobProgressProps) {
 
                   {/* Label */}
                   <span className={active ? "font-medium" : ""}>
-                    {STAGE_LABELS[step]}
+                    {active && step === "downloading_parcels" && pipelineStep === "ingesting"
+                      ? "Ingesting parcels…"
+                      : STAGE_LABELS[step]}
                   </span>
 
                   {/* Right badge */}
                   <span className="ml-auto text-xs tabular-nums">
-                    {active && step === "downloading_parcels" && parcelsTotal ? (
+                    {active && step === "downloading_parcels" && pipelineStep === "ingesting" && parcelsIngestedTotal ? (
+                      <span className="text-blue-400">
+                        {parcelsIngested?.toLocaleString()} /{" "}
+                        {parcelsIngestedTotal.toLocaleString()}
+                      </span>
+                    ) : active && step === "downloading_parcels" && parcelsTotal ? (
                       <span className="text-blue-400">
                         {parcelsDownloaded?.toLocaleString()} /{" "}
                         {parcelsTotal.toLocaleString()}
@@ -138,7 +142,7 @@ export function JobProgress({ job }: JobProgressProps) {
         {/* Footer note */}
         {job.status !== "failed" && (
           <p className="text-center text-xs text-slate-600">
-            Typically 30–90 seconds for a full city
+            Typically 1–3 minutes for a new city · instant on repeat visits
           </p>
         )}
       </div>
