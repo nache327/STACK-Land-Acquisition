@@ -102,15 +102,14 @@ async def get_competitors(
         except ValueError:
             pass
 
-    # Include global (non-jurisdiction-specific) competitors that fall in the area
+    # Always include NULL-jurisdiction records (KMZ imports have no jurisdiction)
     if bbox:
         where = f"""
             WHERE (jurisdiction_id = :jurisdiction_id OR jurisdiction_id IS NULL)
             {bbox_filter}
         """
     else:
-        # No bbox — return jurisdiction-scoped only to avoid massive payloads
-        where = "WHERE jurisdiction_id = :jurisdiction_id"
+        where = "WHERE (jurisdiction_id = :jurisdiction_id OR jurisdiction_id IS NULL)"
 
     result = await db.execute(
         text(f"""
@@ -125,7 +124,7 @@ async def get_competitors(
                 ST_AsGeoJSON(geom)::json AS geometry
             FROM competitor_facilities
             {where}
-            LIMIT 5000
+            {"LIMIT 10000" if bbox else ""}
         """),
         params,
     )
