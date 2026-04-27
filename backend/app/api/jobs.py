@@ -32,19 +32,24 @@ async def create_job(
     city_part = parts[0].strip().lower()
     state_part = parts[1].strip().upper() if len(parts) > 1 else None
 
+    # Try state-qualified match first ("Lehi, UT"), then fall back to city-only
+    # ("Lehi") for jurisdictions stored without a state suffix in the DB.
+    jurisdiction = None
     if state_part:
-        existing_jur = await db.execute(
+        r = await db.execute(
             select(Jurisdiction).where(
                 text("LOWER(name) LIKE :city AND UPPER(name) LIKE :state")
             ).params(city=f"{city_part}%", state=f"%{state_part}%")
         )
-    else:
-        existing_jur = await db.execute(
-            select(Jurisdiction).where(
-                text("LOWER(name) LIKE :city")
-            ).params(city=f"{city_part}%")
+        jurisdiction = r.scalar_one_or_none()
+
+    if jurisdiction is None:
+        r = await db.execute(
+            select(Jurisdiction)
+            .where(text("LOWER(name) LIKE :city").bindparams(city=f"{city_part}%"))
+            .limit(1)
         )
-    jurisdiction = existing_jur.scalar_one_or_none()
+        jurisdiction = r.scalar_one_or_none()
 
     if jurisdiction is not None:
         # 1. Ready job always wins (fast path for already-indexed cities).
