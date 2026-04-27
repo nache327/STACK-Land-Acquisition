@@ -27,26 +27,41 @@ async def create_job(
     # the existing ready job — avoids a full re-download on every search.
     # Use LIKE prefix match so "Draper" matches "Draper City, UT" and
     # include state so "Salem, UT" doesn't collide with "Salem, OR".
-    if not payload.force:
-        parts = payload.jurisdiction.strip().split(",")
-        city_part = parts[0].strip().lower()
-        state_part = parts[1].strip().upper() if len(parts) > 1 else None
+    parts = payload.jurisdiction.strip().split(",")
+    city_part = parts[0].strip().lower()
+    state_part = parts[1].strip().upper() if len(parts) > 1 else None
 
-        if state_part:
-            existing_jur = await db.execute(
-                select(Jurisdiction).where(
-                    text("LOWER(name) LIKE :city AND UPPER(name) LIKE :state")
-                ).params(city=f"{city_part}%", state=f"%{state_part}%")
-            )
-        else:
-            existing_jur = await db.execute(
-                select(Jurisdiction).where(
-                    text("LOWER(name) LIKE :city")
-                ).params(city=f"{city_part}%")
-            )
-        jurisdiction = existing_jur.scalar_one_or_none()
+    if state_part:
+        existing_jur = await db.execute(
+            select(Jurisdiction).where(
+                text("LOWER(name) LIKE :city AND UPPER(name) LIKE :state")
+            ).params(city=f"{city_part}%", state=f"%{state_part}%")
+        )
+    else:
+        existing_jur = await db.execute(
+            select(Jurisdiction).where(
+                text("LOWER(name) LIKE :city")
+            ).params(city=f"{city_part}%")
+        )
+    jurisdiction = existing_jur.scalar_one_or_none()
 
-        if jurisdiction is not None and jurisdiction.last_indexed_at is not None:
+    if jurisdiction is not None:
+        # Always block duplicate concurrent runs — return active job if one exists.
+        active_job = await db.execute(
+            select(Job)
+            .where(
+                Job.status.not_in([JobStatus.ready, JobStatus.failed]),
+                text("(progress->>'jurisdiction_id') = :jid").params(jid=str(jurisdiction.id)),
+            )
+            .order_by(Job.updated_at.desc())
+            .limit(1)
+        )
+        running_job = active_job.scalar_one_or_none()
+        if running_job is not None:
+            return running_job
+
+        # Unless force=True, return the most recent ready job (skip re-download).
+        if not payload.force and jurisdiction.last_indexed_at is not None:
             existing_job = await db.execute(
                 select(Job)
                 .where(

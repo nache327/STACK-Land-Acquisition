@@ -581,11 +581,23 @@ async def _run(db: AsyncSession, job: Job) -> None:
     logger.info("Ingesting parcels into PostGIS …")
     count = await ingest_parcels(gdf, jurisdiction.id, db)
 
-    # Update last_indexed_at + compute bbox from ingested parcels
+    # Commit last_indexed_at immediately so the cache check in jobs.py
+    # can find this jurisdiction on the next search and return instantly.
     from datetime import datetime, timezone
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
     await refresh_jurisdiction_bbox(jurisdiction, db)
-    await db.flush()
+
+    # Mark job ready NOW so the dashboard unlocks without waiting for
+    # zoning / ordinance / overlay steps (those enrich data in-place).
+    await _set_status(
+        db, job, JobStatus.ready,
+        progress={
+            "parcels_ingested": count,
+            "jurisdiction_id": str(jurisdiction.id),
+        },
+    )
+    await db.commit()
+    logger.info("Parcels committed — job %s is ready with %d parcels", job.id, count)
 
     # ── Step 3a: download + ingest zoning polygons (non-fatal) ───────────
     zoning_count = 0
@@ -662,17 +674,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
             )
             # Non-fatal — job continues to ready state
 
-    # ── Step 5: mark ready ────────────────────────────────────────────────
-    await _set_status(
-        db, job, JobStatus.ready,
-        progress={
-            "parcels_ingested": count,
-            "jurisdiction_id": str(jurisdiction.id),
-        },
-    )
-    await db.commit()
     logger.info(
-        "Job %s complete — %d parcels for %s", job.id, count, cfg.name
+        "Job %s fully enriched — %d parcels for %s", job.id, count, cfg.name
     )
 
 
