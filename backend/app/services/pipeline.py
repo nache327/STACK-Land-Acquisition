@@ -150,8 +150,25 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # ── Salt Lake County (Parcels_SaltLake) ──────────────────────────────────
     "sandy":            _ugrc("Parcels_SaltLake", "Sandy",            "Sandy, UT",            "Salt Lake"),
     "west jordan":      _ugrc("Parcels_SaltLake", "West Jordan",      "West Jordan, UT",      "Salt Lake"),
-    "west valley city": _ugrc("Parcels_SaltLake", "West Valley City", "West Valley City, UT", "Salt Lake"),
-    "west valley":      _ugrc("Parcels_SaltLake", "West Valley City", "West Valley City, UT", "Salt Lake"),
+    # West Valley City — PARCEL_CITY varies "West Valley City" / "West Valley" in UGRC
+    "west valley city": JurisdictionConfig(
+        name="West Valley City, UT",
+        state="UT",
+        county="Salt Lake",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
+        where_clause="PARCEL_CITY IN ('West Valley City', 'West Valley')",
+        ordinance_url="https://library.municode.com/ut/west_valley_city/codes/code_of_ordinances",
+    ),
+    "west valley": JurisdictionConfig(
+        name="West Valley City, UT",
+        state="UT",
+        county="Salt Lake",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
+        where_clause="PARCEL_CITY IN ('West Valley City', 'West Valley')",
+        ordinance_url="https://library.municode.com/ut/west_valley_city/codes/code_of_ordinances",
+    ),
     "south jordan":     _ugrc("Parcels_SaltLake", "South Jordan",     "South Jordan, UT",     "Salt Lake"),
     "midvale":          _ugrc("Parcels_SaltLake", "Midvale",          "Midvale, UT",          "Salt Lake"),
     "millcreek":        _ugrc("Parcels_SaltLake", "Millcreek",        "Millcreek, UT",        "Salt Lake"),
