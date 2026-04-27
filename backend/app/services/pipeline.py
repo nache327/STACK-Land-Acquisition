@@ -591,7 +591,18 @@ async def _run(db: AsyncSession, job: Job) -> None:
     )
     await db.commit()
     logger.info("Ingesting parcels into PostGIS …")
-    count = await ingest_parcels(gdf, jurisdiction.id, db)
+
+    async def _ingest_progress(ingested: int, total: int) -> None:
+        job.progress = {
+            **(job.progress or {}),
+            "step": "ingesting",
+            "parcels_ingested": ingested,
+            "parcels_ingested_total": total,
+        }
+        await db.flush()
+        await db.commit()
+
+    count = await ingest_parcels(gdf, jurisdiction.id, db, progress_callback=_ingest_progress)
 
     # Commit last_indexed_at immediately so the cache check in jobs.py
     # can find this jurisdiction on the next search and return instantly.

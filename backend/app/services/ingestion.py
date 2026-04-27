@@ -291,6 +291,7 @@ async def ingest_parcels(
     gdf: gpd.GeoDataFrame,
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
+    progress_callback: Any | None = None,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -344,6 +345,8 @@ async def ingest_parcels(
         await db.execute(stmt)
         total_inserted += len(batch)
         logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
+        if progress_callback is not None:
+            await progress_callback(total_inserted, len(rows))
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id
