@@ -133,17 +133,15 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
 
 
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
-    # ── Draper (city-specific layer with zoning codes — keep as-is) ───────────
+    # ── Draper — switched to UGRC SaltLake parcel service for speed ─────────────
     "draper": JurisdictionConfig(
         name="Draper City, UT",
         state="UT",
         county="Salt Lake",
         parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=(
-            "https://services2.arcgis.com/nAPVXppTJAHM40Se/arcgis/rest"
-            "/services/Public_Parcels/FeatureServer/11"
-        ),
-        zoning_endpoint=(
+        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
+        where_clause="PARCEL_CITY='Draper'",
+        zoning_polygon_endpoint=(
             "https://services2.arcgis.com/nAPVXppTJAHM40Se/arcgis/rest"
             "/services/Zoning/FeatureServer/5"
         ),
@@ -168,7 +166,16 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "salt lake city":   _ugrc("Parcels_SaltLake", "Salt Lake City",   "Salt Lake City, UT",   "Salt Lake"),
     # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
-    "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
+    "orem": JurisdictionConfig(
+        name="Orem, UT", state="UT", county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Orem'",
+        zoning_polygon_endpoint=(
+            "https://maps.utahcounty.gov/arcgis/rest/services"
+            "/Assessor/CommercialAppraiser/MapServer/28"
+        ),
+    ),
     "lehi":          _ugrc("Parcels_Utah", "Lehi",          "Lehi, UT",          "Utah"),
     "lindon": JurisdictionConfig(
         name="Lindon, UT", state="UT", county="Utah",
@@ -206,14 +213,26 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
             "/services/Zoning/FeatureServer/2"
         ),
     ),
+    "saratoga springs": JurisdictionConfig(
+        name="Saratoga Springs, UT", state="UT", county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Saratoga Springs'",
+        zoning_polygon_endpoint=(
+            "https://gis.saratogaspringscity.com/arcgisweb/rest/services"
+            "/Planning/Zoning/MapServer/1"
+        ),
+    ),
     # ── Weber County (Parcels_Weber) ─────────────────────────────────────────
-    "ogden": _ugrc("Parcels_Weber", "Ogden", "Ogden, UT", "Weber"),
-    "roy":   _ugrc("Parcels_Weber", "Roy",   "Roy, UT",   "Weber"),
+    "ogden":     _ugrc("Parcels_Weber", "Ogden",     "Ogden, UT",     "Weber"),
+    "roy":       _ugrc("Parcels_Weber", "Roy",       "Roy, UT",       "Weber"),
+    "west haven": _ugrc("Parcels_Weber", "West Haven", "West Haven, UT", "Weber"),
     # ── Davis County (Parcels_Davis) ─────────────────────────────────────────
     "layton":    _ugrc("Parcels_Davis", "Layton",    "Layton, UT",    "Davis"),
     "bountiful": _ugrc("Parcels_Davis", "Bountiful", "Bountiful, UT", "Davis"),
     "clearfield": _ugrc("Parcels_Davis", "Clearfield", "Clearfield, UT", "Davis"),
     "syracuse":  _ugrc("Parcels_Davis", "Syracuse",  "Syracuse, UT",  "Davis"),
+    "kaysville": _ugrc("Parcels_Davis", "Kaysville", "Kaysville, UT", "Davis"),
     # ── Cache County (Parcels_Cache) ─────────────────────────────────────────
     "logan": _ugrc("Parcels_Cache", "Logan", "Logan, UT", "Cache"),
     # ── Washington County (Parcels_Washington) ────────────────────────────────
@@ -221,7 +240,17 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "saint george": _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
     "st george":   _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
     "washington":  _ugrc("Parcels_Washington", "Washington", "Washington, UT", "Washington"),
-    "hurricane":   _ugrc("Parcels_Washington", "Hurricane",  "Hurricane, UT",  "Washington"),
+    "hurricane": JurisdictionConfig(
+        name="Hurricane, UT", state="UT", county="Washington",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Washington/FeatureServer/0",
+        where_clause="PARCEL_CITY='Hurricane'",
+        zoning_polygon_endpoint=(
+            "https://agisprodvm.washco.utah.gov/arcgis/rest/services"
+            "/Zoning/MapServer/5"
+        ),
+        ordinance_url="https://library.municode.com/ut/hurricane/codes/code_of_ordinances",
+    ),
     # ── Iron County (Parcels_Iron) ────────────────────────────────────────────
     "cedar city": _ugrc("Parcels_Iron", "Cedar City", "Cedar City, UT", "Iron"),
 
