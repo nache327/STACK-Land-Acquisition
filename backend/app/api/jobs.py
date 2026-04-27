@@ -3,6 +3,7 @@ POST /api/jobs        — create a new search job
 GET  /api/jobs/:id   — poll job status
 """
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select, text
@@ -46,34 +47,39 @@ async def create_job(
     jurisdiction = existing_jur.scalar_one_or_none()
 
     if jurisdiction is not None:
-        # Always block duplicate concurrent runs — return active job if one exists.
-        active_job = await db.execute(
-            select(Job)
-            .where(
-                Job.status.not_in([JobStatus.ready, JobStatus.failed]),
-                text("(progress->>'jurisdiction_id') = :jid").params(jid=str(jurisdiction.id)),
-            )
-            .order_by(Job.updated_at.desc())
-            .limit(1)
-        )
-        running_job = active_job.scalar_one_or_none()
-        if running_job is not None:
-            return running_job
+        jid_param = {"jid": str(jurisdiction.id)}
 
-        # Unless force=True, return the most recent ready job (skip re-download).
+        # 1. Ready job always wins (fast path for already-indexed cities).
         if not payload.force and jurisdiction.last_indexed_at is not None:
-            existing_job = await db.execute(
+            result = await db.execute(
                 select(Job)
                 .where(
                     Job.status == JobStatus.ready,
-                    text("(progress->>'jurisdiction_id') = :jid").params(jid=str(jurisdiction.id)),
+                    text("(progress->>'jurisdiction_id') = :jid").params(**jid_param),
                 )
                 .order_by(Job.updated_at.desc())
                 .limit(1)
             )
-            ready_job = existing_job.scalar_one_or_none()
+            ready_job = result.scalar_one_or_none()
             if ready_job is not None:
                 return ready_job
+
+        # 2. Block duplicate concurrent runs — but only for jobs active in the
+        #    last 30 minutes (ignores old stuck jobs from previous deploys).
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+        result = await db.execute(
+            select(Job)
+            .where(
+                Job.status.not_in([JobStatus.ready, JobStatus.failed]),
+                Job.updated_at >= cutoff,
+                text("(progress->>'jurisdiction_id') = :jid").params(**jid_param),
+            )
+            .order_by(Job.updated_at.desc())
+            .limit(1)
+        )
+        running_job = result.scalar_one_or_none()
+        if running_job is not None:
+            return running_job
 
     job = Job(
         jurisdiction_input=payload.jurisdiction,
