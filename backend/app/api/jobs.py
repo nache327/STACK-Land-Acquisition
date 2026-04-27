@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -47,15 +47,15 @@ async def create_job(
     jurisdiction = existing_jur.scalar_one_or_none()
 
     if jurisdiction is not None:
-        jid_param = {"jid": str(jurisdiction.id)}
-
         # 1. Ready job always wins (fast path for already-indexed cities).
+        #    Use Job.jurisdiction_id column — not the JSONB progress field, which
+        #    may be absent on older jobs and causes reliable cache misses.
         if not payload.force and jurisdiction.last_indexed_at is not None:
             result = await db.execute(
                 select(Job)
                 .where(
                     Job.status == JobStatus.ready,
-                    text("(progress->>'jurisdiction_id') = :jid").params(**jid_param),
+                    Job.jurisdiction_id == jurisdiction.id,
                 )
                 .order_by(Job.updated_at.desc())
                 .limit(1)
@@ -64,15 +64,14 @@ async def create_job(
             if ready_job is not None:
                 return ready_job
 
-        # 2. Block duplicate concurrent runs — but only for jobs active in the
-        #    last 30 minutes (ignores old stuck jobs from previous deploys).
+        # 2. Block duplicate concurrent runs — only jobs active in last 30 min.
         cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
         result = await db.execute(
             select(Job)
             .where(
                 Job.status.not_in([JobStatus.ready, JobStatus.failed]),
                 Job.updated_at >= cutoff,
-                text("(progress->>'jurisdiction_id') = :jid").params(**jid_param),
+                Job.jurisdiction_id == jurisdiction.id,
             )
             .order_by(Job.updated_at.desc())
             .limit(1)
