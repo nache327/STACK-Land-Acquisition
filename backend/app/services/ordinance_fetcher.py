@@ -133,16 +133,29 @@ async def fetch_from_pdf(pdf_path: Path) -> list[OrdinanceSection]:
 
 
 def detect_source_type(url: str) -> str:
-    """Return 'municipal_codes' | 'municode' | 'ecode360' | 'american_legal' | 'generic'."""
+    """Return 'municipal_codes' | 'municode' | 'ecode360' | 'american_legal' | 'generic'.
+
+    Any domain in _JS_SPA_DOMAINS is treated as a JS SPA and routed to Playwright.
+    Add new municipal code platforms here as they are encountered.
+    """
     u = url.lower()
     if ".municipal.codes" in u:
         return "municipal_codes"
-    if "municode.com" in u:
-        return "municode"
-    if "ecode360.com" in u:
-        return "ecode360"
     if "amlegal.com" in u or "american-legal.com" in u:
         return "american_legal"
+    # All other known JS SPA / Cloudflare-protected municipal code platforms
+    _JS_SPA_DOMAINS = (
+        "municode.com",
+        "municipalcodeonline.com",
+        "sterlingcodifiers.com",
+        "codepublishing.com",
+        "generalcode.com",
+        "codexonline.com",
+        "ecode360.com",
+        "codelibrary.amlegal.com",
+    )
+    if any(d in u for d in _JS_SPA_DOMAINS):
+        return "municode"  # all routed through _fetch_with_playwright
     return "generic"
 
 

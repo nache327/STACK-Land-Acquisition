@@ -190,40 +190,6 @@ async function jinaFetch(url: string, timeoutMs = 18_000): Promise<string> {
   return res.text();
 }
 
-// Try to directly hit the municipalcodeonline.com REST API that the SPA uses
-async function probeMunicipalCodeApi(origin: string, hashName: string, queryType: string): Promise<string | null> {
-  const endpoints = [
-    `${origin}/api/content?type=${queryType}&name=${hashName}`,
-    `${origin}/api/section?type=${queryType}&name=${hashName}`,
-    `${origin}/api/ordinances?section=${hashName}`,
-    `${origin}/content?type=${queryType}&name=${hashName}`,
-    `${origin}/book/content?type=${queryType}&name=${hashName}`,
-  ];
-
-  const attempts = endpoints.map(async (ep) => {
-    try {
-      const res = await fetch(ep, {
-        headers: { "Accept": "application/json, text/html, text/plain" },
-        signal: AbortSignal.timeout(6_000),
-      });
-      if (!res.ok) return null;
-      const ct = res.headers.get("content-type") ?? "";
-      if (ct.includes("json")) {
-        const json = await res.json() as Record<string, unknown>;
-        const content = (json.content ?? json.text ?? json.html ?? json.body ?? "") as string;
-        return typeof content === "string" && content.length > 100 ? content : null;
-      }
-      const text = await res.text();
-      return text.length > 100 ? text : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const results = await Promise.all(attempts);
-  return results.find(r => r !== null) ?? null;
-}
-
 // Extract candidate section URLs from TOC text
 function extractSectionUrls(tocText: string, baseWithQuery: string): string[] {
   const urls: string[] = [];
@@ -251,97 +217,6 @@ function extractSectionUrls(tocText: string, baseWithQuery: string): string[] {
   }
 
   return Array.from(new Set(urls));
-}
-
-// Main handler for municipalcodeonline.com SPAs
-async function fetchMunicipalCodeOnline(url: string): Promise<{ text: string; url: string } | null> {
-  let urlObj: URL;
-  try { urlObj = new URL(url); } catch { return null; }
-
-  const origin = urlObj.origin;
-  const hashName = urlObj.hash.replace(/^#name=/i, "");
-  const queryType = urlObj.searchParams.get("type") ?? "ordinances";
-  const baseWithQuery = `${origin}${urlObj.pathname}${urlObj.search}`;
-
-  // ── 1. Direct API probe — fastest if it works ──────────────────────────────
-  if (hashName) {
-    const apiText = await probeMunicipalCodeApi(origin, hashName, queryType);
-    if (apiText && hasTableOfUses(apiText)) {
-      return { text: apiText, url };
-    }
-  }
-
-  // ── 2. Try the original hash URL via Jina (works on some SPAs) ─────────────
-  if (hashName) {
-    try {
-      const text = (await jinaFetch(url, 20_000)).slice(0, 200_000);
-      if (hasTableOfUses(text)) return { text, url };
-    } catch { /* fall through */ }
-  }
-
-  // ── 3. Fetch base TOC to find the correct section link ─────────────────────
-  let tocText = "";
-  try {
-    tocText = (await jinaFetch(baseWithQuery, 20_000)).slice(0, 300_000);
-    if (hasTableOfUses(tocText)) return { text: tocText, url: baseWithQuery };
-  } catch { /* fall through */ }
-
-  // ── 4. Build candidate section URLs ────────────────────────────────────────
-  const candidateUrls: string[] = [];
-
-  // From TOC content
-  candidateUrls.push(...extractSectionUrls(tocText, baseWithQuery));
-
-  // Chapter guesses — derive chapter from the hash name
-  const chapterFromHash = hashName ? hashName.match(/^(\d+)\./) : null;
-  const chapter = chapterFromHash ? chapterFromHash[1] : null;
-
-  if (chapter) {
-    for (const kw of HASH_USE_TABLE_PATTERNS) {
-      // Try sub-sections common in Utah zoning codes
-      for (const sub of ["350", "360", "300", "06", "07", "08", "030", "040", "050", "200"]) {
-        candidateUrls.push(`${baseWithQuery}#name=${chapter}.${sub}_${kw}`);
-      }
-    }
-  }
-
-  // Utah-specific common patterns across chapters 11 and 17
-  for (const chap of ["11.350", "11.360", "11.06", "11.07", "11.08", "11.10",
-                       "17.350", "17.06", "10.04", "10.06"]) {
-    for (const kw of HASH_USE_TABLE_PATTERNS) {
-      candidateUrls.push(`${baseWithQuery}#name=${chap}_${kw}`);
-    }
-  }
-
-  const unique = Array.from(new Set(candidateUrls)).slice(0, 16);
-
-  // ── 5. Fetch candidates in parallel ────────────────────────────────────────
-  const attempts = unique.map(async (sectionUrl) => {
-    try {
-      const text = (await jinaFetch(sectionUrl, 12_000)).slice(0, 200_000);
-      return { text, url: sectionUrl, hasTable: hasTableOfUses(text), len: text.length };
-    } catch {
-      return null;
-    }
-  });
-
-  const results = await Promise.all(attempts);
-
-  // Prefer a use-table result; fall back to longest result with any content
-  const best = results.find(r => r?.hasTable);
-  if (best) return { text: best.text, url: best.url };
-
-  const longest = results
-    .filter(r => r !== null && (r?.len ?? 0) > 300)
-    .sort((a, b) => (b?.len ?? 0) - (a?.len ?? 0))[0];
-  if (longest) {
-    return {
-      text: longest.text + "\n\n[FORMAT: Prose format — no use matrix keyword found. Read Permitted/Conditional Use lists per zone.]",
-      url: longest.url,
-    };
-  }
-
-  return null;
 }
 
 // ── Main GET handler ──────────────────────────────────────────────────────────
@@ -385,43 +260,34 @@ export async function GET(req: Request) {
     // Backend unreachable — fall through to Jina (best-effort for PDFs)
   }
 
-  // ── municipal.codes / municode / amlegal: JS SPAs — proxy to Railway backend (Playwright) ──
-  if (hostname.includes("municipal.codes") || hostname.includes("municode.com") || hostname.includes("amlegal.com")) {
-    try {
-      const res = await fetch(`${BACKEND}/api/ordinances/fetch-text?url=${encodeURIComponent(url)}`, {
-        signal: AbortSignal.timeout(55_000),
-      });
-      if (res.ok) {
-        const data = await res.json() as { text: string; section_count: number; error?: string };
-        if (data.text && data.text.length > 200) {
-          return Response.json({ text: data.text, url, via: "backend-playwright" });
-        }
+  // ── All allowlisted domains: try Playwright backend first, Jina as fallback ──
+  // The backend uses Playwright for JS SPAs (municode, municipalcodeonline, ecode360,
+  // sterlingcodifiers, codepublishing, etc.) and plain HTTP for static city sites.
+  // Adding a new municipal code platform only requires updating the backend's
+  // detect_source_type() — no frontend changes needed.
+  try {
+    const res = await fetch(`${BACKEND}/api/ordinances/fetch-text?url=${encodeURIComponent(url)}`, {
+      signal: AbortSignal.timeout(55_000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { text: string; section_count: number; error?: string };
+      if (data.text && data.text.length > 200) {
+        return Response.json({ text: data.text, url, via: "backend-playwright" });
       }
-    } catch { /* fall through to Jina */ }
-    // Jina fallback — may still work if Cloudflare allows it
-    try {
-      const text = (await jinaFetch(url, 20_000)).slice(0, 200_000);
-      if (text.length > 300) return Response.json({ text, url, via: "jina" });
-    } catch { /* fall through */ }
-    return Response.json({
-      text: "[Could not fetch this URL — the site requires a real browser (Cloudflare protection). Paste the relevant section text directly into the chat.]",
-      url,
-      via: "failed",
-    });
-  }
-
-  // ── municipalcodeonline.com: dedicated multi-step path ────────────────────
-  if (hostname.includes("municipalcodeonline.com")) {
-    const result = await fetchMunicipalCodeOnline(url);
-    if (result) {
-      return Response.json({ text: result.text, url: result.url, via: "jina-smart" });
     }
-    return Response.json({
-      text: "[Could not automatically locate the Table of Uses for this URL. Navigate to the specific section in the ordinance website and paste the text directly.]",
-      url,
-      via: "jina-failed",
-    });
-  }
+  } catch { /* fall through to Jina */ }
+
+  // Jina fallback — works for static HTML sites, may work for some SPAs
+  try {
+    const text = (await jinaFetch(url, 20_000)).slice(0, 200_000);
+    if (text.length > 300) return Response.json({ text, url, via: "jina" });
+  } catch { /* fall through */ }
+
+  return Response.json({
+    text: "[Could not fetch this URL — the site may require a real browser or block automated access. Try pasting the relevant ordinance text directly into the chat.]",
+    url,
+    via: "failed",
+  });
 
   // ── Generic path ──────────────────────────────────────────────────────────
   let initialText = "";
