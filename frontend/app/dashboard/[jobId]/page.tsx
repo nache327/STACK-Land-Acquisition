@@ -342,7 +342,12 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               : "Show Saturation"}
           </button>
           <button
-            onClick={() => reanalyzeMutation.mutate()}
+            onClick={() => {
+              const count = parcelList?.total ?? 0;
+              const mins = count > 20000 ? "30–60 min" : count > 10000 ? "15–30 min" : count > 5000 ? "5–15 min" : "1–5 min";
+              if (!confirm(`Re-analyze will re-download and re-process all ${count.toLocaleString()} parcels for this jurisdiction.\n\nEstimated time: ${mins}\n\nOnly do this if the zoning data has changed. Continue?`)) return;
+              reanalyzeMutation.mutate();
+            }}
             disabled={reanalyzeMutation.isPending}
             className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
           >
