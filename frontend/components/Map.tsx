@@ -5,8 +5,8 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
 import { LayerControl, type LayerVisibility } from "@/components/LayerControl";
-import { LAYER_REGISTRY, ZONE_CLASS_COLORS } from "@/lib/layers";
-import type { CandidateParcelRow } from "@/lib/schemas";
+import { LAYER_REGISTRY, SATURATION_COLORS, ZONE_CLASS_COLORS, type ColorMode } from "@/lib/layers";
+import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -45,10 +45,13 @@ interface MapProps {
   parcels: CandidateParcelRow[];
   isLoading?: boolean;
   selectedParcelId?: number | null;
+  selectedParcelCentroid?: [number, number] | null;
   onParcelClick?: (parcelId: number) => void;
   onBoundsChange?: (bbox: [number, number, number, number]) => void;
   visibility: LayerVisibility;
   onVisibilityChange: (next: LayerVisibility) => void;
+  colorMode?: ColorMode;
+  saturationData?: Map<number, SaturationBatchResult>;
 }
 
 const PARCEL_SOURCE = "parcels";
@@ -61,16 +64,42 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const DEFAULT_CENTER: [number, number] = [-98.5, 39.5];
 
 const OVERLAY_LAYER_IDS = ["overlay-flood-fill", "overlay-wetland-fill"];
+const RING_SOURCE = "saturation-rings";
+const RING_LAYER = "saturation-rings-line";
+const RING_RADII_MILES = [1, 3, 5, 10];
+
+function bboxCenter(geom: GeoJSON.Geometry): [number, number] | null {
+  const flat: number[][] = [];
+  const collect = (coords: unknown): void => {
+    if (!Array.isArray(coords)) return;
+    if (typeof coords[0] === "number") {
+      flat.push(coords as number[]);
+    } else {
+      (coords as unknown[]).forEach(collect);
+    }
+  };
+  if ("coordinates" in geom) collect(geom.coordinates);
+  if (!flat.length) return null;
+  const lngs = flat.map((c) => c[0]);
+  const lats = flat.map((c) => c[1]);
+  return [
+    (Math.min(...lngs) + Math.max(...lngs)) / 2,
+    (Math.min(...lats) + Math.max(...lats)) / 2,
+  ];
+}
 
 export default function Map({
   jurisdictionId,
   parcels,
   isLoading = false,
   selectedParcelId,
+  selectedParcelCentroid,
   onParcelClick,
   onBoundsChange,
   visibility,
   onVisibilityChange,
+  colorMode = "permission",
+  saturationData,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -84,28 +113,33 @@ export default function Map({
       type: "FeatureCollection",
       features: parcels
         .filter((parcel) => parcel.geom)
-        .map((parcel) => ({
-          type: "Feature" as const,
-          id: parcel.parcel_id,
-          properties: {
-            parcel_id: parcel.parcel_id,
-            apn: parcel.apn,
-            address: parcel.address,
-            acres: parcel.acres,
-            zoning_code: parcel.zoning_code,
-            zone_class: parcel.zone_class ?? "unknown",
-            storage_permission: parcel.storage_permission ?? "unclassified",
-            storage_allowed: parcel.storage_allowed,
-            storage_conditional: parcel.storage_conditional,
-            in_flood_zone: parcel.in_flood_zone,
-            in_wetland: parcel.in_wetland,
-            has_structure: parcel.has_structure,
-            is_viable: parcel.is_viable,
-          },
-          geometry: parcel.geom as unknown as GeoJSON.Geometry,
-        })),
+        .map((parcel) => {
+          const sat = saturationData?.get(parcel.parcel_id);
+          const satColor = sat?.color ?? "nodata";
+          return {
+            type: "Feature" as const,
+            id: parcel.parcel_id,
+            properties: {
+              parcel_id: parcel.parcel_id,
+              apn: parcel.apn,
+              address: parcel.address,
+              acres: parcel.acres,
+              zoning_code: parcel.zoning_code,
+              zone_class: parcel.zone_class ?? "unknown",
+              storage_permission: parcel.storage_permission ?? "unclassified",
+              storage_allowed: parcel.storage_allowed,
+              storage_conditional: parcel.storage_conditional,
+              in_flood_zone: parcel.in_flood_zone,
+              in_wetland: parcel.in_wetland,
+              has_structure: parcel.has_structure,
+              is_viable: parcel.is_viable,
+              saturation_color: satColor,
+            },
+            geometry: parcel.geom as unknown as GeoJSON.Geometry,
+          };
+        }),
     };
-  }, [parcels]);
+  }, [parcels, saturationData]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -334,6 +368,89 @@ export default function Map({
     );
   }, [selectedParcelId]);
 
+  // Switch parcel fill color between permission-based and saturation-based
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer(PARCEL_FILL)) return;
+
+    if (colorMode === "saturation") {
+      map.setPaintProperty(PARCEL_FILL, "fill-color", [
+        "match",
+        ["get", "saturation_color"],
+        "green",   SATURATION_COLORS.underserved,
+        "yellow",  SATURATION_COLORS.borderline,
+        "red",     SATURATION_COLORS.oversupplied,
+        SATURATION_COLORS.nodata,
+      ]);
+    } else {
+      map.setPaintProperty(PARCEL_FILL, "fill-color", [
+        "match",
+        ["get", "storage_permission"],
+        "permitted",   "#10b981",
+        "conditional", "#f59e0b",
+        "unclear",     "#a78bfa",
+        "prohibited",  "#6b7280",
+        UNCLASSIFIED_PARCEL_COLOR,
+      ]);
+    }
+  }, [colorMode]);
+
+  // Draw saturation ring circles around the selected parcel
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const centroid = selectedParcelCentroid;
+
+    const addRings = () => {
+      if (!centroid) {
+        // Remove rings if no parcel selected
+        if (map.getLayer(RING_LAYER)) map.removeLayer(RING_LAYER);
+        if (map.getSource(RING_SOURCE)) map.removeSource(RING_SOURCE);
+        return;
+      }
+
+      // Build ring circles using @turf/circle
+      const circle = require("@turf/circle").default as (
+        center: [number, number],
+        radiusMiles: number,
+        options: { units: "miles"; steps: number }
+      ) => GeoJSON.Feature;
+
+      const features: GeoJSON.Feature[] = RING_RADII_MILES.map((r) =>
+        circle(centroid, r, { units: "miles", steps: 64 })
+      );
+      const ringCollection: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features,
+      };
+
+      const existing = map.getSource(RING_SOURCE) as maplibregl.GeoJSONSource | undefined;
+      if (existing) {
+        existing.setData(ringCollection);
+      } else {
+        map.addSource(RING_SOURCE, { type: "geojson", data: ringCollection });
+        map.addLayer({
+          id: RING_LAYER,
+          type: "line",
+          source: RING_SOURCE,
+          paint: {
+            "line-color": "#fbbf24",
+            "line-width": 1.5,
+            "line-opacity": 0.7,
+            "line-dasharray": [3, 2],
+          },
+        });
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      addRings();
+    } else {
+      map.once("load", addRings);
+    }
+  }, [selectedParcelCentroid]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -399,6 +516,11 @@ export default function Map({
         layers: [PARCEL_SELECTED, PARCEL_FILL, PARCEL_LINE],
       });
 
+    const queryCompetitorFeatures = (point: maplibregl.Point) =>
+      map.getLayer("competitors-circle")
+        ? map.queryRenderedFeatures(point, { layers: ["competitors-circle"] })
+        : [];
+
     const handleClick = (event: maplibregl.MapMouseEvent) => {
       const feature = queryParcelFeatures(event.point)[0];
       if (!feature) return;
@@ -412,6 +534,29 @@ export default function Map({
     };
 
     const handleMouseMove = (event: maplibregl.MapMouseEvent) => {
+      // Check competitors first (they're on top of parcels)
+      const competitorFeature = queryCompetitorFeatures(event.point)[0];
+      if (competitorFeature) {
+        const cp = competitorFeature.properties ?? {};
+        const sqft = cp.sq_ft ? Number(cp.sq_ft).toLocaleString() : null;
+        const sqftLabel = sqft
+          ? `${sqft} sq ft${cp.sqft_source === "default" ? " (est.)" : ""}`
+          : "Size unknown";
+        map.getCanvas().style.cursor = "pointer";
+        popup
+          .setLngLat(event.lngLat)
+          .setHTML(
+            `<div style="font-size:12px;line-height:1.5">
+              <div style="font-weight:700;color:#ef4444">🏢 ${cp.name || "Self-Storage Facility"}</div>
+              ${cp.address ? `<div>${cp.address}</div>` : ""}
+              <div style="color:#64748b">${sqftLabel}</div>
+              <div style="color:#94a3b8;font-size:10px">${cp.data_source === "kmz" ? "KMZ import" : "Google Places"}</div>
+            </div>`
+          )
+          .addTo(map);
+        return;
+      }
+
       const feature = queryParcelFeatures(event.point)[0];
 
       if (!feature) {

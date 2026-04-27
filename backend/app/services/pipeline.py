@@ -674,6 +674,32 @@ async def _run(db: AsyncSession, job: Job) -> None:
         logger.warning("Overlay step failed (non-fatal): %s", exc)
         await db.rollback()
 
+    # ── Step 3c: sync Google Places competitors (non-fatal) ──────────────
+    try:
+        from app.services.arcgis_bbox import get_parcel_bbox
+        from app.services.competitor_google import upsert_google_competitors
+        parcel_bbox = await get_parcel_bbox(jurisdiction.id, db)
+        if parcel_bbox is not None:
+            comp_count = await upsert_google_competitors(parcel_bbox, jurisdiction.id, db)
+            await db.commit()
+            logger.info("Competitor sync: %d Google Places facilities for %s", comp_count, cfg.name)
+    except Exception as exc:
+        logger.warning("Google Places competitor sync failed (non-fatal): %s", exc)
+        await db.rollback()
+
+    # ── Step 3d: ensure census tracts for saturation analysis (non-fatal) ──
+    try:
+        from app.services.arcgis_bbox import get_parcel_bbox
+        from app.services.census import ensure_census_tracts
+        parcel_bbox = await get_parcel_bbox(jurisdiction.id, db)
+        if parcel_bbox is not None:
+            tract_count = await ensure_census_tracts(parcel_bbox, db)
+            await db.commit()
+            logger.info("Census tracts: %d tracts cached for %s", tract_count, cfg.name)
+    except Exception as exc:
+        logger.warning("Census tract fetch failed (non-fatal): %s", exc)
+        await db.rollback()
+
     # ── Step 4: parse ordinance (optional — non-fatal if it fails) ───────
     ordinance_url = job.ordinance_url or cfg.ordinance_url
     if not ordinance_url:

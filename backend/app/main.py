@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api import (
+    competition,
     jobs,
     jurisdictions,
     ordinances,
@@ -40,6 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(competition.router, prefix="/api")
 app.include_router(jobs.router, prefix="/api")
 app.include_router(jurisdictions.router, prefix="/api")
 app.include_router(ordinances.router, prefix="/api")

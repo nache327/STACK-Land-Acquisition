@@ -17,6 +17,24 @@
 import type { FilterSpecification, LayerSpecification } from "maplibre-gl";
 import type { ZoneClass } from "./schemas";
 
+// ── Saturation color mode ─────────────────────────────────────────────────────
+
+export type ColorMode = "permission" | "saturation";
+
+export const SATURATION_COLORS = {
+  underserved:  "#10b981",  // green-500  — sq ft/person < threshold_low
+  borderline:   "#f59e0b",  // amber-400  — between thresholds
+  oversupplied: "#ef4444",  // red-500    — sq ft/person > threshold_high
+  nodata:       "#94a3b8",  // slate-400  — no competitor or census data
+} as const;
+
+export const SATURATION_LABELS = {
+  underserved:  "Underserved",
+  borderline:   "Borderline",
+  oversupplied: "Oversupplied",
+  nodata:       "No Data",
+} as const;
+
 // ── Color palette for zone_class ──────────────────────────────────────────────
 
 export const ZONE_CLASS_COLORS: Record<ZoneClass, string> = {
@@ -269,6 +287,55 @@ const OVERLAY_WETLAND: LayerDef = {
   legend: [{ color: "#06b6d4", label: "NWI Wetland" }],
 };
 
+// Competitor facilities — existing self-storage sites. Sourced from Google Places
+// (live sync per jurisdiction) and user KMZ uploads.
+const COMPETITORS: LayerDef = {
+  id: "competitors",
+  title: "Competitors",
+  description: "Existing self-storage facilities (Google Places + imported KMZ)",
+  category: "overlay",
+  defaultVisible: false,
+  defaultOpacity: 0.9,
+  source: ({ jurisdictionId, apiBaseUrl }) => ({
+    id: "competitors",
+    type: "geojson",
+    data: `${apiBaseUrl}/api/jurisdictions/${jurisdictionId}/competitors`,
+  }),
+  layers: () => [
+    {
+      id: "competitors-circle",
+      type: "circle",
+      source: "competitors",
+      paint: {
+        "circle-radius": 7,
+        "circle-color": "#ef4444",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1.5,
+        "circle-opacity": 0.85,
+      },
+    } as LayerSpecification,
+    {
+      id: "competitors-label",
+      type: "symbol",
+      source: "competitors",
+      minzoom: 12,
+      layout: {
+        "text-field": ["get", "name"],
+        "text-size": 10,
+        "text-offset": [0, 1.2],
+        "text-anchor": "top",
+      },
+      paint: {
+        "text-color": "#1e293b",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1,
+      },
+    } as LayerSpecification,
+  ],
+  mapLayerIds: ["competitors-circle", "competitors-label"],
+  legend: [{ color: "#ef4444", label: "Existing self-storage" }],
+};
+
 // Order matters: entries that render below should come first (base first,
 // then zoning, then parcels, then overlays).
 export const LAYER_REGISTRY: LayerDef[] = [
@@ -276,6 +343,7 @@ export const LAYER_REGISTRY: LayerDef[] = [
   PARCELS,
   OVERLAY_FLOOD,
   OVERLAY_WETLAND,
+  COMPETITORS,
 ];
 
 // Helper: build the MapLibre filter that scopes a vector tile layer to a

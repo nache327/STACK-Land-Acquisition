@@ -261,3 +261,28 @@ export const ZoningDistrictListSchema = z.object({
   total: z.number().int(),
 });
 export type ZoningDistrictList = z.infer<typeof ZoningDistrictListSchema>;
+
+// ---- saturation analysis ---------------------------------------------------
+
+export const RingResultSchema = z.object({
+  radius_miles: z.number(),
+  population: z.number(),
+  facility_count: z.number().int(),
+  total_sqft: z.number().int(),
+  sqft_per_person: z.number().nullable(),
+});
+export type RingResult = z.infer<typeof RingResultSchema>;
+
+export const SaturationResponseSchema = z.object({
+  parcel_id: z.number().int(),
+  rings: z.array(RingResultSchema),
+  primary_sqft_per_person: z.number().nullable(),
+  color: z.enum(["green", "yellow", "red", "gray"]),
+});
+export type SaturationResponse = z.infer<typeof SaturationResponseSchema>;
+
+export const SaturationBatchResultSchema = z.object({
+  sqft_per_person: z.number().nullable(),
+  color: z.enum(["green", "yellow", "red", "gray"]),
+});
+export type SaturationBatchResult = z.infer<typeof SaturationBatchResultSchema>;

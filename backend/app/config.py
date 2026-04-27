@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     # Optional data sources
     regrid_api_key: str = ""
 
+    # Competition & saturation analysis
+    google_places_api_key: str = ""
+    competitor_sqft_default: int = 60_000
+    saturation_threshold_low: float = 7.0    # sq ft/person — below = underserved (green)
+    saturation_threshold_high: float = 10.0  # sq ft/person — above = oversupplied (red)
+    overpass_url: str = "https://overpass-api.de/api/interpreter"
+
     # Public GIS services
     fema_nfhl_url: str = (
         "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer"
@@ -56,6 +63,10 @@ class Settings(BaseSettings):
     @property
     def regrid_enabled(self) -> bool:
         return bool(self.regrid_api_key)
+
+    @property
+    def google_places_enabled(self) -> bool:
+        return bool(self.google_places_api_key)
 
 
 settings = Settings()

@@ -11,9 +11,11 @@ import { JobProgress } from "@/components/JobProgress";
 import { ParcelTable } from "@/components/ParcelTable";
 import { ParcelDrawer } from "@/components/ParcelDrawer";
 import { FilterPanel, DEFAULT_FILTERS } from "@/components/FilterPanel";
+import { ImportModal } from "@/components/ImportModal";
 import type { FilterState } from "@/components/FilterPanel";
 import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
-import type { CandidateParcelRow, CandidateParcelSearchRequest } from "@/lib/schemas";
+import type { CandidateParcelRow, CandidateParcelSearchRequest, SaturationBatchResult } from "@/lib/schemas";
+import type { ColorMode } from "@/lib/layers";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
@@ -88,9 +90,30 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [verifierOpen, setVerifierOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
   const [bbox, setBBox] = useState<MapBBox>(null);
+
+  // Saturation analysis state
+  const [colorMode, setColorMode] = useState<ColorMode>("permission");
+  const [saturationData, setSaturationData] = useState<Map<number, SaturationBatchResult>>(new Map());
+  const [saturationLoading, setSaturationLoading] = useState(false);
+  const [onlyUnderserved, setOnlyUnderserved] = useState(false);
+  const [satThresholdLow, setSatThresholdLow] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("satThresholdLow");
+      return saved ? parseFloat(saved) : 7;
+    }
+    return 7;
+  });
+  const [satThresholdHigh, setSatThresholdHigh] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("satThresholdHigh");
+      return saved ? parseFloat(saved) : 10;
+    }
+    return 10;
+  });
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [shortlistName, setShortlistName] = useState("");
@@ -116,6 +139,19 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   useEffect(() => {
     setPage(1);
   }, [filters, bbox]);
+
+  // Persist saturation threshold settings to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("satThresholdLow", String(satThresholdLow));
+    }
+  }, [satThresholdLow]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("satThresholdHigh", String(satThresholdHigh));
+    }
+  }, [satThresholdHigh]);
 
   const activeBbox =
     bbox ??
@@ -177,6 +213,70 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const parcels = parcelList?.items ?? [];
   const mapParcels = mapResults?.items ?? [];
 
+  // When colorMode switches to saturation, fetch batch saturation data for all map parcels
+  useEffect(() => {
+    if (colorMode !== "saturation") return;
+    const ids = mapParcels.map((p) => p.parcel_id);
+    if (!ids.length) return;
+
+    setSaturationLoading(true);
+    const chunks: number[][] = [];
+    for (let i = 0; i < ids.length; i += 1000) chunks.push(ids.slice(i, i + 1000));
+
+    Promise.allSettled(chunks.map((chunk) => api.getSaturationBatch(chunk, 3)))
+      .then((results) => {
+        const merged = new Map<number, SaturationBatchResult>();
+        for (const r of results) {
+          if (r.status === "fulfilled") {
+            for (const [k, v] of Object.entries(r.value)) {
+              merged.set(Number(k), v as SaturationBatchResult);
+            }
+          }
+        }
+        setSaturationData(merged);
+      })
+      .finally(() => setSaturationLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colorMode, mapParcels]);
+
+  // Compute centroid of selected parcel for ring visualization
+  const selectedParcelCentroid = useMemo<[number, number] | null>(() => {
+    if (!selectedParcelId) return null;
+    const parcel = mapParcels.find((p) => p.parcel_id === selectedParcelId);
+    if (!parcel?.geom) return null;
+    const geom = parcel.geom as unknown as GeoJSON.Geometry;
+    const flat: number[][] = [];
+    const collect = (c: unknown): void => {
+      if (!Array.isArray(c)) return;
+      if (typeof c[0] === "number") { flat.push(c as number[]); return; }
+      (c as unknown[]).forEach(collect);
+    };
+    if ("coordinates" in geom) collect(geom.coordinates);
+    if (!flat.length) return null;
+    const lngs = flat.map((c) => c[0]);
+    const lats = flat.map((c) => c[1]);
+    return [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
+  }, [selectedParcelId, mapParcels]);
+
+  // Apply threshold filter client-side (re-colors without a new API call)
+  const effectiveSaturationData = useMemo(() => {
+    if (!saturationData.size) return saturationData;
+    const out = new Map<number, SaturationBatchResult>();
+    for (const [id, v] of saturationData) {
+      const spp = v.sqft_per_person;
+      let color: "green" | "yellow" | "red" | "gray";
+      if (spp === null || spp === undefined) color = "gray";
+      else if (spp < satThresholdLow) color = "green";
+      else if (spp < satThresholdHigh) color = "yellow";
+      else color = "red";
+      out.set(id, { ...v, color });
+    }
+    return out;
+  }, [saturationData, satThresholdLow, satThresholdHigh]);
+
   // ─── Shortlist save ─────────────────────────────────────────────────────
 
   const saveMutation = useMutation({
@@ -216,28 +316,110 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950 px-5">
         <span className="text-white font-semibold">ParcelLogic</span>
-        <button
-          onClick={() => reanalyzeMutation.mutate()}
-          disabled={reanalyzeMutation.isPending}
-          className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-        >
-          {reanalyzeMutation.isPending ? "Starting…" : "Re-analyze"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors"
+          >
+            Import KMZ
+          </button>
+          <button
+            onClick={() => {
+              const next = colorMode === "permission" ? "saturation" : "permission";
+              setColorMode(next);
+            }}
+            className={[
+              "text-xs border px-3 py-1.5 rounded transition-colors",
+              colorMode === "saturation"
+                ? "text-emerald-300 border-emerald-600 bg-emerald-950 hover:bg-emerald-900"
+                : "text-slate-400 hover:text-white border-slate-700 hover:border-slate-500",
+            ].join(" ")}
+          >
+            {saturationLoading
+              ? "Loading saturation…"
+              : colorMode === "saturation"
+              ? "← Show Zoning"
+              : "Show Saturation"}
+          </button>
+          <button
+            onClick={() => reanalyzeMutation.mutate()}
+            disabled={reanalyzeMutation.isPending}
+            className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+          >
+            {reanalyzeMutation.isPending ? "Starting…" : "Re-analyze"}
+          </button>
+        </div>
       </header>
 
       {/* Layout */}
       <div className="flex flex-1 overflow-hidden">
 
-        <aside className="w-64 border-r border-slate-800 bg-slate-950">
+        <aside className="w-64 border-r border-slate-800 bg-slate-950 overflow-y-auto">
           <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
+
+          {/* Saturation Settings */}
+          <div className="border-t border-slate-800 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
+              Saturation Settings
+            </p>
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={onlyUnderserved}
+                onChange={(e) => setOnlyUnderserved(e.target.checked)}
+                className="rounded border-slate-600"
+              />
+              Only show undersupplied markets
+            </label>
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] text-slate-500 flex justify-between">
+                  <span>Underserved threshold</span>
+                  <span className="text-emerald-400">&lt; {satThresholdLow} sq ft/person</span>
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={15}
+                  step={0.5}
+                  value={satThresholdLow}
+                  onChange={(e) => setSatThresholdLow(parseFloat(e.target.value))}
+                  className="w-full accent-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 flex justify-between">
+                  <span>Oversupplied threshold</span>
+                  <span className="text-red-400">&gt; {satThresholdHigh} sq ft/person</span>
+                </label>
+                <input
+                  type="range"
+                  min={5}
+                  max={20}
+                  step={0.5}
+                  value={satThresholdHigh}
+                  onChange={(e) => setSatThresholdHigh(parseFloat(e.target.value))}
+                  className="w-full accent-red-500"
+                />
+              </div>
+            </div>
+          </div>
         </aside>
 
         <main className="flex-1">
           <ParcelMap
             jurisdictionId={jurisdictionId!}
-            parcels={mapParcels}
+            parcels={
+              onlyUnderserved && colorMode === "saturation"
+                ? mapParcels.filter((p) => {
+                    const s = effectiveSaturationData.get(p.parcel_id);
+                    return s?.color === "green";
+                  })
+                : mapParcels
+            }
             isLoading={mapLoading}
             selectedParcelId={selectedParcelId}
+            selectedParcelCentroid={selectedParcelCentroid}
             onParcelClick={(id) => {
               setSelectedParcelId(id);
               setDrawerOpen(true);
@@ -245,6 +427,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             onBoundsChange={setBBox}
             visibility={layerVisibility}
             onVisibilityChange={setLayerVisibility}
+            colorMode={colorMode}
+            saturationData={effectiveSaturationData}
           />
         </main>
 
@@ -266,6 +450,11 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           jurisdictionId={jurisdictionId ?? ""}
           onClose={() => setDrawerOpen(false)}
         />
+      )}
+
+      {/* KMZ Import Modal */}
+      {importModalOpen && (
+        <ImportModal onClose={() => setImportModalOpen(false)} />
       )}
 
       {/* Shortlist Bar */}

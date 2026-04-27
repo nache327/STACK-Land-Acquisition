@@ -10,6 +10,7 @@ import {
   CandidateParcelSearchResponseSchema,
   JobSchema,
   JurisdictionSchema,
+  SaturationResponseSchema,
   type CandidateParcelSearchRequest,
   type CandidateParcelSearchResponse,
   ParcelDetailSchema,
@@ -21,6 +22,8 @@ import {
   type Jurisdiction,
   type ParcelDetail,
   type ParcelListResponse,
+  type SaturationBatchResult,
+  type SaturationResponse,
   type ZoneMatrixResponse,
   type ZoningDistrictList,
 } from "./schemas";
@@ -190,5 +193,63 @@ export const api = {
 
   shortlistExportUrl(shortlistId: string): string {
     return `${BASE_URL}/api/shortlists/${shortlistId}/export.csv`;
+  },
+
+  // ---- competition & saturation -------------------------------------------
+
+  competitorsUrl(jurisdictionId: string, bbox?: [number, number, number, number]): string {
+    const bboxParam = bbox ? `?bbox=${bbox.join(",")}` : "";
+    return `${BASE_URL}/api/jurisdictions/${jurisdictionId}/competitors${bboxParam}`;
+  },
+
+  async syncCompetitors(jurisdictionId: string): Promise<{ status: string; message: string }> {
+    return fetchJSON<{ status: string; message: string }>(
+      `/api/jurisdictions/${jurisdictionId}/competitors/sync`,
+      { method: "POST" }
+    );
+  },
+
+  async importKmz(file: File): Promise<{ inserted: number; skipped: number; message: string }> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE_URL}/api/competitors/import-kmz`, {
+      method: "POST",
+      body: form,
+      // No Content-Type header — let browser set multipart boundary
+    });
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail ?? detail;
+      } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    return res.json();
+  },
+
+  async clearKmzCompetitors(): Promise<{ deleted: number }> {
+    return fetchJSON<{ deleted: number }>("/api/competitors/kmz/clear", {
+      method: "DELETE",
+    });
+  },
+
+  async getParcelSaturation(parcelId: number): Promise<SaturationResponse> {
+    const raw = await fetchJSON<unknown>(`/api/parcels/${parcelId}/saturation`);
+    return SaturationResponseSchema.parse(raw);
+  },
+
+  async getSaturationBatch(
+    parcelIds: number[],
+    ringMiles: number = 3
+  ): Promise<Record<string, SaturationBatchResult>> {
+    const raw = await fetchJSON<{ results: Record<string, SaturationBatchResult> }>(
+      "/api/parcels/saturation-batch",
+      {
+        method: "POST",
+        body: JSON.stringify({ parcel_ids: parcelIds, ring_miles: ringMiles }),
+      }
+    );
+    return raw.results;
   },
 };

@@ -1,13 +1,9 @@
 "use client";
 
-/**
- * Side panel that slides in when a parcel is clicked.
- * Includes Three-Layer Zoning Verification Engine.
- */
-
 import { useEffect } from "react";
 import type { ParcelDetail } from "@/lib/schemas";
 import { useVerification } from "@/hooks/useVerification";
+import { useParcelSaturation } from "@/hooks/useParcelSaturation";
 import { VerificationPanel } from "./VerificationPanel";
 
 interface ParcelDrawerProps {
@@ -31,6 +27,10 @@ export function ParcelDrawer({
       zoneCode: parcel?.zoning_code ?? null,
       jurisdictionId,
     });
+
+  const { data: saturation, isLoading: satLoading } = useParcelSaturation(
+    parcel?.id ?? null
+  );
 
   // Auto-run Layer 1 when drawer opens with a new parcel
   useEffect(() => {
@@ -88,6 +88,9 @@ export function ParcelDrawer({
           />
         </dl>
 
+        {/* Market Saturation */}
+        <SaturationPanel saturation={saturation ?? null} isLoading={satLoading} />
+
         {/* Three-Layer Verification */}
         <VerificationPanel
           state={state}
@@ -143,6 +146,101 @@ export function ParcelDrawer({
         </div>
       </div>
     </aside>
+  );
+}
+
+const SAT_COLORS: Record<string, string> = {
+  green:  "#10b981",
+  yellow: "#f59e0b",
+  red:    "#ef4444",
+  gray:   "#94a3b8",
+};
+
+const SAT_LABELS: Record<string, string> = {
+  green:  "Underserved",
+  yellow: "Borderline",
+  red:    "Oversupplied",
+  gray:   "No Data",
+};
+
+function SaturationPanel({
+  saturation,
+  isLoading,
+}: {
+  saturation: import("@/lib/schemas").SaturationResponse | null;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-3 text-sm">
+      <h3 className="mb-2 font-semibold text-slate-700 text-xs uppercase tracking-wide">
+        Market Saturation
+      </h3>
+
+      {isLoading && (
+        <div className="text-xs text-slate-400 animate-pulse">Loading saturation data…</div>
+      )}
+
+      {!isLoading && !saturation && (
+        <div className="text-xs text-slate-400">
+          No saturation data — competitor sync may still be running.
+        </div>
+      )}
+
+      {saturation && (
+        <>
+          <table className="w-full text-xs border-collapse mb-3">
+            <thead>
+              <tr className="text-slate-400 text-[10px]">
+                <th className="text-left pb-1">Ring</th>
+                <th className="text-right pb-1">Pop</th>
+                <th className="text-right pb-1">Sites</th>
+                <th className="text-right pb-1">Sq Ft</th>
+                <th className="text-right pb-1">Sq Ft/P</th>
+              </tr>
+            </thead>
+            <tbody>
+              {saturation.rings.map((ring) => {
+                const isPrimary = ring.radius_miles === 3;
+                const spp = ring.sqft_per_person;
+                let color = "gray";
+                if (spp !== null) {
+                  color = spp < 7 ? "green" : spp < 10 ? "yellow" : "red";
+                }
+                return (
+                  <tr
+                    key={ring.radius_miles}
+                    className={isPrimary ? "font-semibold" : "text-slate-600"}
+                  >
+                    <td className="py-0.5">{ring.radius_miles} mi</td>
+                    <td className="text-right">{ring.population.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                    <td className="text-right">{ring.facility_count}</td>
+                    <td className="text-right">{ring.total_sqft.toLocaleString()}</td>
+                    <td className="text-right" style={{ color: SAT_COLORS[color] }}>
+                      {spp !== null ? spp.toFixed(1) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div
+            className="rounded px-3 py-2 text-center text-xs font-semibold"
+            style={{
+              backgroundColor: `${SAT_COLORS[saturation.color]}20`,
+              color: SAT_COLORS[saturation.color],
+              border: `1px solid ${SAT_COLORS[saturation.color]}40`,
+            }}
+          >
+            3-Mile:{" "}
+            {saturation.primary_sqft_per_person !== null
+              ? `${saturation.primary_sqft_per_person?.toFixed(1)} sq ft/person`
+              : "No data"}{" "}
+            — {SAT_LABELS[saturation.color]}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
