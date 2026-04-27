@@ -1,6 +1,6 @@
 """Extend classification_source enum with llm_low_confidence and llm_rule values
 
-Revision ID: 0009
+Revision ID: 0009a
 Revises: 0008
 Create Date: 2026-04-23 00:00:00.000000
 
@@ -11,7 +11,7 @@ from alembic import op
 
 
 # revision identifiers
-revision = "0009"
+revision = "0009a"
 down_revision = "0008"
 branch_labels = None
 depends_on = None
