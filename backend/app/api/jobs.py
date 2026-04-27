@@ -23,42 +23,42 @@ async def create_job(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> Job:
-    # If the jurisdiction name matches an already-indexed city, return the most
-    # recent ready job for it rather than re-running the full pipeline.
+    # Unless force=True, check if this city is already indexed and return
+    # the existing ready job — avoids a full re-download on every search.
     # Use LIKE prefix match so "Draper" matches "Draper City, UT" and
     # include state so "Salem, UT" doesn't collide with "Salem, OR".
-    parts = payload.jurisdiction.strip().split(",")
-    city_part = parts[0].strip().lower()
-    state_part = parts[1].strip().upper() if len(parts) > 1 else None
+    if not payload.force:
+        parts = payload.jurisdiction.strip().split(",")
+        city_part = parts[0].strip().lower()
+        state_part = parts[1].strip().upper() if len(parts) > 1 else None
 
-    if state_part:
-        existing_jur = await db.execute(
-            select(Jurisdiction).where(
-                text("LOWER(name) LIKE :city AND UPPER(name) LIKE :state")
-            ).params(city=f"{city_part}%", state=f"%{state_part}%")
-        )
-    else:
-        existing_jur = await db.execute(
-            select(Jurisdiction).where(
-                text("LOWER(name) LIKE :city")
-            ).params(city=f"{city_part}%")
-        )
-    jurisdiction = existing_jur.scalar_one_or_none()
-
-    if jurisdiction is not None and jurisdiction.last_indexed_at is not None:
-        # Find the most recent ready job for this jurisdiction
-        existing_job = await db.execute(
-            select(Job)
-            .where(
-                Job.status == JobStatus.ready,
-                text("(progress->>'jurisdiction_id') = :jid").params(jid=str(jurisdiction.id)),
+        if state_part:
+            existing_jur = await db.execute(
+                select(Jurisdiction).where(
+                    text("LOWER(name) LIKE :city AND UPPER(name) LIKE :state")
+                ).params(city=f"{city_part}%", state=f"%{state_part}%")
             )
-            .order_by(Job.updated_at.desc())
-            .limit(1)
-        )
-        ready_job = existing_job.scalar_one_or_none()
-        if ready_job is not None:
-            return ready_job
+        else:
+            existing_jur = await db.execute(
+                select(Jurisdiction).where(
+                    text("LOWER(name) LIKE :city")
+                ).params(city=f"{city_part}%")
+            )
+        jurisdiction = existing_jur.scalar_one_or_none()
+
+        if jurisdiction is not None and jurisdiction.last_indexed_at is not None:
+            existing_job = await db.execute(
+                select(Job)
+                .where(
+                    Job.status == JobStatus.ready,
+                    text("(progress->>'jurisdiction_id') = :jid").params(jid=str(jurisdiction.id)),
+                )
+                .order_by(Job.updated_at.desc())
+                .limit(1)
+            )
+            ready_job = existing_job.scalar_one_or_none()
+            if ready_job is not None:
+                return ready_job
 
     job = Job(
         jurisdiction_input=payload.jurisdiction,

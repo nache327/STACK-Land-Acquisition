@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useJobPoller } from "@/hooks/useJobPoller";
 import { useCandidateParcelSearch, useParcelDetail } from "@/hooks/useParcels";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
@@ -65,8 +66,19 @@ export default function DashboardPage({ params }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status: string } }) {
+function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status: string; jurisdiction_input: string | null } }) {
   const jurisdictionId = job.jurisdiction_id;
+  const router = useRouter();
+
+  const reanalyzeMutation = useMutation({
+    mutationFn: async () => {
+      if (!job.jurisdiction_input) throw new Error("No jurisdiction input");
+      return api.createJob({ jurisdiction: job.jurisdiction_input, force: true });
+    },
+    onSuccess: (newJob) => {
+      router.push(`/dashboard/${newJob.id}`);
+    },
+  });
 
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -199,6 +211,13 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950 px-5">
         <span className="text-white font-semibold">ParcelLogic</span>
+        <button
+          onClick={() => reanalyzeMutation.mutate()}
+          disabled={reanalyzeMutation.isPending}
+          className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+        >
+          {reanalyzeMutation.isPending ? "Starting…" : "Re-analyze"}
+        </button>
       </header>
 
       {/* Layout */}

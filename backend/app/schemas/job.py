@@ -23,6 +23,8 @@ class JobCreate(BaseModel):
     # URL to Municode / eCode360 / city website — OR omit if uploading PDF
     ordinance_url: str | None = Field(None, max_length=1024)
     target_uses: list[TargetUse] = Field(default_factory=lambda: list(ALL_USES))
+    # Skip cache and always run a fresh pipeline
+    force: bool = False
 
 
 class JobRead(BaseModel):

@@ -80,6 +80,7 @@ export const JobCreateSchema = z.object({
     "light_industrial",
     "luxury_garage_condo",
   ]),
+  force: z.boolean().optional(),
 });
 export type JobCreate = z.infer<typeof JobCreateSchema>;
 
