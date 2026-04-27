@@ -179,7 +179,13 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "riverton":         _ugrc("Parcels_SaltLake", "Riverton",         "Riverton, UT",         "Salt Lake"),
     "holladay":         _ugrc("Parcels_SaltLake", "Holladay",         "Holladay, UT",         "Salt Lake"),
     "south salt lake":  _ugrc("Parcels_SaltLake", "South Salt Lake",  "South Salt Lake, UT",  "Salt Lake"),
-    "bluffdale":        _ugrc("Parcels_SaltLake", "Bluffdale",        "Bluffdale, UT",        "Salt Lake"),
+    "bluffdale": JurisdictionConfig(
+        name="Bluffdale, UT", state="UT", county="Salt Lake",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
+        where_clause="PARCEL_CITY='Bluffdale'",
+        ordinance_url="https://library.municode.com/ut/bluffdale",
+    ),
     "salt lake city":   _ugrc("Parcels_SaltLake", "Salt Lake City",   "Salt Lake City, UT",   "Salt Lake"),
     # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
