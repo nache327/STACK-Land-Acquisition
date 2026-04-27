@@ -265,7 +265,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const effectiveSaturationData = useMemo(() => {
     if (!saturationData.size) return saturationData;
     const out = new Map<number, SaturationBatchResult>();
-    for (const [id, v] of saturationData) {
+    for (const [id, v] of Array.from(saturationData.entries())) {
       const spp = v.sqft_per_person;
       let color: "green" | "yellow" | "red" | "gray";
       if (spp === null || spp === undefined) color = "gray";
