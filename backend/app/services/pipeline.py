@@ -133,14 +133,14 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
 
 
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
-    # ── Draper — switched to UGRC SaltLake parcel service for speed ─────────────
+    # ── Draper — UGRC SaltLake parcels; city name varies "Draper" / "Draper City" ──
     "draper": JurisdictionConfig(
         name="Draper City, UT",
         state="UT",
         county="Salt Lake",
         parcel_source=ParcelSource.city_gis,
         parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
-        where_clause="PARCEL_CITY='Draper'",
+        where_clause="PARCEL_CITY IN ('Draper', 'Draper City')",
         zoning_polygon_endpoint=(
             "https://services2.arcgis.com/nAPVXppTJAHM40Se/arcgis/rest"
             "/services/Zoning/FeatureServer/5"
