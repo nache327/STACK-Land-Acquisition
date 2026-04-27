@@ -73,7 +73,11 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const reanalyzeMutation = useMutation({
     mutationFn: async () => {
       if (!job.jurisdiction_input) throw new Error("No jurisdiction input");
-      return api.createJob({ jurisdiction: job.jurisdiction_input, force: true });
+      return api.createJob({
+        jurisdiction: job.jurisdiction_input,
+        target_uses: ["self_storage", "mini_warehouse", "light_industrial", "luxury_garage_condo"],
+        force: true,
+      });
     },
     onSuccess: (newJob) => {
       router.push(`/dashboard/${newJob.id}`);
@@ -81,6 +85,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   });
 
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [verifierOpen, setVerifierOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
