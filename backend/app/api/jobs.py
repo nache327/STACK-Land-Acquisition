@@ -25,12 +25,24 @@ async def create_job(
 ) -> Job:
     # If the jurisdiction name matches an already-indexed city, return the most
     # recent ready job for it rather than re-running the full pipeline.
-    name_query = payload.jurisdiction.strip().split(",")[0].strip().lower()
-    existing_jur = await db.execute(
-        select(Jurisdiction).where(
-            text("LOWER(name) = :n")
-        ).params(n=name_query)
-    )
+    # Use LIKE prefix match so "Draper" matches "Draper City, UT" and
+    # include state so "Salem, UT" doesn't collide with "Salem, OR".
+    parts = payload.jurisdiction.strip().split(",")
+    city_part = parts[0].strip().lower()
+    state_part = parts[1].strip().upper() if len(parts) > 1 else None
+
+    if state_part:
+        existing_jur = await db.execute(
+            select(Jurisdiction).where(
+                text("LOWER(name) LIKE :city AND UPPER(name) LIKE :state")
+            ).params(city=f"{city_part}%", state=f"%{state_part}%")
+        )
+    else:
+        existing_jur = await db.execute(
+            select(Jurisdiction).where(
+                text("LOWER(name) LIKE :city")
+            ).params(city=f"{city_part}%")
+        )
     jurisdiction = existing_jur.scalar_one_or_none()
 
     if jurisdiction is not None and jurisdiction.last_indexed_at is not None:
