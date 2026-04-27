@@ -1,16 +1,16 @@
 """
 KMZ/KML competitor import service.
 
-Streams a KMZ (zipped KML) file and inserts all Placemark points into the
-competitor_facilities table with data_source='kmz'. Memory-safe for large
-files — uses lxml.etree.iterparse and never loads the full tree.
+Parses a KMZ (zipped KML) file and inserts all Placemark points into the
+competitor_facilities table with data_source='kmz'. Uses full-tree parse
+(lxml.etree.parse) so that Style/StyleMap definitions can be resolved for
+operator brand extraction.
 
 KMZ records are the authoritative baseline. They always survive the Google
 Places deduplication step (Google Places records within 200ft are dropped).
 """
 from __future__ import annotations
 
-import io
 import logging
 import re
 import uuid
@@ -27,10 +27,46 @@ from app.models.competitor_facility import CompetitorFacility
 logger = logging.getLogger(__name__)
 
 _BATCH_SIZE = 500
+
 _SQFT_FIELD_PATTERNS = re.compile(
     r"(rentable|gross|net|building|total|storage)?[\s_-]*(sq\.?\s*ft|sqft|square[\s_-]*feet|square[\s_-]*footage)",
     re.IGNORECASE,
 )
+
+# Map icon filename prefix → operator/brand name
+_ICON_TO_OPERATOR: dict[str, str] = {
+    "CS Logo": "CubeSmart",
+    "PS Logo": "Public Storage",
+    "Extra_Space_Storage": "Extra Space Storage",
+    "LS Logo": "Life Storage",
+    "UH Logo": "Life Storage",  # Uncle Bob's rebranded to Life Storage
+    "iStorage": "iStorage",
+    "Planet Logo": "Planet Self Storage",
+    "Store Space": "Store Space",
+    "SROA": "Storage Rentals of America",
+    "storem": "StoreMart",
+    "SM": "StorageMart",
+    "EXR Logo": "Extra Space Storage",  # Extra Space Realty sister brand
+    "Simply Logo": "Simply Self Storage",
+    "Sentinel": "Sentinel Self Storage",
+    "STACK A": "STACK Storage",
+    "Privy Properties": "Privy Properties",
+}
+
+# Generic Google Maps pushpin colors — no brand, treated as independent
+_PUSHPIN_RE = re.compile(r"maps\.google\.com/mapfiles/kml/pushpin")
+
+
+def _icon_href_to_operator(href: str) -> str | None:
+    """Resolve an icon href to an operator brand name, or None if unrecognized."""
+    if not href or _PUSHPIN_RE.search(href):
+        return None  # generic pushpin = independent/unknown operator
+    fname = href.split("/")[-1].rsplit(".", 1)[0]  # strip path + extension
+    # Try longest-match first so "Extra_Space_Storage_02" doesn't match "SM"
+    for key in sorted(_ICON_TO_OPERATOR, key=len, reverse=True):
+        if fname.startswith(key) or key.replace(" ", "_") in fname:
+            return _ICON_TO_OPERATOR[key]
+    return None
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -60,7 +96,7 @@ async def ingest_kmz_file(
 
         row = dict(
             name=placemark.get("name"),
-            operator=None,
+            operator=placemark.get("operator"),
             address=placemark.get("address"),
             sq_ft=sq_ft,
             sqft_source=sqft_source,
@@ -82,7 +118,7 @@ async def ingest_kmz_file(
         inserted += count
 
     await db.flush()
-    logger.info("KMZ import: %d inserted, %d skipped (no coords)", inserted, skipped)
+    logger.info("KMZ import: %d inserted, %d skipped (no point coords)", inserted, skipped)
     return inserted, skipped
 
 
@@ -101,97 +137,112 @@ async def delete_kmz_competitors(db: AsyncSession) -> int:
 
 def _parse_kmz_stream(file_obj: BinaryIO) -> Iterator[dict]:
     """
-    Unzip the KMZ and iterparse the KML, yielding one dict per Placemark.
-    Never loads the full XML tree into memory.
+    Unzip the KMZ and parse the KML with full-tree parsing so Style/StyleMap
+    elements can be resolved for operator brand extraction.
     """
+    from lxml import etree
+
     with zipfile.ZipFile(file_obj) as zf:
-        # Find the root .kml file (usually doc.kml or the first .kml entry)
-        kml_names = [n for n in zf.namelist() if n.endswith(".kml")]
+        kml_names = [n for n in zf.namelist() if n.lower().endswith(".kml")]
         if not kml_names:
             raise ValueError("No .kml file found inside the KMZ archive")
-        # Prefer root-level doc.kml; fall back to first found
         root_kml = next((n for n in kml_names if "/" not in n), kml_names[0])
+        with zf.open(root_kml) as f:
+            kml_bytes = f.read()
 
-        with zf.open(root_kml) as kml_file:
-            kml_bytes = kml_file.read()
+    root = etree.fromstring(kml_bytes)
+    ns = root.nsmap.get(None, "")
+    p = f"{{{ns}}}" if ns else ""
 
-    yield from _iterparse_kml(io.BytesIO(kml_bytes))
+    # Build style_id → icon href map
+    style_icon: dict[str, str] = {}
+    for style in root.iter(f"{p}Style"):
+        sid = style.get("id")
+        icon = style.find(f".//{p}Icon/{p}href")
+        if sid and icon is not None and icon.text:
+            style_icon[sid] = icon.text.strip()
 
-
-def _iterparse_kml(kml_stream: BinaryIO) -> Iterator[dict]:
-    """
-    SAX-style iterparse over KML bytes, yielding one dict per Placemark element.
-    Handles both plain coordinates (Point) and nested structures.
-    """
-    from lxml import etree
-
-    # KML namespace — most files use the standard KML 2.2 namespace
-    _KML_NS = "http://www.opengis.net/kml/2.2"
-    _ALT_NS = "http://earth.google.com/kml/2.2"
-
-    context = etree.iterparse(kml_stream, events=("end",), recover=True)
-    for event, elem in context:
-        local = etree.QName(elem.tag).localname if "{" in elem.tag else elem.tag
-        if local != "Placemark":
+    # Build styleMap_id → normal style_id (follow normal pair)
+    style_map: dict[str, str] = {}
+    for sm in root.iter(f"{p}StyleMap"):
+        smid = sm.get("id")
+        if not smid:
             continue
+        for pair in sm.findall(f"{p}Pair"):
+            key = pair.find(f"{p}key")
+            url = pair.find(f"{p}styleUrl")
+            if key is not None and key.text == "normal" and url is not None:
+                style_map[smid] = url.text.lstrip("#")
 
-        placemark = _extract_placemark(elem)
+    def _resolve_icon(style_url: str) -> str:
+        sid = style_url.lstrip("#")
+        if sid in style_map:
+            sid = style_map[sid]
+        return style_icon.get(sid, "")
+
+    for pm in root.iter(f"{p}Placemark"):
+        placemark = _extract_placemark(pm, p, _resolve_icon)
         yield placemark
 
-        # Free memory — critical for large files
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
 
+def _extract_placemark(elem, p: str, resolve_icon) -> dict:
+    """Extract coord, name, operator, address, and extended data from a Placemark."""
 
-def _extract_placemark(elem) -> dict:
-    """Extract name, coords, address, id, and ExtendedData from a Placemark element."""
-    from lxml import etree
+    def _find(tag: str):
+        """Find child with namespace prefix, falling back to no-namespace."""
+        el = elem.find(f"{p}{tag}")
+        if el is None:
+            el = elem.find(tag)
+        return el
 
-    def _text(tag: str) -> str | None:
-        found = elem.find(f".//{{{_ns(elem)}}}{tag}")
-        if found is None:
-            # Try without namespace
-            found = elem.find(f".//{tag}")
-        return (found.text or "").strip() or None if found is not None else None
+    def _find_deep(tag: str):
+        """Descendant search with namespace prefix, falling back to no-namespace."""
+        el = elem.find(f".//{p}{tag}")
+        if el is None:
+            el = elem.find(f".//{tag}")
+        return el
 
-    def _ns(e) -> str:
-        if "{" in e.tag:
-            return e.tag.split("}")[0].lstrip("{")
-        return "http://www.opengis.net/kml/2.2"
+    name_el = _find("name")
+    name = (name_el.text or "").strip() or None if name_el is not None else None
 
-    ns = _ns(elem)
-
-    name = _text("name")
     placemark_id = elem.get("id") or None
 
-    # Address from <address> element
-    address = _text("address")
+    addr_el = _find("address")
+    address = (addr_el.text or "").strip() or None if addr_el is not None else None
 
-    # Coordinates from <Point><coordinates>lng,lat,alt</coordinates></Point>
+    # Operator from styleUrl → icon href → brand map
+    su_el = _find("styleUrl")
+    operator: str | None = None
+    if su_el is not None and su_el.text:
+        href = resolve_icon(su_el.text.strip())
+        operator = _icon_href_to_operator(href)
+
+    # Coordinates — only from Point (skip Polygon/LineString)
     coords: tuple[float, float] | None = None
-    coord_elem = elem.find(f".//{{{ns}}}coordinates")
-    if coord_elem is None:
-        coord_elem = elem.find(".//coordinates")
-    if coord_elem is not None and coord_elem.text:
-        raw = coord_elem.text.strip().split()[0]  # take first point if MultiGeometry
-        parts = raw.split(",")
-        if len(parts) >= 2:
-            try:
-                coords = (float(parts[0]), float(parts[1]))  # (lng, lat)
-            except ValueError:
-                pass
+    point_el = _find_deep("Point")
+    if point_el is not None:
+        coord_el = point_el.find(f"{p}coordinates")
+        if coord_el is None:
+            coord_el = point_el.find("coordinates")
+        if coord_el is not None and coord_el.text:
+            raw = coord_el.text.strip().split()[0]
+            parts = raw.split(",")
+            if len(parts) >= 2:
+                try:
+                    coords = (float(parts[0]), float(parts[1]))
+                except ValueError:
+                    pass
 
-    # ExtendedData key→value pairs
+    # ExtendedData
     extended: dict[str, str] = {}
-    for data_elem in elem.findall(f".//{{{ns}}}Data") + elem.findall(".//Data"):
-        key = data_elem.get("name", "")
-        val_elem = data_elem.find(f"{{{ns}}}value") or data_elem.find("value")
-        if val_elem is not None and val_elem.text:
-            extended[key] = val_elem.text.strip()
-
-    # SimpleData elements (alternative ExtendedData format)
-    for sd in elem.findall(f".//{{{ns}}}SimpleData") + elem.findall(".//SimpleData"):
+    for data_el in list(elem.findall(f".//{p}Data")) + list(elem.findall(".//Data")):
+        key = data_el.get("name", "")
+        val = data_el.find(f"{p}value")
+        if val is None:
+            val = data_el.find("value")
+        if key and val is not None and val.text:
+            extended[key] = val.text.strip()
+    for sd in list(elem.findall(f".//{p}SimpleData")) + list(elem.findall(".//SimpleData")):
         key = sd.get("name", "")
         if key and sd.text:
             extended[key] = sd.text.strip()
@@ -199,6 +250,7 @@ def _extract_placemark(elem) -> dict:
     return {
         "id": placemark_id,
         "name": name,
+        "operator": operator,
         "address": address,
         "coords": coords,
         "extended_data": extended or None,
@@ -208,10 +260,7 @@ def _extract_placemark(elem) -> dict:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _extract_sqft(placemark: dict) -> tuple[int | None, str]:
-    """
-    Search ExtendedData for a square footage field.
-    Returns (sq_ft, sqft_source) — sq_ft is None when not found (caller uses default).
-    """
+    """Search ExtendedData for a square footage field."""
     extended = placemark.get("extended_data") or {}
     for key, val in extended.items():
         if _SQFT_FIELD_PATTERNS.search(key):
@@ -226,11 +275,9 @@ def _extract_sqft(placemark: dict) -> tuple[int | None, str]:
 
 
 async def _flush_batch(batch: list[dict], db: AsyncSession) -> int:
-    """Bulk-upsert a batch of competitor rows. Returns count inserted/updated."""
+    """Bulk-insert a batch of competitor rows."""
     if not batch:
         return 0
-
     stmt = pg_insert(CompetitorFacility)
-    # For KMZ records with an external_id, upsert on conflict; otherwise insert
     await db.execute(stmt, batch)
     return len(batch)
