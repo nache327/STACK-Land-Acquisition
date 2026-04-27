@@ -275,7 +275,7 @@ export default function Map({
                 "unclear",
                 0.6,
                 "prohibited",
-                0.25,
+                0.45,
                 0.15,
               ],
             },
