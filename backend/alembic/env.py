@@ -1,10 +1,10 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # Import Base + all models so metadata is fully populated
+from app.config import settings
 from app.db import Base
 import app.models  # noqa: F401 — triggers all model imports
 
@@ -19,12 +19,14 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
+    """Resolve the sync DB URL from app.config (which loads .env consistently
+    with the API + worker), so all three components target the same database.
     """
-    Pull the synchronous database URL from the environment.
-    We convert +asyncpg → +psycopg2 so Alembic can use a sync engine.
-    """
-    url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/zoning")
-    return url.replace("+asyncpg", "+psycopg2").replace("+aiosqlite", "")
+    print(
+        f"[alembic] using database={settings.database_url_sanitized} "
+        f"environment={settings.environment}"
+    )
+    return settings.sync_database_url
 
 
 def run_migrations_offline() -> None:

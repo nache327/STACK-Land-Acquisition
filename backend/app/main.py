@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,12 +13,19 @@ from app.api import (
     zoning_districts,
 )
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: nothing to do (Alembic handles migrations)
+    logger.info(
+        "API boot — environment=%s database=%s redis=%s",
+        settings.environment,
+        settings.database_url_sanitized,
+        settings.redis_url_sanitized,
+    )
     yield
-    # Shutdown: dispose engine
     from app.db import engine
     await engine.dispose()
 
