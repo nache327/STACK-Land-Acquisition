@@ -1,5 +1,5 @@
 """
-Ordinance parser — uses Claude Sonnet 4.6 to build the zone→use matrix.
+Ordinance parser — uses Claude Opus 4.7 to build the zone→use matrix.
 
 Pipeline:
   1. Build a combined text from all OrdinanceSections.
@@ -195,7 +195,7 @@ def _call_claude(system_prompt: str, user_message: str) -> str:
     """Synchronous Claude call — run via asyncio.to_thread from async context."""
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-opus-4-7",
         max_tokens=16000,
         system=system_prompt,
         messages=[{"role": "user", "content": user_message}],

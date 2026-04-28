@@ -75,20 +75,22 @@ async def create_job(
                 return ready_job
 
         # 2. Block duplicate concurrent runs — only jobs active in last 30 min.
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
-        result = await db.execute(
-            select(Job)
-            .where(
-                Job.status.not_in([JobStatus.ready, JobStatus.failed]),
-                Job.updated_at >= cutoff,
-                Job.jurisdiction_id == jurisdiction.id,
+        # force=True bypasses this so a stuck/zombie job doesn't block a re-run.
+        if not payload.force:
+            cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+            result = await db.execute(
+                select(Job)
+                .where(
+                    Job.status.not_in([JobStatus.ready, JobStatus.failed]),
+                    Job.updated_at >= cutoff,
+                    Job.jurisdiction_id == jurisdiction.id,
+                )
+                .order_by(Job.updated_at.desc())
+                .limit(1)
             )
-            .order_by(Job.updated_at.desc())
-            .limit(1)
-        )
-        running_job = result.scalar_one_or_none()
-        if running_job is not None:
-            return running_job
+            running_job = result.scalar_one_or_none()
+            if running_job is not None:
+                return running_job
 
     job = Job(
         jurisdiction_input=payload.jurisdiction,

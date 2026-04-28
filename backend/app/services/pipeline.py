@@ -29,7 +29,7 @@ from app.db import async_session_maker
 from app.models.job import Job, JobStatus
 from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource
 from app.models.parcel import Parcel
-from app.services.arcgis_query import download_all_features
+from app.services.arcgis_query import download_all_features, get_layer_count, query_feature_layer
 from app.services.ingestion import ingest_parcels
 from app.services.matrix_bootstrap import bootstrap_zone_use_matrix
 from app.services.spatial_backfill import (
@@ -262,6 +262,19 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "clearfield": _ugrc("Parcels_Davis", "Clearfield", "Clearfield, UT", "Davis"),
     "syracuse":  _ugrc("Parcels_Davis", "Syracuse",  "Syracuse, UT",  "Davis"),
     "kaysville": _ugrc("Parcels_Davis", "Kaysville", "Kaysville, UT", "Davis"),
+    "farmington": JurisdictionConfig(
+        name="Farmington, UT",
+        state="UT",
+        county="Davis",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Davis/FeatureServer/0",
+        where_clause="PARCEL_CITY='Farmington'",
+        zoning_polygon_endpoint=(
+            "https://services6.arcgis.com/IkwwnD5sRYXgxM2N/arcgis/rest"
+            "/services/CEDEV_ZONING_FC2017F_Zoning_View/FeatureServer/0"
+        ),
+        ordinance_url="https://library.municode.com/ut/farmington/codes/code_of_ordinances",
+    ),
     # ── Cache County (Parcels_Cache) ─────────────────────────────────────────
     "logan": _ugrc("Parcels_Cache", "Logan", "Logan, UT", "Cache"),
     # ── Washington County (Parcels_Washington) ────────────────────────────────
@@ -573,36 +586,77 @@ async def _run(db: AsyncSession, job: Job) -> None:
         logger.info("Downloading parcels from Regrid path: %s", cfg.parcel_endpoint)
         from app.services.regrid_client import download_parcels_by_path
         gdf = await download_parcels_by_path(cfg.parcel_endpoint)
-        # Fake a progress update so the UI shows *something*
         await _progress(len(gdf), len(gdf))
-    else:
-        logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
-        gdf = await download_all_features(
-            cfg.parcel_endpoint,
-            where=cfg.where_clause or "1=1",
-            progress_callback=_progress,
+        await _set_status(
+            db, job, JobStatus.downloading_parcels,
+            progress={"step": "ingesting", "parcels_downloaded": len(gdf),
+                      "parcels_total": len(gdf), "jurisdiction_id": str(jurisdiction.id)},
         )
-    logger.info("Downloaded %d features", len(gdf))
-
-    # ── Step 3: ingest into PostGIS ───────────────────────────────────────
-    await _set_status(
-        db, job, JobStatus.downloading_parcels,
-        progress={"step": "ingesting", "parcels_downloaded": len(gdf)},
-    )
-    await db.commit()
-    logger.info("Ingesting parcels into PostGIS …")
-
-    async def _ingest_progress(ingested: int, total: int) -> None:
-        job.progress = {
-            **(job.progress or {}),
-            "step": "ingesting",
-            "parcels_ingested": ingested,
-            "parcels_ingested_total": total,
-        }
-        await db.flush()
         await db.commit()
+        logger.info("Ingesting %d Regrid parcels …", len(gdf))
+        count = await ingest_parcels(gdf, jurisdiction.id, db)
+        await db.commit()
+    else:
+        # ArcGIS path — stream one page (1 000 features) at a time so peak
+        # memory stays low and each page is committed independently.  If the
+        # Railway container is restarted mid-run, the next attempt upserts over
+        # already-ingested rows and advances straight to the zoning step.
+        import math
+        import asyncio as _asyncio
+        import geopandas as _gpd
 
-    count = await ingest_parcels(gdf, jurisdiction.id, db, progress_callback=_ingest_progress)
+        where = cfg.where_clause or "1=1"
+        page_size = 1_000
+        logger.info(
+            "Downloading parcels from ArcGIS: %s (where=%s)",
+            cfg.parcel_endpoint, where,
+        )
+        total = await get_layer_count(cfg.parcel_endpoint, where)
+        logger.info("Total features to download: %d", total)
+        await _progress(0, total)
+
+        count = 0
+        pages = math.ceil(total / page_size) if total > 0 else 0
+
+        for page_idx in range(pages):
+            offset = page_idx * page_size
+            logger.info(
+                "Fetching page %d/%d (offset=%d)", page_idx + 1, pages, offset
+            )
+            data = await query_feature_layer(
+                cfg.parcel_endpoint,
+                where=where,
+                result_offset=offset,
+                result_record_count=page_size,
+            )
+            features = data.get("features", [])
+            if not features:
+                logger.warning("Empty page at offset %d — stopping", offset)
+                break
+
+            page_gdf = _gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
+            downloaded = min((page_idx + 1) * page_size, total)
+
+            await _set_status(
+                db, job, JobStatus.downloading_parcels,
+                progress={
+                    "step": "ingesting",
+                    "parcels_total": total,
+                    "parcels_downloaded": downloaded,
+                    "jurisdiction_id": str(jurisdiction.id),
+                },
+            )
+            await db.commit()
+
+            page_count = await ingest_parcels(page_gdf, jurisdiction.id, db)
+            count += page_count
+            await db.commit()  # commit every page — survives container restart
+
+            await _progress(downloaded, total)
+            if page_idx < pages - 1:
+                await _asyncio.sleep(0.1)  # be polite to the ArcGIS server
+
+        logger.info("Downloaded and ingested %d features total", count)
 
     # Commit last_indexed_at immediately so the cache check in jobs.py
     # can find this jurisdiction on the next search and return instantly.

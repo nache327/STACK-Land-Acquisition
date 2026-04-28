@@ -69,7 +69,12 @@ CITIES: list[CityConfig] = [
         service_url="https://webmaps.kaysvillecity.com/arcgis/rest/services/Base/Zoning/MapServer/1",
         zone_field="NAME1_",
     ),
-    # Farmington UT skipped — no public GIS service found (wrong-Farmington issue)
+    CityConfig(
+        name="Farmington",
+        jur_id="f90d021b-98fe-47b0-ad31-bf8c1b2dd23f",
+        service_url="https://services6.arcgis.com/IkwwnD5sRYXgxM2N/arcgis/rest/services/CEDEV_ZONING_FC2017F_Zoning_View/FeatureServer/0",
+        zone_field="Zone",
+    ),
     CityConfig(
         name="American Fork",
         jur_id="d3757bf8-b4f1-4142-bece-8c774c863955",

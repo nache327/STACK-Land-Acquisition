@@ -282,7 +282,7 @@ async def _parse_with_claude_vision(
         # Run in executor (anthropic SDK is sync)
         def _call() -> anthropic.types.Message:
             return client.messages.create(
-                model="claude-sonnet-4-6",
+                model="claude-opus-4-7",
                 max_tokens=2048,
                 messages=[
                     {

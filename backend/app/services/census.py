@@ -75,35 +75,35 @@ async def ensure_census_tracts(
         logger.warning("No census tracts returned for bbox %s", bbox)
         return 0
 
-    # Delete stale tracts for the area first
-    await db.execute(
-        text("""
-            DELETE FROM census_tracts
-            WHERE ST_Intersects(
-              geom,
-              ST_MakeEnvelope(:xmin, :ymin, :xmax, :ymax, 4326)
-            )
-        """),
-        {"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax},
-    )
-
-    rows = [
-        CensusTract(
-            geoid=t["geoid"],
-            state_fips=t["geoid"][:2],
-            county_fips=t["geoid"][2:5],
-            tract_fips=t["geoid"][5:],
-            name=t.get("name"),
-            population=t.get("population"),
-            geom=WKTElement(t["wkt"], srid=4326),
+    # Bulk upsert with ON CONFLICT DO NOTHING to handle concurrent requests
+    # inserting the same tracts simultaneously (race condition on geoid unique constraint).
+    for t in tracts:
+        await db.execute(
+            text("""
+                INSERT INTO census_tracts
+                    (geoid, state_fips, county_fips, tract_fips, name, population, geom, fetched_at)
+                VALUES
+                    (:geoid, :state_fips, :county_fips, :tract_fips, :name, :population,
+                     ST_GeomFromText(:wkt, 4326), NOW())
+                ON CONFLICT (geoid) DO UPDATE SET
+                    population = EXCLUDED.population,
+                    geom = EXCLUDED.geom,
+                    fetched_at = EXCLUDED.fetched_at
+            """),
+            {
+                "geoid": t["geoid"],
+                "state_fips": t["geoid"][:2],
+                "county_fips": t["geoid"][2:5],
+                "tract_fips": t["geoid"][5:],
+                "name": t.get("name"),
+                "population": t.get("population"),
+                "wkt": t["wkt"],
+            },
         )
-        for t in tracts
-    ]
 
-    db.add_all(rows)
     await db.flush()
-    logger.info("Cached %d census tracts for bbox %s", len(rows), bbox)
-    return len(rows)
+    logger.info("Cached %d census tracts for bbox %s", len(tracts), bbox)
+    return len(tracts)
 
 
 async def compute_population_in_ring(

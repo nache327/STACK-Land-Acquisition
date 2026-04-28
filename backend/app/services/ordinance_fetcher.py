@@ -194,15 +194,17 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             )
             page = await ctx.new_page()
 
-            # First load — may trigger Cloudflare challenge; wait for full render
+            # domcontentloaded is much faster than networkidle (no waiting for all
+            # XHR/fetch to settle).  amlegal and similar SPAs hydrate quickly after
+            # DOMContentLoaded; the selector waits below give them extra time.
             try:
-                await page.goto(url, wait_until="networkidle", timeout=60_000)
+                await page.goto(url, wait_until="domcontentloaded", timeout=20_000)
             except Exception:
                 pass
 
-            for selector in ("article", "main", "[class*='chapter']", "[class*='content']"):
+            for selector in ("div.codenav__section-body", "article", "main", "[class*='chapter']"):
                 try:
-                    await page.wait_for_selector(selector, timeout=8_000)
+                    await page.wait_for_selector(selector, timeout=5_000)
                     break
                 except Exception:
                     continue
@@ -532,70 +534,25 @@ async def _crawl_amlegal_chapters(page, initial_soup: BeautifulSoup, initial_url
         all_sections.extend(_extract_content(initial_soup, initial_url))
         seen_pending.add(initial_url)  # don't re-fetch via pending
 
-    # Navigate to parent title to walk from the beginning of the title
-    if parent_num:
-        parent_url = f"{parsed.scheme}://{parsed.netloc}{base_dir}/0-0-0-{parent_num}"
-        try:
-            await page.goto(parent_url, wait_until="load", timeout=45_000)
-        except Exception:
-            pass
-        parent_html = await page.content()
-        parent_soup = BeautifulSoup(parent_html, "lxml")
-        current_soup = parent_soup
-        current_url = parent_url
-    else:
-        # Already at title level or no parent found — start from initial page
-        current_soup = initial_soup
-        current_url = initial_url
-
-    # Walk Next Doc forward within the title
-    for _ in range(40):
-        nurl = _next_doc_url(current_soup, current_url)
-        if not nurl:
-            break
-        next_num = _amlegal_node_num(nurl)
-        if stop_at and next_num and next_num >= stop_at:
-            break
-
-        try:
-            await page.goto(nurl, wait_until="load", timeout=45_000)
-        except Exception:
-            try:
-                await page.goto(nurl, wait_until="commit", timeout=30_000)
-                await page.wait_for_timeout(2_000)
-            except Exception:
-                break
-
-        html = await page.content()
-        next_soup = BeautifulSoup(html, "lxml")
-
-        # Detect TOC-only chapter pages (small body = just a list of section links).
-        # IMPORTANT: measure text length only — pages that are mostly HTML tables
-        # (e.g. use matrices) will have short plain-text but rich table content.
-        # Check for tables before deciding this is a barren TOC page.
-        body_el = next_soup.find("div", class_="codenav__section-body")
-        body_len = len(body_el.get_text(strip=True)) if body_el else 0
-        has_table = bool(body_el and body_el.find("table"))
-        if body_len < 3000 and not has_table:
-            pending_section_urls.extend(
-                _collect_chapter_section_links(next_soup, nurl)
-            )
-        else:
-            all_sections.extend(_extract_content(next_soup, nurl))
-
-        current_soup = next_soup
-        current_url = nurl
+    # Skip the expensive parent-title walk + Next Doc loop — they can navigate
+    # 40+ pages and blow well past the 55-second edge-function timeout.
+    # Instead: if the initial page was a sparse TOC, fetch its direct section
+    # links (already collected in pending_section_urls above).  That gives us
+    # the same content in 3–8 page loads instead of 40+.
 
     # Fetch section pages collected from TOC-only chapter pages
-    for surl in pending_section_urls[:50]:
+    for surl in pending_section_urls[:12]:
         try:
-            await page.goto(surl, wait_until="load", timeout=45_000)
+            await page.goto(surl, wait_until="domcontentloaded", timeout=15_000)
         except Exception:
             try:
-                await page.goto(surl, wait_until="commit", timeout=30_000)
-                await page.wait_for_timeout(2_000)
+                await page.goto(surl, wait_until="commit", timeout=10_000)
             except Exception:
                 continue
+        try:
+            await page.wait_for_selector("div.codenav__section-body, article, main", timeout=4_000)
+        except Exception:
+            pass
         html = await page.content()
         sec_soup = BeautifulSoup(html, "lxml")
         all_sections.extend(_extract_content(sec_soup, surl))
