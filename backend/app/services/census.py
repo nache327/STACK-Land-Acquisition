@@ -1,9 +1,9 @@
 """
 US Census ACS population data service.
 
-Fetches census tract geometries (TigerWeb) and population estimates (ACS 5-year)
-for a bounding box and caches them in the census_tracts table. Data is re-fetched
-if older than 90 days.
+Fetches census tract geometries (TIGER/Line shapefiles) and population estimates
+(ACS 5-year API) for a bounding box and caches them in the census_tracts table.
+Data is re-fetched if older than 90 days.
 
 Population within a radius is computed via area-weighted areal interpolation:
   estimated_population = SUM(tract_population * overlap_area / tract_area)
@@ -11,23 +11,24 @@ across all census tracts that intersect the radius circle.
 """
 from __future__ import annotations
 
+import io
 import logging
 from datetime import datetime, timedelta, timezone
 
+import geopandas as gpd
 import httpx
 from geoalchemy2 import WKTElement
-from shapely.geometry import mapping, shape
-from sqlalchemy import delete, text
+from shapely.geometry import MultiPolygon
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.census_tract import CensusTract
 
 logger = logging.getLogger(__name__)
 
-_TIGERWEB_URL = (
-    "https://tigerweb.geo.census.gov/arcgis/rest/services"
-    "/TIGERweb/tigerWMS_ACS2022/MapServer/8/query"
-)
+# TIGER/Line shapefiles hosted at Census Bureau FTP — works from cloud IPs.
+# TigerWeb ArcGIS REST API blocks Railway outbound IPs.
+_TIGER_BASE = "https://www2.census.gov/geo/tiger/TIGER2022/TRACT"
 _ACS_URL = "https://api.census.gov/data/2022/acs/acs5"
 _CACHE_TTL_DAYS = 90
 _MILES_TO_METERS = 1609.344
@@ -151,29 +152,37 @@ async def _fetch_tracts_with_population(
     bbox: tuple[float, float, float, float],
 ) -> list[dict]:
     """
-    Fetch census tract geometries from TigerWeb + population from ACS API.
+    Fetch census tract geometries from TIGER/Line shapefiles + population from ACS API.
     Returns list of dicts: {geoid, name, population, wkt}.
     """
     xmin, ymin, xmax, ymax = bbox
 
-    # Step 1: get tract geometries from TigerWeb (ArcGIS FeatureServer)
-    geom_data = await _fetch_tigerweb_tracts(xmin, ymin, xmax, ymax)
+    # Step 1: determine which state covers this bbox via Census geocoder
+    cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    state_fips = await _geocode_state_fips(cx, cy)
+    if not state_fips:
+        logger.warning("Could not determine state FIPS for bbox %s", bbox)
+        return []
+
+    # Step 2: download TIGER/Line shapefile and extract tracts in bbox
+    geom_data = await _fetch_tiger_tracts_for_state(state_fips, xmin, ymin, xmax, ymax)
+
     if not geom_data:
         return []
 
-    # Step 2: collect unique state+county combinations to query ACS API
+    # Step 3: collect unique state+county combinations to query ACS API
     state_county_pairs: set[tuple[str, str]] = set()
     for tract in geom_data:
         geoid = tract["geoid"]
         state_county_pairs.add((geoid[:2], geoid[2:5]))
 
-    # Step 3: fetch population from ACS API for each state+county
+    # Step 4: fetch population from ACS API for each state+county
     pop_map: dict[str, int] = {}
     for state_fips, county_fips in state_county_pairs:
         pops = await _fetch_acs_population(state_fips, county_fips)
         pop_map.update(pops)
 
-    # Step 4: merge geometries with population
+    # Step 5: merge geometries with population
     result = []
     for tract in geom_data:
         geoid = tract["geoid"]
@@ -183,74 +192,82 @@ async def _fetch_tracts_with_population(
     return result
 
 
-async def _fetch_tigerweb_tracts(
-    xmin: float, ymin: float, xmax: float, ymax: float
-) -> list[dict]:
-    """
-    Query TigerWeb ACS2022 census tracts (MapServer layer 8) by bounding box.
-    Requires where=1=1 or ArcGIS returns empty results even with spatial filter.
-    Returns list of {geoid, name, wkt}.
-    """
-    # POST form-data avoids URL-encoding issues with the where clause.
-    form = {
-        "where": "GEOID IS NOT NULL",
-        "geometry": f"{xmin},{ymin},{xmax},{ymax}",
-        "geometryType": "esriGeometryEnvelope",
-        "inSR": "4326",
-        "spatialRel": "esriSpatialRelIntersects",
-        "outFields": "GEOID,NAME",
-        "returnGeometry": "true",
-        "outSR": "4326",
-        "f": "geojson",
-        "resultRecordCount": "2000",
-    }
 
+async def _geocode_state_fips(lon: float, lat: float) -> str | None:
+    """Use Census Geocoder to determine state FIPS for a coordinate."""
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(_TIGERWEB_URL, data=form)
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                "https://geocoding.geo.census.gov/geocoder/geographies/coordinates",
+                params={
+                    "x": lon, "y": lat,
+                    "benchmark": "Public_AR_Current",
+                    "vintage": "Current_Current",
+                    "layers": "States",
+                    "format": "json",
+                },
+            )
             resp.raise_for_status()
             data = resp.json()
+            states = data.get("result", {}).get("geographies", {}).get("States", [])
+            if states:
+                return states[0].get("STATE")
     except Exception as exc:
-        logger.warning("TigerWeb tracts query failed: %s", exc)
+        logger.warning("Census geocoder failed: %s", exc)
+    return None
+
+
+async def _fetch_tiger_tracts_for_state(
+    state_fips: str,
+    xmin: float, ymin: float, xmax: float, ymax: float,
+) -> list[dict]:
+    """
+    Download TIGER/Line tract shapefile ZIP for the given state from Census Bureau,
+    spatial-filter to bbox, return list of {geoid, name, wkt}.
+    """
+    url = f"{_TIGER_BASE}/tl_2022_{state_fips}_tract.zip"
+    logger.warning("Downloading TIGER/Line tracts for state %s from %s", state_fips, url)
+
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            zip_bytes = resp.content
+    except Exception as exc:
+        logger.warning("TIGER/Line download failed for state %s: %s", state_fips, exc)
         return []
 
-    if "error" in data:
-        logger.warning("TigerWeb tracts API error: %s", data["error"])
+    try:
+        gdf = gpd.read_file(io.BytesIO(zip_bytes))
+    except Exception as exc:
+        logger.warning("TIGER/Line parse failed for state %s: %s", state_fips, exc)
         return []
 
-    features = data.get("features", [])
-    logger.info("TigerWeb returned %d tract features for bbox %s,%s,%s,%s", len(features), xmin, ymin, xmax, ymax)
+    from shapely.geometry import box as shapely_box
+    bbox_geom = shapely_box(xmin, ymin, xmax, ymax)
+    gdf = gdf[gdf.geometry.intersects(bbox_geom)]
+
+    logger.warning("TIGER/Line state %s: %d tracts in bbox", state_fips, len(gdf))
 
     tracts = []
-    for feature in features:
-        props = feature.get("properties", {})
-        geoid = props.get("GEOID", "")
+    for _, row in gdf.iterrows():
+        geoid = str(row.get("GEOID", "") or row.get("GEOID20", ""))
         if len(geoid) != 11:
             continue
-
-        geom = feature.get("geometry")
-        if not geom:
+        geom = row.geometry
+        if geom is None or geom.is_empty:
             continue
-
-        try:
-            shapely_geom = shape(geom)
-            if shapely_geom.is_empty:
-                continue
-            # Ensure MultiPolygon
-            if shapely_geom.geom_type == "Polygon":
-                from shapely.geometry import MultiPolygon
-                shapely_geom = MultiPolygon([shapely_geom])
-            wkt = shapely_geom.wkt
-        except Exception:
-            continue
-
+        if geom.geom_type == "Polygon":
+            geom = MultiPolygon([geom])
         tracts.append({
             "geoid": geoid,
-            "name": props.get("NAME"),
-            "wkt": wkt,
+            "name": str(row.get("NAME", "") or row.get("NAMELSAD", "")),
+            "wkt": geom.wkt,
         })
 
     return tracts
+
+
 
 
 async def _fetch_acs_population(state_fips: str, county_fips: str) -> dict[str, int]:
