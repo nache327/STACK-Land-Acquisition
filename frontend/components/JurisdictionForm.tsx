@@ -16,7 +16,6 @@ type TargetUseId = (typeof TARGET_USES)[number]["id"];
 export function JurisdictionForm() {
   const router = useRouter();
   const [jurisdiction, setJurisdiction] = useState("");
-  const [ordinanceUrl, setOrdinanceUrl] = useState("");
   const [selectedUses, setSelectedUses] = useState<Set<TargetUseId>>(
     new Set(TARGET_USES.map((u) => u.id))
   );
@@ -47,7 +46,6 @@ export function JurisdictionForm() {
     try {
       const job = await api.createJob({
         jurisdiction: jurisdiction.trim(),
-        ordinance_url: ordinanceUrl.trim() || undefined,
         target_uses: Array.from(selectedUses),
       });
       router.push(`/dashboard/${job.id}`);
@@ -73,22 +71,6 @@ export function JurisdictionForm() {
           onChange={(e) => setJurisdiction(e.target.value)}
           placeholder='e.g. "Draper, UT" or paste an ArcGIS URL'
           autoFocus
-          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder-slate-500 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Ordinance URL */}
-      <div className="space-y-1.5">
-        <label htmlFor="ordinance-url" className="block text-sm font-medium text-slate-300">
-          Zoning Ordinance URL{" "}
-          <span className="font-normal text-slate-500">— optional</span>
-        </label>
-        <input
-          id="ordinance-url"
-          type="url"
-          value={ordinanceUrl}
-          onChange={(e) => setOrdinanceUrl(e.target.value)}
-          placeholder="Municode / eCode360 / city site…"
           className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder-slate-500 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
