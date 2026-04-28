@@ -97,26 +97,15 @@ async def compute_batch_saturation(
     """
     Compute saturation for multiple parcels at a single ring radius.
     Returns {parcel_id: {"sqft_per_person": float|None, "color": str}}.
+
+    Uses a single bulk SQL query (not a per-parcel loop) so 1,000 parcels
+    run in 1–5 seconds instead of timing out.
     """
     if not parcel_ids:
         return {}
 
-    # Get all centroids in one query
-    result = await db.execute(
-        text("""
-            SELECT id, ST_AsText(centroid) as centroid_wkt
-            FROM parcels
-            WHERE id = ANY(:ids) AND centroid IS NOT NULL
-        """),
-        {"ids": parcel_ids},
-    )
-    rows = result.fetchall()
-
-    if not rows:
-        return {}
-
-    # Lazily ensure census tracts are loaded for this area — one-time fetch
-    # per city (cached 90 days), so subsequent calls are a fast DB check only.
+    # Lazily ensure census tracts are loaded — one-time fetch per city,
+    # cached 90 days. Must happen before the bulk query below.
     try:
         from app.services.census import ensure_census_tracts
         bbox_result = await db.execute(
@@ -134,7 +123,7 @@ async def compute_batch_saturation(
         bbox_row = bbox_result.fetchone()
         if bbox_row and all(v is not None for v in bbox_row):
             xmin, ymin, xmax, ymax = bbox_row
-            buf = 0.20  # ~14 miles buffer so ring queries near the edge still have tracts
+            buf = 0.20  # ~14-mile pad so ring edges near bbox boundary have tracts
             tract_count = await ensure_census_tracts(
                 (xmin - buf, ymin - buf, xmax + buf, ymax + buf), db
             )
@@ -143,13 +132,69 @@ async def compute_batch_saturation(
     except Exception as exc:
         logger.warning("Auto-fetch census tracts failed (non-fatal): %s", exc)
 
+    radius_m = ring_miles * _MILES_TO_METERS
+    sqft_default = settings.competitor_sqft_default
+
+    # Single bulk query: competitor counts + area-weighted census population
+    # for all parcels in one shot — replaces 2,000 individual queries per 1,000 parcels.
+    result = await db.execute(
+        text("""
+            WITH parcel_centroids AS (
+                SELECT id, centroid
+                FROM parcels
+                WHERE id = ANY(:ids) AND centroid IS NOT NULL
+            ),
+            competitor_counts AS (
+                SELECT
+                    pc.id AS parcel_id,
+                    COUNT(cf.id)::int AS facility_count,
+                    COALESCE(SUM(COALESCE(cf.sq_ft, :sqft_default)), 0)::int AS total_sqft
+                FROM parcel_centroids pc
+                LEFT JOIN competitor_facilities cf
+                    ON ST_DWithin(pc.centroid::geography, cf.geom::geography, :radius_m)
+                GROUP BY pc.id
+            ),
+            ring_geoms AS (
+                SELECT id, ST_Buffer(centroid::geography, :radius_m)::geometry AS ring_geom
+                FROM parcel_centroids
+            ),
+            census_pop AS (
+                SELECT
+                    rg.id AS parcel_id,
+                    COALESCE(SUM(
+                        ct.population::float *
+                        ST_Area(ST_Intersection(rg.ring_geom, ct.geom)::geography) /
+                        NULLIF(ST_Area(ct.geom::geography), 0)
+                    ), 0.0) AS population
+                FROM ring_geoms rg
+                JOIN census_tracts ct ON ST_Intersects(rg.ring_geom, ct.geom)
+                WHERE ct.population IS NOT NULL AND ct.population > 0
+                GROUP BY rg.id
+            )
+            SELECT
+                cc.parcel_id,
+                cc.facility_count,
+                cc.total_sqft,
+                COALESCE(cp.population, 0) AS population,
+                CASE
+                    WHEN COALESCE(cp.population, 0) > 0
+                    THEN ROUND((cc.total_sqft::float / cp.population)::numeric, 2)
+                    ELSE NULL
+                END AS sqft_per_person
+            FROM competitor_counts cc
+            LEFT JOIN census_pop cp ON cp.parcel_id = cc.parcel_id
+        """),
+        {"ids": parcel_ids, "radius_m": radius_m, "sqft_default": sqft_default},
+    )
+    rows = result.fetchall()
+
     output: dict[int, dict] = {}
     for row in rows:
-        pid, centroid_wkt = row[0], row[1]
-        ring = await _compute_single_ring(centroid_wkt, ring_miles, db)
+        pid, _facility_count, _total_sqft, _population, sqft_per_person = row
+        spp = float(sqft_per_person) if sqft_per_person is not None else None
         output[pid] = {
-            "sqft_per_person": ring.sqft_per_person,
-            "color": _saturation_color(ring.sqft_per_person),
+            "sqft_per_person": spp,
+            "color": _saturation_color(spp),
         }
 
     return output
