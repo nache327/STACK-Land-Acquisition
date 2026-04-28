@@ -243,13 +243,22 @@ export const api = {
     parcelIds: number[],
     ringMiles: number = 3
   ): Promise<Record<string, SaturationBatchResult>> {
-    const raw = await fetchJSON<{ results: Record<string, SaturationBatchResult> }>(
-      "/api/parcels/saturation-batch",
-      {
-        method: "POST",
-        body: JSON.stringify({ parcel_ids: parcelIds, ring_miles: ringMiles }),
-      }
-    );
+    // Uses the Next.js proxy route (/api/saturation-batch) so the request
+    // is made server-side to Railway, bypassing browser CORS restrictions.
+    const res = await fetch("/api/saturation-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parcel_ids: parcelIds, ring_miles: ringMiles }),
+    });
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const b = await res.json();
+        detail = b.error ?? b.detail ?? detail;
+      } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    const raw = await res.json() as { results: Record<string, SaturationBatchResult> };
     return raw.results;
   },
 };

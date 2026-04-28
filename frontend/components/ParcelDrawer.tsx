@@ -12,6 +12,7 @@ interface ParcelDrawerProps {
   onClose: () => void;
   isInShortlist?: boolean;
   onToggleShortlist?: () => void;
+  onShowRing?: () => void;
 }
 
 export function ParcelDrawer({
@@ -20,6 +21,7 @@ export function ParcelDrawer({
   onClose,
   isInShortlist = false,
   onToggleShortlist,
+  onShowRing,
 }: ParcelDrawerProps) {
   const { state, layer1Loading, layer3Loading, error, runLayer1, runLayer3, reset } =
     useVerification({
@@ -47,7 +49,15 @@ export function ParcelDrawer({
       <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <h2 className="font-semibold text-slate-900">Parcel Detail</h2>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-400">ESC to close · ↑↓ navigate</span>
+          {onShowRing && (
+            <button
+              onClick={onShowRing}
+              title="Show 3-mile ring on map"
+              className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+            >
+              ◎ 3-mi Ring
+            </button>
+          )}
           <button
             onClick={onClose}
             className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"

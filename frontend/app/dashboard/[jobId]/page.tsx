@@ -87,6 +87,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   });
 
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
+  const [flyTrigger, setFlyTrigger] = useState(0);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [verifierOpen, setVerifierOpen] = useState(false);
@@ -324,6 +325,20 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             Import KMZ
           </button>
           <button
+            onClick={() => setVerifierOpen(true)}
+            className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors"
+          >
+            Zone Verifier
+          </button>
+          {jurisdictionId && (
+            <Link
+              href={`/ordinance/${jurisdictionId}`}
+              className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors"
+            >
+              Zone Matrix
+            </Link>
+          )}
+          <button
             onClick={() => {
               const next = colorMode === "permission" ? "saturation" : "permission";
               setColorMode(next);
@@ -434,6 +449,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             onVisibilityChange={setLayerVisibility}
             colorMode={colorMode}
             saturationData={effectiveSaturationData}
+            flyTrigger={flyTrigger}
           />
         </main>
 
@@ -454,6 +470,16 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           parcel={parcelDetail ?? null}
           jurisdictionId={jurisdictionId ?? ""}
           onClose={() => setDrawerOpen(false)}
+          onShowRing={() => setFlyTrigger((n) => n + 1)}
+        />
+      )}
+
+      {/* Zone Verifier Panel */}
+      {verifierOpen && (
+        <ZoningChatPanel
+          jurisdictionId={jurisdictionId}
+          cityName={job.jurisdiction_input ?? undefined}
+          onClose={() => setVerifierOpen(false)}
         />
       )}
 

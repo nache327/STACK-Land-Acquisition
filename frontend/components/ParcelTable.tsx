@@ -115,19 +115,6 @@ export function ParcelTable({
       cell: (info) =>
         info.getValue() != null ? info.getValue()!.toFixed(2) : "—",
     }),
-    columnHelper.display({
-      id: "storage",
-      header: "Storage",
-      cell: ({ row }) => {
-        if (row.original.storage_allowed) {
-          return <span className="text-xs font-medium text-emerald-700">Permitted</span>;
-        }
-        if (row.original.storage_conditional) {
-          return <span className="text-xs font-medium text-amber-700">Conditional</span>;
-        }
-        return <span className="text-xs text-slate-400">No</span>;
-      },
-    }),
     columnHelper.accessor("is_viable", {
       header: "Viable",
       cell: (info) =>

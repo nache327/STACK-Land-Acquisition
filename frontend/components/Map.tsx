@@ -10,6 +10,7 @@ import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
     satellite: {
       type: "raster",
@@ -52,6 +53,7 @@ interface MapProps {
   onVisibilityChange: (next: LayerVisibility) => void;
   colorMode?: ColorMode;
   saturationData?: Map<number, SaturationBatchResult>;
+  flyTrigger?: number; // increment to fly to selectedParcelCentroid
 }
 
 const PARCEL_SOURCE = "parcels";
@@ -66,7 +68,36 @@ const DEFAULT_CENTER: [number, number] = [-98.5, 39.5];
 const OVERLAY_LAYER_IDS = ["overlay-flood-fill", "overlay-wetland-fill"];
 const RING_SOURCE = "saturation-rings";
 const RING_LAYER = "saturation-rings-line";
-const RING_RADII_MILES = [1, 3, 5, 10];
+const RING_RADII_MILES = [3];
+const HEAT_SOURCE = "saturation-heat";
+const HEAT_LAYER = "saturation-heat-layer";
+
+// Haversine circle — no external deps, returns a closed LineString
+function geoCircle(center: [number, number], radiusMiles: number, steps = 96): GeoJSON.Feature {
+  const [lng0, lat0] = center;
+  const d = radiusMiles / 3958.8; // angular distance (Earth radius in miles)
+  const latR = (lat0 * Math.PI) / 180;
+  const lngR = (lng0 * Math.PI) / 180;
+  const coords: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const bearing = (2 * Math.PI * i) / steps;
+    const lat2 = Math.asin(
+      Math.sin(latR) * Math.cos(d) + Math.cos(latR) * Math.sin(d) * Math.cos(bearing)
+    );
+    const lng2 =
+      lngR +
+      Math.atan2(
+        Math.sin(bearing) * Math.sin(d) * Math.cos(latR),
+        Math.cos(d) - Math.sin(latR) * Math.sin(lat2)
+      );
+    coords.push([(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI]);
+  }
+  return {
+    type: "Feature",
+    geometry: { type: "LineString", coordinates: coords },
+    properties: { radius_miles: radiusMiles },
+  };
+}
 
 function bboxCenter(geom: GeoJSON.Geometry): [number, number] | null {
   const flat: number[][] = [];
@@ -100,6 +131,7 @@ export default function Map({
   onVisibilityChange,
   colorMode = "permission",
   saturationData,
+  flyTrigger,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -134,11 +166,30 @@ export default function Map({
               has_structure: parcel.has_structure,
               is_viable: parcel.is_viable,
               saturation_color: satColor,
+              sqft_per_person: sat?.sqft_per_person ?? null,
             },
             geometry: parcel.geom as unknown as GeoJSON.Geometry,
           };
         }),
     };
+  }, [parcels, saturationData]);
+
+  // Point centroids used for the saturation heatmap overlay
+  const heatCollection = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!saturationData?.size) return { type: "FeatureCollection", features: [] };
+    const features: GeoJSON.Feature[] = [];
+    for (const parcel of parcels) {
+      const sat = saturationData.get(parcel.parcel_id);
+      if (!sat || sat.sqft_per_person == null || !parcel.geom) continue;
+      const centroid = bboxCenter(parcel.geom as unknown as GeoJSON.Geometry);
+      if (!centroid) continue;
+      features.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: centroid },
+        properties: { spp: Math.min(sat.sqft_per_person, 20) },
+      });
+    }
+    return { type: "FeatureCollection", features };
   }, [parcels, saturationData]);
 
   useEffect(() => {
@@ -190,6 +241,18 @@ export default function Map({
 
     hasFitRef.current = jurisdictionId;
   }, [bounds, jurisdictionId]);
+
+  // Fly to parcel + guarantee ring is drawn when "◎ 3-mi Ring" button pressed
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !flyTrigger) return;
+    const centroid = getBestCentroid();
+    if (!centroid) return;
+    map.flyTo({ center: centroid, zoom: Math.max(map.getZoom(), 15), duration: 800 });
+    // Draw ring immediately (don't wait for moveend to recompute)
+    if (map.isStyleLoaded()) drawRingOnMap(map, centroid);
+    else map.once("load", () => drawRingOnMap(map, centroid));
+  }, [flyTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current;
@@ -302,15 +365,11 @@ export default function Map({
               "fill-opacity": [
                 "match",
                 ["get", "storage_permission"],
-                "permitted",
-                0.65,
-                "conditional",
-                0.55,
-                "unclear",
-                0.6,
-                "prohibited",
-                0.45,
-                0.15,
+                "permitted",   0.75,
+                "conditional", 0.65,
+                "unclear",     0.08,
+                "prohibited",  0.05,
+                0.05,
               ],
             },
           },
@@ -347,6 +406,13 @@ export default function Map({
           filter: ["==", ["get", "parcel_id"], -1],
         });
       }
+
+      // Ensure competitor dots are always rendered above the parcel fill
+      for (const layerId of ["competitors-circle", "competitors-label"]) {
+        try {
+          if (map.getLayer(layerId)) map.moveLayer(layerId);
+        } catch { /* ignore */ }
+      }
     };
 
     if (map.isStyleLoaded()) {
@@ -374,15 +440,56 @@ export default function Map({
     if (!map || !map.getLayer(PARCEL_FILL)) return;
 
     if (colorMode === "saturation") {
+      // Combined zoning × saturation signal — each parcel gets a single "investment quality" color
       map.setPaintProperty(PARCEL_FILL, "fill-color", [
-        "match",
-        ["get", "saturation_color"],
-        "green",   SATURATION_COLORS.underserved,
-        "yellow",  SATURATION_COLORS.borderline,
-        "red",     SATURATION_COLORS.oversupplied,
-        SATURATION_COLORS.nodata,
+        "case",
+        // Non-actionable → ghost grey
+        ["match", ["get", "storage_permission"], ["prohibited", "unclassified"], true, false],
+        "#94a3b8",
+        // Oversupplied → red NO signal for all actionable
+        ["==", ["get", "saturation_color"], "red"],
+        "#ef4444",
+        // Underserved — tier by zoning quality
+        ["all", ["==", ["get", "saturation_color"], "green"], ["==", ["get", "storage_permission"], "permitted"]],
+        "#fbbf24",   // Gold: best site in the city (permitted + underserved)
+        ["all", ["==", ["get", "saturation_color"], "green"], ["==", ["get", "storage_permission"], "conditional"]],
+        "#06b6d4",   // Teal: great market, needs CUP
+        ["all", ["==", ["get", "saturation_color"], "green"], ["==", ["get", "storage_permission"], "unclear"]],
+        "#818cf8",   // Indigo: great market, zoning unclear
+        // Borderline — tier by zoning quality
+        ["all", ["==", ["get", "saturation_color"], "yellow"], ["==", ["get", "storage_permission"], "permitted"]],
+        "#06b6d4",   // Teal: permitted + borderline (still worth a look)
+        ["all", ["==", ["get", "saturation_color"], "yellow"], ["==", ["get", "storage_permission"], "conditional"]],
+        "#60a5fa",   // Blue: conditional + borderline
+        // No saturation data yet → dim permission color as placeholder
+        ["==", ["get", "storage_permission"], "permitted"],   "#10b981",
+        ["==", ["get", "storage_permission"], "conditional"], "#f59e0b",
+        "#94a3b8",
+      ]);
+      map.setPaintProperty(PARCEL_FILL, "fill-opacity", [
+        "case",
+        ["match", ["get", "storage_permission"], ["prohibited", "unclassified"], true, false],
+        0.05,
+        ["==", ["get", "saturation_color"], "red"],
+        0.55,
+        ["all", ["==", ["get", "saturation_color"], "green"], ["==", ["get", "storage_permission"], "permitted"]],
+        0.95,   // Gold: brightest — your eyes go here first
+        ["all", ["==", ["get", "saturation_color"], "green"], ["==", ["get", "storage_permission"], "conditional"]],
+        0.85,
+        ["all", ["==", ["get", "saturation_color"], "green"], ["==", ["get", "storage_permission"], "unclear"]],
+        0.65,
+        ["all", ["==", ["get", "saturation_color"], "yellow"], ["==", ["get", "storage_permission"], "permitted"]],
+        0.75,
+        ["all", ["==", ["get", "saturation_color"], "yellow"], ["==", ["get", "storage_permission"], "conditional"]],
+        0.6,
+        // no saturation data yet → show normal permission opacity so map looks correct while loading
+        ["==", ["get", "storage_permission"], "permitted"],   0.75,
+        ["==", ["get", "storage_permission"], "conditional"], 0.65,
+        ["==", ["get", "storage_permission"], "unclear"],     0.08,
+        0.05,
       ]);
     } else {
+      // Default: only permitted + conditional clearly visible; everything else fades away
       map.setPaintProperty(PARCEL_FILL, "fill-color", [
         "match",
         ["get", "storage_permission"],
@@ -392,64 +499,101 @@ export default function Map({
         "prohibited",  "#6b7280",
         UNCLASSIFIED_PARCEL_COLOR,
       ]);
+      map.setPaintProperty(PARCEL_FILL, "fill-opacity", [
+        "match",
+        ["get", "storage_permission"],
+        "permitted",   0.75,
+        "conditional", 0.65,
+        "unclear",     0.08,
+        "prohibited",  0.05,
+        0.05,
+      ]);
     }
   }, [colorMode]);
 
-  // Draw saturation ring circles around the selected parcel
+  // Heatmap source kept for compatibility but layer is always hidden —
+  // the parcel fill-color/opacity already tells the complete saturation story.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
 
-    const centroid = selectedParcelCentroid;
-
-    const addRings = () => {
-      if (!centroid) {
-        // Remove rings if no parcel selected
-        if (map.getLayer(RING_LAYER)) map.removeLayer(RING_LAYER);
-        if (map.getSource(RING_SOURCE)) map.removeSource(RING_SOURCE);
-        return;
-      }
-
-      // Build ring circles using @turf/circle
-      const circle = require("@turf/circle").default as (
-        center: [number, number],
-        radiusMiles: number,
-        options: { units: "miles"; steps: number }
-      ) => GeoJSON.Feature;
-
-      const features: GeoJSON.Feature[] = RING_RADII_MILES.map((r) =>
-        circle(centroid, r, { units: "miles", steps: 64 })
-      );
-      const ringCollection: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features,
-      };
-
-      const existing = map.getSource(RING_SOURCE) as maplibregl.GeoJSONSource | undefined;
+    const upsertHeat = () => {
+      const existing = map.getSource(HEAT_SOURCE) as maplibregl.GeoJSONSource | undefined;
       if (existing) {
-        existing.setData(ringCollection);
+        existing.setData(heatCollection);
       } else {
-        map.addSource(RING_SOURCE, { type: "geojson", data: ringCollection });
+        map.addSource(HEAT_SOURCE, { type: "geojson", data: heatCollection });
         map.addLayer({
-          id: RING_LAYER,
-          type: "line",
-          source: RING_SOURCE,
-          paint: {
-            "line-color": "#fbbf24",
-            "line-width": 1.5,
-            "line-opacity": 0.7,
-            "line-dasharray": [3, 2],
-          },
+          id: HEAT_LAYER,
+          type: "heatmap",
+          source: HEAT_SOURCE,
+          paint: { "heatmap-opacity": 0 },
+          layout: { visibility: "none" },
         });
       }
     };
 
-    if (map.isStyleLoaded()) {
-      addRings();
-    } else {
-      map.once("load", addRings);
+    if (map.isStyleLoaded()) upsertHeat();
+    else map.once("load", upsertHeat);
+  }, [heatCollection]);
+
+  // ── Ring helpers ──────────────────────────────────────────────────────────
+  const drawRingOnMap = (map: maplibregl.Map, centroid: [number, number]) => {
+    const ringCollection: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: RING_RADII_MILES.map((r) => geoCircle(centroid, r)),
+    };
+    const existing = map.getSource(RING_SOURCE) as maplibregl.GeoJSONSource | undefined;
+    if (existing) {
+      existing.setData(ringCollection);
+      return;
     }
-  }, [selectedParcelCentroid]);
+    map.addSource(RING_SOURCE, { type: "geojson", data: ringCollection });
+    map.addLayer({
+      id: RING_LAYER + "-glow",
+      type: "line",
+      source: RING_SOURCE,
+      paint: { "line-color": "#ef4444", "line-width": 16, "line-opacity": 0.3, "line-blur": 8 },
+    });
+    map.addLayer({
+      id: RING_LAYER,
+      type: "line",
+      source: RING_SOURCE,
+      paint: { "line-color": "#ef4444", "line-width": 6, "line-opacity": 1 },
+    });
+  };
+
+  const removeRingFromMap = (map: maplibregl.Map) => {
+    if (map.getLayer(RING_LAYER)) map.removeLayer(RING_LAYER);
+    if (map.getLayer(RING_LAYER + "-glow")) map.removeLayer(RING_LAYER + "-glow");
+    if (map.getSource(RING_SOURCE)) map.removeSource(RING_SOURCE);
+  };
+
+  // Best-effort centroid: check parcelCollection first, fall back to prop
+  const getBestCentroid = (): [number, number] | null => {
+    if (selectedParcelId != null) {
+      const feature = parcelCollection.features.find(
+        (f) => Number(f.properties?.parcel_id) === selectedParcelId
+      );
+      if (feature?.geometry) {
+        const c = bboxCenter(feature.geometry);
+        if (c) return c;
+      }
+    }
+    return selectedParcelCentroid ?? null;
+  };
+
+  // Draw ring whenever selected parcel changes (auto-ring on selection)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const centroid = getBestCentroid();
+    const run = () => {
+      if (!centroid) { removeRingFromMap(map); return; }
+      drawRingOnMap(map, centroid);
+    };
+    if (map.isStyleLoaded()) run(); else map.once("load", run);
+  }, [selectedParcelId, parcelCollection, selectedParcelCentroid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current;
@@ -472,7 +616,8 @@ export default function Map({
           const type = (map.getLayer(mapLayerId) as maplibregl.LayerSpecification)
             ?.type;
 
-          if (type === "fill") {
+          // PARCEL_FILL opacity is managed by the colorMode effect (match expression)
+          if (type === "fill" && mapLayerId !== PARCEL_FILL) {
             map.setPaintProperty(mapLayerId, "fill-opacity", state.opacity);
           } else if (type === "line") {
             map.setPaintProperty(mapLayerId, "line-opacity", state.opacity);
@@ -582,6 +727,33 @@ export default function Map({
                 ? "Storage prohibited"
                 : "Storage unclassified";
 
+      // Saturation section — only shown in saturation mode for actionable parcels
+      const isActionable = ["permitted", "conditional", "unclear"].includes(storagePermission);
+      const satColor = String(props.saturation_color ?? "nodata");
+      const spp = props.sqft_per_person != null ? Number(props.sqft_per_person) : null;
+      const satTierLabel =
+        satColor === "green"  && storagePermission === "permitted"   ? "★ Best Site — Permitted + Underserved" :
+        satColor === "green"  && storagePermission === "conditional" ? "Strong — Conditional + Underserved"   :
+        satColor === "green"  ? "Underserved market"                                                         :
+        satColor === "yellow" && storagePermission === "permitted"   ? "Strong — Permitted + Borderline"      :
+        satColor === "yellow" ? "Borderline market"                                                          :
+        satColor === "red"    ? "Oversupplied — Don't Build"                                                 : null;
+      const satTierColor =
+        satColor === "green"  && storagePermission === "permitted"   ? "#fbbf24" :
+        satColor === "green"  ? "#06b6d4" :
+        satColor === "yellow" ? "#60a5fa" :
+        satColor === "red"    ? "#ef4444" : "#94a3b8";
+
+      const saturationHTML =
+        colorMode === "saturation" && isActionable
+          ? `<div style="margin-top:5px;padding-top:5px;border-top:1px solid #334155">
+              ${satTierLabel ? `<div style="font-weight:700;color:${satTierColor}">${satTierLabel}</div>` : ""}
+              <div style="color:#94a3b8;font-size:11px">${
+                spp != null ? `${spp.toFixed(1)} sq ft / person` : "No saturation data"
+              }</div>
+            </div>`
+          : "";
+
       map.getCanvas().style.cursor = "pointer";
 
       popup
@@ -613,6 +785,7 @@ export default function Map({
                 ? '<div style="color:#0891b2;font-weight:500">Wetland</div>'
                 : ""
             }
+            ${saturationHTML}
           </div>`
         )
         .addTo(map);
@@ -632,13 +805,15 @@ export default function Map({
       map.off("mousemove", handleMouseMove);
       map.off("mouseout", handleMouseLeave);
     };
-  }, [onParcelClick]);
+  }, [onParcelClick, colorMode]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
       <LayerControl visibility={visibility} onChange={onVisibilityChange} />
+
+      {colorMode === "saturation" && <SaturationLegend />}
 
       {isLoading && (
         <div className="absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow">
@@ -651,6 +826,48 @@ export default function Map({
           No parcels match the current filters.
         </div>
       )}
+    </div>
+  );
+}
+
+function SaturationLegend() {
+  const rows = [
+    { color: "#fbbf24", label: "Best Site",          sub: "Permitted + Underserved",           faded: false },
+    { color: "#06b6d4", label: "Strong",              sub: "Conditional + Underserved or Permitted + Borderline", faded: false },
+    { color: "#60a5fa", label: "Investigate",         sub: "Conditional + Borderline",         faded: false },
+    { color: "#ef4444", label: "Oversupplied — NO",  sub: "Market saturated, don't build",    faded: false },
+    { color: "#94a3b8", label: "Not Actionable",      sub: "Prohibited / Unclassified",        faded: true },
+  ];
+
+  return (
+    <div style={{
+      position: "absolute",
+      bottom: "44px",
+      right: "10px",
+      background: "rgba(15,23,42,0.90)",
+      backdropFilter: "blur(4px)",
+      borderRadius: "8px",
+      padding: "10px 14px",
+      minWidth: "210px",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+      zIndex: 10,
+      pointerEvents: "none",
+    }}>
+      <div style={{ fontSize: "11px", fontWeight: 700, color: "#cbd5e1", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>
+        Market Saturation
+      </div>
+      {rows.map((row) => (
+        <div key={row.label} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px", opacity: row.faded ? 0.45 : 1 }}>
+          <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: row.color, flexShrink: 0, display: "block" }} />
+          <div style={{ lineHeight: 1.3 }}>
+            <div style={{ fontSize: "12px", color: "#f1f5f9", fontWeight: 500 }}>{row.label}</div>
+            <div style={{ fontSize: "10px", color: "#94a3b8" }}>{row.sub}</div>
+          </div>
+        </div>
+      ))}
+      <div style={{ marginTop: "8px", paddingTop: "6px", borderTop: "1px solid rgba(148,163,184,0.2)", fontSize: "10px", color: "#64748b", lineHeight: 1.4 }}>
+        Actionable parcels only · 3-mile ring
+      </div>
     </div>
   );
 }

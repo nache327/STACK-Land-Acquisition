@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sqlalchemy import and_, asc, desc, func, or_, select
+from sqlalchemy import and_, asc, case, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.parcel import Parcel
@@ -20,6 +20,14 @@ from app.schemas.parcel import (
 TARGET_USE_COLUMN = {
     TargetUse.self_storage: ZoneUseMatrix.self_storage,
 }
+
+_PERMISSION_LABEL = case(
+    (ZoneUseMatrix.self_storage == UsePermission.permitted, "permitted"),
+    (ZoneUseMatrix.self_storage == UsePermission.conditional, "conditional"),
+    (ZoneUseMatrix.self_storage == UsePermission.prohibited, "prohibited"),
+    (ZoneUseMatrix.self_storage == UsePermission.unclear, "unclear"),
+    else_="unclassified",
+)
 
 
 def _sort_clause(sort: ParcelSearchSort) -> tuple[Any, ...]:
@@ -59,7 +67,6 @@ async def search_candidate_parcels(
     db: AsyncSession,
 ) -> CandidateParcelSearchResponse:
     target_column = TARGET_USE_COLUMN[payload.target_use]
-    allowed_permissions = (UsePermission.permitted, UsePermission.conditional)
     permission_join = and_(
         ZoneUseMatrix.jurisdiction_id == Parcel.jurisdiction_id,
         ZoneUseMatrix.zone_code == Parcel.zoning_code,
@@ -67,7 +74,6 @@ async def search_candidate_parcels(
 
     conditions: list[Any] = [
         Parcel.jurisdiction_id == payload.jurisdiction_id,
-        target_column.in_(allowed_permissions),
     ]
 
     filters = payload.filters
@@ -75,6 +81,23 @@ async def search_candidate_parcels(
         conditions.append(Parcel.zoning_code.in_(filters.zones))
     if filters.zone_classes:
         conditions.append(Parcel.zone_class.in_(filters.zone_classes))
+    if filters.storage_permissions:
+        # Map frontend strings to UsePermission enum values for the filter
+        perm_map = {
+            "permitted": UsePermission.permitted,
+            "conditional": UsePermission.conditional,
+            "prohibited": UsePermission.prohibited,
+            "unclear": UsePermission.unclear,
+        }
+        mapped = [perm_map[p] for p in filters.storage_permissions if p in perm_map]
+        if "unclassified" in filters.storage_permissions:
+            # unclassified = no zone_use_matrix row at all
+            conditions.append(
+                or_(target_column.in_(mapped), target_column.is_(None))
+                if mapped else target_column.is_(None)
+            )
+        elif mapped:
+            conditions.append(target_column.in_(mapped))
     if filters.min_acres is not None:
         conditions.append(Parcel.acres >= filters.min_acres)
     if filters.max_acres is not None:
@@ -123,6 +146,7 @@ async def search_candidate_parcels(
             Parcel.in_wetland,
             Parcel.has_structure,
             target_column.label("target_permission"),
+            _PERMISSION_LABEL.label("storage_permission"),
             func.ST_AsGeoJSON(
                 func.ST_SimplifyPreserveTopology(Parcel.geom, 0.00001)
             ).label("geom"),
@@ -159,6 +183,7 @@ async def search_candidate_parcels(
                 acres=float(row.acres) if row.acres is not None else None,
                 zoning_code=row.zoning_code,
                 zone_class=row.zone_class,
+                storage_permission=row.storage_permission,
                 storage_allowed=storage_allowed,
                 storage_conditional=storage_conditional,
                 in_flood_zone=row.in_flood_zone,
