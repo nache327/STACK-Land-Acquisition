@@ -10,7 +10,10 @@ POST /api/parcels/saturation-batch                             → batch saturat
 from __future__ import annotations
 
 import json
+import logging
 import uuid
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
@@ -200,27 +203,37 @@ async def sync_competitors(
 @router.post("/competitors/import-kmz")
 async def import_kmz(
     file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Upload and import a KMZ file. Placemarks are inserted into competitor_facilities
-    with data_source='kmz'. Existing KMZ records are NOT deleted first — they are
-    upserted. To replace all KMZ data, delete first via /competitors/kmz/clear.
+    Upload and import a KMZ file. Runs in background so large files don't timeout.
+    White and green pins are skipped automatically; yellow and REIT pins are imported.
     """
     if not file.filename or not file.filename.lower().endswith(".kmz"):
         raise HTTPException(status_code=400, detail="File must be a .kmz file")
 
     from app.services.competitor_kmz import ingest_kmz_file
+    from app.db import async_session_maker
+    import io
 
     content = await file.read()
-    import io
-    inserted, skipped = await ingest_kmz_file(io.BytesIO(content), None, db)
-    await db.commit()
+
+    async def _do_import():
+        async with async_session_maker() as bg_db:
+            try:
+                inserted, skipped = await ingest_kmz_file(io.BytesIO(content), None, bg_db)
+                await bg_db.commit()
+                logger.info("KMZ background import complete: %d inserted, %d skipped", inserted, skipped)
+            except Exception as exc:
+                logger.error("KMZ background import failed: %s", exc)
+
+    background_tasks.add_task(_do_import)
 
     return {
-        "inserted": inserted,
-        "skipped": skipped,
-        "message": f"{inserted} facilities added, {skipped} placemarks skipped (no coordinates)",
+        "inserted": None,
+        "skipped": None,
+        "message": "Import started in background. Competitors will appear on the map within 1–2 minutes.",
     }
 
 
