@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 _TIGERWEB_URL = (
     "https://tigerweb.geo.census.gov/arcgis/rest/services"
-    "/TIGERweb/Tracts_Blocks/MapServer/0/query"
+    "/TIGERweb/tigerWMS_ACS2022/MapServer/8/query"
 )
 _ACS_URL = "https://api.census.gov/data/2022/acs/acs5"
 _CACHE_TTL_DAYS = 90
@@ -187,7 +187,8 @@ async def _fetch_tigerweb_tracts(
     xmin: float, ymin: float, xmax: float, ymax: float
 ) -> list[dict]:
     """
-    Query TigerWeb ACS2022 census tracts (layer 8) by bounding box.
+    Query TigerWeb ACS2022 census tracts (MapServer layer 8) by bounding box.
+    Requires where=1=1 or ArcGIS returns empty results even with spatial filter.
     Returns list of {geoid, name, wkt}.
     """
     params = {
@@ -196,7 +197,7 @@ async def _fetch_tigerweb_tracts(
         "geometryType": "esriGeometryEnvelope",
         "inSR": "4326",
         "spatialRel": "esriSpatialRelIntersects",
-        "outFields": "GEOID20,NAME20",
+        "outFields": "GEOID,NAME",
         "returnGeometry": "true",
         "outSR": "4326",
         "f": "geojson",
@@ -222,8 +223,7 @@ async def _fetch_tigerweb_tracts(
     tracts = []
     for feature in features:
         props = feature.get("properties", {})
-        # Tracts_Blocks service uses GEOID20; fall back to GEOID for older services
-        geoid = props.get("GEOID20") or props.get("GEOID", "")
+        geoid = props.get("GEOID", "")
         if len(geoid) != 11:
             continue
 
@@ -245,7 +245,7 @@ async def _fetch_tigerweb_tracts(
 
         tracts.append({
             "geoid": geoid,
-            "name": props.get("NAME20") or props.get("NAME"),
+            "name": props.get("NAME"),
             "wkt": wkt,
         })
 
