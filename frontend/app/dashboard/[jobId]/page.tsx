@@ -316,7 +316,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950 px-5">
-        <span className="text-white font-semibold">ParcelLogic</span>
+        <a href="/" className="text-white font-semibold hover:text-slate-300 transition-colors">ParcelLogic</a>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setImportModalOpen(true)}
