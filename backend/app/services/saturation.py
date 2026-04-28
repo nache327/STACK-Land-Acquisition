@@ -112,6 +112,37 @@ async def compute_batch_saturation(
     )
     rows = result.fetchall()
 
+    if not rows:
+        return {}
+
+    # Lazily ensure census tracts are loaded for this area — one-time fetch
+    # per city (cached 90 days), so subsequent calls are a fast DB check only.
+    try:
+        from app.services.census import ensure_census_tracts
+        bbox_result = await db.execute(
+            text("""
+                SELECT
+                    ST_XMin(ST_Extent(centroid)) AS xmin,
+                    ST_YMin(ST_Extent(centroid)) AS ymin,
+                    ST_XMax(ST_Extent(centroid)) AS xmax,
+                    ST_YMax(ST_Extent(centroid)) AS ymax
+                FROM parcels
+                WHERE id = ANY(:ids) AND centroid IS NOT NULL
+            """),
+            {"ids": parcel_ids},
+        )
+        bbox_row = bbox_result.fetchone()
+        if bbox_row and all(v is not None for v in bbox_row):
+            xmin, ymin, xmax, ymax = bbox_row
+            buf = 0.20  # ~14 miles buffer so ring queries near the edge still have tracts
+            tract_count = await ensure_census_tracts(
+                (xmin - buf, ymin - buf, xmax + buf, ymax + buf), db
+            )
+            if tract_count:
+                await db.commit()
+    except Exception as exc:
+        logger.warning("Auto-fetch census tracts failed (non-fatal): %s", exc)
+
     output: dict[int, dict] = {}
     for row in rows:
         pid, centroid_wkt = row[0], row[1]
