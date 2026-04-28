@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import io
 import logging
+import os
+import tempfile
 from datetime import datetime, timedelta, timezone
 
 import geopandas as gpd
@@ -238,7 +240,13 @@ async def _fetch_tiger_tracts_for_state(
         return []
 
     try:
-        gdf = gpd.read_file(io.BytesIO(zip_bytes))
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
+            tmp.write(zip_bytes)
+            tmp_path = tmp.name
+        try:
+            gdf = gpd.read_file(f"zip://{tmp_path}")
+        finally:
+            os.unlink(tmp_path)
     except Exception as exc:
         logger.warning("TIGER/Line parse failed for state %s: %s", state_fips, exc)
         return []
