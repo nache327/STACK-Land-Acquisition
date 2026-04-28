@@ -90,9 +90,21 @@ async def ingest_kmz_file(
             skipped += 1
             continue
 
+        pin_type = placemark.get("pin_type", "unknown")
+        if pin_type in ("white", "green"):
+            skipped += 1
+            continue
+
         lng, lat = coords
         sq_ft, sqft_source = _extract_sqft(placemark)
         external_id = placemark.get("id") or None
+
+        # Merge pin_type and icon_href into attributes
+        attrs: dict = dict(placemark.get("extended_data") or {})
+        attrs["pin_type"] = pin_type
+        icon_href = placemark.get("icon_href", "")
+        if icon_href:
+            attrs["icon_href"] = icon_href
 
         row = dict(
             name=placemark.get("name"),
@@ -102,7 +114,7 @@ async def ingest_kmz_file(
             sqft_source=sqft_source,
             data_source="kmz",
             external_id=external_id,
-            attributes=placemark.get("extended_data") or None,
+            attributes=attrs or None,
             geom=WKTElement(f"POINT({lng} {lat})", srid=4326),
             jurisdiction_id=jurisdiction_id,
         )
@@ -156,11 +168,16 @@ def _parse_kmz_stream(file_obj: BinaryIO) -> Iterator[dict]:
 
     # Build style_id → icon href map
     style_icon: dict[str, str] = {}
+    # Build style_id → color (ABGR hex string from <IconStyle><color>)
+    style_color: dict[str, str] = {}
     for style in root.iter(f"{p}Style"):
         sid = style.get("id")
         icon = style.find(f".//{p}Icon/{p}href")
         if sid and icon is not None and icon.text:
             style_icon[sid] = icon.text.strip()
+        color_el = style.find(f".//{p}IconStyle/{p}color")
+        if sid and color_el is not None and color_el.text:
+            style_color[sid] = color_el.text.strip().lower()
 
     # Build styleMap_id → normal style_id (follow normal pair)
     style_map: dict[str, str] = {}
@@ -180,12 +197,45 @@ def _parse_kmz_stream(file_obj: BinaryIO) -> Iterator[dict]:
             sid = style_map[sid]
         return style_icon.get(sid, "")
 
+    def _resolve_color(style_url: str) -> str:
+        sid = style_url.lstrip("#")
+        if sid in style_map:
+            sid = style_map[sid]
+        return style_color.get(sid, "")
+
+    def _classify_pin_type(href: str, color: str) -> str:
+        fname = href.split("/")[-1].rsplit(".", 1)[0].lower() if href else ""
+        # REIT operator icon → "reit"
+        if href and _icon_href_to_operator(href) is not None:
+            return "reit"
+        # Yellow pushpin
+        if "ylw" in fname or "ylw" in href.lower():
+            return "yellow"
+        # White pushpin
+        if "wht" in fname or color == "ffffffff":
+            return "white"
+        # Green pushpin
+        if "grn" in fname or color in ("ff00ff00", "ff008000"):
+            return "green"
+        return "unknown"
+
     for pm in root.iter(f"{p}Placemark"):
-        placemark = _extract_placemark(pm, p, _resolve_icon)
+        # Resolve style for this placemark
+        su_el = pm.find(f"{p}styleUrl")
+        if su_el is None:
+            su_el = pm.find("styleUrl")
+        pin_type = "unknown"
+        icon_href = ""
+        if su_el is not None and su_el.text:
+            icon_href = _resolve_icon(su_el.text.strip())
+            color = _resolve_color(su_el.text.strip())
+            pin_type = _classify_pin_type(icon_href, color)
+
+        placemark = _extract_placemark(pm, p, _resolve_icon, pin_type, icon_href)
         yield placemark
 
 
-def _extract_placemark(elem, p: str, resolve_icon) -> dict:
+def _extract_placemark(elem, p: str, resolve_icon, pin_type: str = "unknown", icon_href: str = "") -> dict:
     """Extract coord, name, operator, address, and extended data from a Placemark."""
 
     def _find(tag: str):
@@ -254,6 +304,8 @@ def _extract_placemark(elem, p: str, resolve_icon) -> dict:
         "address": address,
         "coords": coords,
         "extended_data": extended or None,
+        "pin_type": pin_type,
+        "icon_href": icon_href,
     }
 
 

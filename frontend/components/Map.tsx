@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
 import { LayerControl, type LayerVisibility } from "@/components/LayerControl";
 import { LAYER_REGISTRY, SATURATION_COLORS, ZONE_CLASS_COLORS, type ColorMode } from "@/lib/layers";
+import { api } from "@/lib/api";
 import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
@@ -137,6 +138,14 @@ export default function Map({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const tooltipRef = useRef<maplibregl.Popup | null>(null);
   const hasFitRef = useRef<string | null>(null);
+
+  const [contextMenu, setContextMenu] = useState<{
+    x: number; y: number;
+    type: "competitor" | "parcel";
+    competitorId?: number;
+    lngLat?: { lng: number; lat: number };
+    parcelId?: number;
+  } | null>(null);
 
   const { data: bounds } = useJurisdictionBounds(jurisdictionId);
 
@@ -807,6 +816,56 @@ export default function Map({
     };
   }, [onParcelClick, colorMode]);
 
+  // Right-click context menu
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const handleContextMenu = (e: maplibregl.MapMouseEvent) => {
+      // Check if clicking on a competitor circle
+      const compFeats = map.queryRenderedFeatures(e.point, { layers: ["competitors-circle"] });
+      if (compFeats.length > 0) {
+        const f = compFeats[0];
+        setContextMenu({
+          x: e.originalEvent.clientX,
+          y: e.originalEvent.clientY,
+          type: "competitor",
+          competitorId: f.properties?.id as number,
+        });
+        return;
+      }
+
+      // Check if clicking on a parcel
+      const parcelFeats = map.queryRenderedFeatures(e.point, { layers: [PARCEL_FILL] });
+      if (parcelFeats.length > 0) {
+        const f = parcelFeats[0];
+        setContextMenu({
+          x: e.originalEvent.clientX,
+          y: e.originalEvent.clientY,
+          type: "parcel",
+          lngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat },
+          parcelId: f.properties?.parcel_id as number,
+        });
+        return;
+      }
+
+      setContextMenu(null);
+    };
+
+    const handleClickClose = () => setContextMenu(null);
+    const handleDragClose = () => setContextMenu(null);
+
+    map.on("contextmenu", handleContextMenu);
+    map.on("click", handleClickClose);
+    map.on("dragstart", handleDragClose);
+
+    return () => {
+      map.off("contextmenu", handleContextMenu);
+      map.off("click", handleClickClose);
+      map.off("dragstart", handleDragClose);
+    };
+  }, []);
+
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
@@ -824,6 +883,100 @@ export default function Map({
       {!isLoading && parcels.length === 0 && (
         <div className="absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-1.5 text-xs text-slate-500 shadow">
           No parcels match the current filters.
+        </div>
+      )}
+
+      {contextMenu && (
+        <div
+          style={{
+            position: "fixed",
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 1000,
+            background: "rgba(15,23,42,0.95)",
+            border: "1px solid #334155",
+            borderRadius: 8,
+            padding: "4px 0",
+            minWidth: 180,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          }}
+          onMouseLeave={() => setContextMenu(null)}
+        >
+          {contextMenu.type === "competitor" && (
+            <button
+              style={{
+                display: "block", width: "100%", textAlign: "left",
+                padding: "8px 14px", background: "none", border: "none",
+                color: "#f87171", fontSize: 13, cursor: "pointer",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#1e293b")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}
+              onClick={async () => {
+                if (!contextMenu.competitorId) return;
+                if (!window.confirm("Remove this competitor from the map?")) {
+                  setContextMenu(null);
+                  return;
+                }
+                try {
+                  await api.deleteCompetitor(contextMenu.competitorId);
+                  // Refresh the competitors source data
+                  const map = mapRef.current;
+                  if (map) {
+                    const src = map.getSource("competitors") as maplibregl.GeoJSONSource | undefined;
+                    if (src) {
+                      const url = api.competitorsUrl(jurisdictionId);
+                      src.setData(url);
+                    }
+                  }
+                } catch {
+                  alert("Failed to delete competitor.");
+                }
+                setContextMenu(null);
+              }}
+            >
+              Remove competitor
+            </button>
+          )}
+          {contextMenu.type === "parcel" && (
+            <button
+              style={{
+                display: "block", width: "100%", textAlign: "left",
+                padding: "8px 14px", background: "none", border: "none",
+                color: "#94a3b8", fontSize: 13, cursor: "pointer",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#1e293b")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}
+              onClick={async () => {
+                if (!contextMenu.lngLat) return;
+                const name = prompt("Competitor name (optional):");
+                const sqftStr = prompt("Square footage (leave blank for default 60,000):");
+                const sqFt = sqftStr ? parseInt(sqftStr) : undefined;
+                try {
+                  await api.createCompetitor({
+                    lng: contextMenu.lngLat.lng,
+                    lat: contextMenu.lngLat.lat,
+                    name: name || undefined,
+                    sq_ft: sqFt,
+                    jurisdiction_id: jurisdictionId || undefined,
+                  });
+                  // Refresh the competitors source data
+                  const map = mapRef.current;
+                  if (map) {
+                    const src = map.getSource("competitors") as maplibregl.GeoJSONSource | undefined;
+                    if (src) {
+                      const url = api.competitorsUrl(jurisdictionId);
+                      src.setData(url);
+                    }
+                  }
+                } catch {
+                  alert("Failed to add competitor.");
+                }
+                setContextMenu(null);
+              }}
+            >
+              Mark as competitor
+            </button>
+          )}
         </div>
       )}
     </div>

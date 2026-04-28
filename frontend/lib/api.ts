@@ -234,6 +234,17 @@ export const api = {
     });
   },
 
+  async deleteCompetitor(competitorId: number): Promise<void> {
+    await fetchJSON<unknown>(`/api/competitors/${competitorId}`, { method: "DELETE" });
+  },
+
+  async createCompetitor(payload: { lng: number; lat: number; name?: string; sq_ft?: number; jurisdiction_id?: string }): Promise<{ id: number }> {
+    return fetchJSON<{ id: number }>("/api/competitors", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
   async getParcelSaturation(parcelId: number): Promise<SaturationResponse> {
     const raw = await fetchJSON<unknown>(`/api/parcels/${parcelId}/saturation`);
     return SaturationResponseSchema.parse(raw);

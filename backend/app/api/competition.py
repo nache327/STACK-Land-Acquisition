@@ -224,6 +224,46 @@ async def import_kmz(
     }
 
 
+@router.delete("/competitors/{competitor_id}")
+async def delete_competitor(
+    competitor_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.competitor_facility import CompetitorFacility
+    from sqlalchemy import delete as sql_delete
+    result = await db.execute(
+        sql_delete(CompetitorFacility).where(CompetitorFacility.id == competitor_id)
+    )
+    await db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Competitor not found")
+    return {"deleted": competitor_id}
+
+
+@router.post("/competitors")
+async def create_competitor(
+    payload: dict,  # {lng, lat, name?, sq_ft?, jurisdiction_id?}
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.competitor_facility import CompetitorFacility
+    from geoalchemy2 import WKTElement
+    lng = payload["lng"]
+    lat = payload["lat"]
+    facility = CompetitorFacility(
+        name=payload.get("name"),
+        sq_ft=payload.get("sq_ft"),
+        sqft_source="manual",
+        data_source="manual",
+        attributes={"pin_type": "manual"},
+        geom=WKTElement(f"POINT({lng} {lat})", srid=4326),
+        jurisdiction_id=payload.get("jurisdiction_id"),
+    )
+    db.add(facility)
+    await db.commit()
+    await db.refresh(facility)
+    return {"id": facility.id}
+
+
 @router.delete("/competitors/kmz/clear")
 async def clear_kmz_competitors(db: AsyncSession = Depends(get_db)):
     """Remove all KMZ-sourced competitors so you can re-import a fresh file."""
