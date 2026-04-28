@@ -6,6 +6,7 @@ from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource  #
 from app.models.parcel import Parcel  # noqa: F401
 from app.models.zone_use_matrix import ZoneUseMatrix, UsePermission  # noqa: F401
 from app.models.zoning_district import ZoneClass, ZoneSource, ZoningDistrict  # noqa: F401
+from app.models.zoning_record import EnrichmentCache, ZoningOverlay, ZoningRule  # noqa: F401
 from app.models.overlay import Overlay, OverlayType  # noqa: F401
 from app.models.job import Job, JobStatus  # noqa: F401
 from app.models.job_step import JobArtifact, JobStep  # noqa: F401

@@ -11,6 +11,7 @@ from sqlalchemy import (
     Index,
     Numeric,
     String,
+    Text,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -39,6 +40,10 @@ class Parcel(Base):
     )
     apn: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    city: Mapped[str | None] = mapped_column(Text, nullable=True, index=True)
+    state: Mapped[str | None] = mapped_column(Text, nullable=True)
+    lat: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    lng: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     owner_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
     acres: Mapped[float | None] = mapped_column(Numeric(10, 3), nullable=True)
     zoning_code: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
