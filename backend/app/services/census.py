@@ -132,7 +132,6 @@ async def compute_population_in_ring(
                 WHERE ST_Intersects(ct.geom, ring.geom)
                   AND ct.population IS NOT NULL
                   AND ct.population > 0
-                  AND ct.tract_area > 0
             )
             SELECT COALESCE(
                 SUM(population::float * intersect_area / NULLIF(tract_area, 0)),
