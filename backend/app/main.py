@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api import (
+    debug,
     jobs,
     jurisdictions,
     ordinances,
@@ -48,6 +49,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(debug.router, prefix="/api")
 app.include_router(jobs.router, prefix="/api")
 app.include_router(jurisdictions.router, prefix="/api")
 app.include_router(ordinances.router, prefix="/api")
