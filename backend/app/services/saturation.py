@@ -121,14 +121,19 @@ async def compute_batch_saturation(
             {"ids": parcel_ids},
         )
         bbox_row = bbox_result.fetchone()
+        logger.warning("Census bbox_row: %s", bbox_row)
         if bbox_row and all(v is not None for v in bbox_row):
             xmin, ymin, xmax, ymax = bbox_row
             buf = 0.20  # ~14-mile pad so ring edges near bbox boundary have tracts
+            logger.warning("Calling ensure_census_tracts for bbox: %s %s %s %s", xmin - buf, ymin - buf, xmax + buf, ymax + buf)
             tract_count = await ensure_census_tracts(
                 (xmin - buf, ymin - buf, xmax + buf, ymax + buf), db
             )
+            logger.warning("ensure_census_tracts returned: %d", tract_count)
             if tract_count:
                 await db.commit()
+        else:
+            logger.warning("Census bbox check failed — skipping tract fetch")
     except Exception as exc:
         logger.warning("Auto-fetch census tracts failed (non-fatal): %s", exc)
 
