@@ -1,7 +1,7 @@
 """Add unique constraint on (jurisdiction_id, apn) to prevent duplicate parcel ingestion
 
 Revision ID: 0010
-Revises: 0009
+Revises: 0009b
 Create Date: 2026-04-24 00:00:00.000000
 
 Without this constraint, every pipeline re-run stacks a fresh copy of every
@@ -12,7 +12,7 @@ from alembic import op
 
 
 revision = "0010"
-down_revision = "0009"
+down_revision = "0009b"
 branch_labels = None
 depends_on = None
 
