@@ -191,8 +191,9 @@ async def _fetch_tigerweb_tracts(
     Requires where=1=1 or ArcGIS returns empty results even with spatial filter.
     Returns list of {geoid, name, wkt}.
     """
-    params = {
-        "where": "1=1",
+    # POST form-data avoids URL-encoding issues with the where clause.
+    form = {
+        "where": "GEOID IS NOT NULL",
         "geometry": f"{xmin},{ymin},{xmax},{ymax}",
         "geometryType": "esriGeometryEnvelope",
         "inSR": "4326",
@@ -206,7 +207,7 @@ async def _fetch_tigerweb_tracts(
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.get(_TIGERWEB_URL, params=params)
+            resp = await client.post(_TIGERWEB_URL, data=form)
             resp.raise_for_status()
             data = resp.json()
     except Exception as exc:
