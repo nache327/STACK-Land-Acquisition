@@ -15,11 +15,10 @@ import uuid
 from typing import Any
 
 import geopandas as gpd
-from geoalchemy2 import WKTElement
+from geoalchemy2.shape import from_shape
 from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
-from sqlalchemy import insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -152,6 +151,12 @@ def _safe_float(val: Any) -> float | None:
         return None
 
 
+def _row_geometry(row: Any) -> Any:
+    if isinstance(row, dict):
+        return row.get("geometry")
+    return getattr(row, "geometry", None)
+
+
 # Square-foot fields used by NYC MapPLUTO (LotArea) and Philadelphia OPA (total_area).
 _AREA_SQFT_FIELDS = [
     "LotArea", "LOT_AREA", "total_area", "TotalArea", "LOTAREA",
@@ -227,11 +232,14 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
     Convert a single GeoDataFrame row to a dict ready for Parcel bulk insert.
     Returns None if the row has no usable geometry or APN.
     """
-    geom = _normalize_geom(row.geometry)
+    geom = _normalize_geom(_row_geometry(row))
     if geom is None:
         return None
 
     apn = _first(row, _APN_FIELDS)
+    if not apn:
+        return None
+    apn = str(apn).strip()
     if not apn:
         return None
 
@@ -264,9 +272,11 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
     zoning_code_val = str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None
     zone_class_val = classify_zone_code(zoning_code_val).value if zoning_code_val else None
 
+    centroid = geom.centroid
+
     return {
         "jurisdiction_id": jurisdiction_id,
-        "apn": str(apn),
+        "apn": apn,
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
@@ -279,8 +289,8 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         "avg_slope_pct": None,
         "has_structure": has_structure,
         "improvement_value": _safe_float(_first(row, _IMPROVEMENT_FIELDS)),
-        "geom": WKTElement(geom.wkt, srid=4326),
-        "centroid": WKTElement(geom.centroid.wkt, srid=4326),
+        "geom": from_shape(geom, srid=4326),
+        "centroid": from_shape(centroid, srid=4326),
         "raw": raw,
     }
 
@@ -291,6 +301,7 @@ async def ingest_parcels(
     gdf: gpd.GeoDataFrame,
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
+    progress_callback: Any = None,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -303,23 +314,41 @@ async def ingest_parcels(
         return 0
 
     logger.info("Mapping %d GDF rows → Parcel dicts …", len(gdf))
-    rows: list[dict] = []
-    # iterrows preserves the original ArcGIS field names. itertuples sanitizes
-    # dotted names like "SHAPE.AREA" and breaks field matching.
-    for _, row in gdf.iterrows():
+    rows_by_apn: dict[str, dict] = {}
+    duplicate_apns = 0
+    columns = list(gdf.columns)
+    for idx, values in enumerate(gdf.itertuples(index=False, name=None), start=1):
+        row = dict(zip(columns, values))
         mapped = _map_row(row, jurisdiction_id)
         if mapped is not None:
-            rows.append(mapped)
+            apn = mapped["apn"]
+            if apn in rows_by_apn:
+                duplicate_apns += 1
+            rows_by_apn[apn] = mapped
+        if progress_callback is not None and idx % 1000 == 0:
+            await progress_callback("mapping", idx, len(gdf))
 
-    skipped = len(gdf) - len(rows)
+    if progress_callback is not None:
+        await progress_callback("mapping", len(gdf), len(gdf))
+
+    rows = list(rows_by_apn.values())
+    skipped = len(gdf) - len(rows) - duplicate_apns
     if skipped:
         logger.warning("Skipped %d rows (null geometry or missing APN)", skipped)
+    if duplicate_apns:
+        logger.warning(
+            "Collapsed %d duplicate APN rows before parcel upsert for jurisdiction %s",
+            duplicate_apns,
+            jurisdiction_id,
+        )
 
     if not rows:
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
 
-    BATCH = 2000
+    # asyncpg caps bind parameters at 32,767. With 17 inserted parcel columns,
+    # 1,000 rows leaves headroom for SQLAlchemy-generated parameters.
+    BATCH = 1000
     total_inserted = 0
     num_batches = math.ceil(len(rows) / BATCH)
 
@@ -344,6 +373,8 @@ async def ingest_parcels(
         await db.execute(stmt)
         total_inserted += len(batch)
         logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
+        if progress_callback is not None:
+            await progress_callback("upserting", total_inserted, len(rows))
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id

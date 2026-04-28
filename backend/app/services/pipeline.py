@@ -14,13 +14,18 @@ Known jurisdictions remain as a fast-path cache to avoid network calls.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+import socket
 import re
+import time
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import select as sa_select
@@ -31,6 +36,16 @@ from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource
 from app.models.parcel import Parcel
 from app.services.arcgis_query import download_all_features
 from app.services.ingestion import ingest_parcels
+from app.services.job_tracking import (
+    JobCancelled,
+    add_job_artifact,
+    check_cancelled,
+    complete_job_step,
+    fail_job_step,
+    mark_job_failed,
+    now_utc,
+    start_job_step,
+)
 from app.services.matrix_bootstrap import bootstrap_zone_use_matrix
 from app.services.spatial_backfill import (
     backfill_parcel_zoning_from_districts,
@@ -38,8 +53,69 @@ from app.services.spatial_backfill import (
     refresh_jurisdiction_coverage_level,
 )
 from app.services.zoning_ingestion import ingest_zoning_districts
+from app.services.zoning_system import enqueue_missing_zoning_for_jurisdiction
 
 logger = logging.getLogger(__name__)
+
+PARCEL_FETCH_TIMEOUT_SECONDS = 180
+PARCEL_INGEST_TIMEOUT_SECONDS = 300
+ZONING_TIMEOUT_SECONDS = 240
+ENRICHMENT_TIMEOUT_SECONDS = 240
+ORDINANCE_TIMEOUT_SECONDS = 240
+MAX_JOB_ERROR_LENGTH = 2000
+
+
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _format_extra(extra: dict[str, Any]) -> str:
+    if not extra:
+        return ""
+    return " " + " ".join(f"{key}={value!r}" for key, value in extra.items())
+
+
+def _stage_started(job: Job, stage: str, **extra: Any) -> float:
+    started_at = time.perf_counter()
+    logger.info(
+        "pipeline_event timestamp=%s job_id=%s stage=%s event=started duration_ms=0%s",
+        _timestamp(),
+        job.id,
+        stage,
+        _format_extra(extra),
+    )
+    return started_at
+
+
+def _stage_completed(job: Job, stage: str, started_at: float, **extra: Any) -> None:
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    logger.info(
+        "pipeline_event timestamp=%s job_id=%s stage=%s event=completed duration_ms=%s%s",
+        _timestamp(),
+        job.id,
+        stage,
+        duration_ms,
+        _format_extra(extra),
+    )
+
+
+def _stage_failed(job: Job, stage: str, started_at: float, exc: Exception) -> None:
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    logger.exception(
+        "pipeline_event timestamp=%s job_id=%s stage=%s event=failed duration_ms=%s error=%r",
+        _timestamp(),
+        job.id,
+        stage,
+        duration_ms,
+        str(exc),
+    )
+
+
+def _job_error_message(exc: Exception) -> str:
+    message = str(exc)
+    if len(message) <= MAX_JOB_ERROR_LENGTH:
+        return message
+    return f"{message[:MAX_JOB_ERROR_LENGTH]}... [truncated]"
 
 
 # ─── Known jurisdiction registry ────────────────────────────────────────────
@@ -425,25 +501,62 @@ async def run_job_pipeline(job_id: uuid.UUID) -> None:
     request context ends).
     """
     async with async_session_maker() as db:
-        job = await db.get(Job, job_id)
+        try:
+            result = await db.execute(
+                select(Job).where(Job.id == job_id).with_for_update(nowait=True)
+            )
+        except OperationalError:
+            logger.info("Job %s is already locked by another worker", job_id)
+            return
+        job = result.scalar_one_or_none()
         if job is None:
             logger.error("Job %s not found in DB", job_id)
             return
+        if job.status in {JobStatus.ready, JobStatus.failed, JobStatus.cancelled}:
+            logger.info("Skipping terminal job %s with status=%s", job_id, job.status.value)
+            return
+        if job.locked_by and job.status not in {JobStatus.queued, JobStatus.retrying, JobStatus.pending}:
+            logger.info("Skipping locked job %s locked_by=%s", job_id, job.locked_by)
+            return
+        if job.cancel_requested_at is not None:
+            job.status = JobStatus.cancelled
+            job.finished_at = now_utc()
+            await db.commit()
+            return
+
+        pipeline_started = _stage_started(
+            job,
+            "pipeline",
+            jurisdiction_input=job.jurisdiction_input,
+        )
+        worker_id = socket.gethostname()
+        job.status = JobStatus.running
+        job.started_at = job.started_at or now_utc()
+        job.locked_by = worker_id
+        job.locked_at = now_utc()
+        job.attempts = (job.attempts or 0) + 1
+        await db.commit()
 
         try:
             await _run(db, job)
-        except Exception as exc:
-            logger.exception("Pipeline failed for job %s", job_id)
-            await _set_status(db, job, JobStatus.failed, error=str(exc))
+            _stage_completed(job, "pipeline", pipeline_started, status=JobStatus.ready.value)
+        except JobCancelled:
+            _stage_completed(job, "pipeline", pipeline_started, status=JobStatus.cancelled.value)
             await db.commit()
+        except Exception as exc:
+            _stage_failed(job, "pipeline", pipeline_started, exc)
+            await mark_job_failed(db, job_id, _job_error_message(exc))
 
 
 async def _run(db: AsyncSession, job: Job) -> None:
     """Inner pipeline — raises on error so the outer handler can catch."""
 
     # ── Step 0: resolve jurisdiction config ──────────────────────────────
+    discovery_started = _stage_started(job, "discover_layers")
+    discovery_step = await start_job_step(db, job, "discover_layers")
     await _set_status(db, job, JobStatus.discovering_layers)
     await db.commit()
+    await check_cancelled(db, job)
 
     cfg = _match_jurisdiction(job.jurisdiction_input or "")
     if cfg is None:
@@ -457,8 +570,32 @@ async def _run(db: AsyncSession, job: Job) -> None:
         await db.commit()
 
     logger.info("Pipeline resolved jurisdiction: %s (source=%s)", cfg.name, cfg.parcel_source)
+    _stage_completed(
+        job,
+        "discover_layers",
+        discovery_started,
+        jurisdiction=cfg.name,
+        source=cfg.parcel_source.value,
+    )
+    await complete_job_step(
+        db,
+        discovery_step,
+        {"jurisdiction": cfg.name, "source": cfg.parcel_source.value},
+    )
+    await add_job_artifact(
+        db,
+        job,
+        "discover_layers",
+        "source_layers",
+        {
+            "parcel_endpoint": cfg.parcel_endpoint,
+            "zoning_endpoint": cfg.zoning_polygon_endpoint or cfg.zoning_endpoint,
+            "where": cfg.where_clause or "1=1",
+        },
+    )
 
     # ── Step 1: get or create Jurisdiction row ────────────────────────────
+    persistence_started = _stage_started(job, "jurisdiction_persistence", jurisdiction=cfg.name)
     result = await db.execute(
         select(Jurisdiction).where(Jurisdiction.name == cfg.name)
     )
@@ -486,13 +623,37 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # Link job to jurisdiction
     job.jurisdiction_id = jurisdiction.id
     await db.flush()
+    _stage_completed(
+        job,
+        "jurisdiction_persistence",
+        persistence_started,
+        jurisdiction_id=str(jurisdiction.id),
+    )
 
     # ── Step 2: download parcels ──────────────────────────────────────────
+    parcel_fetch_started = _stage_started(
+        job,
+        "parcel_fetch",
+        endpoint=cfg.parcel_endpoint,
+        source=cfg.parcel_source.value,
+        where=cfg.where_clause or "1=1",
+    )
+    parcel_fetch_step = await start_job_step(
+        db,
+        job,
+        "download_parcels",
+        {
+            "endpoint": cfg.parcel_endpoint,
+            "source": cfg.parcel_source.value,
+            "where": cfg.where_clause or "1=1",
+        },
+    )
     await _set_status(
         db, job, JobStatus.downloading_parcels,
         progress={"jurisdiction_id": str(jurisdiction.id)},
     )
     await db.commit()
+    await check_cancelled(db, job)
 
     downloaded_count = [0]
     total_count = [0]
@@ -514,58 +675,220 @@ async def _run(db: AsyncSession, job: Job) -> None:
         # Regrid path is stored in parcel_endpoint (e.g. "ut/salt_lake/draper")
         logger.info("Downloading parcels from Regrid path: %s", cfg.parcel_endpoint)
         from app.services.regrid_client import download_parcels_by_path
-        gdf = await download_parcels_by_path(cfg.parcel_endpoint)
+        async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
+            gdf = await download_parcels_by_path(cfg.parcel_endpoint)
         # Fake a progress update so the UI shows *something*
         await _progress(len(gdf), len(gdf))
     else:
         logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
-        gdf = await download_all_features(
-            cfg.parcel_endpoint,
-            where=cfg.where_clause or "1=1",
-            progress_callback=_progress,
-        )
+        async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
+            gdf = await download_all_features(
+                cfg.parcel_endpoint,
+                where=cfg.where_clause or "1=1",
+                progress_callback=_progress,
+            )
     logger.info("Downloaded %d features", len(gdf))
+    _stage_completed(job, "parcel_fetch", parcel_fetch_started, feature_count=len(gdf))
+    await complete_job_step(db, parcel_fetch_step, {"feature_count": len(gdf)})
+    await add_job_artifact(
+        db,
+        job,
+        "download_parcels",
+        "parcel_download_metadata",
+        {
+            "feature_count": len(gdf),
+            "endpoint": cfg.parcel_endpoint,
+            "source": cfg.parcel_source.value,
+            "where": cfg.where_clause or "1=1",
+        },
+    )
 
     # ── Step 3: ingest into PostGIS ───────────────────────────────────────
+    ingest_started = _stage_started(job, "ingest", parcel_count=len(gdf))
+    ingest_step = await start_job_step(
+        db,
+        job,
+        "ingest_parcels",
+        {"downloaded_feature_count": len(gdf)},
+    )
+    logger.info("Ingesting parcels into PostGIS …")
     await _set_status(
-        db, job, JobStatus.downloading_parcels,
-        progress={"step": "ingesting", "parcels_downloaded": len(gdf)},
+        db,
+        job,
+        JobStatus.ingesting_parcels,
+        progress={
+            "ingest_phase": "mapping",
+            "parcels_downloaded": len(gdf),
+            "parcels_total": len(gdf),
+            "parcels_mapped": 0,
+            "parcels_ingested": 0,
+        },
     )
     await db.commit()
-    logger.info("Ingesting parcels into PostGIS …")
-    count = await ingest_parcels(gdf, jurisdiction.id, db)
+    await check_cancelled(db, job)
+
+    async def _ingest_progress(phase: str, completed: int, total: int) -> None:
+        progress_key = "parcels_ingested" if phase == "upserting" else "parcels_mapped"
+        job.progress = {
+            **(job.progress or {}),
+            "ingest_phase": phase,
+            progress_key: completed,
+            "parcels_total": total,
+        }
+        await db.flush()
+        if completed % 2000 == 0 or completed == total:
+            await db.commit()
+
+    async with asyncio.timeout(PARCEL_INGEST_TIMEOUT_SECONDS):
+        count = await ingest_parcels(
+            gdf,
+            jurisdiction.id,
+            db,
+            progress_callback=_ingest_progress,
+        )
+    _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
+    await complete_job_step(
+        db,
+        ingest_step,
+        {
+            "parcels_downloaded": len(gdf),
+            "parcels_ingested": count,
+            "dedupe_count": max(len(gdf) - count, 0),
+        },
+    )
+    await add_job_artifact(
+        db,
+        job,
+        "ingest_parcels",
+        "parcel_ingest_metadata",
+        {
+            "parcels_downloaded": len(gdf),
+            "parcels_ingested": count,
+            "dedupe_count": max(len(gdf) - count, 0),
+        },
+    )
 
     # Update last_indexed_at + compute bbox from ingested parcels
-    from datetime import datetime, timezone
+    bbox_started = _stage_started(job, "parcel_bbox_refresh", jurisdiction_id=str(jurisdiction.id))
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
     await refresh_jurisdiction_bbox(jurisdiction, db)
     await db.flush()
+    _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
 
-    # ── Step 3a: download + ingest zoning polygons (non-fatal) ───────────
+    owned_zoning_started = _stage_started(job, "zoning_system_of_record", jurisdiction_id=str(jurisdiction.id))
+    owned_zoning_step = await start_job_step(
+        db,
+        job,
+        "zoning",
+        {"jurisdiction_id": str(jurisdiction.id)},
+    )
+    queued_zoning = await enqueue_missing_zoning_for_jurisdiction(jurisdiction.id, db)
+    if queued_zoning:
+        owned_zoning_step.status = "waiting_for_data"
+        await _set_status(
+            db,
+            job,
+            JobStatus.pending_zoning,
+            progress={
+                "status": "pending_zoning",
+                "message": "Zoning data is being ingested",
+                "zoning_jobs_queued": queued_zoning,
+                "jurisdiction_id": str(jurisdiction.id),
+            },
+        )
+        job.finished_at = now_utc()
+        job.locked_by = None
+        job.locked_at = None
+        await db.commit()
+        _stage_completed(
+            job,
+            "zoning_system_of_record",
+            owned_zoning_started,
+            status="pending_zoning",
+            zoning_jobs_queued=queued_zoning,
+        )
+        return
+    await complete_job_step(db, owned_zoning_step, {"status": "found"})
+    _stage_completed(job, "zoning_system_of_record", owned_zoning_started, status="found")
+
+    # ── Step 3a: legacy external zoning polygons ─────────────────────────
+    # Disabled for the system-of-record path: feasibility must read zoning
+    # from Postgres-owned overlays/rules instead of blocking on external GIS.
     zoning_count = 0
-    zoning_endpoint = cfg.zoning_polygon_endpoint or cfg.zoning_endpoint
+    zoning_endpoint = None
     if zoning_endpoint:
+        zoning_started = _stage_started(job, "zoning_fetch", endpoint=zoning_endpoint)
+        zoning_fetch_step = await start_job_step(
+            db,
+            job,
+            "download_zoning",
+            {"endpoint": zoning_endpoint},
+        )
         await _set_status(
             db, job, JobStatus.downloading_zoning,
             progress={"zoning_endpoint": zoning_endpoint},
         )
         await db.commit()
+        await check_cancelled(db, job)
         try:
             logger.info("Downloading zoning districts from %s", zoning_endpoint)
-            zgdf = await download_all_features(
-                zoning_endpoint,
-                where=cfg.zoning_where_clause or "1=1",
+            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
+                zgdf = await download_all_features(
+                    zoning_endpoint,
+                    where=cfg.zoning_where_clause or "1=1",
             )
-            zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
-            await db.commit()
+            _stage_completed(job, "zoning_fetch", zoning_started, feature_count=len(zgdf))
+            await complete_job_step(db, zoning_fetch_step, {"feature_count": len(zgdf)})
+            await add_job_artifact(
+                db,
+                job,
+                "download_zoning",
+                "zoning_download_metadata",
+                {"feature_count": len(zgdf), "endpoint": zoning_endpoint},
+            )
 
-            updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
+            zoning_ingest_started = _stage_started(job, "zoning_ingest", feature_count=len(zgdf))
+            zoning_ingest_step = await start_job_step(
+                db,
+                job,
+                "ingest_zoning",
+                {"feature_count": len(zgdf)},
+            )
+            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
+                zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
+            await db.commit()
+            _stage_completed(job, "zoning_ingest", zoning_ingest_started, districts_ingested=zoning_count)
+            await complete_job_step(db, zoning_ingest_step, {"districts_ingested": zoning_count})
+            await add_job_artifact(
+                db,
+                job,
+                "ingest_zoning",
+                "zoning_ingest_metadata",
+                {"districts_ingested": zoning_count},
+            )
+
+            zoning_backfill_started = _stage_started(job, "zoning_backfill", jurisdiction_id=str(jurisdiction.id))
+            zoning_backfill_step = await start_job_step(
+                db,
+                job,
+                "backfill_zoning",
+                {"jurisdiction_id": str(jurisdiction.id)},
+            )
+            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
+                updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
             logger.info("zone_class backfill updated %d parcels", updated)
             await db.commit()
+            _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
+            await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
         except Exception as exc:
+            _stage_failed(job, "zoning", zoning_started, exc)
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
             await db.rollback()
+            zoning_fetch_step = await db.merge(zoning_fetch_step)
+            await fail_job_step(db, zoning_fetch_step, exc, status="warning")
+            await db.commit()
 
+    matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
     seeded_matrix = await bootstrap_zone_use_matrix(
         jurisdiction.id,
         db,
@@ -574,26 +897,62 @@ async def _run(db: AsyncSession, job: Job) -> None:
     if seeded_matrix:
         logger.info("Bootstrapped %d zone_use_matrix rows", seeded_matrix)
         await db.commit()
+    _stage_completed(job, "zone_matrix_bootstrap", matrix_started, rows_seeded=seeded_matrix)
 
+    coverage_started = _stage_started(job, "coverage_refresh", jurisdiction_id=str(jurisdiction.id))
     await refresh_jurisdiction_coverage_level(jurisdiction, db)
     await db.flush()
+    _stage_completed(job, "coverage_refresh", coverage_started, coverage_level=jurisdiction.coverage_level.value)
 
     # ── Step 3b: apply overlays (flood + wetland, non-fatal) ─────────────
+    enrichment_started = _stage_started(job, "enrichment")
+    enrichment_step = await start_job_step(db, job, "run_overlays")
     await _set_status(db, job, JobStatus.running_overlays)
     await db.commit()
+    await check_cancelled(db, job)
     try:
         from app.services.overlays import apply_flood_overlay, apply_wetland_overlay
-        flood_count = await apply_flood_overlay(jurisdiction.id, db)
-        wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+        flood_started = _stage_started(job, "fema_flood_overlay", jurisdiction_id=str(jurisdiction.id))
+        async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
+            flood_count = await apply_flood_overlay(jurisdiction.id, db)
+        _stage_completed(job, "fema_flood_overlay", flood_started, parcels_flagged=flood_count)
+        wetland_started = _stage_started(job, "wetland_overlay", jurisdiction_id=str(jurisdiction.id))
+        async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
+            wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+        _stage_completed(job, "wetland_overlay", wetland_started, parcels_flagged=wetland_count)
         await db.commit()
         logger.info(
             "Overlays: %d flood parcels, %d wetland parcels", flood_count, wetland_count
         )
+        _stage_completed(
+            job,
+            "enrichment",
+            enrichment_started,
+            flood_parcels=flood_count,
+            wetland_parcels=wetland_count,
+        )
+        await complete_job_step(
+            db,
+            enrichment_step,
+            {"flood_parcels": flood_count, "wetland_parcels": wetland_count},
+        )
+        await add_job_artifact(
+            db,
+            job,
+            "run_overlays",
+            "overlay_metadata",
+            {"flood_parcels": flood_count, "wetland_parcels": wetland_count},
+        )
     except Exception as exc:
+        _stage_failed(job, "enrichment", enrichment_started, exc)
         logger.warning("Overlay step failed (non-fatal): %s", exc)
         await db.rollback()
+        enrichment_step = await db.merge(enrichment_step)
+        await fail_job_step(db, enrichment_step, exc, status="warning")
+        await db.commit()
 
     # ── Step 4: parse ordinance (optional — non-fatal if it fails) ───────
+    ordinance_discovery_started = _stage_started(job, "ordinance_source")
     ordinance_url = job.ordinance_url or cfg.ordinance_url
     if not ordinance_url:
         # Auto-discover the ordinance URL from Municode / eCode360
@@ -605,18 +964,54 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 logger.info("Auto-discovered ordinance URL for %s: %s", cfg.name, discovered)
         except Exception as exc:
             logger.warning("Ordinance URL discovery failed (non-fatal): %s", exc)
+    _stage_completed(
+        job,
+        "ordinance_source",
+        ordinance_discovery_started,
+        ordinance_url=ordinance_url,
+    )
     if ordinance_url:
+        ordinance_started = _stage_started(job, "ordinance_parse", ordinance_url=ordinance_url)
+        ordinance_step = await start_job_step(
+            db,
+            job,
+            "parse_ordinance",
+            {"ordinance_url": ordinance_url},
+        )
         await _set_status(db, job, JobStatus.parsing_ordinance)
         await db.commit()
+        await check_cancelled(db, job)
         try:
-            await _parse_and_save_ordinance(db, jurisdiction, ordinance_url)
+            async with asyncio.timeout(ORDINANCE_TIMEOUT_SECONDS):
+                await _parse_and_save_ordinance(db, jurisdiction, ordinance_url)
+            _stage_completed(job, "ordinance_parse", ordinance_started)
+            await complete_job_step(db, ordinance_step, {"ordinance_url": ordinance_url})
+            await add_job_artifact(
+                db,
+                job,
+                "parse_ordinance",
+                "ordinance_parse_metadata",
+                {"ordinance_url": ordinance_url},
+            )
         except Exception as exc:
+            _stage_failed(job, "ordinance_parse", ordinance_started, exc)
             logger.warning(
                 "Ordinance parsing failed (non-fatal) for job %s: %s", job.id, exc
             )
+            await db.rollback()
+            ordinance_step = await db.merge(ordinance_step)
+            await fail_job_step(db, ordinance_step, exc, status="warning")
+            await db.commit()
             # Non-fatal — job continues to ready state
 
     # ── Step 5: mark ready ────────────────────────────────────────────────
+    feasibility_started = _stage_started(job, "feasibility_complete", jurisdiction_id=str(jurisdiction.id))
+    feasibility_step = await start_job_step(
+        db,
+        job,
+        "complete_feasibility",
+        {"jurisdiction_id": str(jurisdiction.id)},
+    )
     await _set_status(
         db, job, JobStatus.ready,
         progress={
@@ -624,6 +1019,12 @@ async def _run(db: AsyncSession, job: Job) -> None:
             "jurisdiction_id": str(jurisdiction.id),
         },
     )
+    job.finished_at = now_utc()
+    job.locked_by = None
+    job.locked_at = None
+    await db.commit()
+    _stage_completed(job, "feasibility_complete", feasibility_started, status=JobStatus.ready.value)
+    await complete_job_step(db, feasibility_step, {"status": JobStatus.ready.value})
     await db.commit()
     logger.info(
         "Job %s complete — %d parcels for %s", job.id, count, cfg.name
