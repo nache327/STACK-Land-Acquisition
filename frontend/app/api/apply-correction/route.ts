@@ -26,7 +26,7 @@ interface ZoneCorrection {
   luxury_garage_condo?: string;
   classification_source?: string;
   confidence?: string | number;
-  action: "UPDATE" | "DELETE" | "ADD";
+  action: "UPDATE" | "UPDATE_METADATA" | "DELETE" | "ADD";
 }
 
 // Map use field names from correction report to DB column names
@@ -84,11 +84,17 @@ export async function POST(req: NextRequest) {
   for (const c of corrections) {
     if (!c.zone || !c.action) continue;
 
-    if (c.action === "DELETE") {
+    // Normalize any non-standard action that clearly means UPDATE (e.g. "UPDATE_METADATA", "VERIFY", "VERIFY — no change needed")
+    const normalizedAction: "UPDATE" | "DELETE" | "ADD" =
+      c.action === "DELETE" ? "DELETE"
+      : c.action === "ADD" ? "ADD"
+      : "UPDATE";
+
+    if (normalizedAction === "DELETE") {
       deletes.push(c.zone);
-    } else if (c.action === "ADD") {
+    } else if (normalizedAction === "ADD") {
       adds.push(c);
-    } else if (c.action === "UPDATE") {
+    } else if (normalizedAction === "UPDATE") {
       if (!c.use) continue;
       const column = USE_TO_COLUMN[c.use];
       if (!column) continue;

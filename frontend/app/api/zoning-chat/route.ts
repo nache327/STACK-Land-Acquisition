@@ -128,6 +128,17 @@ ZONING RULE CORRECTIONS:
 ]
 ---END CORRECTION REPORT---
 
+ACTION FIELD RULES — this is critical:
+- The "action" field MUST be exactly one of these three strings: "UPDATE", "ADD", or "DELETE". Nothing else.
+- NEVER write "UPDATE_METADATA", "VERIFY", "VERIFY — no change needed", or any other variation.
+- When values already match and you are only confirming/verifying: use "UPDATE" with the confirmed correct_value.
+- There is no "VERIFY" action. Verification is always expressed as "UPDATE".
+
+CRITICAL — NEVER generate an empty corrections array []. When ordinance text has been provided and verified:
+- Even if all DB values already match the ordinance, ALWAYS generate one UPDATE entry per use (self_storage, mini_warehouse, light_industrial, luxury_garage_condo) for every zone that was verified.
+- This records the human verification in the database (classification_source → "human", human_reviewed → true).
+- An empty [] array means the user cannot click "Apply Correction" to mark the zone as verified. Always give them something to apply.
+
 WHEN STRUCTURED_TABLE DATA IS PROVIDED:
 - This means the PDF was parsed with coordinate analysis — the P/C/blank values are EXACT, not interpreted from text.
 - Do NOT try to re-read column positions from the raw text. Trust the structured data completely.
@@ -140,12 +151,18 @@ WHEN NO USABLE ORDINANCE TEXT IS PROVIDED (URL failed to fetch, or first message
 - Instead: immediately produce the database state table, mark every row where classification_source is "rule" or "unclear" as UNVERIFIED, and end with ONE sentence: "Load a URL or paste ordinance text above to verify these values against the actual ordinance."
 - If the text starts with "[Could not automatically locate" or "[Could not fetch", acknowledge in one sentence then proceed to the database report
 
-DO NOT GIVE UP when the ordinance text lacks a formal "Table of Uses":
-- If you receive per-zone chapter text (Format B), extract the use lists directly from the prose
-- Look for self-storage, mini-storage, storage facilities, warehousing, personal storage, garage condominiums, luxury garages, vehicle storage in the permitted/conditional use lists
-- If a zone chapter says "Permitted Uses: [list that includes storage]" → that zone = permitted
-- If the chapter says "Conditional Uses: [list that includes storage]" → conditional
-- If storage is not mentioned in any permitted/conditional list for a zone → prohibited
+FORMAT B IS THE MOST COMMON FORMAT. Most cities write one chapter per zone with "Permitted Uses:" and "Conditional Uses:" lists. There is no table. This is normal. Work with it directly.
+
+NEVER ask the user for a "table of uses" or tell them to find a different section. If a per-zone chapter is provided, that IS the source — extract from it immediately.
+
+For Format B extraction:
+- "Permitted Uses:" section → everything listed = permitted
+- "Conditional Uses:" section → everything listed = conditional
+- Anything not in either list = prohibited (silence = prohibited)
+- Search for: self-storage, mini-storage, storage facility, warehousing, personal storage, garage condominium, luxury garage, vehicle storage, light manufacturing, industrial
+- If the chapter says "No other permitted uses are allowed" or similar closed-list language, that confirms silence = prohibited
+
+NEVER ask for more information when ordinance text is present. Read what was given and produce the analysis.
 
 IMPORTANT: Never give multi-step instructions asking the user to do manual work. Always output data.`;
 
@@ -268,20 +285,24 @@ export async function POST(req: NextRequest) {
   // Build extra context blocks for the current user message
   const extraBlocks: Anthropic.ContentBlockParam[] = [];
 
-  // URL fetch skipped server-side (Vercel Hobby 10s limit).
-  // Tell Claude the URL was provided so it can reference it in answers.
-  if (ordinanceUrl) {
-    extraBlocks.push({
-      type: "text",
-      text: `\n\n[The user has provided this ordinance URL for reference: ${ordinanceUrl}. You cannot fetch it directly — ask the user to paste the relevant table or section text if you need specifics. You may still answer general questions about the city's zoning based on your training knowledge.]`,
-    });
+  // Fetch URL server-side if provided and no pasted text already present
+  let resolvedText = pastedText;
+  if (ordinanceUrl && !pastedText?.trim()) {
+    try {
+      resolvedText = await fetchOrdinanceUrl(ordinanceUrl);
+    } catch (err) {
+      extraBlocks.push({
+        type: "text",
+        text: `\n\n[Could not fetch ${ordinanceUrl}: ${err instanceof Error ? err.message : String(err)}. Ask the user to paste the ordinance text directly.]`,
+      });
+    }
   }
 
-  // Add pasted or pre-fetched ordinance text
-  if (pastedText?.trim()) {
+  // Add fetched or pasted ordinance text
+  if (resolvedText?.trim()) {
     extraBlocks.push({
       type: "text",
-      text: `\n\n--- ORDINANCE TEXT (source: ${ordinanceUrl ?? "pasted"}) ---\n${pastedText.slice(0, 150_000)}\n--- END ORDINANCE TEXT ---`,
+      text: `\n\n--- ORDINANCE TEXT (source: ${ordinanceUrl ?? "pasted"}) ---\n${resolvedText.slice(0, 150_000)}\n--- END ORDINANCE TEXT ---`,
     });
   }
 
@@ -359,7 +380,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const stream = anthropic.messages.stream({
-      model: "claude-sonnet-4-6",
+      model: "claude-opus-4-7",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: claudeMessages,
