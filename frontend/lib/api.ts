@@ -9,6 +9,9 @@
 import {
   CandidateParcelSearchResponseSchema,
   JobSchema,
+  JobAdminSchema,
+  JobArtifactSchema,
+  JobStepSchema,
   JurisdictionSchema,
   SaturationResponseSchema,
   type CandidateParcelSearchRequest,
@@ -18,7 +21,10 @@ import {
   ZoneMatrixResponseSchema,
   ZoningDistrictListSchema,
   type Job,
+  type JobAdmin,
+  type JobArtifact,
   type JobCreate,
+  type JobStep,
   type Jurisdiction,
   type ParcelDetail,
   type ParcelListResponse,
@@ -68,6 +74,47 @@ export const api = {
   async getJob(jobId: string): Promise<Job> {
     const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}`);
     return JobSchema.parse(raw);
+  },
+
+  async cancelJob(jobId: string): Promise<Job> {
+    const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}/cancel`, {
+      method: "POST",
+    });
+    return JobSchema.parse(raw);
+  },
+
+  async retryJob(jobId: string): Promise<Job> {
+    const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}/retry`, {
+      method: "POST",
+    });
+    return JobSchema.parse(raw);
+  },
+
+  async forceRerunJob(jobId: string): Promise<Job> {
+    const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}/force-rerun`, {
+      method: "POST",
+    });
+    return JobSchema.parse(raw);
+  },
+
+  async getJobSteps(jobId: string): Promise<JobStep[]> {
+    const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}/steps`);
+    return JobStepSchema.array().parse(raw);
+  },
+
+  async getJobArtifacts(jobId: string): Promise<JobArtifact[]> {
+    const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}/artifacts`);
+    return JobArtifactSchema.array().parse(raw);
+  },
+
+  async listAdminJobs(): Promise<Job[]> {
+    const raw = await fetchJSON<unknown>("/api/admin/jobs");
+    return JobSchema.array().parse(raw);
+  },
+
+  async getAdminJob(jobId: string): Promise<JobAdmin> {
+    const raw = await fetchJSON<unknown>(`/api/admin/jobs/${jobId}`);
+    return JobAdminSchema.parse(raw);
   },
 
   // ---- parcels ------------------------------------------------------------

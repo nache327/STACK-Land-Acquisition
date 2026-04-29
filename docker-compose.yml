@@ -1,18 +1,17 @@
 version: "3.9"
 
+# Postgres is intentionally NOT defined here. Supabase is the single source of
+# truth for this system. Set DATABASE_URL in .env to your Supabase pooler URL.
+#
+# Redis is the only stateful service we run locally for the Dramatiq queue.
+
 services:
-  db:
-    image: postgis/postgis:16-3.4
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: zoning
+  redis:
+    image: redis:7-alpine
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "6379:6379"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d zoning"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -22,7 +21,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/zoning
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set in .env}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL must be set in .env}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       REGRID_API_KEY: ${REGRID_API_KEY:-}
       FEMA_NFHL_URL: ${FEMA_NFHL_URL:-https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer}
@@ -31,21 +32,28 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      db:
+      redis:
         condition: service_healthy
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  tileserv:
-    image: pramsey/pg_tileserv:latest
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/zoning
-    ports:
-      - "7800:7800"
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set in .env}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL must be set in .env}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      REGRID_API_KEY: ${REGRID_API_KEY:-}
+      FEMA_NFHL_URL: ${FEMA_NFHL_URL:-https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer}
+      USFWS_NWI_URL: ${USFWS_NWI_URL:-https://www.fws.gov/wetlandsmapservice/services/Wetlands/MapServer}
+      USGS_3DEP_DEM_URL: ${USGS_3DEP_DEM_URL:-https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer}
     depends_on:
-      db:
+      redis:
         condition: service_healthy
-
-volumes:
-  postgres_data:
+    volumes:
+      - ./backend:/app
+    command: dramatiq app.worker --processes 1 --threads 2

@@ -16,11 +16,17 @@ export type UsePermission = z.infer<typeof UsePermissionSchema>;
 
 export const JobStatusSchema = z.enum([
   "pending",
+  "queued",
+  "running",
+  "retrying",
   "discovering_layers",
   "downloading_parcels",
+  "ingesting_parcels",
   "downloading_zoning",
+  "pending_zoning",
   "parsing_ordinance",
   "running_overlays",
+  "cancelled",
   "ready",
   "failed",
 ]);
@@ -66,10 +72,53 @@ export const JobSchema = z.object({
   target_uses: z.array(z.string()).nullable(),
   error_message: z.string().nullable(),
   progress: z.record(z.unknown()).nullable(),
+  queued_at: z.string().datetime().nullable().optional(),
+  started_at: z.string().datetime().nullable().optional(),
+  finished_at: z.string().datetime().nullable().optional(),
+  cancel_requested_at: z.string().datetime().nullable().optional(),
+  force: z.boolean().optional(),
+  dedupe_key: z.string().nullable().optional(),
+  locked_by: z.string().nullable().optional(),
+  locked_at: z.string().datetime().nullable().optional(),
+  attempts: z.number().int().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });
 export type Job = z.infer<typeof JobSchema>;
+
+export const JobStepSchema = z.object({
+  id: z.number().int(),
+  job_id: z.string().uuid(),
+  step: z.string(),
+  status: z.string(),
+  attempt: z.number().int(),
+  started_at: z.string().datetime().nullable(),
+  finished_at: z.string().datetime().nullable(),
+  duration_ms: z.number().int().nullable(),
+  error: z.string().nullable(),
+  step_metadata: z.record(z.unknown()).nullable(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+export type JobStep = z.infer<typeof JobStepSchema>;
+
+export const JobArtifactSchema = z.object({
+  id: z.number().int(),
+  job_id: z.string().uuid(),
+  step: z.string(),
+  artifact_type: z.string(),
+  artifact_metadata: z.record(z.unknown()).nullable(),
+  storage_uri: z.string().nullable(),
+  created_at: z.string().datetime(),
+});
+export type JobArtifact = z.infer<typeof JobArtifactSchema>;
+
+export const JobAdminSchema = z.object({
+  job: JobSchema,
+  steps: z.array(JobStepSchema),
+  artifacts: z.array(JobArtifactSchema),
+});
+export type JobAdmin = z.infer<typeof JobAdminSchema>;
 
 export const JobCreateSchema = z.object({
   jurisdiction: z.string().min(2),

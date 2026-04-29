@@ -14,13 +14,18 @@ Known jurisdictions remain as a fast-path cache to avoid network calls.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+import socket
 import re
+import time
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import select as sa_select
@@ -29,8 +34,18 @@ from app.db import async_session_maker
 from app.models.job import Job, JobStatus
 from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource
 from app.models.parcel import Parcel
-from app.services.arcgis_query import download_all_features, get_layer_count, query_feature_layer
+from app.services.arcgis_query import download_all_features
 from app.services.ingestion import ingest_parcels
+from app.services.job_tracking import (
+    JobCancelled,
+    add_job_artifact,
+    check_cancelled,
+    complete_job_step,
+    fail_job_step,
+    mark_job_failed,
+    now_utc,
+    start_job_step,
+)
 from app.services.matrix_bootstrap import bootstrap_zone_use_matrix
 from app.services.spatial_backfill import (
     backfill_parcel_zoning_from_districts,
@@ -38,8 +53,69 @@ from app.services.spatial_backfill import (
     refresh_jurisdiction_coverage_level,
 )
 from app.services.zoning_ingestion import ingest_zoning_districts
+from app.services.zoning_system import enqueue_missing_zoning_for_jurisdiction
 
 logger = logging.getLogger(__name__)
+
+PARCEL_FETCH_TIMEOUT_SECONDS = 180
+PARCEL_INGEST_TIMEOUT_SECONDS = 300
+ZONING_TIMEOUT_SECONDS = 240
+ENRICHMENT_TIMEOUT_SECONDS = 240
+ORDINANCE_TIMEOUT_SECONDS = 240
+MAX_JOB_ERROR_LENGTH = 2000
+
+
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _format_extra(extra: dict[str, Any]) -> str:
+    if not extra:
+        return ""
+    return " " + " ".join(f"{key}={value!r}" for key, value in extra.items())
+
+
+def _stage_started(job: Job, stage: str, **extra: Any) -> float:
+    started_at = time.perf_counter()
+    logger.info(
+        "pipeline_event timestamp=%s job_id=%s stage=%s event=started duration_ms=0%s",
+        _timestamp(),
+        job.id,
+        stage,
+        _format_extra(extra),
+    )
+    return started_at
+
+
+def _stage_completed(job: Job, stage: str, started_at: float, **extra: Any) -> None:
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    logger.info(
+        "pipeline_event timestamp=%s job_id=%s stage=%s event=completed duration_ms=%s%s",
+        _timestamp(),
+        job.id,
+        stage,
+        duration_ms,
+        _format_extra(extra),
+    )
+
+
+def _stage_failed(job: Job, stage: str, started_at: float, exc: Exception) -> None:
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    logger.exception(
+        "pipeline_event timestamp=%s job_id=%s stage=%s event=failed duration_ms=%s error=%r",
+        _timestamp(),
+        job.id,
+        stage,
+        duration_ms,
+        str(exc),
+    )
+
+
+def _job_error_message(exc: Exception) -> str:
+    message = str(exc)
+    if len(message) <= MAX_JOB_ERROR_LENGTH:
+        return message
+    return f"{message[:MAX_JOB_ERROR_LENGTH]}... [truncated]"
 
 
 # ─── Known jurisdiction registry ────────────────────────────────────────────
@@ -133,15 +209,17 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
 
 
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
-    # ── Draper — UGRC SaltLake parcels; city name varies "Draper" / "Draper City" ──
+    # ── Draper (city-specific layer with zoning codes — keep as-is) ───────────
     "draper": JurisdictionConfig(
         name="Draper City, UT",
         state="UT",
         county="Salt Lake",
         parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
-        where_clause="PARCEL_CITY IN ('Draper', 'Draper City')",
-        zoning_polygon_endpoint=(
+        parcel_endpoint=(
+            "https://services2.arcgis.com/nAPVXppTJAHM40Se/arcgis/rest"
+            "/services/Public_Parcels/FeatureServer/11"
+        ),
+        zoning_endpoint=(
             "https://services2.arcgis.com/nAPVXppTJAHM40Se/arcgis/rest"
             "/services/Zoning/FeatureServer/5"
         ),
@@ -150,61 +228,23 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # ── Salt Lake County (Parcels_SaltLake) ──────────────────────────────────
     "sandy":            _ugrc("Parcels_SaltLake", "Sandy",            "Sandy, UT",            "Salt Lake"),
     "west jordan":      _ugrc("Parcels_SaltLake", "West Jordan",      "West Jordan, UT",      "Salt Lake"),
-    # West Valley City — PARCEL_CITY varies "West Valley City" / "West Valley" in UGRC
-    "west valley city": JurisdictionConfig(
-        name="West Valley City, UT",
-        state="UT",
-        county="Salt Lake",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
-        where_clause="PARCEL_CITY IN ('West Valley City', 'West Valley')",
-        ordinance_url="https://library.municode.com/ut/west_valley_city/codes/code_of_ordinances",
-    ),
-    "west valley": JurisdictionConfig(
-        name="West Valley City, UT",
-        state="UT",
-        county="Salt Lake",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
-        where_clause="PARCEL_CITY IN ('West Valley City', 'West Valley')",
-        ordinance_url="https://library.municode.com/ut/west_valley_city/codes/code_of_ordinances",
-    ),
+    "west valley city": _ugrc("Parcels_SaltLake", "West Valley City", "West Valley City, UT", "Salt Lake"),
+    "west valley":      _ugrc("Parcels_SaltLake", "West Valley City", "West Valley City, UT", "Salt Lake"),
     "south jordan":     _ugrc("Parcels_SaltLake", "South Jordan",     "South Jordan, UT",     "Salt Lake"),
     "midvale":          _ugrc("Parcels_SaltLake", "Midvale",          "Midvale, UT",          "Salt Lake"),
     "millcreek":        _ugrc("Parcels_SaltLake", "Millcreek",        "Millcreek, UT",        "Salt Lake"),
     "cottonwood heights": _ugrc("Parcels_SaltLake", "Cottonwood Heights", "Cottonwood Heights, UT", "Salt Lake"),
-    "murray": JurisdictionConfig(
-        name="Murray, UT", state="UT", county="Salt Lake",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
-        where_clause="PARCEL_CITY='Murray'",
-        ordinance_url="https://library.municode.com/ut/murray/codes/code_of_ordinances",
-    ),
+    "murray":           _ugrc("Parcels_SaltLake", "Murray",           "Murray, UT",           "Salt Lake"),
     "taylorsville":     _ugrc("Parcels_SaltLake", "Taylorsville",     "Taylorsville, UT",     "Salt Lake"),
     "herriman":         _ugrc("Parcels_SaltLake", "Herriman",         "Herriman, UT",         "Salt Lake"),
     "riverton":         _ugrc("Parcels_SaltLake", "Riverton",         "Riverton, UT",         "Salt Lake"),
     "holladay":         _ugrc("Parcels_SaltLake", "Holladay",         "Holladay, UT",         "Salt Lake"),
     "south salt lake":  _ugrc("Parcels_SaltLake", "South Salt Lake",  "South Salt Lake, UT",  "Salt Lake"),
-    "bluffdale": JurisdictionConfig(
-        name="Bluffdale, UT", state="UT", county="Salt Lake",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
-        where_clause="PARCEL_CITY='Bluffdale'",
-        ordinance_url="https://library.municode.com/ut/bluffdale",
-    ),
+    "bluffdale":        _ugrc("Parcels_SaltLake", "Bluffdale",        "Bluffdale, UT",        "Salt Lake"),
     "salt lake city":   _ugrc("Parcels_SaltLake", "Salt Lake City",   "Salt Lake City, UT",   "Salt Lake"),
     # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
-    "orem": JurisdictionConfig(
-        name="Orem, UT", state="UT", county="Utah",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
-        where_clause="PARCEL_CITY='Orem'",
-        zoning_polygon_endpoint=(
-            "https://maps.utahcounty.gov/arcgis/rest/services"
-            "/Assessor/CommercialAppraiser/MapServer/28"
-        ),
-    ),
+    "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
     "lehi":          _ugrc("Parcels_Utah", "Lehi",          "Lehi, UT",          "Utah"),
     "lindon": JurisdictionConfig(
         name="Lindon, UT", state="UT", county="Utah",
@@ -242,39 +282,14 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
             "/services/Zoning/FeatureServer/2"
         ),
     ),
-    "saratoga springs": JurisdictionConfig(
-        name="Saratoga Springs, UT", state="UT", county="Utah",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
-        where_clause="PARCEL_CITY='Saratoga Springs'",
-        zoning_polygon_endpoint=(
-            "https://gis.saratogaspringscity.com/arcgisweb/rest/services"
-            "/Planning/Zoning/MapServer/1"
-        ),
-    ),
     # ── Weber County (Parcels_Weber) ─────────────────────────────────────────
-    "ogden":     _ugrc("Parcels_Weber", "Ogden",     "Ogden, UT",     "Weber"),
-    "roy":       _ugrc("Parcels_Weber", "Roy",       "Roy, UT",       "Weber"),
-    "west haven": _ugrc("Parcels_Weber", "West Haven", "West Haven, UT", "Weber"),
+    "ogden": _ugrc("Parcels_Weber", "Ogden", "Ogden, UT", "Weber"),
+    "roy":   _ugrc("Parcels_Weber", "Roy",   "Roy, UT",   "Weber"),
     # ── Davis County (Parcels_Davis) ─────────────────────────────────────────
     "layton":    _ugrc("Parcels_Davis", "Layton",    "Layton, UT",    "Davis"),
     "bountiful": _ugrc("Parcels_Davis", "Bountiful", "Bountiful, UT", "Davis"),
     "clearfield": _ugrc("Parcels_Davis", "Clearfield", "Clearfield, UT", "Davis"),
     "syracuse":  _ugrc("Parcels_Davis", "Syracuse",  "Syracuse, UT",  "Davis"),
-    "kaysville": _ugrc("Parcels_Davis", "Kaysville", "Kaysville, UT", "Davis"),
-    "farmington": JurisdictionConfig(
-        name="Farmington, UT",
-        state="UT",
-        county="Davis",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_Davis/FeatureServer/0",
-        where_clause="PARCEL_CITY='Farmington'",
-        zoning_polygon_endpoint=(
-            "https://services6.arcgis.com/IkwwnD5sRYXgxM2N/arcgis/rest"
-            "/services/CEDEV_ZONING_FC2017F_Zoning_View/FeatureServer/0"
-        ),
-        ordinance_url="https://library.municode.com/ut/farmington/codes/code_of_ordinances",
-    ),
     # ── Cache County (Parcels_Cache) ─────────────────────────────────────────
     "logan": _ugrc("Parcels_Cache", "Logan", "Logan, UT", "Cache"),
     # ── Washington County (Parcels_Washington) ────────────────────────────────
@@ -282,17 +297,7 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "saint george": _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
     "st george":   _ugrc("Parcels_Washington", "St. George", "St George, UT", "Washington"),
     "washington":  _ugrc("Parcels_Washington", "Washington", "Washington, UT", "Washington"),
-    "hurricane": JurisdictionConfig(
-        name="Hurricane, UT", state="UT", county="Washington",
-        parcel_source=ParcelSource.city_gis,
-        parcel_endpoint=f"{_UGRC}/Parcels_Washington/FeatureServer/0",
-        where_clause="PARCEL_CITY='Hurricane'",
-        zoning_polygon_endpoint=(
-            "https://agisprodvm.washco.utah.gov/arcgis/rest/services"
-            "/Zoning/MapServer/5"
-        ),
-        ordinance_url="https://library.municode.com/ut/hurricane/codes/code_of_ordinances",
-    ),
+    "hurricane":   _ugrc("Parcels_Washington", "Hurricane",  "Hurricane, UT",  "Washington"),
     # ── Iron County (Parcels_Iron) ────────────────────────────────────────────
     "cedar city": _ugrc("Parcels_Iron", "Cedar City", "Cedar City, UT", "Iron"),
 
@@ -496,25 +501,62 @@ async def run_job_pipeline(job_id: uuid.UUID) -> None:
     request context ends).
     """
     async with async_session_maker() as db:
-        job = await db.get(Job, job_id)
+        try:
+            result = await db.execute(
+                select(Job).where(Job.id == job_id).with_for_update(nowait=True)
+            )
+        except OperationalError:
+            logger.info("Job %s is already locked by another worker", job_id)
+            return
+        job = result.scalar_one_or_none()
         if job is None:
             logger.error("Job %s not found in DB", job_id)
             return
+        if job.status in {JobStatus.ready, JobStatus.failed, JobStatus.cancelled}:
+            logger.info("Skipping terminal job %s with status=%s", job_id, job.status.value)
+            return
+        if job.locked_by and job.status not in {JobStatus.queued, JobStatus.retrying, JobStatus.pending}:
+            logger.info("Skipping locked job %s locked_by=%s", job_id, job.locked_by)
+            return
+        if job.cancel_requested_at is not None:
+            job.status = JobStatus.cancelled
+            job.finished_at = now_utc()
+            await db.commit()
+            return
+
+        pipeline_started = _stage_started(
+            job,
+            "pipeline",
+            jurisdiction_input=job.jurisdiction_input,
+        )
+        worker_id = socket.gethostname()
+        job.status = JobStatus.running
+        job.started_at = job.started_at or now_utc()
+        job.locked_by = worker_id
+        job.locked_at = now_utc()
+        job.attempts = (job.attempts or 0) + 1
+        await db.commit()
 
         try:
             await _run(db, job)
-        except Exception as exc:
-            logger.exception("Pipeline failed for job %s", job_id)
-            await _set_status(db, job, JobStatus.failed, error=str(exc))
+            _stage_completed(job, "pipeline", pipeline_started, status=JobStatus.ready.value)
+        except JobCancelled:
+            _stage_completed(job, "pipeline", pipeline_started, status=JobStatus.cancelled.value)
             await db.commit()
+        except Exception as exc:
+            _stage_failed(job, "pipeline", pipeline_started, exc)
+            await mark_job_failed(db, job_id, _job_error_message(exc))
 
 
 async def _run(db: AsyncSession, job: Job) -> None:
     """Inner pipeline — raises on error so the outer handler can catch."""
 
     # ── Step 0: resolve jurisdiction config ──────────────────────────────
+    discovery_started = _stage_started(job, "discover_layers")
+    discovery_step = await start_job_step(db, job, "discover_layers")
     await _set_status(db, job, JobStatus.discovering_layers)
     await db.commit()
+    await check_cancelled(db, job)
 
     cfg = _match_jurisdiction(job.jurisdiction_input or "")
     if cfg is None:
@@ -528,8 +570,32 @@ async def _run(db: AsyncSession, job: Job) -> None:
         await db.commit()
 
     logger.info("Pipeline resolved jurisdiction: %s (source=%s)", cfg.name, cfg.parcel_source)
+    _stage_completed(
+        job,
+        "discover_layers",
+        discovery_started,
+        jurisdiction=cfg.name,
+        source=cfg.parcel_source.value,
+    )
+    await complete_job_step(
+        db,
+        discovery_step,
+        {"jurisdiction": cfg.name, "source": cfg.parcel_source.value},
+    )
+    await add_job_artifact(
+        db,
+        job,
+        "discover_layers",
+        "source_layers",
+        {
+            "parcel_endpoint": cfg.parcel_endpoint,
+            "zoning_endpoint": cfg.zoning_polygon_endpoint or cfg.zoning_endpoint,
+            "where": cfg.where_clause or "1=1",
+        },
+    )
 
     # ── Step 1: get or create Jurisdiction row ────────────────────────────
+    persistence_started = _stage_started(job, "jurisdiction_persistence", jurisdiction=cfg.name)
     result = await db.execute(
         select(Jurisdiction).where(Jurisdiction.name == cfg.name)
     )
@@ -557,13 +623,37 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # Link job to jurisdiction
     job.jurisdiction_id = jurisdiction.id
     await db.flush()
+    _stage_completed(
+        job,
+        "jurisdiction_persistence",
+        persistence_started,
+        jurisdiction_id=str(jurisdiction.id),
+    )
 
     # ── Step 2: download parcels ──────────────────────────────────────────
+    parcel_fetch_started = _stage_started(
+        job,
+        "parcel_fetch",
+        endpoint=cfg.parcel_endpoint,
+        source=cfg.parcel_source.value,
+        where=cfg.where_clause or "1=1",
+    )
+    parcel_fetch_step = await start_job_step(
+        db,
+        job,
+        "download_parcels",
+        {
+            "endpoint": cfg.parcel_endpoint,
+            "source": cfg.parcel_source.value,
+            "where": cfg.where_clause or "1=1",
+        },
+    )
     await _set_status(
         db, job, JobStatus.downloading_parcels,
         progress={"jurisdiction_id": str(jurisdiction.id)},
     )
     await db.commit()
+    await check_cancelled(db, job)
 
     downloaded_count = [0]
     total_count = [0]
@@ -585,122 +675,220 @@ async def _run(db: AsyncSession, job: Job) -> None:
         # Regrid path is stored in parcel_endpoint (e.g. "ut/salt_lake/draper")
         logger.info("Downloading parcels from Regrid path: %s", cfg.parcel_endpoint)
         from app.services.regrid_client import download_parcels_by_path
-        gdf = await download_parcels_by_path(cfg.parcel_endpoint)
+        async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
+            gdf = await download_parcels_by_path(cfg.parcel_endpoint)
+        # Fake a progress update so the UI shows *something*
         await _progress(len(gdf), len(gdf))
-        await _set_status(
-            db, job, JobStatus.downloading_parcels,
-            progress={"step": "ingesting", "parcels_downloaded": len(gdf),
-                      "parcels_total": len(gdf), "jurisdiction_id": str(jurisdiction.id)},
-        )
-        await db.commit()
-        logger.info("Ingesting %d Regrid parcels …", len(gdf))
-        count = await ingest_parcels(gdf, jurisdiction.id, db)
-        await db.commit()
     else:
-        # ArcGIS path — stream one page (1 000 features) at a time so peak
-        # memory stays low and each page is committed independently.  If the
-        # Railway container is restarted mid-run, the next attempt upserts over
-        # already-ingested rows and advances straight to the zoning step.
-        import math
-        import asyncio as _asyncio
-        import geopandas as _gpd
-
-        where = cfg.where_clause or "1=1"
-        page_size = 1_000
-        logger.info(
-            "Downloading parcels from ArcGIS: %s (where=%s)",
-            cfg.parcel_endpoint, where,
-        )
-        total = await get_layer_count(cfg.parcel_endpoint, where)
-        logger.info("Total features to download: %d", total)
-        await _progress(0, total)
-
-        count = 0
-        pages = math.ceil(total / page_size) if total > 0 else 0
-
-        for page_idx in range(pages):
-            offset = page_idx * page_size
-            logger.info(
-                "Fetching page %d/%d (offset=%d)", page_idx + 1, pages, offset
-            )
-            data = await query_feature_layer(
+        logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
+        async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
+            gdf = await download_all_features(
                 cfg.parcel_endpoint,
-                where=where,
-                result_offset=offset,
-                result_record_count=page_size,
+                where=cfg.where_clause or "1=1",
+                progress_callback=_progress,
             )
-            features = data.get("features", [])
-            if not features:
-                logger.warning("Empty page at offset %d — stopping", offset)
-                break
+    logger.info("Downloaded %d features", len(gdf))
+    _stage_completed(job, "parcel_fetch", parcel_fetch_started, feature_count=len(gdf))
+    await complete_job_step(db, parcel_fetch_step, {"feature_count": len(gdf)})
+    await add_job_artifact(
+        db,
+        job,
+        "download_parcels",
+        "parcel_download_metadata",
+        {
+            "feature_count": len(gdf),
+            "endpoint": cfg.parcel_endpoint,
+            "source": cfg.parcel_source.value,
+            "where": cfg.where_clause or "1=1",
+        },
+    )
 
-            page_gdf = _gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
-            downloaded = min((page_idx + 1) * page_size, total)
-
-            await _set_status(
-                db, job, JobStatus.downloading_parcels,
-                progress={
-                    "step": "ingesting",
-                    "parcels_total": total,
-                    "parcels_downloaded": downloaded,
-                    "jurisdiction_id": str(jurisdiction.id),
-                },
-            )
-            await db.commit()
-
-            page_count = await ingest_parcels(page_gdf, jurisdiction.id, db)
-            count += page_count
-            await db.commit()  # commit every page — survives container restart
-
-            await _progress(downloaded, total)
-            if page_idx < pages - 1:
-                await _asyncio.sleep(0.1)  # be polite to the ArcGIS server
-
-        logger.info("Downloaded and ingested %d features total", count)
-
-    # Commit last_indexed_at immediately so the cache check in jobs.py
-    # can find this jurisdiction on the next search and return instantly.
-    from datetime import datetime, timezone
-    jurisdiction.last_indexed_at = datetime.now(timezone.utc)
-    await refresh_jurisdiction_bbox(jurisdiction, db)
-
-    # Mark job ready NOW so the dashboard unlocks without waiting for
-    # zoning / ordinance / overlay steps (those enrich data in-place).
+    # ── Step 3: ingest into PostGIS ───────────────────────────────────────
+    ingest_started = _stage_started(job, "ingest", parcel_count=len(gdf))
+    ingest_step = await start_job_step(
+        db,
+        job,
+        "ingest_parcels",
+        {"downloaded_feature_count": len(gdf)},
+    )
+    logger.info("Ingesting parcels into PostGIS …")
     await _set_status(
-        db, job, JobStatus.ready,
+        db,
+        job,
+        JobStatus.ingesting_parcels,
         progress={
-            "parcels_ingested": count,
-            "jurisdiction_id": str(jurisdiction.id),
+            "ingest_phase": "mapping",
+            "parcels_downloaded": len(gdf),
+            "parcels_total": len(gdf),
+            "parcels_mapped": 0,
+            "parcels_ingested": 0,
         },
     )
     await db.commit()
-    logger.info("Parcels committed — job %s is ready with %d parcels", job.id, count)
+    await check_cancelled(db, job)
 
-    # ── Step 3a: download + ingest zoning polygons (non-fatal) ───────────
+    async def _ingest_progress(phase: str, completed: int, total: int) -> None:
+        progress_key = "parcels_ingested" if phase == "upserting" else "parcels_mapped"
+        job.progress = {
+            **(job.progress or {}),
+            "ingest_phase": phase,
+            progress_key: completed,
+            "parcels_total": total,
+        }
+        await db.flush()
+        if completed % 2000 == 0 or completed == total:
+            await db.commit()
+
+    async with asyncio.timeout(PARCEL_INGEST_TIMEOUT_SECONDS):
+        count = await ingest_parcels(
+            gdf,
+            jurisdiction.id,
+            db,
+            progress_callback=_ingest_progress,
+        )
+    _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
+    await complete_job_step(
+        db,
+        ingest_step,
+        {
+            "parcels_downloaded": len(gdf),
+            "parcels_ingested": count,
+            "dedupe_count": max(len(gdf) - count, 0),
+        },
+    )
+    await add_job_artifact(
+        db,
+        job,
+        "ingest_parcels",
+        "parcel_ingest_metadata",
+        {
+            "parcels_downloaded": len(gdf),
+            "parcels_ingested": count,
+            "dedupe_count": max(len(gdf) - count, 0),
+        },
+    )
+
+    # Update last_indexed_at + compute bbox from ingested parcels
+    bbox_started = _stage_started(job, "parcel_bbox_refresh", jurisdiction_id=str(jurisdiction.id))
+    jurisdiction.last_indexed_at = datetime.now(timezone.utc)
+    await refresh_jurisdiction_bbox(jurisdiction, db)
+    await db.flush()
+    _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
+
+    owned_zoning_started = _stage_started(job, "zoning_system_of_record", jurisdiction_id=str(jurisdiction.id))
+    owned_zoning_step = await start_job_step(
+        db,
+        job,
+        "zoning",
+        {"jurisdiction_id": str(jurisdiction.id)},
+    )
+    queued_zoning = await enqueue_missing_zoning_for_jurisdiction(jurisdiction.id, db)
+    if queued_zoning:
+        owned_zoning_step.status = "waiting_for_data"
+        await _set_status(
+            db,
+            job,
+            JobStatus.pending_zoning,
+            progress={
+                "status": "pending_zoning",
+                "message": "Zoning data is being ingested",
+                "zoning_jobs_queued": queued_zoning,
+                "jurisdiction_id": str(jurisdiction.id),
+            },
+        )
+        job.finished_at = now_utc()
+        job.locked_by = None
+        job.locked_at = None
+        await db.commit()
+        _stage_completed(
+            job,
+            "zoning_system_of_record",
+            owned_zoning_started,
+            status="pending_zoning",
+            zoning_jobs_queued=queued_zoning,
+        )
+        return
+    await complete_job_step(db, owned_zoning_step, {"status": "found"})
+    _stage_completed(job, "zoning_system_of_record", owned_zoning_started, status="found")
+
+    # ── Step 3a: legacy external zoning polygons ─────────────────────────
+    # Disabled for the system-of-record path: feasibility must read zoning
+    # from Postgres-owned overlays/rules instead of blocking on external GIS.
     zoning_count = 0
-    zoning_endpoint = cfg.zoning_polygon_endpoint or cfg.zoning_endpoint
+    zoning_endpoint = None
     if zoning_endpoint:
+        zoning_started = _stage_started(job, "zoning_fetch", endpoint=zoning_endpoint)
+        zoning_fetch_step = await start_job_step(
+            db,
+            job,
+            "download_zoning",
+            {"endpoint": zoning_endpoint},
+        )
         await _set_status(
             db, job, JobStatus.downloading_zoning,
             progress={"zoning_endpoint": zoning_endpoint},
         )
         await db.commit()
+        await check_cancelled(db, job)
         try:
             logger.info("Downloading zoning districts from %s", zoning_endpoint)
-            zgdf = await download_all_features(
-                zoning_endpoint,
-                where=cfg.zoning_where_clause or "1=1",
+            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
+                zgdf = await download_all_features(
+                    zoning_endpoint,
+                    where=cfg.zoning_where_clause or "1=1",
             )
-            zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
-            await db.commit()
+            _stage_completed(job, "zoning_fetch", zoning_started, feature_count=len(zgdf))
+            await complete_job_step(db, zoning_fetch_step, {"feature_count": len(zgdf)})
+            await add_job_artifact(
+                db,
+                job,
+                "download_zoning",
+                "zoning_download_metadata",
+                {"feature_count": len(zgdf), "endpoint": zoning_endpoint},
+            )
 
-            updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
+            zoning_ingest_started = _stage_started(job, "zoning_ingest", feature_count=len(zgdf))
+            zoning_ingest_step = await start_job_step(
+                db,
+                job,
+                "ingest_zoning",
+                {"feature_count": len(zgdf)},
+            )
+            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
+                zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
+            await db.commit()
+            _stage_completed(job, "zoning_ingest", zoning_ingest_started, districts_ingested=zoning_count)
+            await complete_job_step(db, zoning_ingest_step, {"districts_ingested": zoning_count})
+            await add_job_artifact(
+                db,
+                job,
+                "ingest_zoning",
+                "zoning_ingest_metadata",
+                {"districts_ingested": zoning_count},
+            )
+
+            zoning_backfill_started = _stage_started(job, "zoning_backfill", jurisdiction_id=str(jurisdiction.id))
+            zoning_backfill_step = await start_job_step(
+                db,
+                job,
+                "backfill_zoning",
+                {"jurisdiction_id": str(jurisdiction.id)},
+            )
+            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
+                updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
             logger.info("zone_class backfill updated %d parcels", updated)
             await db.commit()
+            _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
+            await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
         except Exception as exc:
+            _stage_failed(job, "zoning", zoning_started, exc)
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
             await db.rollback()
+            zoning_fetch_step = await db.merge(zoning_fetch_step)
+            await fail_job_step(db, zoning_fetch_step, exc, status="warning")
+            await db.commit()
 
+    matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
     seeded_matrix = await bootstrap_zone_use_matrix(
         jurisdiction.id,
         db,
@@ -709,52 +897,62 @@ async def _run(db: AsyncSession, job: Job) -> None:
     if seeded_matrix:
         logger.info("Bootstrapped %d zone_use_matrix rows", seeded_matrix)
         await db.commit()
+    _stage_completed(job, "zone_matrix_bootstrap", matrix_started, rows_seeded=seeded_matrix)
 
+    coverage_started = _stage_started(job, "coverage_refresh", jurisdiction_id=str(jurisdiction.id))
     await refresh_jurisdiction_coverage_level(jurisdiction, db)
     await db.flush()
+    _stage_completed(job, "coverage_refresh", coverage_started, coverage_level=jurisdiction.coverage_level.value)
 
     # ── Step 3b: apply overlays (flood + wetland, non-fatal) ─────────────
+    enrichment_started = _stage_started(job, "enrichment")
+    enrichment_step = await start_job_step(db, job, "run_overlays")
     await _set_status(db, job, JobStatus.running_overlays)
     await db.commit()
+    await check_cancelled(db, job)
     try:
         from app.services.overlays import apply_flood_overlay, apply_wetland_overlay
-        flood_count = await apply_flood_overlay(jurisdiction.id, db)
-        wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+        flood_started = _stage_started(job, "fema_flood_overlay", jurisdiction_id=str(jurisdiction.id))
+        async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
+            flood_count = await apply_flood_overlay(jurisdiction.id, db)
+        _stage_completed(job, "fema_flood_overlay", flood_started, parcels_flagged=flood_count)
+        wetland_started = _stage_started(job, "wetland_overlay", jurisdiction_id=str(jurisdiction.id))
+        async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
+            wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+        _stage_completed(job, "wetland_overlay", wetland_started, parcels_flagged=wetland_count)
         await db.commit()
         logger.info(
             "Overlays: %d flood parcels, %d wetland parcels", flood_count, wetland_count
         )
+        _stage_completed(
+            job,
+            "enrichment",
+            enrichment_started,
+            flood_parcels=flood_count,
+            wetland_parcels=wetland_count,
+        )
+        await complete_job_step(
+            db,
+            enrichment_step,
+            {"flood_parcels": flood_count, "wetland_parcels": wetland_count},
+        )
+        await add_job_artifact(
+            db,
+            job,
+            "run_overlays",
+            "overlay_metadata",
+            {"flood_parcels": flood_count, "wetland_parcels": wetland_count},
+        )
     except Exception as exc:
+        _stage_failed(job, "enrichment", enrichment_started, exc)
         logger.warning("Overlay step failed (non-fatal): %s", exc)
         await db.rollback()
-
-    # ── Step 3c: sync Google Places competitors (non-fatal) ──────────────
-    try:
-        from app.services.arcgis_bbox import get_parcel_bbox
-        from app.services.competitor_google import upsert_google_competitors
-        parcel_bbox = await get_parcel_bbox(jurisdiction.id, db)
-        if parcel_bbox is not None:
-            comp_count = await upsert_google_competitors(parcel_bbox, jurisdiction.id, db)
-            await db.commit()
-            logger.info("Competitor sync: %d Google Places facilities for %s", comp_count, cfg.name)
-    except Exception as exc:
-        logger.warning("Google Places competitor sync failed (non-fatal): %s", exc)
-        await db.rollback()
-
-    # ── Step 3d: ensure census tracts for saturation analysis (non-fatal) ──
-    try:
-        from app.services.arcgis_bbox import get_parcel_bbox
-        from app.services.census import ensure_census_tracts
-        parcel_bbox = await get_parcel_bbox(jurisdiction.id, db)
-        if parcel_bbox is not None:
-            tract_count = await ensure_census_tracts(parcel_bbox, db)
-            await db.commit()
-            logger.info("Census tracts: %d tracts cached for %s", tract_count, cfg.name)
-    except Exception as exc:
-        logger.warning("Census tract fetch failed (non-fatal): %s", exc)
-        await db.rollback()
+        enrichment_step = await db.merge(enrichment_step)
+        await fail_job_step(db, enrichment_step, exc, status="warning")
+        await db.commit()
 
     # ── Step 4: parse ordinance (optional — non-fatal if it fails) ───────
+    ordinance_discovery_started = _stage_started(job, "ordinance_source")
     ordinance_url = job.ordinance_url or cfg.ordinance_url
     if not ordinance_url:
         # Auto-discover the ordinance URL from Municode / eCode360
@@ -766,19 +964,70 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 logger.info("Auto-discovered ordinance URL for %s: %s", cfg.name, discovered)
         except Exception as exc:
             logger.warning("Ordinance URL discovery failed (non-fatal): %s", exc)
+    _stage_completed(
+        job,
+        "ordinance_source",
+        ordinance_discovery_started,
+        ordinance_url=ordinance_url,
+    )
     if ordinance_url:
+        ordinance_started = _stage_started(job, "ordinance_parse", ordinance_url=ordinance_url)
+        ordinance_step = await start_job_step(
+            db,
+            job,
+            "parse_ordinance",
+            {"ordinance_url": ordinance_url},
+        )
         await _set_status(db, job, JobStatus.parsing_ordinance)
         await db.commit()
+        await check_cancelled(db, job)
         try:
-            await _parse_and_save_ordinance(db, jurisdiction, ordinance_url)
+            async with asyncio.timeout(ORDINANCE_TIMEOUT_SECONDS):
+                await _parse_and_save_ordinance(db, jurisdiction, ordinance_url)
+            _stage_completed(job, "ordinance_parse", ordinance_started)
+            await complete_job_step(db, ordinance_step, {"ordinance_url": ordinance_url})
+            await add_job_artifact(
+                db,
+                job,
+                "parse_ordinance",
+                "ordinance_parse_metadata",
+                {"ordinance_url": ordinance_url},
+            )
         except Exception as exc:
+            _stage_failed(job, "ordinance_parse", ordinance_started, exc)
             logger.warning(
                 "Ordinance parsing failed (non-fatal) for job %s: %s", job.id, exc
             )
+            await db.rollback()
+            ordinance_step = await db.merge(ordinance_step)
+            await fail_job_step(db, ordinance_step, exc, status="warning")
+            await db.commit()
             # Non-fatal — job continues to ready state
 
+    # ── Step 5: mark ready ────────────────────────────────────────────────
+    feasibility_started = _stage_started(job, "feasibility_complete", jurisdiction_id=str(jurisdiction.id))
+    feasibility_step = await start_job_step(
+        db,
+        job,
+        "complete_feasibility",
+        {"jurisdiction_id": str(jurisdiction.id)},
+    )
+    await _set_status(
+        db, job, JobStatus.ready,
+        progress={
+            "parcels_ingested": count,
+            "jurisdiction_id": str(jurisdiction.id),
+        },
+    )
+    job.finished_at = now_utc()
+    job.locked_by = None
+    job.locked_at = None
+    await db.commit()
+    _stage_completed(job, "feasibility_complete", feasibility_started, status=JobStatus.ready.value)
+    await complete_job_step(db, feasibility_step, {"status": JobStatus.ready.value})
+    await db.commit()
     logger.info(
-        "Job %s fully enriched — %d parcels for %s", job.id, count, cfg.name
+        "Job %s complete — %d parcels for %s", job.id, count, cfg.name
     )
 
 

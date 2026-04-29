@@ -1,8 +1,14 @@
 """Repair production schema drift for zoning coverage recovery.
 
-Revision ID: 0009
-Revises: 0008
+Revision ID: 0009b
+Revises: 0009
 Create Date: 2026-04-21 00:00:01.000000
+
+Renumbered from "0009" to "0009b" to deduplicate against
+0009_classification_source_extend.py. Body is fully idempotent
+(`if not _has_table(...)` etc.), so re-running on a DB that already has
+these tables is a safe no-op. Production was stamped past this revision
+months ago and is unaffected.
 """
 from __future__ import annotations
 
@@ -15,8 +21,8 @@ from sqlalchemy import inspect
 from sqlalchemy.dialects import postgresql
 
 
-revision: str = "0009"
-down_revision: Union[str, None] = "0008"
+revision: str = "0009b"
+down_revision: Union[str, None] = "0009"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

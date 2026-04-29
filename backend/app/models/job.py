@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,11 +11,17 @@ from app.db import Base
 
 class JobStatus(str, enum.Enum):
     pending = "pending"
+    queued = "queued"
+    running = "running"
+    retrying = "retrying"
     discovering_layers = "discovering_layers"
     downloading_parcels = "downloading_parcels"
+    ingesting_parcels = "ingesting_parcels"
     downloading_zoning = "downloading_zoning"
+    pending_zoning = "pending_zoning"
     parsing_ordinance = "parsing_ordinance"
     running_overlays = "running_overlays"
+    cancelled = "cancelled"
     ready = "ready"
     failed = "failed"
 
@@ -49,6 +55,15 @@ class Job(Base):
     error_message: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     # Structured progress details for each stage
     progress: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    queued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    force: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    dedupe_key: Mapped[str | None] = mapped_column(String(768), nullable=True, index=True)
+    locked_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -62,6 +77,14 @@ class Job(Base):
 
     jurisdiction: Mapped["Jurisdiction | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
         back_populates="jobs"
+    )
+    steps: Mapped[list["JobStep"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="job",
+        cascade="all, delete-orphan",
+    )
+    artifacts: Mapped[list["JobArtifact"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="job",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

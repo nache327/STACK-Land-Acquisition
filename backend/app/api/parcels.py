@@ -20,6 +20,7 @@ from app.schemas.parcel import (
     ParcelRead,
 )
 from app.services.candidate_search import search_candidate_parcels
+from app.services.zoning_system import get_zoning_from_db
 
 router = APIRouter(tags=["parcels"])
 
@@ -183,3 +184,56 @@ async def get_parcel(
     if parcel is None:
         raise HTTPException(status_code=404, detail="Parcel not found")
     return parcel
+
+
+@router.get("/parcel/{parcel_id}/zoning")
+@router.get("/parcels/{parcel_id}/zoning")
+async def get_parcel_zoning(
+    parcel_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    parcel = await db.get(Parcel, parcel_id)
+    if parcel is None:
+        raise HTTPException(status_code=404, detail="Parcel not found")
+    zoning = await get_zoning_from_db(parcel_id, db)
+    await db.commit()
+    if zoning is None:
+        return {
+            "parcel_id": parcel_id,
+            "zoning_status": "pending",
+            "rule": None,
+            "overlay": None,
+            "message": "Zoning data is being ingested",
+        }
+    rule = zoning["rule"]
+    overlay = zoning["overlay"]
+    cache = zoning["cache"]
+    return {
+        "parcel_id": parcel_id,
+        "zoning_status": cache.zoning_status if cache else "found",
+        "rule": {
+            "id": str(rule.id),
+            "city": rule.city,
+            "zone_code": rule.zone_code,
+            "density": rule.density,
+            "max_units": rule.max_units,
+            "min_lot_size": rule.min_lot_size,
+            "setbacks": rule.setbacks,
+            "height_limit": rule.height_limit,
+            "source": rule.source,
+            "confidence": rule.confidence,
+            "created_at": rule.created_at,
+        },
+        "overlay": {
+            "id": str(overlay.id),
+            "source_type": overlay.source_type,
+            "raw_data": overlay.raw_data,
+            "created_at": overlay.created_at,
+        },
+        "enrichment": {
+            "slope": cache.slope if cache else None,
+            "flood_zone": cache.flood_zone if cache else None,
+            "raw_json": cache.raw_json if cache else None,
+            "last_updated": cache.last_updated if cache else None,
+        },
+    }
