@@ -9,7 +9,7 @@ import { LAYER_REGISTRY, SATURATION_COLORS, ZONE_CLASS_COLORS, type ColorMode } 
 import { api } from "@/lib/api";
 import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 import type { IsochronePolygons, TractData } from "@/lib/isochrone";
-import { garagePermToScore, scoreToColor } from "@/lib/keep-layer";
+import { scoreToColor } from "@/lib/keep-layer";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -709,53 +709,47 @@ export default function Map({
   }, [heatCollection]);
 
   // ── The Keep layer ────────────────────────────────────────────────────────
+  // Full-coverage overlay: colors ALL parcels by garage_permission grade.
+  // Prohibited/unclassified → slate gray so the full map remains readable.
+  // Uses a separate layer at full opacity so it never blends with the storage fill.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
+    const NEUTRAL = "#cbd5e1"; // slate-300 for prohibited / unclassified
+
     if (!keepActive) {
-      if (map.getLayer(KEEP_LAYER)) map.removeLayer(KEEP_LAYER);
+      if (map.getLayer(KEEP_LAYER)) {
+        map.setPaintProperty(KEEP_LAYER, "fill-opacity", 0);
+      }
       return;
     }
 
-    // Build a color expression: match garage_permission → grade color, filtered by minScore
-    const colorExpr: maplibregl.ExpressionSpecification = [
-      "case",
-      [">=", ["coalesce", ["literal", 0],
-        ["case", ["==", ["get", "garage_permission"], "permitted"], 90,
-                 ["==", ["get", "garage_permission"], "conditional"], 72,
-                 ["==", ["get", "garage_permission"], "unclear"], 57, 0]], keepMinScore],
-      [
-        "match", ["get", "garage_permission"],
-        "permitted",   scoreToColor(90),
-        "conditional", scoreToColor(72),
-        "unclear",     scoreToColor(57),
-        "rgba(0,0,0,0)",
-      ],
-      "rgba(0,0,0,0)",
-    ];
-
-    // Simpler: just use a match on permission + opacity filter via score
     const fillColor: maplibregl.ExpressionSpecification = [
       "match", ["get", "garage_permission"],
-      "permitted",   keepMinScore <= 90 ? scoreToColor(90) : "rgba(0,0,0,0)",
-      "conditional", keepMinScore <= 72 ? scoreToColor(72) : "rgba(0,0,0,0)",
-      "unclear",     keepMinScore <= 57 ? scoreToColor(57) : "rgba(0,0,0,0)",
-      "rgba(0,0,0,0)",
+      "permitted",   keepMinScore <= 90 ? scoreToColor(90) : NEUTRAL,
+      "conditional", keepMinScore <= 72 ? scoreToColor(72) : NEUTRAL,
+      "unclear",     keepMinScore <= 57 ? scoreToColor(57) : NEUTRAL,
+      NEUTRAL,
     ];
 
     if (!map.getLayer(KEEP_LAYER)) {
-      map.addLayer({
-        id: KEEP_LAYER,
-        type: "fill",
-        source: PARCEL_SOURCE,
-        paint: {
-          "fill-color": fillColor,
-          "fill-opacity": 0.82,
+      map.addLayer(
+        {
+          id: KEEP_LAYER,
+          type: "fill",
+          source: PARCEL_SOURCE,
+          paint: {
+            "fill-color": fillColor,
+            "fill-opacity": 0.88,
+          },
         },
-      });
+        // Insert above parcel fill but below the outline + selection layers
+        PARCEL_LINE,
+      );
     } else {
       map.setPaintProperty(KEEP_LAYER, "fill-color", fillColor);
+      map.setPaintProperty(KEEP_LAYER, "fill-opacity", 0.88);
     }
   }, [keepActive, keepMinScore, parcelCollection]);
 
