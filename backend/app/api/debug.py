@@ -1,7 +1,9 @@
 """Operational debug endpoints — recent jobs, env, queue health."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +11,7 @@ from app.config import settings
 from app.db import get_db
 from app.models.job import Job
 from app.models.job_step import JobStep
+from app.models.jurisdiction import Jurisdiction
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
@@ -71,3 +74,50 @@ async def debug_jobs(
         }
         for job in jobs
     ]
+
+
+@router.post("/fix-zoning/{jurisdiction_id}")
+async def fix_zoning(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Bypass the job queue and directly run the zoning district download + spatial backfill.
+
+    Use this to fix parcels.zoning_code = NULL without waiting for the queue.
+    """
+    result = await db.execute(
+        select(Jurisdiction).where(Jurisdiction.id == jurisdiction_id)
+    )
+    jurisdiction = result.scalar_one_or_none()
+    if jurisdiction is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    zoning_endpoint = jurisdiction.zoning_endpoint
+    if not zoning_endpoint:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Jurisdiction '{jurisdiction.name}' has no zoning_endpoint configured",
+        )
+
+    from app.services.arcgis_query import download_all_features
+    from app.services.spatial_backfill import backfill_parcel_zoning_from_districts
+    from app.services.zoning_ingestion import ingest_zoning_districts
+    from app.services.zoning_system import bulk_ingest_zoning_for_jurisdiction
+
+    zgdf = await download_all_features(zoning_endpoint, where="1=1")
+    districts_ingested = await ingest_zoning_districts(zgdf, jurisdiction_id, db)
+    await db.commit()
+
+    parcels_updated = await backfill_parcel_zoning_from_districts(jurisdiction_id, db)
+    await db.commit()
+
+    overlays_created = await bulk_ingest_zoning_for_jurisdiction(jurisdiction_id, db)
+    await db.commit()
+
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": jurisdiction.name,
+        "districts_ingested": districts_ingested,
+        "parcels_updated": parcels_updated,
+        "overlays_created": overlays_created,
+    }
