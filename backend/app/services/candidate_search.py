@@ -29,6 +29,14 @@ _PERMISSION_LABEL = case(
     else_="unclassified",
 )
 
+_GARAGE_PERM_LABEL = case(
+    (ZoneUseMatrix.luxury_garage_condo == UsePermission.permitted, "permitted"),
+    (ZoneUseMatrix.luxury_garage_condo == UsePermission.conditional, "conditional"),
+    (ZoneUseMatrix.luxury_garage_condo == UsePermission.prohibited, "prohibited"),
+    (ZoneUseMatrix.luxury_garage_condo == UsePermission.unclear, "unclear"),
+    else_="unclassified",
+)
+
 
 def _sort_clause(sort: ParcelSearchSort) -> tuple[Any, ...]:
     if sort == ParcelSearchSort.acres_asc:
@@ -147,6 +155,7 @@ async def search_candidate_parcels(
             Parcel.has_structure,
             target_column.label("target_permission"),
             _PERMISSION_LABEL.label("storage_permission"),
+            _GARAGE_PERM_LABEL.label("garage_permission"),
             func.ST_AsGeoJSON(
                 func.ST_SimplifyPreserveTopology(Parcel.geom, 0.00001)
             ).label("geom"),
@@ -184,6 +193,7 @@ async def search_candidate_parcels(
                 zoning_code=row.zoning_code,
                 zone_class=row.zone_class,
                 storage_permission=row.storage_permission,
+                garage_permission=row.garage_permission,
                 storage_allowed=storage_allowed,
                 storage_conditional=storage_conditional,
                 in_flood_zone=row.in_flood_zone,

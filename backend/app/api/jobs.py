@@ -178,12 +178,14 @@ async def cancel_job(
     if job.status in {JobStatus.ready, JobStatus.failed, JobStatus.cancelled}:
         return job
     job.cancel_requested_at = now_utc()
-    if job.status in {JobStatus.pending, JobStatus.queued, JobStatus.retrying}:
+    terminal = {JobStatus.ready, JobStatus.failed, JobStatus.cancelled}
+    if job.status not in terminal:
         job.status = JobStatus.cancelled
         job.finished_at = now_utc()
         job.locked_by = None
         job.locked_at = None
     await db.flush()
+    await db.commit()
     return job
 
 

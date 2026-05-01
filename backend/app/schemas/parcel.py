@@ -107,6 +107,7 @@ class CandidateParcelRow(BaseModel):
     zoning_code: str | None = None
     zone_class: ZoneClass | None = None
     storage_permission: str | None = None
+    garage_permission: str | None = None
     storage_allowed: bool
     storage_conditional: bool
     in_flood_zone: bool
