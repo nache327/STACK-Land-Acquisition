@@ -39,7 +39,7 @@ describe("JobSchema", () => {
   });
 
   it("rejects unknown status", () => {
-    expect(() => JobSchema.parse({ ...valid, status: "running" })).toThrow();
+    expect(() => JobSchema.parse({ ...valid, status: "not_a_real_status" })).toThrow();
   });
 });
 
