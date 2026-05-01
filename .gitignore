@@ -58,3 +58,4 @@ docker-compose.override.yml
 /data/
 /tmp/
 .vercel
+.env*.local

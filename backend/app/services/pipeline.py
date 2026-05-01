@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +53,7 @@ from app.services.spatial_backfill import (
     refresh_jurisdiction_coverage_level,
 )
 from app.services.zoning_ingestion import ingest_zoning_districts
-from app.services.zoning_system import enqueue_missing_zoning_for_jurisdiction
+from app.services.zoning_system import bulk_ingest_zoning_for_jurisdiction, enqueue_missing_zoning_for_jurisdiction
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +245,16 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
     "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
-    "lehi":          _ugrc("Parcels_Utah", "Lehi",          "Lehi, UT",          "Utah"),
+    "lehi": JurisdictionConfig(
+        name="Lehi, UT", state="UT", county="Utah",
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause="PARCEL_CITY='Lehi'",
+        zoning_polygon_endpoint=(
+            "https://maps.utahcounty.gov/arcgis/rest/services/Assessor"
+            "/CommercialAppraiser/MapServer/50"
+        ),
+    ),
     "lindon": JurisdictionConfig(
         name="Lindon, UT", state="UT", county="Utah",
         parcel_source=ParcelSource.city_gis,
@@ -655,118 +664,149 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await db.commit()
     await check_cancelled(db, job)
 
-    downloaded_count = [0]
-    total_count = [0]
-
-    async def _progress(downloaded: int, total: int) -> None:
-        downloaded_count[0] = downloaded
-        total_count[0] = total
-        job.progress = {
-            **(job.progress or {}),
-            "parcels_downloaded": downloaded,
-            "parcels_total": total,
-        }
-        await db.flush()
-        # Commit progress every 500 parcels so the frontend can see it
-        if downloaded % 500 == 0:
-            await db.commit()
-
-    if cfg.parcel_source == ParcelSource.regrid:
-        # Regrid path is stored in parcel_endpoint (e.g. "ut/salt_lake/draper")
-        logger.info("Downloading parcels from Regrid path: %s", cfg.parcel_endpoint)
-        from app.services.regrid_client import download_parcels_by_path
-        async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
-            gdf = await download_parcels_by_path(cfg.parcel_endpoint)
-        # Fake a progress update so the UI shows *something*
-        await _progress(len(gdf), len(gdf))
-    else:
-        logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
-        async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
-            gdf = await download_all_features(
-                cfg.parcel_endpoint,
-                where=cfg.where_clause or "1=1",
-                progress_callback=_progress,
-            )
-    logger.info("Downloaded %d features", len(gdf))
-    _stage_completed(job, "parcel_fetch", parcel_fetch_started, feature_count=len(gdf))
-    await complete_job_step(db, parcel_fetch_step, {"feature_count": len(gdf)})
-    await add_job_artifact(
-        db,
-        job,
-        "download_parcels",
-        "parcel_download_metadata",
-        {
-            "feature_count": len(gdf),
-            "endpoint": cfg.parcel_endpoint,
-            "source": cfg.parcel_source.value,
-            "where": cfg.where_clause or "1=1",
-        },
+    existing_count = await db.scalar(
+        select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction.id)
     )
+    # Always reuse cached parcels if they exist. force=True bypasses job dedup
+    # and re-runs analysis (zoning, overlays, feasibility), but re-downloading
+    # 30k+ geometries on every forced run spikes memory and kills the container.
+    parcels_cached = (existing_count or 0) > 0
 
-    # ── Step 3: ingest into PostGIS ───────────────────────────────────────
-    ingest_started = _stage_started(job, "ingest", parcel_count=len(gdf))
-    ingest_step = await start_job_step(
-        db,
-        job,
-        "ingest_parcels",
-        {"downloaded_feature_count": len(gdf)},
-    )
-    logger.info("Ingesting parcels into PostGIS …")
-    await _set_status(
-        db,
-        job,
-        JobStatus.ingesting_parcels,
-        progress={
-            "ingest_phase": "mapping",
-            "parcels_downloaded": len(gdf),
-            "parcels_total": len(gdf),
-            "parcels_mapped": 0,
-            "parcels_ingested": 0,
-        },
-    )
-    await db.commit()
-    await check_cancelled(db, job)
-
-    async def _ingest_progress(phase: str, completed: int, total: int) -> None:
-        progress_key = "parcels_ingested" if phase == "upserting" else "parcels_mapped"
-        job.progress = {
-            **(job.progress or {}),
-            "ingest_phase": phase,
-            progress_key: completed,
-            "parcels_total": total,
-        }
-        await db.flush()
-        if completed % 2000 == 0 or completed == total:
-            await db.commit()
-
-    async with asyncio.timeout(PARCEL_INGEST_TIMEOUT_SECONDS):
-        count = await ingest_parcels(
-            gdf,
+    if parcels_cached:
+        logger.info(
+            "Parcels already cached (%d) for jurisdiction %s — skipping download",
+            existing_count,
             jurisdiction.id,
-            db,
-            progress_callback=_ingest_progress,
         )
-    _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
-    await complete_job_step(
-        db,
-        ingest_step,
-        {
-            "parcels_downloaded": len(gdf),
-            "parcels_ingested": count,
-            "dedupe_count": max(len(gdf) - count, 0),
-        },
-    )
-    await add_job_artifact(
-        db,
-        job,
-        "ingest_parcels",
-        "parcel_ingest_metadata",
-        {
-            "parcels_downloaded": len(gdf),
-            "parcels_ingested": count,
-            "dedupe_count": max(len(gdf) - count, 0),
-        },
-    )
+        count = existing_count
+        _stage_completed(job, "parcel_fetch", parcel_fetch_started, cached=True, existing_count=existing_count)
+        await complete_job_step(db, parcel_fetch_step, {"cached": True, "existing_count": existing_count})
+        await _set_status(
+            db,
+            job,
+            JobStatus.ingesting_parcels,
+            progress={
+                "ingest_phase": "cached",
+                "parcels_downloaded": existing_count,
+                "parcels_total": existing_count,
+                "parcels_ingested": existing_count,
+            },
+        )
+        await db.commit()
+        await check_cancelled(db, job)
+    else:
+        downloaded_count = [0]
+        total_count = [0]
+
+        async def _progress(downloaded: int, total: int) -> None:
+            downloaded_count[0] = downloaded
+            total_count[0] = total
+            job.progress = {
+                **(job.progress or {}),
+                "parcels_downloaded": downloaded,
+                "parcels_total": total,
+            }
+            await db.flush()
+            # Commit progress every 500 parcels so the frontend can see it
+            if downloaded % 500 == 0:
+                await db.commit()
+
+        if cfg.parcel_source == ParcelSource.regrid:
+            # Regrid path is stored in parcel_endpoint (e.g. "ut/salt_lake/draper")
+            logger.info("Downloading parcels from Regrid path: %s", cfg.parcel_endpoint)
+            from app.services.regrid_client import download_parcels_by_path
+            async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
+                gdf = await download_parcels_by_path(cfg.parcel_endpoint)
+            # Fake a progress update so the UI shows *something*
+            await _progress(len(gdf), len(gdf))
+        else:
+            logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
+            async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
+                gdf = await download_all_features(
+                    cfg.parcel_endpoint,
+                    where=cfg.where_clause or "1=1",
+                    progress_callback=_progress,
+                )
+        logger.info("Downloaded %d features", len(gdf))
+        _stage_completed(job, "parcel_fetch", parcel_fetch_started, feature_count=len(gdf))
+        await complete_job_step(db, parcel_fetch_step, {"feature_count": len(gdf)})
+        await add_job_artifact(
+            db,
+            job,
+            "download_parcels",
+            "parcel_download_metadata",
+            {
+                "feature_count": len(gdf),
+                "endpoint": cfg.parcel_endpoint,
+                "source": cfg.parcel_source.value,
+                "where": cfg.where_clause or "1=1",
+            },
+        )
+
+        # ── Step 3: ingest into PostGIS ───────────────────────────────────────
+        ingest_started = _stage_started(job, "ingest", parcel_count=len(gdf))
+        ingest_step = await start_job_step(
+            db,
+            job,
+            "ingest_parcels",
+            {"downloaded_feature_count": len(gdf)},
+        )
+        logger.info("Ingesting parcels into PostGIS …")
+        await _set_status(
+            db,
+            job,
+            JobStatus.ingesting_parcels,
+            progress={
+                "ingest_phase": "mapping",
+                "parcels_downloaded": len(gdf),
+                "parcels_total": len(gdf),
+                "parcels_mapped": 0,
+                "parcels_ingested": 0,
+            },
+        )
+        await db.commit()
+        await check_cancelled(db, job)
+
+        async def _ingest_progress(phase: str, completed: int, total: int) -> None:
+            progress_key = "parcels_ingested" if phase == "upserting" else "parcels_mapped"
+            job.progress = {
+                **(job.progress or {}),
+                "ingest_phase": phase,
+                progress_key: completed,
+                "parcels_total": total,
+            }
+            await db.flush()
+            if completed % 2000 == 0 or completed == total:
+                await db.commit()
+
+        async with asyncio.timeout(PARCEL_INGEST_TIMEOUT_SECONDS):
+            count = await ingest_parcels(
+                gdf,
+                jurisdiction.id,
+                db,
+                progress_callback=_ingest_progress,
+            )
+        _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
+        await complete_job_step(
+            db,
+            ingest_step,
+            {
+                "parcels_downloaded": len(gdf),
+                "parcels_ingested": count,
+                "dedupe_count": max(len(gdf) - count, 0),
+            },
+        )
+        await add_job_artifact(
+            db,
+            job,
+            "ingest_parcels",
+            "parcel_ingest_metadata",
+            {
+                "parcels_downloaded": len(gdf),
+                "parcels_ingested": count,
+                "dedupe_count": max(len(gdf) - count, 0),
+            },
+        )
 
     # Update last_indexed_at + compute bbox from ingested parcels
     bbox_started = _stage_started(job, "parcel_bbox_refresh", jurisdiction_id=str(jurisdiction.id))
@@ -782,41 +822,46 @@ async def _run(db: AsyncSession, job: Job) -> None:
         "zoning",
         {"jurisdiction_id": str(jurisdiction.id)},
     )
-    queued_zoning = await enqueue_missing_zoning_for_jurisdiction(jurisdiction.id, db)
-    if queued_zoning:
-        owned_zoning_step.status = "waiting_for_data"
-        await _set_status(
-            db,
-            job,
-            JobStatus.pending_zoning,
-            progress={
-                "status": "pending_zoning",
-                "message": "Zoning data is being ingested",
-                "zoning_jobs_queued": queued_zoning,
-                "jurisdiction_id": str(jurisdiction.id),
-            },
-        )
-        job.finished_at = now_utc()
-        job.locked_by = None
-        job.locked_at = None
-        await db.commit()
-        _stage_completed(
-            job,
-            "zoning_system_of_record",
-            owned_zoning_started,
-            status="pending_zoning",
-            zoning_jobs_queued=queued_zoning,
-        )
-        return
-    await complete_job_step(db, owned_zoning_step, {"status": "found"})
-    _stage_completed(job, "zoning_system_of_record", owned_zoning_started, status="found")
+    await _set_status(
+        db,
+        job,
+        JobStatus.ingesting_parcels,
+        progress={
+            "status": "building_zoning",
+            "message": "Building zoning records…",
+            "jurisdiction_id": str(jurisdiction.id),
+        },
+    )
+    await db.commit()
+    overlays_inserted = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
+    await db.commit()
+    await complete_job_step(db, owned_zoning_step, {"overlays_inserted": overlays_inserted})
+    _stage_completed(job, "zoning_system_of_record", owned_zoning_started, overlays_inserted=overlays_inserted)
 
-    # ── Step 3a: legacy external zoning polygons ─────────────────────────
-    # Disabled for the system-of-record path: feasibility must read zoning
-    # from Postgres-owned overlays/rules instead of blocking on external GIS.
+    # ── Step 3a: zoning district polygons → spatial backfill ─────────────
+    # Download zoning district polygons from the GIS endpoint (if configured),
+    # ingest them into zoning_districts, then spatial-join to set zone_code on
+    # every parcel. bulk_ingest runs again after backfill so overlays are
+    # created for parcels that only got their zone_code from the spatial join.
     zoning_count = 0
-    zoning_endpoint = None
+    zoning_endpoint = cfg.zoning_polygon_endpoint
     if zoning_endpoint:
+        from app.models.zoning_district import ZoningDistrict as _ZD
+        _zd_count = await db.scalar(
+            select(func.count(_ZD.id)).where(_ZD.jurisdiction_id == jurisdiction.id)
+        )
+        _unzoned = await db.scalar(
+            select(func.count(Parcel.id)).where(
+                Parcel.jurisdiction_id == jurisdiction.id,
+                or_(Parcel.zoning_code.is_(None), Parcel.zoning_code == ""),
+            )
+        )
+        _skip_zd_download = (_zd_count or 0) > 0 and (_unzoned or 0) == 0
+        logger.info(
+            "Zoning districts cache check: cached=%d unzoned=%d skip_download=%s",
+            _zd_count or 0, _unzoned or 0, _skip_zd_download,
+        )
+    if zoning_endpoint and not _skip_zd_download:
         zoning_started = _stage_started(job, "zoning_fetch", endpoint=zoning_endpoint)
         zoning_fetch_step = await start_job_step(
             db,
@@ -880,6 +925,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
             await db.commit()
             _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
             await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
+
+            # Re-run bulk ingest now that parcels have zone_codes from spatial backfill
+            post_backfill_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
+            await db.commit()
+            logger.info("Post-backfill bulk zoning ingest: %d new overlays", post_backfill_overlays)
         except Exception as exc:
             _stage_failed(job, "zoning", zoning_started, exc)
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
@@ -887,6 +937,19 @@ async def _run(db: AsyncSession, job: Job) -> None:
             zoning_fetch_step = await db.merge(zoning_fetch_step)
             await fail_job_step(db, zoning_fetch_step, exc, status="warning")
             await db.commit()
+
+    # Cache-hit path: districts exist but some parcels may still be unzoned
+    if zoning_endpoint and _skip_zd_download and (_unzoned or 0) > 0:
+        logger.info("Zoning districts cached but %d unzoned parcels remain — running backfill only", _unzoned)
+        try:
+            cached_backfill = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
+            await db.commit()
+            post_cache_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
+            await db.commit()
+            logger.info("Cached-hit backfill: %d parcels updated, %d new overlays", cached_backfill, post_cache_overlays)
+        except Exception as exc:
+            logger.warning("Cached-hit backfill failed (non-fatal): %s", exc)
+            await db.rollback()
 
     matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
     seeded_matrix = await bootstrap_zone_use_matrix(
@@ -953,17 +1016,9 @@ async def _run(db: AsyncSession, job: Job) -> None:
 
     # ── Step 4: parse ordinance (optional — non-fatal if it fails) ───────
     ordinance_discovery_started = _stage_started(job, "ordinance_source")
+    # Only use an explicitly-provided ordinance URL. Auto-discovery via Playwright
+    # spikes memory (headless Chromium) and crashes the worker container on Railway.
     ordinance_url = job.ordinance_url or cfg.ordinance_url
-    if not ordinance_url:
-        # Auto-discover the ordinance URL from Municode / eCode360
-        try:
-            from app.services.ordinance_fetcher import discover_ordinance_url
-            discovered = await discover_ordinance_url(cfg.name, cfg.state or "")
-            if discovered:
-                ordinance_url = discovered
-                logger.info("Auto-discovered ordinance URL for %s: %s", cfg.name, discovered)
-        except Exception as exc:
-            logger.warning("Ordinance URL discovery failed (non-fatal): %s", exc)
     _stage_completed(
         job,
         "ordinance_source",

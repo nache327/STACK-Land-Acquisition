@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 from typing import AsyncGenerator
 from app.config import settings
 
@@ -18,22 +19,16 @@ class Base(DeclarativeBase):
 
 logger.info("Connected to Postgres at %s (env=%s)", settings.database_url_sanitized, settings.environment)
 
-# Supabase transaction-mode pooler (port 6543) does not pin connections, so
-# asyncpg's prepared-statement cache must be disabled — otherwise a connection
-# hands a stmt back to the pool and the next caller hits "prepared statement
-# already exists". Session-mode (5432) is unaffected by these flags.
+# NullPool: no SQLAlchemy-level connection pooling. Each request opens and closes
+# its own connection. pgbouncer handles server-side pooling. This avoids zombie
+# connections from rapid redeployments exhausting Supabase's session-mode limit,
+# and avoids asyncio event-loop lock binding errors across worker threads.
 engine = create_async_engine(
     settings.database_url,
     echo=False,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    # asyncpg-level cache (per-connection): turn off statement preparation.
+    poolclass=NullPool,
     connect_args={
         "statement_cache_size": 0,
-        # Force unique server-side prepared statement names so a stmt left on
-        # one pooler-pinned conn can't collide on the next checkout.
-        "prepared_statement_name_func": lambda: f"__asyncpg_{__import__('uuid').uuid4().hex}__",
     },
 )
 

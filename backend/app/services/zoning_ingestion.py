@@ -38,10 +38,12 @@ _ZONE_CODE_FIELDS = [
     "ZONE_CODE", "ZONING_CODE", "zoning", "zonecode",
     "LONG_CODE", "ZONE_CODE_LABEL", "BASEZONE",
     "ZONINGCODE", "ZONECLASS", "ZONE_OR_LABEL",
+    "ZONE_LE_LABEL",  # Utah County / Lehi zoning service
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
     "DESCRIPTION", "DESC", "NAME", "CODE_DEF",
+    "ZONE_LE_DESC",   # Utah County / Lehi zoning service
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",

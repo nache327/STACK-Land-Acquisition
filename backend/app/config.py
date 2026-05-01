@@ -65,11 +65,15 @@ class Settings(BaseSettings):
 
     @property
     def sync_database_url(self) -> str:
-        """Synchronous database URL for Alembic migrations."""
+        """Synchronous database URL for Alembic migrations.
+        Uses session-mode pooler (port 5432) because psycopg2 requires
+        session-level features (hstore OID lookup) that break on port 6543.
+        """
         return (
             self.database_url
             .replace("+asyncpg", "+psycopg2")
             .replace("+aiosqlite", "")
+            .replace(":6543/", ":5432/")
         )
 
     @property

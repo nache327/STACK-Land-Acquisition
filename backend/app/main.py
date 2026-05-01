@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -27,7 +28,28 @@ async def lifespan(app: FastAPI):
         settings.database_url_sanitized,
         settings.redis_url_sanitized,
     )
+    from app.services.job_watchdog import recover_stale_jobs
+
+    async def _watchdog_loop() -> None:
+        while True:
+            await asyncio.sleep(5 * 60)
+            try:
+                recovered = await recover_stale_jobs()
+                if recovered:
+                    logger.info("Periodic watchdog: recovered %d stale locked jobs", recovered)
+            except Exception:
+                logger.exception("Periodic watchdog iteration failed")
+
+    try:
+        recovered = await recover_stale_jobs()
+        if recovered:
+            logger.info("Startup watchdog: recovered %d stale locked jobs", recovered)
+    except Exception:
+        logger.exception("Startup watchdog failed — continuing boot")
+
+    watchdog_task = asyncio.create_task(_watchdog_loop())
     yield
+    watchdog_task.cancel()
     from app.db import engine
     await engine.dispose()
 

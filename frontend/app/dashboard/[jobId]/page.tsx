@@ -19,6 +19,8 @@ import type { ColorMode } from "@/lib/layers";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
+import { fetchIsochrone, fetchCensusTracts, type IsochroneResult, type TractData } from "@/lib/isochrone";
+import type { DriveTimeMode } from "@/components/Map";
 
 // MapLibre GL JS must not be SSR'd
 const ParcelMap = dynamic(() => import("@/components/Map"), {
@@ -115,6 +117,17 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
     return 10;
   });
+
+  // Drive-time isochrone state
+  const [driveTimeMode, setDriveTimeMode] = useState<DriveTimeMode>("off");
+  const [isochroneData, setIsochroneData] = useState<IsochroneResult | null>(null);
+  const [isochroneWealth, setIsochroneWealth] = useState<TractData[] | null>(null);
+  const [pinnedIsochroneData, setPinnedIsochroneData] = useState<IsochroneResult | null>(null);
+  const [isochroneLoading, setIsochroneLoading] = useState(false);
+
+  // Keep layer state
+  const [keepActive, setKeepActive] = useState(false);
+  const [keepMinScore, setKeepMinScore] = useState(55);
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [shortlistName, setShortlistName] = useState("");
@@ -307,6 +320,48 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     setDrawerOpen(true);
   }
 
+  // Fetch isochrone whenever a parcel is clicked and drive-time mode is active
+  useEffect(() => {
+    if (driveTimeMode === "off" || !selectedParcelCentroid) return;
+
+    let cancelled = false;
+    setIsochroneLoading(true);
+
+    const [lng, lat] = selectedParcelCentroid;
+
+    fetchIsochrone(lat, lng)
+      .then(async (result) => {
+        if (cancelled) return;
+
+        if (driveTimeMode === "pinned" && isochroneData) {
+          // Lock current rings as pinned, show new rings as primary
+          setPinnedIsochroneData(isochroneData);
+        }
+        setIsochroneData(result);
+
+        // Fetch wealth data for the 10-min ring
+        const tracts = await fetchCensusTracts(result.polygons.min10);
+        if (!cancelled) setIsochroneWealth(tracts);
+      })
+      .catch((err) => {
+        if (!cancelled) console.warn("Isochrone fetch failed:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setIsochroneLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedParcelCentroid, driveTimeMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear isochrone data when drive-time mode is turned off
+  useEffect(() => {
+    if (driveTimeMode === "off") {
+      setIsochroneData(null);
+      setIsochroneWealth(null);
+      setPinnedIsochroneData(null);
+    }
+  }, [driveTimeMode]);
+
   const totalPages = parcelList
     ? Math.max(1, Math.ceil(parcelList.total / parcelList.page_size))
     : 1;
@@ -450,6 +505,17 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             colorMode={colorMode}
             saturationData={effectiveSaturationData}
             flyTrigger={flyTrigger}
+            driveTimeMode={driveTimeMode}
+            isochronePolygons={isochroneData?.polygons ?? null}
+            isochroneWealth={isochroneWealth}
+            pinnedIsochronePolygons={pinnedIsochroneData?.polygons ?? null}
+            onDriveTimeModeChange={setDriveTimeMode}
+            keepActive={keepActive}
+            keepMinScore={keepMinScore}
+            onKeepChange={(active, score) => {
+              setKeepActive(active);
+              setKeepMinScore(score);
+            }}
           />
         </main>
 

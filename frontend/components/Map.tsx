@@ -8,6 +8,7 @@ import { LayerControl, type LayerVisibility } from "@/components/LayerControl";
 import { LAYER_REGISTRY, SATURATION_COLORS, ZONE_CLASS_COLORS, type ColorMode } from "@/lib/layers";
 import { api } from "@/lib/api";
 import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
+import type { IsochronePolygons, TractData } from "@/lib/isochrone";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -42,6 +43,8 @@ const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
+export type DriveTimeMode = "off" | "on" | "pinned";
+
 interface MapProps {
   jurisdictionId: string;
   parcels: CandidateParcelRow[];
@@ -54,7 +57,17 @@ interface MapProps {
   onVisibilityChange: (next: LayerVisibility) => void;
   colorMode?: ColorMode;
   saturationData?: Map<number, SaturationBatchResult>;
-  flyTrigger?: number; // increment to fly to selectedParcelCentroid
+  flyTrigger?: number;
+  // Drive-time isochrone props
+  driveTimeMode?: DriveTimeMode;
+  isochronePolygons?: IsochronePolygons | null;
+  isochroneWealth?: TractData[] | null;
+  pinnedIsochronePolygons?: IsochronePolygons | null;
+  pinnedIsochroneWealth?: TractData[] | null;
+  onDriveTimeModeChange?: (mode: DriveTimeMode) => void;
+  keepActive?: boolean;
+  keepMinScore?: number;
+  onKeepChange?: (active: boolean, minScore: number) => void;
 }
 
 const PARCEL_SOURCE = "parcels";
@@ -72,6 +85,144 @@ const RING_LAYER = "saturation-rings-line";
 const RING_RADII_MILES = [3];
 const HEAT_SOURCE = "saturation-heat";
 const HEAT_LAYER = "saturation-heat-layer";
+
+// ── Isochrone constants ───────────────────────────────────────────────────────
+const ISO_RING_SOURCE   = "isochrone-rings";
+const ISO_LABEL_SOURCE  = "isochrone-labels";
+const ISO_WEALTH_SOURCE = "isochrone-wealth";
+const ISO_PIN_RING_SOURCE   = "isochrone-rings-pinned";
+const ISO_PIN_LABEL_SOURCE  = "isochrone-labels-pinned";
+
+const RING_SPECS = [
+  { key: "min10" as const, label: "10 min", fill: "#9B6B9B", fillOpacity: 0.08, lineOpacity: 0.4 },
+  { key: "min5"  as const, label: "5 min",  fill: "#7B68EE", fillOpacity: 0.10, lineOpacity: 0.45 },
+  { key: "min2"  as const, label: "2 min",  fill: "#4A90D9", fillOpacity: 0.12, lineOpacity: 0.5 },
+] as const;
+
+const PINNED_COLOR = "#E8934A";
+
+// Get the northernmost [lng, lat] from a GeoJSON feature
+function northernmostPoint(
+  feature: IsochronePolygons[keyof IsochronePolygons]
+): [number, number] {
+  const coords: number[][] = [];
+  const collect = (c: unknown): void => {
+    if (!Array.isArray(c)) return;
+    if (typeof c[0] === "number") { coords.push(c as number[]); return; }
+    (c as unknown[]).forEach(collect);
+  };
+  collect(feature.geometry.coordinates);
+  return coords.reduce((best, c) => (c[1] > best[1] ? c : best)) as [number, number];
+}
+
+function isoRingFC(polygons: IsochronePolygons): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: RING_SPECS.map((s) => ({
+      ...(polygons[s.key] as GeoJSON.Feature),
+      properties: { ring: s.key },
+    })),
+  };
+}
+
+function isoLabelFC(polygons: IsochronePolygons): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: RING_SPECS.map((s) => ({
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: northernmostPoint(polygons[s.key]) },
+      properties: { label: s.label, ring: s.key },
+    })),
+  };
+}
+
+function isoWealthFC(tracts: TractData[]): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: tracts
+      .filter((t) => t.clipped_geometry !== null)
+      .map((t) => ({
+        ...(t.clipped_geometry as GeoJSON.Feature),
+        properties: { median_hhi: t.median_hhi ?? -1, household_count: t.household_count ?? 0 },
+      })),
+  };
+}
+
+function isoUpsertRingLayers(
+  map: maplibregl.Map,
+  ringSrc: string,
+  labelSrc: string,
+  polygons: IsochronePolygons | null | undefined,
+  color?: string
+): void {
+  if (!polygons) {
+    for (const s of RING_SPECS) {
+      const fillId  = `iso-fill-${s.key}-${ringSrc}`;
+      const lineId  = `iso-line-${s.key}-${ringSrc}`;
+      const labelId = `iso-label-${s.key}-${labelSrc}`;
+      if (map.getLayer(fillId))  map.removeLayer(fillId);
+      if (map.getLayer(lineId))  map.removeLayer(lineId);
+      if (map.getLayer(labelId)) map.removeLayer(labelId);
+    }
+    if (map.getSource(ringSrc))  map.removeSource(ringSrc);
+    if (map.getSource(labelSrc)) map.removeSource(labelSrc);
+    return;
+  }
+
+  const rFC = isoRingFC(polygons);
+  const lFC = isoLabelFC(polygons);
+
+  const existingRing = map.getSource(ringSrc) as maplibregl.GeoJSONSource | undefined;
+  existingRing ? existingRing.setData(rFC) : map.addSource(ringSrc, { type: "geojson", data: rFC });
+
+  const existingLabel = map.getSource(labelSrc) as maplibregl.GeoJSONSource | undefined;
+  existingLabel ? existingLabel.setData(lFC) : map.addSource(labelSrc, { type: "geojson", data: lFC });
+
+  for (const s of RING_SPECS) {
+    const fillId  = `iso-fill-${s.key}-${ringSrc}`;
+    const lineId  = `iso-line-${s.key}-${ringSrc}`;
+    const labelId = `iso-label-${s.key}-${labelSrc}`;
+    const c       = color ?? s.fill;
+    const f: maplibregl.FilterSpecification = ["==", ["get", "ring"], s.key];
+
+    if (!map.getLayer(fillId)) {
+      map.addLayer({ id: fillId, type: "fill", source: ringSrc, filter: f,
+        paint: { "fill-color": c, "fill-opacity": s.fillOpacity } });
+    }
+    if (!map.getLayer(lineId)) {
+      map.addLayer({ id: lineId, type: "line", source: ringSrc, filter: f,
+        paint: { "line-color": c, "line-width": 1.5, "line-opacity": s.lineOpacity } });
+    }
+    if (!map.getLayer(labelId)) {
+      map.addLayer({ id: labelId, type: "symbol", source: labelSrc, filter: f,
+        layout: { "text-field": ["get", "label"], "text-size": 11,
+                  "text-offset": [0, -0.8], "text-anchor": "bottom" },
+        paint: { "text-color": c, "text-halo-color": "rgba(255,255,255,0.8)", "text-halo-width": 1.5 } });
+    }
+  }
+}
+
+function isoUpsertWealth(map: maplibregl.Map, tracts: TractData[]): void {
+  const fc = isoWealthFC(tracts);
+  const existing = map.getSource(ISO_WEALTH_SOURCE) as maplibregl.GeoJSONSource | undefined;
+  if (existing) {
+    existing.setData(fc);
+    return;
+  }
+  if (!fc.features.length) return;
+  map.addSource(ISO_WEALTH_SOURCE, { type: "geojson", data: fc });
+  map.addLayer({
+    id: "iso-wealth-fill",
+    type: "fill",
+    source: ISO_WEALTH_SOURCE,
+    paint: {
+      "fill-color": ["step", ["get", "median_hhi"],
+        "rgba(0,0,0,0)", 100_000, "#E8D5A3", 150_000, "#C9A84C", 200_000, "#C9A84C"],
+      "fill-opacity": ["step", ["get", "median_hhi"],
+        0, 100_000, 0.30, 150_000, 0.35, 200_000, 0.55],
+    },
+  });
+}
 
 // Haversine circle — no external deps, returns a closed LineString
 function geoCircle(center: [number, number], radiusMiles: number, steps = 96): GeoJSON.Feature {
@@ -133,6 +284,14 @@ export default function Map({
   colorMode = "permission",
   saturationData,
   flyTrigger,
+  driveTimeMode = "off",
+  isochronePolygons,
+  isochroneWealth,
+  pinnedIsochronePolygons,
+  onDriveTimeModeChange,
+  keepActive = false,
+  keepMinScore = 55,
+  onKeepChange,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -604,6 +763,28 @@ export default function Map({
     if (map.isStyleLoaded()) run(); else map.once("load", run);
   }, [selectedParcelId, parcelCollection, selectedParcelCentroid]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Isochrone ring rendering ──────────────────────────────────────────────
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const run = (m: maplibregl.Map) => {
+      isoUpsertRingLayers(m, ISO_RING_SOURCE, ISO_LABEL_SOURCE,
+        driveTimeMode !== "off" ? isochronePolygons : null);
+
+      isoUpsertRingLayers(m, ISO_PIN_RING_SOURCE, ISO_PIN_LABEL_SOURCE,
+        driveTimeMode === "pinned" ? pinnedIsochronePolygons : null,
+        PINNED_COLOR);
+
+      isoUpsertWealth(m, isochroneWealth ?? []);
+    };
+
+    if (map.isStyleLoaded()) run(map); else map.once("load", () => run(map!));
+  }, [driveTimeMode, isochronePolygons, isochroneWealth, pinnedIsochronePolygons]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -870,7 +1051,15 @@ export default function Map({
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
-      <LayerControl visibility={visibility} onChange={onVisibilityChange} />
+      <LayerControl
+        visibility={visibility}
+        onChange={onVisibilityChange}
+        driveTimeMode={driveTimeMode}
+        onDriveTimeModeChange={onDriveTimeModeChange}
+        keepActive={keepActive}
+        keepMinScore={keepMinScore}
+        onKeepChange={onKeepChange}
+      />
 
       {colorMode === "saturation" && <SaturationLegend />}
 

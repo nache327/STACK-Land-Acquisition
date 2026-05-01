@@ -5,7 +5,7 @@ import time
 from datetime import timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -254,3 +254,77 @@ async def enqueue_missing_zoning_for_jurisdiction(
         )
     await db.flush()
     return len(parcel_ids)
+
+
+async def bulk_ingest_zoning_for_jurisdiction(
+    jurisdiction_id: Any,
+    db: AsyncSession,
+) -> int:
+    """Bulk-create ZoningRules + ZoningOverlays from parcel.zoning_code in two SQL passes.
+
+    Returns the number of ZoningOverlays inserted. Replaces the per-parcel
+    Dramatiq worker path so the pipeline never enters pending_zoning limbo.
+    """
+    jid = str(jurisdiction_id)
+
+    # Step 1: ensure a ZoningRule row exists for every distinct (city, zone_code) pair
+    await db.execute(text("""
+        INSERT INTO zoning_rules (id, city, zone_code, source, confidence)
+        SELECT
+            gen_random_uuid(),
+            COALESCE(NULLIF(TRIM(p.city), ''), 'unknown') AS city,
+            p.zoning_code,
+            'parcel_ingest',
+            0.75
+        FROM parcels p
+        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+          AND p.zoning_code IS NOT NULL
+          AND p.zoning_code != ''
+        GROUP BY COALESCE(NULLIF(TRIM(p.city), ''), 'unknown'), p.zoning_code
+        ON CONFLICT (city, zone_code) DO NOTHING
+    """), {"jid": jid})
+
+    # Step 2: insert ZoningOverlays for every parcel that has a zoning_code but no overlay yet
+    overlay_result = await db.execute(text("""
+        INSERT INTO zoning_overlays (id, parcel_id, zoning_rule_id, source_type, raw_data)
+        SELECT
+            gen_random_uuid(),
+            p.id,
+            r.id,
+            'authoritative',
+            jsonb_build_object('parcel_id', p.id, 'apn', p.apn, 'zoning_code', p.zoning_code)
+        FROM parcels p
+        JOIN zoning_rules r
+            ON r.city = COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')
+           AND r.zone_code = p.zoning_code
+        LEFT JOIN zoning_overlays o ON o.parcel_id = p.id
+        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+          AND p.zoning_code IS NOT NULL
+          AND p.zoning_code != ''
+          AND o.id IS NULL
+    """), {"jid": jid})
+    overlays_inserted = overlay_result.rowcount
+
+    # Step 3: mark parcels without zoning_code as "missing" in enrichment_cache
+    # so enqueue_missing_zoning_for_jurisdiction doesn't queue them as workers
+    await db.execute(text("""
+        INSERT INTO enrichment_cache (id, parcel_id, zoning_status, raw_json, last_updated)
+        SELECT
+            gen_random_uuid(),
+            p.id,
+            'missing',
+            '{"reason": "no zoning_code in parcel data"}'::jsonb,
+            NOW()
+        FROM parcels p
+        LEFT JOIN enrichment_cache ec ON ec.parcel_id = p.id
+        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+          AND (p.zoning_code IS NULL OR p.zoning_code = '')
+          AND ec.id IS NULL
+        ON CONFLICT (parcel_id) DO NOTHING
+    """), {"jid": jid})
+
+    logger.info(
+        "Bulk zoning ingest for jurisdiction %s: inserted %d ZoningOverlays",
+        jurisdiction_id, overlays_inserted,
+    )
+    return overlays_inserted

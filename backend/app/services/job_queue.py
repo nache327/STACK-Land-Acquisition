@@ -30,21 +30,31 @@ def enqueue_pipeline_job(job_id: uuid.UUID) -> None:
 
 @dramatiq.actor(max_retries=1, min_backoff=2_000, max_backoff=10_000, time_limit=5 * 60 * 1000)
 def process_zoning_ingest(parcel_id: int) -> None:
-    from app.db import async_session_maker
     from app.services.zoning_system import ingest_zoning_for_parcel_db
 
     async def _run() -> None:
-        async with async_session_maker() as db:
-            try:
-                await ingest_zoning_for_parcel_db(parcel_id, db)
-                await db.commit()
-            except Exception:
-                # Persist the failure step/cache update before Dramatiq retries.
+        # Must create a fresh engine per asyncio.run() call — the shared engine's
+        # internal asyncio locks are bound to the process's main event loop, which
+        # is destroyed and recreated each time asyncio.run() is called from a
+        # Dramatiq worker thread, causing "bound to a different event loop" errors.
+        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+        from sqlalchemy.pool import NullPool
+
+        engine = create_async_engine(settings.database_url, poolclass=NullPool)
+        local_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        try:
+            async with local_session() as db:
                 try:
+                    await ingest_zoning_for_parcel_db(parcel_id, db)
                     await db.commit()
                 except Exception:
-                    await db.rollback()
-                raise
+                    try:
+                        await db.commit()
+                    except Exception:
+                        await db.rollback()
+                    raise
+        finally:
+            await engine.dispose()
 
     asyncio.run(_run())
 
