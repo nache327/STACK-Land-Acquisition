@@ -55,6 +55,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/zoning_test
           ANTHROPIC_API_KEY: ""
           REGRID_API_KEY: ""
+          REDIS_URL: redis://localhost:6379
         run: |
           pytest --cov=app --cov-report=term-missing --cov-fail-under=25 -v -m "not integration"
 
@@ -65,6 +66,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/zoning_test
           ANTHROPIC_API_KEY: ""
           REGRID_API_KEY: ""
+          REDIS_URL: redis://localhost:6379
         run: |
           pytest tests/test_draper_e2e.py -v -m integration --timeout=300
 

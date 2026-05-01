@@ -19,6 +19,7 @@ from geoalchemy2.shape import from_shape
 from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
+from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -353,13 +354,22 @@ async def ingest_parcels(
     num_batches = math.ceil(len(rows) / BATCH)
 
     # Upsert: on conflict (jurisdiction_id, apn) update all mutable fields.
-    # This replaces the old delete-then-insert pattern that caused duplicates
-    # when two pipeline runs overlapped or a setup script ran before the pipeline.
+    # zoning_code and zone_class use COALESCE so a re-ingest from a GIS source
+    # that lacks zoning fields (e.g. UGRC) never clears values set by the
+    # spatial backfill or Zone Verifier.
     update_cols = {
         c.key: getattr(pg_insert(Parcel).excluded, c.key)
         for c in Parcel.__table__.columns
-        if c.key not in ("id", "jurisdiction_id", "apn", "created_at")
+        if c.key not in ("id", "jurisdiction_id", "apn", "created_at", "zoning_code", "zone_class")
     }
+    update_cols["zoning_code"] = func.coalesce(
+        pg_insert(Parcel).excluded.zoning_code,
+        text("parcels.zoning_code"),
+    )
+    update_cols["zone_class"] = func.coalesce(
+        pg_insert(Parcel).excluded.zone_class,
+        text("parcels.zone_class"),
+    )
     for i in range(0, len(rows), BATCH):
         batch = rows[i : i + BATCH]
         stmt = (
