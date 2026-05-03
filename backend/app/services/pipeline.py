@@ -840,7 +840,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
     except Exception as exc:
         logger.warning("Bulk zoning ingest (main) failed/timed out (non-fatal): %s", exc)
         try:
-            await db.rollback()
+            async with asyncio.timeout(5):
+                await db.rollback()
         except Exception:
             pass
         overlays_inserted = 0
@@ -943,7 +944,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
         except Exception as exc:
             _stage_failed(job, "zoning", zoning_started, exc)
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
-            await db.rollback()
+            try:
+                async with asyncio.timeout(5):
+                    await db.rollback()
+            except Exception:
+                pass
             zoning_fetch_step = await db.merge(zoning_fetch_step)
             await fail_job_step(db, zoning_fetch_step, exc, status="warning")
             await db.commit()
@@ -960,7 +965,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
             logger.info("Cached-hit backfill: %d parcels updated, %d new overlays", cached_backfill, post_cache_overlays)
         except Exception as exc:
             logger.warning("Cached-hit backfill failed (non-fatal): %s", exc)
-            await db.rollback()
+            try:
+                async with asyncio.timeout(5):
+                    await db.rollback()
+            except Exception:
+                pass
 
     matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
     seeded_matrix = await bootstrap_zone_use_matrix(

@@ -29,6 +29,10 @@ engine = create_async_engine(
     poolclass=NullPool,
     connect_args={
         "statement_cache_size": 0,
+        # Per-command client-side timeout. Prevents asyncpg from hanging indefinitely
+        # if the TCP connection to pgBouncer becomes half-open (no server-side response).
+        # Also caps asyncpg's internal cancel-request cleanup after asyncio.timeout fires.
+        "command_timeout": 90,
     },
 )
 
