@@ -267,43 +267,79 @@ async def bulk_ingest_zoning_for_jurisdiction(
     """
     jid = str(jurisdiction_id)
 
-    # Step 1: ensure a ZoningRule row exists for every distinct (city, zone_code) pair
-    await db.execute(text("""
-        INSERT INTO zoning_rules (id, city, zone_code, source, confidence)
-        SELECT
-            gen_random_uuid(),
-            COALESCE(NULLIF(TRIM(p.city), ''), 'unknown') AS city,
-            p.zoning_code,
-            'parcel_ingest',
-            0.75
-        FROM parcels p
-        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
-          AND p.zoning_code IS NOT NULL
-          AND p.zoning_code != ''
-        GROUP BY COALESCE(NULLIF(TRIM(p.city), ''), 'unknown'), p.zoning_code
-        ON CONFLICT (city, zone_code) DO NOTHING
-    """), {"jid": jid})
+    # Cap the INSERT statements so lock contention never hangs the pipeline.
+    await db.execute(text("SET LOCAL statement_timeout = '60s'"))
+    # Fail fast if we can't acquire a row lock — don't wait 60s for a stale connection to release.
+    await db.execute(text("SET LOCAL lock_timeout = '5s'"))
 
-    # Step 2: insert ZoningOverlays for every parcel that has a zoning_code but no overlay yet
-    overlay_result = await db.execute(text("""
-        INSERT INTO zoning_overlays (id, parcel_id, zoning_rule_id, source_type, raw_data)
-        SELECT
-            gen_random_uuid(),
-            p.id,
-            r.id,
-            'authoritative',
-            jsonb_build_object('parcel_id', p.id, 'apn', p.apn, 'zoning_code', p.zoning_code)
-        FROM parcels p
-        JOIN zoning_rules r
-            ON r.city = COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')
-           AND r.zone_code = p.zoning_code
-        LEFT JOIN zoning_overlays o ON o.parcel_id = p.id
-        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
-          AND p.zoning_code IS NOT NULL
-          AND p.zoning_code != ''
-          AND o.id IS NULL
-    """), {"jid": jid})
-    overlays_inserted = overlay_result.rowcount
+    # Fast skip: if every zoned parcel already has an overlay, nothing to do.
+    zoned_count = await db.scalar(text(
+        "SELECT COUNT(*) FROM parcels "
+        "WHERE jurisdiction_id = CAST(:jid AS uuid) "
+        "AND zoning_code IS NOT NULL AND zoning_code != ''"
+    ), {"jid": jid})
+    if not zoned_count:
+        logger.info("No zoned parcels for jurisdiction %s — skipping bulk zoning", jurisdiction_id)
+        return 0
+
+    overlay_count = await db.scalar(text(
+        "SELECT COUNT(o.id) FROM zoning_overlays o "
+        "JOIN parcels p ON p.id = o.parcel_id "
+        "WHERE p.jurisdiction_id = CAST(:jid AS uuid)"
+    ), {"jid": jid})
+    if overlay_count and overlay_count >= zoned_count:
+        logger.info(
+            "Bulk zoning already complete for %s (%d overlays / %d zoned parcels) — skipping",
+            jurisdiction_id, overlay_count, zoned_count,
+        )
+        return 0
+
+    try:
+        # Step 1: ensure a ZoningRule row exists for every distinct (city, zone_code) pair
+        await db.execute(text("""
+            INSERT INTO zoning_rules (id, city, zone_code, source, confidence)
+            SELECT
+                gen_random_uuid(),
+                COALESCE(NULLIF(TRIM(p.city), ''), 'unknown') AS city,
+                p.zoning_code,
+                'parcel_ingest',
+                0.75
+            FROM parcels p
+            WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+              AND p.zoning_code IS NOT NULL
+              AND p.zoning_code != ''
+            GROUP BY COALESCE(NULLIF(TRIM(p.city), ''), 'unknown'), p.zoning_code
+            ON CONFLICT (city, zone_code) DO NOTHING
+        """), {"jid": jid})
+
+        # Step 2: insert ZoningOverlays for every parcel that has a zoning_code but no overlay yet
+        overlay_result = await db.execute(text("""
+            INSERT INTO zoning_overlays (id, parcel_id, zoning_rule_id, source_type, raw_data)
+            SELECT
+                gen_random_uuid(),
+                p.id,
+                r.id,
+                'authoritative',
+                jsonb_build_object('parcel_id', p.id, 'apn', p.apn, 'zoning_code', p.zoning_code)
+            FROM parcels p
+            JOIN zoning_rules r
+                ON r.city = COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')
+               AND r.zone_code = p.zoning_code
+            LEFT JOIN zoning_overlays o ON o.parcel_id = p.id
+            WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+              AND p.zoning_code IS NOT NULL
+              AND p.zoning_code != ''
+              AND o.id IS NULL
+        """), {"jid": jid})
+        overlays_inserted = overlay_result.rowcount
+    except Exception as exc:
+        # LockNotAvailable (55P03) or statement timeout — prior run's overlays are still intact.
+        logger.warning(
+            "bulk_ingest_zoning lock/timeout for %s — skipping inserts: %s",
+            jurisdiction_id, exc,
+        )
+        await db.rollback()
+        return 0
 
     # Step 3: mark parcels without zoning_code as "missing" in enrichment_cache
     # so enqueue_missing_zoning_for_jurisdiction doesn't queue them as workers

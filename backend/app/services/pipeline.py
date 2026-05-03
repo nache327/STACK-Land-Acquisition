@@ -833,8 +833,17 @@ async def _run(db: AsyncSession, job: Job) -> None:
         },
     )
     await db.commit()
-    overlays_inserted = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
-    await db.commit()
+    try:
+        async with asyncio.timeout(45):
+            overlays_inserted = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
+        await db.commit()
+    except Exception as exc:
+        logger.warning("Bulk zoning ingest (main) failed/timed out (non-fatal): %s", exc)
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        overlays_inserted = 0
     await complete_job_step(db, owned_zoning_step, {"overlays_inserted": overlays_inserted})
     _stage_completed(job, "zoning_system_of_record", owned_zoning_started, overlays_inserted=overlays_inserted)
 
@@ -927,7 +936,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
             await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
 
             # Re-run bulk ingest now that parcels have zone_codes from spatial backfill
-            post_backfill_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
+            async with asyncio.timeout(45):
+                post_backfill_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
             await db.commit()
             logger.info("Post-backfill bulk zoning ingest: %d new overlays", post_backfill_overlays)
         except Exception as exc:
@@ -944,7 +954,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
         try:
             cached_backfill = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
             await db.commit()
-            post_cache_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
+            async with asyncio.timeout(45):
+                post_cache_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
             await db.commit()
             logger.info("Cached-hit backfill: %d parcels updated, %d new overlays", cached_backfill, post_cache_overlays)
         except Exception as exc:
@@ -975,14 +986,13 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await check_cancelled(db, job)
     try:
         from app.services.overlays import apply_flood_overlay, apply_wetland_overlay
-        flood_started = _stage_started(job, "fema_flood_overlay", jurisdiction_id=str(jurisdiction.id))
+        overlay_started = _stage_started(job, "overlays", jurisdiction_id=str(jurisdiction.id))
         async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
-            flood_count = await apply_flood_overlay(jurisdiction.id, db)
-        _stage_completed(job, "fema_flood_overlay", flood_started, parcels_flagged=flood_count)
-        wetland_started = _stage_started(job, "wetland_overlay", jurisdiction_id=str(jurisdiction.id))
-        async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
-            wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
-        _stage_completed(job, "wetland_overlay", wetland_started, parcels_flagged=wetland_count)
+            flood_count, wetland_count = await asyncio.gather(
+                apply_flood_overlay(jurisdiction.id, db),
+                apply_wetland_overlay(jurisdiction.id, db),
+            )
+        _stage_completed(job, "overlays", overlay_started, flood=flood_count, wetland=wetland_count)
         await db.commit()
         logger.info(
             "Overlays: %d flood parcels, %d wetland parcels", flood_count, wetland_count
