@@ -287,7 +287,7 @@ async def bulk_ingest_zoning_for_jurisdiction(
         "JOIN parcels p ON p.id = o.parcel_id "
         "WHERE p.jurisdiction_id = CAST(:jid AS uuid)"
     ), {"jid": jid})
-    if overlay_count and overlay_count >= zoned_count:
+    if overlay_count and overlay_count >= zoned_count * 0.99:
         logger.info(
             "Bulk zoning already complete for %s (%d overlays / %d zoned parcels) — skipping",
             jurisdiction_id, overlay_count, zoned_count,
