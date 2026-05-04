@@ -60,6 +60,18 @@ class Settings(BaseSettings):
         "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer"
     )
 
+    # Market saturation thresholds (sq ft of storage per person)
+    saturation_threshold_low: float = 7.0   # below = underserved (green)
+    saturation_threshold_high: float = 10.0  # above = oversupplied (red)
+    competitor_sqft_default: int = 60000     # assumed sq ft when a facility has no sq_ft
+
+    # Google Places (optional — enables competitor auto-fetch)
+    google_places_api_key: str = ""
+
+    @property
+    def google_places_enabled(self) -> bool:
+        return bool(self.google_places_api_key)
+
     # CORS — comma-separated string; split into list at usage time
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
