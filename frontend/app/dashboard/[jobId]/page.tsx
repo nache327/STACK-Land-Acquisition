@@ -56,7 +56,9 @@ export default function DashboardPage({ params }: Props) {
       job.status === "ready" ||
       job.status === "downloading_zoning" ||
       job.status === "running_overlays" ||
-      job.status === "parsing_ordinance"
+      job.status === "parsing_ordinance" ||
+      (job.status === "ingesting_parcels" &&
+        (job.progress as any)?.ingest_phase === "cached")
     )
   );
 
