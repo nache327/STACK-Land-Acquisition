@@ -10,14 +10,23 @@ import type { Job, JobStatus } from "@/lib/schemas";
 
 const TERMINAL: JobStatus[] = ["ready", "failed", "cancelled", "pending_zoning"];
 
-export function useJobPoller(jobId: string) {
+// Statuses where parcels are in the DB and the user is on the map
+const BACKGROUND_STATUSES: JobStatus[] = [
+  "downloading_zoning",
+  "running_overlays",
+  "parsing_ordinance",
+];
+
+export function useJobPoller(jobId: string, backgroundMode = false) {
   return useQuery({
     queryKey: ["job", jobId],
     queryFn: () => api.getJob(jobId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (!status || TERMINAL.includes(status)) return false;
-      return 2_000; // poll every 2 s while processing
+      // Poll slowly while user is working on the map and we're just waiting for Layer 2/3
+      if (backgroundMode || BACKGROUND_STATUSES.includes(status as JobStatus)) return 8_000;
+      return 2_000;
     },
     staleTime: 0,
     enabled: !!jobId,

@@ -21,6 +21,7 @@ import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
 import { fetchIsochrone, fetchCensusTracts, type IsochroneResult, type TractData } from "@/lib/isochrone";
 import type { DriveTimeMode } from "@/components/Map";
+import { PIPELINE_STEPS, STAGE_LABELS } from "@/hooks/useJobPoller";
 
 // MapLibre GL JS must not be SSR'd
 const ParcelMap = dynamic(() => import("@/components/Map"), {
@@ -43,7 +44,28 @@ const MAP_PAGE_SIZE = 5000;
 
 export default function DashboardPage({ params }: Props) {
   const { jobId } = params;
-  const { data: job, isLoading, error } = useJobPoller(jobId);
+  // Background mode: once parcels are loaded we're on the map — slow the poll rate
+  const [inBackground, setInBackground] = useState(false);
+  const { data: job, isLoading, error } = useJobPoller(jobId, inBackground);
+
+  // Navigate to map as soon as parcels are ingested — don't wait for zoning/overlays.
+  // The pipeline sets progress.status="building_zoning" the moment parcel upsert finishes.
+  // Computed before early returns so hooks are always called in the same order.
+  const parcelsReady = !!(
+    job && (
+      job.status === "ready" ||
+      job.status === "downloading_zoning" ||
+      job.status === "running_overlays" ||
+      job.status === "parsing_ordinance" ||
+      (job.status === "ingesting_parcels" &&
+        (job.progress as any)?.status === "building_zoning")
+    )
+  );
+
+  // Once parcels are ready, switch poller to background (8s interval)
+  useEffect(() => {
+    if (parcelsReady) setInBackground(true);
+  }, [parcelsReady]);
 
   if (isLoading || !job) {
     return (
@@ -61,7 +83,7 @@ export default function DashboardPage({ params }: Props) {
     );
   }
 
-  if (job.status !== "ready") {
+  if (!parcelsReady) {
     return <JobProgress job={job} />;
   }
 
@@ -70,9 +92,22 @@ export default function DashboardPage({ params }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status: string; jurisdiction_input: string | null } }) {
+function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status: string; jurisdiction_input: string | null; progress?: Record<string, unknown> | null } }) {
   const jurisdictionId = job.jurisdiction_id;
   const router = useRouter();
+  const [bgPanelOpen, setBgPanelOpen] = useState(false);
+  const [bgComplete, setBgComplete] = useState(false);
+
+  const isBackground = job.status !== "ready" && job.status !== "failed" && job.status !== "cancelled";
+
+  // Flash "complete" badge briefly then hide
+  useEffect(() => {
+    if (job.status === "ready") {
+      setBgComplete(true);
+      const t = setTimeout(() => setBgComplete(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [job.status]);
 
   const reanalyzeMutation = useMutation({
     mutationFn: async () => {
@@ -372,6 +407,64 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950 px-5">
         <a href="/" className="text-white font-semibold hover:text-slate-300 transition-colors">ParcelLogic</a>
+
+        {/* Background-loading pill — visible while zoning/overlays/ordinance are still running */}
+        {(isBackground || bgComplete) && (
+          <div className="relative flex-1 flex justify-center">
+            <button
+              onClick={() => setBgPanelOpen((o) => !o)}
+              className={[
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all",
+                bgComplete
+                  ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                  : "bg-amber-950/60 text-amber-300 border border-amber-800/50 hover:bg-amber-950",
+              ].join(" ")}
+            >
+              {bgComplete ? (
+                <span className="text-emerald-400">✓</span>
+              ) : (
+                <span className="inline-block h-2 w-2 animate-spin rounded-full border border-amber-400/30 border-t-amber-400" />
+              )}
+              <span>
+                {bgComplete
+                  ? "Analysis complete"
+                  : job.status === "ingesting_parcels"
+                  ? "Building zoning index…"
+                  : STAGE_LABELS[job.status] ?? "Loading…"}
+              </span>
+              <span className="text-amber-500/60">{bgComplete ? "" : "▾"}</span>
+            </button>
+
+            {/* Dropdown pipeline checklist */}
+            {bgPanelOpen && !bgComplete && (
+              <div className="absolute top-8 z-50 w-64 rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Background progress</p>
+                <ol className="space-y-0.5">
+                  {PIPELINE_STEPS.filter(s => !["queued","discovering_layers","downloading_parcels","ingesting_parcels"].includes(s)).map((step) => {
+                    const currentIdx = PIPELINE_STEPS.indexOf(job.status as any);
+                    const stepIdx = PIPELINE_STEPS.indexOf(step);
+                    const done = stepIdx < currentIdx;
+                    const active = step === job.status;
+                    return (
+                      <li key={step} className={[
+                        "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs",
+                        done ? "text-emerald-400" : active ? "bg-slate-800 text-white" : "text-slate-600",
+                      ].join(" ")}>
+                        <span className="w-4 text-center">
+                          {done ? "✓" : active ? (
+                            <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-blue-500/30 border-t-blue-400" />
+                          ) : "○"}
+                        </span>
+                        {STAGE_LABELS[step]}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setImportModalOpen(true)}
