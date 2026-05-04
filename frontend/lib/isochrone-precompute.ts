@@ -140,6 +140,17 @@ export async function saveCityCache(
   }
 }
 
+export async function clearCityCache(cityId: string): Promise<void> {
+  try { localStorage.removeItem(META_KEY(cityId)); } catch { /* ignore */ }
+  try { localStorage.removeItem(DATA_KEY(cityId)); } catch { /* ignore */ }
+  try {
+    const db = await openIDB();
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).delete(DATA_KEY(cityId));
+    await new Promise<void>((res) => { tx.oncomplete = () => res(); tx.onerror = () => res(); });
+  } catch { /* ignore */ }
+}
+
 export async function loadCityCacheAsync(
   cityId: string,
 ): Promise<Map<string, PrecomputedParcelData> | null> {

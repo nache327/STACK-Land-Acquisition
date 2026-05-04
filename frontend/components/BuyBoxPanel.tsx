@@ -18,6 +18,7 @@ interface BuyBoxPanelProps {
   precomputeStatus: PrecomputeStatus | null;
   evaluationCounts: { match: number; borderline: number; fail: number; computing: number };
   cityDataRanges: { maxPopulation: number; maxHnwHouseholds: number } | null;
+  onRecompute?: () => void;
 }
 
 function fmt(value: number | null, prefix = ""): string {
@@ -35,6 +36,7 @@ export function BuyBoxPanel({
   precomputeStatus,
   evaluationCounts,
   cityDataRanges,
+  onRecompute,
 }: BuyBoxPanelProps) {
   const [presets, setPresets] = useState<SavedPreset[]>(() => loadPresets());
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -300,13 +302,19 @@ export function BuyBoxPanel({
       </div>
 
       {evaluationCounts.match === 0 && evaluationCounts.borderline === 0 && !isComputing && (
-        <p className="mb-2 text-[10px] text-slate-500">
-          No parcels match — try adjusting thresholds.
-        </p>
+        hidden > 0 ? (
+          <p className="mb-2 text-[10px] text-amber-500/80">
+            All parcels hidden — thresholds may be above available data. Try Recompute if data looks stale.
+          </p>
+        ) : (
+          <p className="mb-2 text-[10px] text-slate-500">
+            No parcels match — try adjusting thresholds.
+          </p>
+        )
       )}
 
       {/* Footer actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onChange(DEFAULT_FILTER)}
           className="rounded px-2 py-1 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -319,6 +327,14 @@ export function BuyBoxPanel({
         >
           Save as preset…
         </button>
+        {onRecompute && precomputeStatus?.complete && (
+          <button
+            onClick={onRecompute}
+            className="rounded px-2 py-1 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          >
+            Recompute
+          </button>
+        )}
       </div>
     </div>
   );

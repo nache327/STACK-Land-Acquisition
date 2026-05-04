@@ -35,6 +35,7 @@ import {
   precomputeCityIsochrones,
   saveCityCache,
   loadCityCacheAsync,
+  clearCityCache,
   getCacheMetadata,
   type PrecomputedParcelData,
   type PrecomputeStatus,
@@ -457,6 +458,13 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     buyBoxDebounceRef.current = setTimeout(() => setBuyBoxFilter(f), 50);
   }
 
+  function handleRecompute() {
+    if (!jurisdictionId) return;
+    setPrecomputeData(new Map());
+    setPrecomputeStatus(null);
+    clearCityCache(jurisdictionId).then(() => startPrecompute(jurisdictionId));
+  }
+
   // ─── Shortlist save ─────────────────────────────────────────────────────
 
   const saveMutation = useMutation({
@@ -661,6 +669,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               precomputeStatus={precomputeStatus}
               evaluationCounts={evaluationCounts}
               cityDataRanges={cityDataRanges}
+              onRecompute={handleRecompute}
             />
           )}
           <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
