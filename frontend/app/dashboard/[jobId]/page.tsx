@@ -19,7 +19,7 @@ import type { ColorMode } from "@/lib/layers";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
-import { fetchIsochrone, fetchCensusTracts, type IsochroneResult, type TractData } from "@/lib/isochrone";
+import { fetchIsochrone, fetchCensusTracts, clearIsochroneCache, type IsochroneResult, type TractData } from "@/lib/isochrone";
 import type { DriveTimeMode } from "@/components/Map";
 import { PIPELINE_STEPS, STAGE_LABELS } from "@/hooks/useJobPoller";
 import { BuyBoxPanel } from "@/components/BuyBoxPanel";
@@ -369,6 +369,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   function startPrecompute(cityId: string) {
     precomputeAbortRef.current?.abort();
+    clearIsochroneCache(); // reset in-memory tractCache so Census calls are fresh
     const ctrl = new AbortController();
     precomputeAbortRef.current = ctrl;
 
@@ -462,6 +463,9 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     if (!jurisdictionId) return;
     setPrecomputeData(new Map());
     setPrecomputeStatus(null);
+    // Clear both IDB/localStorage cache AND the module-level tractCache in isochrone.ts
+    // so empty Census API results from previous failures aren't re-served from memory.
+    clearIsochroneCache();
     clearCityCache(jurisdictionId).then(() => startPrecompute(jurisdictionId));
   }
 
