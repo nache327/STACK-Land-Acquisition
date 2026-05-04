@@ -15,6 +15,7 @@ export interface IsochronePolygons {
   min2:  Feature<Polygon | MultiPolygon>;
   min5:  Feature<Polygon | MultiPolygon>;
   min10: Feature<Polygon | MultiPolygon>;
+  min15: Feature<Polygon | MultiPolygon>;
 }
 
 export interface IsochroneResult {
@@ -98,7 +99,7 @@ export async function fetchIsochrone(lat: number, lng: number): Promise<Isochron
 
   const url =
     `https://api.mapbox.com/isochrone/v1/mapbox/driving/${lng},${lat}` +
-    `?contours_minutes=2,5,10&polygons=true&denoise=0.25&generalize=100` +
+    `?contours_minutes=2,5,10,15&polygons=true&denoise=0.25&generalize=100` +
     `&access_token=${token}`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
@@ -106,7 +107,7 @@ export async function fetchIsochrone(lat: number, lng: number): Promise<Isochron
 
   const fc = (await res.json()) as FeatureCollection;
 
-  const byContour: Record<number, Feature[]> = { 2: [], 5: [], 10: [] };
+  const byContour: Record<number, Feature[]> = { 2: [], 5: [], 10: [], 15: [] };
   for (const f of fc.features) {
     const contour = (f.properties as Record<string, number>)?.contour;
     if (contour in byContour) byContour[contour].push(f);
@@ -123,6 +124,7 @@ export async function fetchIsochrone(lat: number, lng: number): Promise<Isochron
       min2:  mergePolygons(byContour[2]),
       min5:  mergePolygons(byContour[5]),
       min10: mergePolygons(byContour[10]),
+      min15: mergePolygons(byContour[15]),
     },
   };
 

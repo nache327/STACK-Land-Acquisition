@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 import type { IsochronePolygons, TractData } from "@/lib/isochrone";
 import { scoreToColor, scoreToGrade, computeAllKeepScores } from "@/lib/keep-layer";
+import { isFilterActive, type EvaluationStatus, type BuyBoxFilter } from "@/lib/buy-box-filter";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -69,6 +70,8 @@ interface MapProps {
   keepActive?: boolean;
   keepMinScore?: number;
   onKeepChange?: (active: boolean, minScore: number) => void;
+  parcelEvaluations?: Map<string, EvaluationStatus>;
+  buyBoxFilter?: BuyBoxFilter;
 }
 
 const PARCEL_SOURCE = "parcels";
@@ -298,6 +301,8 @@ export default function Map({
   keepActive = false,
   keepMinScore = 55,
   onKeepChange,
+  parcelEvaluations,
+  buyBoxFilter,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -342,12 +347,13 @@ export default function Map({
               is_viable: parcel.is_viable,
               saturation_color: satColor,
               sqft_per_person: sat?.sqft_per_person ?? null,
+              evaluation_status: parcelEvaluations?.get(String(parcel.parcel_id)) ?? "computing",
             },
             geometry: parcel.geom as unknown as GeoJSON.Geometry,
           };
         }),
     };
-  }, [parcels, saturationData]);
+  }, [parcels, saturationData, parcelEvaluations]);
 
   const keepEffectiveScores = useMemo(
     () => computeAllKeepScores(isochroneWealth),
@@ -740,21 +746,52 @@ export default function Map({
     const conditionalScore = keepEffectiveScores.conditional ?? 72;
     const unclearScore     = keepEffectiveScores.unclear      ?? 57;
 
-    const fillColor: maplibregl.ExpressionSpecification = [
-      "case",
-      STORAGE_QUALIFIED,
-      [
-        "match", ["get", "garage_permission"],
-        "permitted",   keepMinScore <= permittedScore   ? scoreToColor(permittedScore)   : KEEP_NEUTRAL,
-        "conditional", keepMinScore <= conditionalScore ? scoreToColor(conditionalScore) : KEEP_NEUTRAL,
-        "unclear",     keepMinScore <= unclearScore     ? scoreToColor(unclearScore)     : KEEP_NEUTRAL,
-        KEEP_NEUTRAL,
-      ],
-      KEEP_NEUTRAL,
-    ];
+    const filterActive = buyBoxFilter ? isFilterActive(buyBoxFilter) : false;
 
-    // Non-qualifying parcels are transparent so Layer 1 colors remain visible.
-    const fillOpacity: maplibregl.ExpressionSpecification = ["case", STORAGE_QUALIFIED, 0.88, 0];
+    let fillColor: maplibregl.ExpressionSpecification;
+    let fillOpacity: maplibregl.ExpressionSpecification;
+
+    if (parcelEvaluations && parcelEvaluations.size > 0 && filterActive) {
+      fillColor = [
+        "case",
+        STORAGE_QUALIFIED,
+        [
+          "match", ["get", "evaluation_status"],
+          "match",      scoreToColor(permittedScore),
+          "borderline", "#D69D2D",
+          "fail",       KEEP_NEUTRAL,
+          "computing",  "#B5D4F4",
+          KEEP_NEUTRAL,
+        ],
+        KEEP_NEUTRAL,
+      ];
+      fillOpacity = [
+        "case",
+        STORAGE_QUALIFIED,
+        ["match", ["get", "evaluation_status"],
+          "match",      0.85,
+          "borderline", 0.55,
+          "fail",       0.20,
+          "computing",  0.40,
+          0],
+        0,
+      ];
+    } else {
+      fillColor = [
+        "case",
+        STORAGE_QUALIFIED,
+        [
+          "match", ["get", "garage_permission"],
+          "permitted",   keepMinScore <= permittedScore   ? scoreToColor(permittedScore)   : KEEP_NEUTRAL,
+          "conditional", keepMinScore <= conditionalScore ? scoreToColor(conditionalScore) : KEEP_NEUTRAL,
+          "unclear",     keepMinScore <= unclearScore     ? scoreToColor(unclearScore)     : KEEP_NEUTRAL,
+          KEEP_NEUTRAL,
+        ],
+        KEEP_NEUTRAL,
+      ];
+      // Non-qualifying parcels are transparent so Layer 1 colors remain visible.
+      fillOpacity = ["case", STORAGE_QUALIFIED, 0.88, 0];
+    }
 
     if (!map.getLayer(KEEP_LAYER)) {
       map.addLayer(
@@ -774,7 +811,7 @@ export default function Map({
       map.setPaintProperty(KEEP_LAYER, "fill-color", fillColor);
       map.setPaintProperty(KEEP_LAYER, "fill-opacity", fillOpacity);
     }
-  }, [keepActive, keepMinScore, parcelCollection, keepEffectiveScores]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [keepActive, keepMinScore, parcelCollection, keepEffectiveScores, parcelEvaluations, buyBoxFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Ring helpers ──────────────────────────────────────────────────────────
   const drawRingOnMap = (map: maplibregl.Map, centroid: [number, number]) => {

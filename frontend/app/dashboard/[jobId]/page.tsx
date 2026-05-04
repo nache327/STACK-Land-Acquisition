@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useJobPoller } from "@/hooks/useJobPoller";
@@ -22,6 +22,23 @@ import { ZoningChatPanel } from "@/components/ZoningChatPanel";
 import { fetchIsochrone, fetchCensusTracts, type IsochroneResult, type TractData } from "@/lib/isochrone";
 import type { DriveTimeMode } from "@/components/Map";
 import { PIPELINE_STEPS, STAGE_LABELS } from "@/hooks/useJobPoller";
+import { BuyBoxPanel } from "@/components/BuyBoxPanel";
+import {
+  DEFAULT_FILTER,
+  getDefaultPreset,
+  evaluateAll,
+  isFilterActive,
+  type BuyBoxFilter,
+  type EvaluationStatus,
+} from "@/lib/buy-box-filter";
+import {
+  precomputeCityIsochrones,
+  saveCityCache,
+  loadCityCacheAsync,
+  getCacheMetadata,
+  type PrecomputedParcelData,
+  type PrecomputeStatus,
+} from "@/lib/isochrone-precompute";
 
 // MapLibre GL JS must not be SSR'd
 const ParcelMap = dynamic(() => import("@/components/Map"), {
@@ -163,6 +180,17 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   // Keep layer state
   const [keepActive, setKeepActive] = useState(false);
   const [keepMinScore, setKeepMinScore] = useState(55);
+
+  // Buy-box precompute state
+  const [precomputeData, setPrecomputeData] = useState(new Map<string, PrecomputedParcelData>());
+  const [precomputeStatus, setPrecomputeStatus] = useState<PrecomputeStatus | null>(null);
+  const [buyBoxFilter, setBuyBoxFilter] = useState<BuyBoxFilter>(
+    () => getDefaultPreset()?.filter ?? DEFAULT_FILTER,
+  );
+  const precomputeAbortRef = useRef<AbortController | null>(null);
+  const pendingBatchRef = useRef(new Map<string, PrecomputedParcelData>());
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const buyBoxDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [shortlistName, setShortlistName] = useState("");
@@ -325,6 +353,109 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
     return out;
   }, [saturationData, satThresholdLow, satThresholdHigh]);
+
+  // ─── Buy-box precompute ──────────────────────────────────────────────────
+
+  function scheduleFlush() {
+    if (flushTimerRef.current) return;
+    flushTimerRef.current = setTimeout(() => {
+      flushTimerRef.current = null;
+      const batch = new Map(pendingBatchRef.current);
+      pendingBatchRef.current.clear();
+      setPrecomputeData((prev) => new Map([...Array.from(prev), ...Array.from(batch)]));
+    }, 500);
+  }
+
+  function startPrecompute(cityId: string) {
+    precomputeAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    precomputeAbortRef.current = ctrl;
+
+    precomputeCityIsochrones(mapParcels, cityId, {
+      onProgress: (status) => setPrecomputeStatus(status),
+      onParcelComputed: (parcelId, data) => {
+        pendingBatchRef.current.set(parcelId, data);
+        scheduleFlush();
+      },
+      signal: ctrl.signal,
+    }).then((results) => {
+      if (ctrl.signal.aborted) return;
+      saveCityCache(cityId, results, results.size);
+      const meta = getCacheMetadata(cityId);
+      setPrecomputeStatus({
+        progress: results.size,
+        total: results.size,
+        complete: true,
+        lastComputed: meta?.lastComputed,
+      });
+    }).catch((err) => {
+      if (!ctrl.signal.aborted) console.warn("[precompute] run failed:", err);
+    });
+  }
+
+  useEffect(() => {
+    if (!keepActive || !jurisdictionId) {
+      precomputeAbortRef.current?.abort();
+      return;
+    }
+    loadCityCacheAsync(jurisdictionId).then((cached) => {
+      if (cached && cached.size > 0) {
+        setPrecomputeData(cached);
+        const meta = getCacheMetadata(jurisdictionId);
+        setPrecomputeStatus({
+          progress: cached.size,
+          total: cached.size,
+          complete: true,
+          lastComputed: meta?.lastComputed,
+        });
+      } else {
+        startPrecompute(jurisdictionId);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keepActive, jurisdictionId]);
+
+  const parcelEvaluations = useMemo<Map<string, EvaluationStatus>>(() => {
+    if (!keepActive || !isFilterActive(buyBoxFilter) || !precomputeData.size) {
+      return new Map();
+    }
+    const ids = mapParcels.map((p) => String(p.parcel_id));
+    const results = evaluateAll(ids, precomputeData, buyBoxFilter);
+    const out = new Map<string, EvaluationStatus>();
+    Array.from(results.entries()).forEach(([id, r]) => out.set(id, r.status));
+    return out;
+  }, [keepActive, buyBoxFilter, precomputeData, mapParcels]);
+
+  const evaluationCounts = useMemo(() => {
+    let match = 0, borderline = 0, fail = 0, computing = 0;
+    Array.from(parcelEvaluations.values()).forEach((status) => {
+      if (status === "match") match++;
+      else if (status === "borderline") borderline++;
+      else if (status === "fail") fail++;
+      else computing++;
+    });
+    return { match, borderline, fail, computing };
+  }, [parcelEvaluations]);
+
+  const cityDataRanges = useMemo(() => {
+    if (!precomputeData.size) return null;
+    const pops: number[] = [];
+    const hnws: number[] = [];
+    Array.from(precomputeData.values()).forEach((d) => {
+      const ring = d.rings[buyBoxFilter.driveTimeMinutes];
+      pops.push(ring.totalPopulation);
+      hnws.push(ring.hnwHouseholds);
+    });
+    pops.sort((a, b) => a - b);
+    hnws.sort((a, b) => a - b);
+    const p99 = (arr: number[]) => arr[Math.floor(arr.length * 0.99)] ?? arr[arr.length - 1] ?? 0;
+    return { maxPopulation: Math.max(p99(pops), 200_000), maxHnwHouseholds: Math.max(p99(hnws), 5_000) };
+  }, [precomputeData, buyBoxFilter.driveTimeMinutes]);
+
+  function handleBuyBoxChange(f: BuyBoxFilter) {
+    if (buyBoxDebounceRef.current) clearTimeout(buyBoxDebounceRef.current);
+    buyBoxDebounceRef.current = setTimeout(() => setBuyBoxFilter(f), 50);
+  }
 
   // ─── Shortlist save ─────────────────────────────────────────────────────
 
@@ -523,6 +654,15 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       <div className="flex flex-1 overflow-hidden">
 
         <aside className="w-64 border-r border-slate-800 bg-slate-950 overflow-y-auto">
+          {keepActive && (
+            <BuyBoxPanel
+              filter={buyBoxFilter}
+              onChange={handleBuyBoxChange}
+              precomputeStatus={precomputeStatus}
+              evaluationCounts={evaluationCounts}
+              cityDataRanges={cityDataRanges}
+            />
+          )}
           <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
 
           {/* Saturation Settings */}
@@ -609,6 +749,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               setKeepActive(active);
               setKeepMinScore(score);
             }}
+            parcelEvaluations={parcelEvaluations}
+            buyBoxFilter={buyBoxFilter}
           />
         </main>
 
