@@ -815,44 +815,14 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await db.flush()
     _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
 
-    owned_zoning_started = _stage_started(job, "zoning_system_of_record", jurisdiction_id=str(jurisdiction.id))
-    owned_zoning_step = await start_job_step(
-        db,
-        job,
-        "zoning",
-        {"jurisdiction_id": str(jurisdiction.id)},
-    )
-    await _set_status(
-        db,
-        job,
-        JobStatus.ingesting_parcels,
-        progress={
-            "status": "building_zoning",
-            "message": "Building zoning records…",
-            "jurisdiction_id": str(jurisdiction.id),
-        },
-    )
-    await db.commit()
-    try:
-        async with asyncio.timeout(45):
-            overlays_inserted = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
-        await db.commit()
-    except Exception as exc:
-        logger.warning("Bulk zoning ingest (main) failed/timed out (non-fatal): %s", exc)
-        try:
-            async with asyncio.timeout(5):
-                await db.rollback()
-        except Exception:
-            pass
-        overlays_inserted = 0
-    await complete_job_step(db, owned_zoning_step, {"overlays_inserted": overlays_inserted})
-    _stage_completed(job, "zoning_system_of_record", owned_zoning_started, overlays_inserted=overlays_inserted)
+    # zoning_overlays/zoning_rules/enrichment_cache are not read by any API endpoint —
+    # they were scaffolded for a future authoritative zoning service. Skip the step
+    # entirely; it was the sole source of every pipeline hang.
 
     # ── Step 3a: zoning district polygons → spatial backfill ─────────────
     # Download zoning district polygons from the GIS endpoint (if configured),
     # ingest them into zoning_districts, then spatial-join to set zone_code on
-    # every parcel. bulk_ingest runs again after backfill so overlays are
-    # created for parcels that only got their zone_code from the spatial join.
+    # every parcel.
     zoning_count = 0
     zoning_endpoint = cfg.zoning_polygon_endpoint
     if zoning_endpoint:
@@ -936,11 +906,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
             _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
             await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
 
-            # Re-run bulk ingest now that parcels have zone_codes from spatial backfill
-            async with asyncio.timeout(45):
-                post_backfill_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
-            await db.commit()
-            logger.info("Post-backfill bulk zoning ingest: %d new overlays", post_backfill_overlays)
+            logger.info("Zoning district backfill complete — skipping zoning_overlays (not used by API)")
         except Exception as exc:
             _stage_failed(job, "zoning", zoning_started, exc)
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
@@ -959,10 +925,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
         try:
             cached_backfill = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
             await db.commit()
-            async with asyncio.timeout(45):
-                post_cache_overlays = await bulk_ingest_zoning_for_jurisdiction(jurisdiction.id, db)
-            await db.commit()
-            logger.info("Cached-hit backfill: %d parcels updated, %d new overlays", cached_backfill, post_cache_overlays)
+            logger.info("Cached-hit backfill: %d parcels updated", cached_backfill)
         except Exception as exc:
             logger.warning("Cached-hit backfill failed (non-fatal): %s", exc)
             try:
