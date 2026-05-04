@@ -347,13 +347,12 @@ export default function Map({
               is_viable: parcel.is_viable,
               saturation_color: satColor,
               sqft_per_person: sat?.sqft_per_person ?? null,
-              evaluation_status: parcelEvaluations?.get(String(parcel.parcel_id)) ?? "computing",
             },
             geometry: parcel.geom as unknown as GeoJSON.Geometry,
           };
         }),
     };
-  }, [parcels, saturationData, parcelEvaluations]);
+  }, [parcels, saturationData]);
 
   const keepEffectiveScores = useMemo(
     () => computeAllKeepScores(isochroneWealth),
@@ -727,6 +726,29 @@ export default function Map({
     else map.once("load", upsertHeat);
   }, [heatCollection]);
 
+  // ── Evaluation feature state ─────────────────────────────────────────────
+  // Push evaluation_status into MapLibre feature state (keyed by parcel_id).
+  // Feature state is per-feature and instant — no GeoJSON source rebuild needed.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getSource(PARCEL_SOURCE)) return;
+    if (!parcelEvaluations || parcelEvaluations.size === 0) return;
+
+    const run = () => {
+      parcelEvaluations.forEach((status, parcelIdStr) => {
+        const id = Number(parcelIdStr);
+        if (Number.isFinite(id)) {
+          map.setFeatureState(
+            { source: PARCEL_SOURCE, id },
+            { evaluation_status: status },
+          );
+        }
+      });
+    };
+
+    if (map.isStyleLoaded()) run(); else map.once("load", run);
+  }, [parcelEvaluations]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── The Keep layer ────────────────────────────────────────────────────────
   // Full-coverage overlay: colors ALL parcels by garage_permission grade.
   // Prohibited/unclassified → slate gray so the full map remains readable.
@@ -752,14 +774,17 @@ export default function Map({
     let fillOpacity: maplibregl.ExpressionSpecification;
 
     if (parcelEvaluations && parcelEvaluations.size > 0 && filterActive) {
+      // Use feature-state (set per-feature in the evaluation effect above)
+      const evalStatus: maplibregl.ExpressionSpecification =
+        ["coalesce", ["feature-state", "evaluation_status"], "none"];
       fillColor = [
         "case",
         STORAGE_QUALIFIED,
         [
-          "match", ["get", "evaluation_status"],
+          "match", evalStatus,
           "match",      scoreToColor(permittedScore),
           "borderline", "#D69D2D",
-          "fail",       KEEP_NEUTRAL,
+          "fail",       "#1e293b",
           "computing",  "#B5D4F4",
           KEEP_NEUTRAL,
         ],
@@ -768,11 +793,11 @@ export default function Map({
       fillOpacity = [
         "case",
         STORAGE_QUALIFIED,
-        ["match", ["get", "evaluation_status"],
-          "match",      0.85,
-          "borderline", 0.55,
-          "fail",       0.20,
-          "computing",  0.40,
+        ["match", evalStatus,
+          "match",      0.88,
+          "borderline", 0.65,
+          "fail",       0.72,
+          "computing",  0.45,
           0],
         0,
       ];
@@ -811,7 +836,7 @@ export default function Map({
       map.setPaintProperty(KEEP_LAYER, "fill-color", fillColor);
       map.setPaintProperty(KEEP_LAYER, "fill-opacity", fillOpacity);
     }
-  }, [keepActive, keepMinScore, parcelCollection, keepEffectiveScores, parcelEvaluations, buyBoxFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [keepActive, keepMinScore, parcelCollection, keepEffectiveScores, buyBoxFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Ring helpers ──────────────────────────────────────────────────────────
   const drawRingOnMap = (map: maplibregl.Map, centroid: [number, number]) => {
