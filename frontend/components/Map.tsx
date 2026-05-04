@@ -96,9 +96,9 @@ const ISO_PIN_RING_SOURCE   = "isochrone-rings-pinned";
 const ISO_PIN_LABEL_SOURCE  = "isochrone-labels-pinned";
 
 const RING_SPECS = [
-  { key: "min10" as const, label: "10 min", fill: "#9B6B9B", fillOpacity: 0.18, lineOpacity: 0.65, lineWidth: 2.0 },
-  { key: "min5"  as const, label: "5 min",  fill: "#7B68EE", fillOpacity: 0.22, lineOpacity: 0.72, lineWidth: 2.0 },
-  { key: "min2"  as const, label: "2 min",  fill: "#4A90D9", fillOpacity: 0.28, lineOpacity: 0.80, lineWidth: 2.5 },
+  { key: "min10" as const, label: "10 min", fill: "#9B6B9B", fillOpacity: 0.28, lineOpacity: 0.85, lineWidth: 2.5 },
+  { key: "min5"  as const, label: "5 min",  fill: "#7B68EE", fillOpacity: 0.35, lineOpacity: 0.90, lineWidth: 2.5 },
+  { key: "min2"  as const, label: "2 min",  fill: "#4A90D9", fillOpacity: 0.45, lineOpacity: 0.95, lineWidth: 3.0 },
 ] as const;
 
 const PINNED_COLOR = "#E8934A";
@@ -752,6 +752,15 @@ export default function Map({
       NEUTRAL, // prohibited / unclassified stay gray
     ];
 
+    // Non-qualifying parcels (prohibited / unclassified storage) are fully
+    // transparent so Layer 1 zoning colors remain visible underneath.
+    const fillOpacity: maplibregl.ExpressionSpecification = [
+      "case",
+      ["in", ["get", "storage_permission"], ["literal", ["permitted", "conditional", "unclear"]]],
+      0.88,
+      0,
+    ];
+
     if (!map.getLayer(KEEP_LAYER)) {
       map.addLayer(
         {
@@ -760,7 +769,7 @@ export default function Map({
           source: PARCEL_SOURCE,
           paint: {
             "fill-color": fillColor,
-            "fill-opacity": 0.88,
+            "fill-opacity": fillOpacity,
           },
         },
         // Insert above parcel fill but below the outline + selection layers
@@ -768,7 +777,7 @@ export default function Map({
       );
     } else {
       map.setPaintProperty(KEEP_LAYER, "fill-color", fillColor);
-      map.setPaintProperty(KEEP_LAYER, "fill-opacity", 0.88);
+      map.setPaintProperty(KEEP_LAYER, "fill-opacity", fillOpacity);
     }
   }, [keepActive, keepMinScore, parcelCollection, keepEffectiveScores]); // eslint-disable-line react-hooks/exhaustive-deps
 
