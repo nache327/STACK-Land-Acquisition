@@ -50,6 +50,14 @@ async def apply_flood_overlay(
     Sets in_flood_zone = TRUE on matching parcels.
     Returns number of parcels updated.
     """
+    # Skip if all parcels already have flood data (cached run)
+    unset = await db.scalar(text(
+        "SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL AND in_flood_zone IS NULL"
+    ), {"jid": jurisdiction_id})
+    if not unset:
+        logger.info("Flood overlay already complete for %s — skipping API call", jurisdiction_id)
+        return 0
+
     bbox = await get_parcel_bbox(jurisdiction_id, db)
     if bbox is None:
         logger.warning("No parcel bbox for jurisdiction %s — skipping flood overlay", jurisdiction_id)
@@ -107,6 +115,14 @@ async def apply_wetland_overlay(
     Sets in_wetland = TRUE on matching parcels.
     Returns number of parcels updated.
     """
+    # Skip if all parcels already have wetland data (cached run)
+    unset = await db.scalar(text(
+        "SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL AND in_wetland IS NULL"
+    ), {"jid": jurisdiction_id})
+    if not unset:
+        logger.info("Wetland overlay already complete for %s — skipping API call", jurisdiction_id)
+        return 0
+
     bbox = await get_parcel_bbox(jurisdiction_id, db)
     if bbox is None:
         return 0
@@ -149,9 +165,10 @@ async def _bulk_flag_by_geometry(
     """
     Update parcels.{column} = TRUE for all parcels whose geometry intersects
     the union of the provided GeoDataFrame geometries.
-    """
-    import asyncio
 
+    Builds a single unary_union in Python then issues ONE UPDATE — avoids the
+    N/250 round-trips the old batched approach required.
+    """
     valid_geoms = [
         g.simplify(0.00001, preserve_topology=True)
         for g in gdf.geometry.dropna()
@@ -160,28 +177,23 @@ async def _bulk_flag_by_geometry(
     if not valid_geoms:
         return 0
 
-    total = 0
-    batch_size = 250
-    for offset in range(0, len(valid_geoms), batch_size):
-        union = unary_union(valid_geoms[offset : offset + batch_size])
-        if union is None or union.is_empty:
-            continue
+    union = unary_union(valid_geoms)
+    if union is None or union.is_empty:
+        return 0
 
-        result = await db.execute(
-            text(f"""
-                UPDATE parcels
-                SET {column} = TRUE
-                WHERE jurisdiction_id = :jid
-                  AND geom IS NOT NULL
-                  AND COALESCE({column}, FALSE) IS DISTINCT FROM TRUE
-                  AND ST_Intersects(geom, ST_GeomFromText(:geom, 4326))
-            """),
-            {"jid": jurisdiction_id, "geom": union.wkt},
-        )
-        total += result.rowcount or 0
-
+    result = await db.execute(
+        text(f"""
+            UPDATE parcels
+            SET {column} = TRUE
+            WHERE jurisdiction_id = :jid
+              AND geom IS NOT NULL
+              AND COALESCE({column}, FALSE) IS DISTINCT FROM TRUE
+              AND ST_Intersects(geom, ST_GeomFromText(:geom, 4326))
+        """),
+        {"jid": str(jurisdiction_id), "geom": union.wkt},
+    )
     await db.flush()
-    return total
+    return result.rowcount or 0
 
 
 async def _persist_overlay_polygons(

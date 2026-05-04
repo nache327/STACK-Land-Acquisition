@@ -30,6 +30,11 @@ interface LayerControlProps {
   keepActive?: boolean;
   keepMinScore?: number;
   onKeepChange?: (active: boolean, minScore: number) => void;
+  keepEffectiveScores?: {
+    permitted: number | null;
+    conditional: number | null;
+    unclear: number | null;
+  };
 }
 
 const CATEGORY_LABELS: Record<LayerCategory, string> = {
@@ -46,6 +51,7 @@ export function LayerControl({
   keepActive = false,
   keepMinScore = 55,
   onKeepChange,
+  keepEffectiveScores,
 }: LayerControlProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -230,18 +236,39 @@ export function LayerControl({
                         className="h-1 w-full accent-amber-500"
                       />
                     </div>
-                    <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1">
-                      {[
-                        { color: "#C9A84C", label: "A  85–100" },
-                        { color: "#5B8DB8", label: "B  70–84" },
-                        { color: "#8B9BA8", label: "C  55–69" },
-                      ].map((sw) => (
-                        <div key={sw.label} className="flex items-center gap-1 text-[9px] text-slate-600">
-                          <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: sw.color }} />
-                          {sw.label}
+                    {keepEffectiveScores ? (
+                      <div className="mt-1.5">
+                        <div className="flex flex-wrap gap-x-2 gap-y-1">
+                          {[
+                            { color: "#C9A84C", key: "permitted"   as const, grade: "A" },
+                            { color: "#5B8DB8", key: "conditional" as const, grade: "B" },
+                            { color: "#8B9BA8", key: "unclear"     as const, grade: "C" },
+                          ].map((sw) => {
+                            const score = keepEffectiveScores[sw.key];
+                            return (
+                              <div key={sw.grade} className="flex items-center gap-1 text-[9px] text-slate-600">
+                                <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: sw.color }} />
+                                {score != null ? `${sw.grade} · ${score}` : sw.grade}
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
+                        <p className="mt-0.5 text-[9px] text-amber-600">Wealth-adjusted</p>
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1">
+                        {[
+                          { color: "#C9A84C", label: "A  85–100" },
+                          { color: "#5B8DB8", label: "B  70–84" },
+                          { color: "#8B9BA8", label: "C  55–69" },
+                        ].map((sw) => (
+                          <div key={sw.label} className="flex items-center gap-1 text-[9px] text-slate-600">
+                            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: sw.color }} />
+                            {sw.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

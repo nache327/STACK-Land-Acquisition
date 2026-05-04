@@ -9,7 +9,7 @@ import { LAYER_REGISTRY, SATURATION_COLORS, ZONE_CLASS_COLORS, type ColorMode } 
 import { api } from "@/lib/api";
 import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 import type { IsochronePolygons, TractData } from "@/lib/isochrone";
-import { scoreToColor } from "@/lib/keep-layer";
+import { scoreToColor, scoreToGrade, computeKeepScore } from "@/lib/keep-layer";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -96,9 +96,9 @@ const ISO_PIN_RING_SOURCE   = "isochrone-rings-pinned";
 const ISO_PIN_LABEL_SOURCE  = "isochrone-labels-pinned";
 
 const RING_SPECS = [
-  { key: "min10" as const, label: "10 min", fill: "#9B6B9B", fillOpacity: 0.08, lineOpacity: 0.4 },
-  { key: "min5"  as const, label: "5 min",  fill: "#7B68EE", fillOpacity: 0.10, lineOpacity: 0.45 },
-  { key: "min2"  as const, label: "2 min",  fill: "#4A90D9", fillOpacity: 0.12, lineOpacity: 0.5 },
+  { key: "min10" as const, label: "10 min", fill: "#9B6B9B", fillOpacity: 0.18, lineOpacity: 0.65, lineWidth: 2.0 },
+  { key: "min5"  as const, label: "5 min",  fill: "#7B68EE", fillOpacity: 0.22, lineOpacity: 0.72, lineWidth: 2.0 },
+  { key: "min2"  as const, label: "2 min",  fill: "#4A90D9", fillOpacity: 0.28, lineOpacity: 0.80, lineWidth: 2.5 },
 ] as const;
 
 const PINNED_COLOR = "#E8934A";
@@ -193,7 +193,7 @@ function isoUpsertRingLayers(
     }
     if (!map.getLayer(lineId)) {
       map.addLayer({ id: lineId, type: "line", source: ringSrc, filter: f,
-        paint: { "line-color": c, "line-width": 1.5, "line-opacity": s.lineOpacity } });
+        paint: { "line-color": c, "line-width": s.lineWidth, "line-opacity": s.lineOpacity } });
     }
     if (!map.getLayer(labelId)) {
       map.addLayer({ id: labelId, type: "symbol", source: labelSrc, filter: f,
@@ -344,6 +344,15 @@ export default function Map({
         }),
     };
   }, [parcels, saturationData]);
+
+  const keepEffectiveScores = useMemo(
+    () => ({
+      permitted:   computeKeepScore("permitted",   isochroneWealth),
+      conditional: computeKeepScore("conditional", isochroneWealth),
+      unclear:     computeKeepScore("unclear",      isochroneWealth),
+    }),
+    [isochroneWealth],
+  );
 
   // Point centroids used for the saturation heatmap overlay
   const heatCollection = useMemo<GeoJSON.FeatureCollection>(() => {
@@ -725,12 +734,22 @@ export default function Map({
       return;
     }
 
+    const permittedScore   = keepEffectiveScores.permitted   ?? 90;
+    const conditionalScore = keepEffectiveScores.conditional ?? 72;
+    const unclearScore     = keepEffectiveScores.unclear      ?? 57;
+
     const fillColor: maplibregl.ExpressionSpecification = [
-      "match", ["get", "garage_permission"],
-      "permitted",   keepMinScore <= 90 ? scoreToColor(90) : NEUTRAL,
-      "conditional", keepMinScore <= 72 ? scoreToColor(72) : NEUTRAL,
-      "unclear",     keepMinScore <= 57 ? scoreToColor(57) : NEUTRAL,
-      NEUTRAL,
+      "case",
+      // Gate 1: only score parcels that passed the Layer-1 zoning screen
+      ["in", ["get", "storage_permission"], ["literal", ["permitted", "conditional", "unclear"]]],
+      [
+        "match", ["get", "garage_permission"],
+        "permitted",   keepMinScore <= permittedScore   ? scoreToColor(permittedScore)   : NEUTRAL,
+        "conditional", keepMinScore <= conditionalScore ? scoreToColor(conditionalScore) : NEUTRAL,
+        "unclear",     keepMinScore <= unclearScore     ? scoreToColor(unclearScore)     : NEUTRAL,
+        NEUTRAL,
+      ],
+      NEUTRAL, // prohibited / unclassified stay gray
     ];
 
     if (!map.getLayer(KEEP_LAYER)) {
@@ -751,7 +770,7 @@ export default function Map({
       map.setPaintProperty(KEEP_LAYER, "fill-color", fillColor);
       map.setPaintProperty(KEEP_LAYER, "fill-opacity", 0.88);
     }
-  }, [keepActive, keepMinScore, parcelCollection]);
+  }, [keepActive, keepMinScore, parcelCollection, keepEffectiveScores]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Ring helpers ──────────────────────────────────────────────────────────
   const drawRingOnMap = (map: maplibregl.Map, centroid: [number, number]) => {
@@ -992,6 +1011,15 @@ export default function Map({
             </div>`
           : "";
 
+      const garagePermission = String(props.garage_permission ?? "unclassified");
+      const keepScore = keepActive ? computeKeepScore(garagePermission, isochroneWealth) : null;
+      const keepHTML = keepScore !== null
+        ? `<div style="margin-top:5px;padding-top:5px;border-top:1px solid #334155">
+            <span style="color:${scoreToColor(keepScore)};font-weight:700">Keep ${keepScore} (${scoreToGrade(keepScore)})</span>
+            ${isochroneWealth?.length ? `<div style="color:#94a3b8;font-size:10px">Wealth-adjusted</div>` : ""}
+          </div>`
+        : "";
+
       map.getCanvas().style.cursor = "pointer";
 
       popup
@@ -1024,6 +1052,7 @@ export default function Map({
                 : ""
             }
             ${saturationHTML}
+            ${keepHTML}
           </div>`
         )
         .addTo(map);
@@ -1043,7 +1072,7 @@ export default function Map({
       map.off("mousemove", handleMouseMove);
       map.off("mouseout", handleMouseLeave);
     };
-  }, [onParcelClick, colorMode]);
+  }, [onParcelClick, colorMode, keepActive, isochroneWealth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Right-click context menu
   useEffect(() => {
@@ -1107,6 +1136,7 @@ export default function Map({
         keepActive={keepActive}
         keepMinScore={keepMinScore}
         onKeepChange={onKeepChange}
+        keepEffectiveScores={isochroneWealth?.length ? keepEffectiveScores : undefined}
       />
 
       {colorMode === "saturation" && <SaturationLegend />}
