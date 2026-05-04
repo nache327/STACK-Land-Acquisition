@@ -808,10 +808,20 @@ async def _run(db: AsyncSession, job: Job) -> None:
             },
         )
 
+    # Advance status so the frontend navigates to the map immediately while
+    # bbox / matrix / coverage finish in the background.
+    await _set_status(db, job, JobStatus.downloading_zoning, progress={
+        **(job.progress or {}),
+        "phase": "post_ingest",
+    })
+    await db.commit()
+    await check_cancelled(db, job)
+
     # Update last_indexed_at + compute bbox from ingested parcels
     bbox_started = _stage_started(job, "parcel_bbox_refresh", jurisdiction_id=str(jurisdiction.id))
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
-    await refresh_jurisdiction_bbox(jurisdiction, db)
+    async with asyncio.timeout(30):
+        await refresh_jurisdiction_bbox(jurisdiction, db)
     await db.flush()
     _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
 
@@ -935,18 +945,20 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 pass
 
     matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
-    seeded_matrix = await bootstrap_zone_use_matrix(
-        jurisdiction.id,
-        db,
-        missing_only=True,
-    )
+    async with asyncio.timeout(30):
+        seeded_matrix = await bootstrap_zone_use_matrix(
+            jurisdiction.id,
+            db,
+            missing_only=True,
+        )
     if seeded_matrix:
         logger.info("Bootstrapped %d zone_use_matrix rows", seeded_matrix)
         await db.commit()
     _stage_completed(job, "zone_matrix_bootstrap", matrix_started, rows_seeded=seeded_matrix)
 
     coverage_started = _stage_started(job, "coverage_refresh", jurisdiction_id=str(jurisdiction.id))
-    await refresh_jurisdiction_coverage_level(jurisdiction, db)
+    async with asyncio.timeout(30):
+        await refresh_jurisdiction_coverage_level(jurisdiction, db)
     await db.flush()
     _stage_completed(job, "coverage_refresh", coverage_started, coverage_level=jurisdiction.coverage_level.value)
 
