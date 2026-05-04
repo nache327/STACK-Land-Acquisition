@@ -54,10 +54,7 @@ export function isKeepVisible(
   return score !== null && score >= minScore;
 }
 
-/**
- * Weighted-mean HHI across tracts (weighted by household_count).
- * Normalised to a multiplier centred on $100k: [0.75, 1.25].
- */
+/** Weighted-mean HHI across tracts → multiplier centred on $100k: [0.75, 1.25]. */
 export function computeWealthMultiplier(tracts: TractData[]): number {
   const valid = tracts.filter(
     (t) => t.median_hhi != null && t.household_count != null && t.household_count > 0,
@@ -66,14 +63,10 @@ export function computeWealthMultiplier(tracts: TractData[]): number {
   const totalHH = valid.reduce((s, t) => s + t.household_count!, 0);
   const weightedHHI =
     valid.reduce((s, t) => s + t.median_hhi! * t.household_count!, 0) / totalHH;
-  const raw = weightedHHI / 100_000;
-  return Math.min(1.25, Math.max(0.75, raw));
+  return Math.min(1.25, Math.max(0.75, weightedHHI / 100_000));
 }
 
-/**
- * Wealth-adjusted Keep score (0-100).
- * Returns null for prohibited / unclassified — those parcels are hidden on the map.
- */
+/** Wealth-adjusted Keep score (0-100). Returns null for prohibited/unclassified. */
 export function computeKeepScore(
   permission: string | null | undefined,
   tracts: TractData[] | null | undefined,
@@ -82,4 +75,27 @@ export function computeKeepScore(
   if (base === null) return null;
   const multiplier = tracts?.length ? computeWealthMultiplier(tracts) : 1.0;
   return Math.round(Math.min(100, Math.max(0, base * multiplier)));
+}
+
+/**
+ * Compute all three permission scores in one pass — multiplier evaluated once.
+ * Use this when you need all three scores together (e.g. for the map paint expression).
+ */
+export function computeAllKeepScores(tracts: TractData[] | null | undefined): {
+  permitted: number | null;
+  conditional: number | null;
+  unclear: number | null;
+  wealthAdjusted: boolean;
+} {
+  const multiplier = tracts?.length ? computeWealthMultiplier(tracts) : 1.0;
+  const apply = (perm: string) => {
+    const base = garagePermToScore(perm);
+    return base === null ? null : Math.round(Math.min(100, Math.max(0, base * multiplier)));
+  };
+  return {
+    permitted: apply("permitted"),
+    conditional: apply("conditional"),
+    unclear: apply("unclear"),
+    wealthAdjusted: multiplier !== 1.0,
+  };
 }

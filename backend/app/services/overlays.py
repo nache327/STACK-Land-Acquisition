@@ -50,9 +50,9 @@ async def apply_flood_overlay(
     Sets in_flood_zone = TRUE on matching parcels.
     Returns number of parcels updated.
     """
-    # Skip if all parcels already have flood data (cached run)
+    # Skip if no parcels still need flood data
     unset = await db.scalar(text(
-        "SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL AND in_flood_zone IS NULL"
+        "SELECT EXISTS(SELECT 1 FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL AND in_flood_zone IS NULL)"
     ), {"jid": jurisdiction_id})
     if not unset:
         logger.info("Flood overlay already complete for %s — skipping API call", jurisdiction_id)
@@ -115,9 +115,9 @@ async def apply_wetland_overlay(
     Sets in_wetland = TRUE on matching parcels.
     Returns number of parcels updated.
     """
-    # Skip if all parcels already have wetland data (cached run)
+    # Skip if no parcels still need wetland data
     unset = await db.scalar(text(
-        "SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL AND in_wetland IS NULL"
+        "SELECT EXISTS(SELECT 1 FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL AND in_wetland IS NULL)"
     ), {"jid": jurisdiction_id})
     if not unset:
         logger.info("Wetland overlay already complete for %s — skipping API call", jurisdiction_id)

@@ -9,7 +9,7 @@ import { LAYER_REGISTRY, SATURATION_COLORS, ZONE_CLASS_COLORS, type ColorMode } 
 import { api } from "@/lib/api";
 import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 import type { IsochronePolygons, TractData } from "@/lib/isochrone";
-import { scoreToColor, scoreToGrade, computeKeepScore } from "@/lib/keep-layer";
+import { scoreToColor, scoreToGrade, computeAllKeepScores } from "@/lib/keep-layer";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -82,6 +82,10 @@ const DEFAULT_CENTER: [number, number] = [-98.5, 39.5];
 
 const OVERLAY_LAYER_IDS = ["overlay-flood-fill", "overlay-wetland-fill"];
 const KEEP_LAYER = "keep-layer";
+const KEEP_NEUTRAL = "#cbd5e1"; // slate-300 — storage-qualified parcels below min-score threshold
+// MapLibre filter expression: parcel passed the Layer-1 storage zoning screen
+const STORAGE_QUALIFIED: maplibregl.ExpressionSpecification =
+  ["in", ["get", "storage_permission"], ["literal", ["permitted", "conditional", "unclear"]]];
 const RING_SOURCE = "saturation-rings";
 const RING_LAYER = "saturation-rings-line";
 const RING_RADII_MILES = [3];
@@ -346,13 +350,13 @@ export default function Map({
   }, [parcels, saturationData]);
 
   const keepEffectiveScores = useMemo(
-    () => ({
-      permitted:   computeKeepScore("permitted",   isochroneWealth),
-      conditional: computeKeepScore("conditional", isochroneWealth),
-      unclear:     computeKeepScore("unclear",      isochroneWealth),
-    }),
+    () => computeAllKeepScores(isochroneWealth),
     [isochroneWealth],
   );
+
+  // Ref so the tooltip handler always reads the latest scores without re-registering.
+  const keepEffectiveScoresRef = useRef(keepEffectiveScores);
+  useEffect(() => { keepEffectiveScoresRef.current = keepEffectiveScores; }, [keepEffectiveScores]);
 
   // Point centroids used for the saturation heatmap overlay
   const heatCollection = useMemo<GeoJSON.FeatureCollection>(() => {
@@ -725,8 +729,6 @@ export default function Map({
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const NEUTRAL = "#cbd5e1"; // slate-300 for prohibited / unclassified
-
     if (!keepActive) {
       if (map.getLayer(KEEP_LAYER)) {
         map.setPaintProperty(KEEP_LAYER, "fill-opacity", 0);
@@ -740,26 +742,19 @@ export default function Map({
 
     const fillColor: maplibregl.ExpressionSpecification = [
       "case",
-      // Gate 1: only score parcels that passed the Layer-1 zoning screen
-      ["in", ["get", "storage_permission"], ["literal", ["permitted", "conditional", "unclear"]]],
+      STORAGE_QUALIFIED,
       [
         "match", ["get", "garage_permission"],
-        "permitted",   keepMinScore <= permittedScore   ? scoreToColor(permittedScore)   : NEUTRAL,
-        "conditional", keepMinScore <= conditionalScore ? scoreToColor(conditionalScore) : NEUTRAL,
-        "unclear",     keepMinScore <= unclearScore     ? scoreToColor(unclearScore)     : NEUTRAL,
-        NEUTRAL,
+        "permitted",   keepMinScore <= permittedScore   ? scoreToColor(permittedScore)   : KEEP_NEUTRAL,
+        "conditional", keepMinScore <= conditionalScore ? scoreToColor(conditionalScore) : KEEP_NEUTRAL,
+        "unclear",     keepMinScore <= unclearScore     ? scoreToColor(unclearScore)     : KEEP_NEUTRAL,
+        KEEP_NEUTRAL,
       ],
-      NEUTRAL, // prohibited / unclassified stay gray
+      KEEP_NEUTRAL,
     ];
 
-    // Non-qualifying parcels (prohibited / unclassified storage) are fully
-    // transparent so Layer 1 zoning colors remain visible underneath.
-    const fillOpacity: maplibregl.ExpressionSpecification = [
-      "case",
-      ["in", ["get", "storage_permission"], ["literal", ["permitted", "conditional", "unclear"]]],
-      0.88,
-      0,
-    ];
+    // Non-qualifying parcels are transparent so Layer 1 colors remain visible.
+    const fillOpacity: maplibregl.ExpressionSpecification = ["case", STORAGE_QUALIFIED, 0.88, 0];
 
     if (!map.getLayer(KEEP_LAYER)) {
       map.addLayer(
@@ -1020,12 +1015,16 @@ export default function Map({
             </div>`
           : "";
 
-      const garagePermission = String(props.garage_permission ?? "unclassified");
-      const keepScore = keepActive ? computeKeepScore(garagePermission, isochroneWealth) : null;
+      const garagePermission = String(props.garage_permission ?? "");
+      const scores = keepEffectiveScoresRef.current;
+      type ScoreKey = "permitted" | "conditional" | "unclear";
+      const keepScore = keepActive && garagePermission in scores
+        ? (scores[garagePermission as ScoreKey] ?? null)
+        : null;
       const keepHTML = keepScore !== null
         ? `<div style="margin-top:5px;padding-top:5px;border-top:1px solid #334155">
             <span style="color:${scoreToColor(keepScore)};font-weight:700">Keep ${keepScore} (${scoreToGrade(keepScore)})</span>
-            ${isochroneWealth?.length ? `<div style="color:#94a3b8;font-size:10px">Wealth-adjusted</div>` : ""}
+            ${scores.wealthAdjusted ? `<div style="color:#94a3b8;font-size:10px">Wealth-adjusted</div>` : ""}
           </div>`
         : "";
 
@@ -1081,7 +1080,7 @@ export default function Map({
       map.off("mousemove", handleMouseMove);
       map.off("mouseout", handleMouseLeave);
     };
-  }, [onParcelClick, colorMode, keepActive, isochroneWealth]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onParcelClick, colorMode, keepActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Right-click context menu
   useEffect(() => {
