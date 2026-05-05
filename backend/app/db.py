@@ -1,5 +1,6 @@
 import logging
 
+import asyncpg
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -20,7 +21,12 @@ class Base(DeclarativeBase):
 logger.info("Connected to Postgres at %s (env=%s)", settings.database_url_sanitized, settings.environment)
 
 
-async def _on_asyncpg_connect(connection) -> None:
+def _asyncpg_dsn(url: str) -> str:
+    """Strip the SQLAlchemy `+asyncpg` dialect marker so asyncpg.connect accepts it."""
+    return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+
+async def _on_asyncpg_connect(connection: "asyncpg.Connection") -> None:
     """asyncpg `init` hook — runs once per new pool connection.
 
     Why: pgBouncer transaction-mode pooling for Supabase sometimes returns a
@@ -33,6 +39,27 @@ async def _on_asyncpg_connect(connection) -> None:
     await connection.execute("SET default_transaction_read_only = off")
 
 
+def _make_async_creator(database_url: str):
+    """Return an async creator coroutine that calls asyncpg.connect directly.
+
+    SQLAlchemy's asyncpg dialect doesn't forward the `init` kwarg, so we
+    bypass it entirely with `async_creator`. The connection it returns is
+    handed straight to SQLAlchemy's connection pool wrapper.
+    """
+    dsn = _asyncpg_dsn(database_url)
+
+    async def _create_conn() -> "asyncpg.Connection":
+        return await asyncpg.connect(
+            dsn,
+            statement_cache_size=0,
+            command_timeout=90,
+            server_settings={"default_transaction_read_only": "off"},
+            init=_on_asyncpg_connect,
+        )
+
+    return _create_conn
+
+
 def make_engine(database_url: str | None = None):
     """Build an AsyncEngine configured for Supabase pgBouncer + Dramatiq workers.
 
@@ -41,27 +68,12 @@ def make_engine(database_url: str | None = None):
     asyncio.run() calls). Centralising this guarantees the read-only-flag
     workaround applies in both places.
     """
+    url = database_url or settings.database_url
     return create_async_engine(
-        database_url or settings.database_url,
+        url,
         echo=False,
         poolclass=NullPool,
-        connect_args={
-            "statement_cache_size": 0,
-            # Per-command client-side timeout. Prevents asyncpg from hanging
-            # if the TCP connection to pgBouncer becomes half-open. Also caps
-            # asyncpg's internal cancel-request cleanup after asyncio.timeout.
-            "command_timeout": 90,
-            # Request read-write at the asyncpg startup level. The Supabase
-            # pgBouncer transaction-mode pooler frequently strips startup
-            # options, so we also force RW per-connection via the asyncpg
-            # `init` callback below.
-            "server_settings": {"default_transaction_read_only": "off"},
-            # asyncpg `init` is invoked as a coroutine for every new connection
-            # from inside asyncpg's own async setup — no SQLAlchemy greenlet
-            # bridge needed (which was the failure mode of a sync `connect`
-            # event handler).
-            "init": _on_asyncpg_connect,
-        },
+        async_creator=_make_async_creator(url),
     )
 
 
