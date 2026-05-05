@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -16,12 +17,28 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
-from app.db import async_session_maker
 from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
 from app.services.arcgis_query import download_all_features
 from app.services.ingestion import ingest_parcels
+
+# Build a session-mode (port 5432) engine for this script.
+# `railway run` executes locally but injects Railway env vars, so DATABASE_URL
+# points at Supabase's transaction-mode PgBouncer (port 6543).  Transaction mode
+# can hand out read-only backend connections; session mode (port 5432) gives each
+# client a dedicated backend connection and never has this problem.
+_raw_url = os.environ["DATABASE_URL"].replace(":6543/", ":5432/")
+_engine = create_async_engine(
+    _raw_url,
+    poolclass=NullPool,
+    connect_args={"statement_cache_size": 0, "command_timeout": 180},
+)
+async_session_maker = async_sessionmaker(
+    _engine, class_=AsyncSession, expire_on_commit=False
+)
 
 logging.basicConfig(
     level=logging.INFO,
