@@ -45,12 +45,15 @@ async def backfill_parcel_zoning_from_districts(
     fill_missing_zone_code: bool = True,
 ) -> int:
     """
-    Backfill `parcels.zone_class` using parcel/polygon intersection.
+    Backfill `parcels.zone_class` using parcel centroid containment.
 
-    Disables Supabase's server-side statement_timeout for this query — the
-    spatial join of large jurisdictions (e.g. Philadelphia: 547K parcels ×
-    29K districts) is legitimately slow but correct; the timeout would cancel
-    it prematurely. SET LOCAL resets at transaction end.
+    Uses ST_Within(centroid, district) instead of full polygon intersection —
+    10-100x faster on large jurisdictions (point-in-polygon vs polygon-polygon).
+    Accurate for normal parcels; a parcel straddling a zone boundary gets the
+    zone that contains its centroid.
+
+    Disables Supabase's server-side statement_timeout via SET LOCAL so the
+    query isn't cancelled prematurely on large cities.
     """
     zone_code_set = (
         ", zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)"
@@ -68,8 +71,7 @@ async def backfill_parcel_zoning_from_districts(
                     zd.zone_code,
                     ROW_NUMBER() OVER (
                         PARTITION BY p.id
-                        ORDER BY ST_Area(ST_Intersection(p.geom, zd.geom)) DESC NULLS LAST,
-                                 zd.id
+                        ORDER BY zd.id
                     ) AS rn
                 FROM parcels p
                 JOIN zoning_districts zd
@@ -77,7 +79,7 @@ async def backfill_parcel_zoning_from_districts(
                  AND p.jurisdiction_id = :jid
                  AND p.geom IS NOT NULL
                  AND zd.geom IS NOT NULL
-                 AND ST_Intersects(p.geom, zd.geom)
+                 AND ST_Within(ST_Centroid(p.geom), zd.geom)
             )
             UPDATE parcels p
             SET zone_class = ranked.zone_class
