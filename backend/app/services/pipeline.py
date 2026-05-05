@@ -186,25 +186,47 @@ def _nj(county_name: str, full_name: str, zoning_endpoint: str | None = None) ->
 
 
 def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
-    """Build all NJ county entries (avoids repeating the same config dict twice)."""
-    hudson  = _nj("Hudson",    "Hudson County, NJ",    _NJ_JC_LANDUSE)
-    essex   = _nj("Essex",     "Essex County, NJ",     _NJ_NEWARK_ZONING)
-    union   = _nj("Union",     "Union County, NJ")
-    midsx   = _nj("Middlesex", "Middlesex County, NJ")
-    passaic = _nj("Passaic",   "Passaic County, NJ")
+    """Build all NJ county entries (avoids repeating the same config dict twice).
+
+    City-keyed aliases route the priority NJ cities (Newark, Jersey City,
+    Paterson, Elizabeth, New Brunswick, Marlboro, Hoboken) to their county's
+    statewide MOD-IV slice instead of falling through to live ArcGIS
+    discovery — which has been miscoding city→county pairs (Paterson sent to
+    Bergen, Elizabeth/New Brunswick/Paterson stamped state='NE').
+    """
+    hudson    = _nj("Hudson",    "Hudson County, NJ",    _NJ_JC_LANDUSE)
+    essex     = _nj("Essex",     "Essex County, NJ",     _NJ_NEWARK_ZONING)
+    union     = _nj("Union",     "Union County, NJ")
+    midsx     = _nj("Middlesex", "Middlesex County, NJ")
+    passaic   = _nj("Passaic",   "Passaic County, NJ")
+    monmouth  = _nj("Monmouth",  "Monmouth County, NJ")
     return {
         "hudson county":          hudson,
         "hudson county, nj":      hudson,
         "jersey city":            hudson,
+        "jersey city, nj":        hudson,
+        "hoboken":                hudson,
+        "hoboken, nj":            hudson,
         "essex county":           essex,
         "essex county, nj":       essex,
         "newark":                 essex,
+        "newark, nj":             essex,
         "union county":           union,
         "union county, nj":       union,
+        "elizabeth":              union,
+        "elizabeth, nj":          union,
         "middlesex county":       midsx,
         "middlesex county, nj":   midsx,
+        "new brunswick":          midsx,
+        "new brunswick, nj":      midsx,
         "passaic county":         passaic,
         "passaic county, nj":     passaic,
+        "paterson":               passaic,
+        "paterson, nj":           passaic,
+        "monmouth county":        monmouth,
+        "monmouth county, nj":    monmouth,
+        "marlboro":               monmouth,
+        "marlboro, nj":           monmouth,
     }
 
 
@@ -370,32 +392,6 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         zoning_polygon_endpoint=(
             "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
             "/services/Zoning_BaseDistricts/FeatureServer/0"
-        ),
-    ),
-    "allentown": JurisdictionConfig(
-        name="Allentown, PA",
-        state="PA",
-        county="Lehigh",
-        parcel_source=ParcelSource.county_gis,
-        parcel_endpoint=(
-            "https://gis.dep.pa.gov/depgisprd/rest/services/Parcels/PA_Parcels/MapServer/0"
-        ),
-        where_clause="CITY='ALLENTOWN' AND COUNTY_NAME='LEHIGH'",
-        zoning_polygon_endpoint=(
-            "https://gisportal.allentownpa.gov/server/rest/services/CityZoning/MapServer/0"
-        ),
-    ),
-    "allentown, pa": JurisdictionConfig(
-        name="Allentown, PA",
-        state="PA",
-        county="Lehigh",
-        parcel_source=ParcelSource.county_gis,
-        parcel_endpoint=(
-            "https://gis.dep.pa.gov/depgisprd/rest/services/Parcels/PA_Parcels/MapServer/0"
-        ),
-        where_clause="CITY='ALLENTOWN' AND COUNTY_NAME='LEHIGH'",
-        zoning_polygon_endpoint=(
-            "https://gisportal.allentownpa.gov/server/rest/services/CityZoning/MapServer/0"
         ),
     ),
     "park city": JurisdictionConfig(
