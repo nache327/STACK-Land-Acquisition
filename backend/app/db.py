@@ -33,10 +33,15 @@ engine = create_async_engine(
         # if the TCP connection to pgBouncer becomes half-open (no server-side response).
         # Also caps asyncpg's internal cancel-request cleanup after asyncio.timeout fires.
         "command_timeout": 90,
-        # Override any PgBouncer server_reset_query or Supabase read-replica routing
-        # that can hand out a read-only backend connection.
+        # Request read-write mode in the asyncpg startup message. PgBouncer
+        # transaction-mode can override this, so we also set postgresql_readonly=False
+        # below to force BEGIN READ WRITE at the SQLAlchemy level.
         "server_settings": {"default_transaction_read_only": "off"},
     },
+    # Force SQLAlchemy to emit BEGIN READ WRITE for every transaction so that
+    # PgBouncer transaction-mode connections handed out in read-only state are
+    # immediately promoted to read-write before any DML is attempted.
+    execution_options={"postgresql_readonly": False},
 )
 
 async_session_maker = async_sessionmaker(
