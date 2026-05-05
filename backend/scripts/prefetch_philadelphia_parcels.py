@@ -20,6 +20,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.config import settings
 from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
 from app.services.arcgis_query import download_all_features
@@ -30,9 +31,11 @@ from app.services.ingestion import ingest_parcels
 # points at Supabase's transaction-mode PgBouncer (port 6543).  Transaction mode
 # can hand out read-only backend connections; session mode (port 5432) gives each
 # client a dedicated backend connection and never has this problem.
-_raw_url = os.environ["DATABASE_URL"].replace(":6543/", ":5432/")
+# Use settings.database_url (not os.environ) because config.py upgrades the raw
+# postgres:// URL to postgresql+asyncpg:// which create_async_engine requires.
+_session_url = settings.database_url.replace(":6543/", ":5432/")
 _engine = create_async_engine(
-    _raw_url,
+    _session_url,
     poolclass=NullPool,
     connect_args={"statement_cache_size": 0, "command_timeout": 180},
 )
