@@ -37,10 +37,14 @@ def process_zoning_ingest(parcel_id: int) -> None:
         # internal asyncio locks are bound to the process's main event loop, which
         # is destroyed and recreated each time asyncio.run() is called from a
         # Dramatiq worker thread, causing "bound to a different event loop" errors.
-        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-        from sqlalchemy.pool import NullPool
+        # Use the shared `make_engine` so this engine inherits the asyncpg `init`
+        # hook that forces default_transaction_read_only=off on each new
+        # connection — without it, Supabase pgBouncer can hand us a connection
+        # that ReadOnlySQLTransactionError-fails the first INSERT.
+        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+        from app.db import make_engine
 
-        engine = create_async_engine(settings.database_url, poolclass=NullPool)
+        engine = make_engine()
         local_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
         try:
             async with local_session() as db:
