@@ -114,8 +114,7 @@ async def main() -> None:
                         zd.zone_code,
                         ROW_NUMBER() OVER (
                             PARTITION BY p.id
-                            ORDER BY ST_Area(ST_Intersection(p.geom, zd.geom)) DESC NULLS LAST,
-                                     zd.id
+                            ORDER BY zd.id
                         ) AS rn
                     FROM parcels p
                     JOIN zoning_districts zd
@@ -123,7 +122,7 @@ async def main() -> None:
                      AND p.jurisdiction_id = $1
                      AND p.geom IS NOT NULL
                      AND zd.geom IS NOT NULL
-                     AND ST_Intersects(p.geom, zd.geom)
+                     AND ST_Within(ST_Centroid(p.geom), zd.geom)
                 )
                 UPDATE parcels p
                 SET zone_class = ranked.zone_class,
