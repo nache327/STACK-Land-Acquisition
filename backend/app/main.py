@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.version import get_pipeline_version
 from app.api import (
     competition,
     debug,
@@ -19,9 +20,12 @@ from app.api import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
 
+PIPELINE_VERSION = get_pipeline_version()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("PIPELINE_VERSION=%s", PIPELINE_VERSION)
     logger.info(
         "API boot — environment=%s database=%s redis=%s",
         settings.environment,
@@ -89,7 +93,11 @@ app.include_router(zoning_districts.router, prefix="/api")
 
 @app.get("/health", tags=["meta"])
 async def health() -> dict:
-    return {"status": "ok", "version": app.version}
+    return {
+        "status": "ok",
+        "version": app.version,
+        "pipeline_version": PIPELINE_VERSION,
+    }
 
 
 @app.get("/api/openapi.json", include_in_schema=False)

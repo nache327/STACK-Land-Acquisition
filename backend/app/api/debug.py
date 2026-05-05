@@ -16,6 +16,7 @@ from app.models.job_step import JobStep
 from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
 from app.models.zoning_district import ZoningDistrict
+from app.version import get_pipeline_version
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
@@ -26,6 +27,7 @@ async def debug_env() -> dict:
         "environment": settings.environment,
         "database_url": settings.database_url_sanitized,
         "redis_url": settings.redis_url_sanitized,
+        "pipeline_version": get_pipeline_version(),
     }
 
 
