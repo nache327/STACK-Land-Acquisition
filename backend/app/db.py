@@ -42,20 +42,26 @@ async def _on_asyncpg_connect(connection: "asyncpg.Connection") -> None:
 def _make_async_creator(database_url: str):
     """Return an async creator coroutine that calls asyncpg.connect directly.
 
-    SQLAlchemy's asyncpg dialect doesn't forward the `init` kwarg, so we
-    bypass it entirely with `async_creator`. The connection it returns is
-    handed straight to SQLAlchemy's connection pool wrapper.
+    `init=` is an `asyncpg.create_pool()` parameter, NOT `asyncpg.connect()`.
+    Since we use SQLAlchemy's pool (NullPool) and not asyncpg's pool, we
+    must run the SET as an explicit statement on the brand-new connection
+    after asyncpg.connect() returns.
     """
     dsn = _asyncpg_dsn(database_url)
 
     async def _create_conn() -> "asyncpg.Connection":
-        return await asyncpg.connect(
+        conn = await asyncpg.connect(
             dsn,
             statement_cache_size=0,
             command_timeout=90,
             server_settings={"default_transaction_read_only": "off"},
-            init=_on_asyncpg_connect,
         )
+        # Belt-and-braces: pgBouncer transaction-mode pooling for Supabase
+        # frequently strips startup options, so issue the SET explicitly on
+        # the connection before handing it to SQLAlchemy. This runs inside
+        # the asyncpg connection's own async context — no greenlet bridge.
+        await _on_asyncpg_connect(conn)
+        return conn
 
     return _create_conn
 
