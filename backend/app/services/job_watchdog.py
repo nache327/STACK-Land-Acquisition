@@ -9,7 +9,7 @@ from app.models.job import Job, JobStatus
 from app.services.job_queue import enqueue_pipeline_job
 from app.services.job_tracking import ACTIVE_JOB_STATUSES, now_utc, truncate_error
 
-STALE_AFTER_SECONDS = 10 * 60
+STALE_AFTER_SECONDS = 25 * 60
 MAX_ATTEMPTS = 3
 
 
