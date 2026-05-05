@@ -65,11 +65,6 @@ function bboxOf(feature: Feature<Polygon | MultiPolygon>): [number, number, numb
   return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
 }
 
-function centroidOf(feature: Feature<Polygon | MultiPolygon>): [number, number] {
-  const [minLng, minLat, maxLng, maxLat] = bboxOf(feature);
-  return [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
-}
-
 function bboxCacheKey(polygon: Feature<Polygon | MultiPolygon>): string {
   const [w, s, e, n] = bboxOf(polygon);
   return `${w.toFixed(2)},${s.toFixed(2)},${e.toFixed(2)},${n.toFixed(2)}`;
@@ -134,31 +129,6 @@ export async function fetchIsochrone(lat: number, lng: number): Promise<Isochron
 
 // ── fetchCensusTracts ─────────────────────────────────────────────────────────
 
-type CensusGeocoderResponse = {
-  result: {
-    geographies: {
-      "Census Tracts"?: Array<{ STATE: string; COUNTY: string; TRACT: string }>;
-    };
-  };
-};
-
-async function getFipsFromPoint(lng: number, lat: number): Promise<{ state: string; county: string } | null> {
-  try {
-    const url =
-      `https://geocoding.geo.census.gov/geocoder/geographies/coordinates` +
-      `?x=${lng}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current` +
-      `&layers=Census%20Tracts&format=json`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
-    if (!res.ok) return null;
-    const data = (await res.json()) as CensusGeocoderResponse;
-    const tracts = data.result?.geographies?.["Census Tracts"];
-    if (!tracts?.length) return null;
-    return { state: tracts[0].STATE, county: tracts[0].COUNTY };
-  } catch {
-    return null;
-  }
-}
-
 type AcsRow = string[];
 
 async function fetchAcsForCounty(
@@ -218,28 +188,40 @@ export async function fetchCensusTracts(
   const cacheKey = bboxCacheKey(polygon);
   if (tractCache.has(cacheKey)) return tractCache.get(cacheKey)!;
 
-  const centroid = centroidOf(polygon);
-  const fips = await getFipsFromPoint(centroid[0], centroid[1]);
-  if (!fips) return [];
+  // Step 1: get tract geometries from TIGER (may span multiple counties)
+  const tractFC = await fetchTractGeometries(bboxOf(polygon));
+  if (!tractFC.features.length) {
+    tractCache.set(cacheKey, []);
+    return [];
+  }
 
-  const [acsData, tractFC] = await Promise.all([
-    fetchAcsForCounty(fips.state, fips.county),
-    fetchTractGeometries(bboxOf(polygon)),
-  ]);
+  // Step 2: extract unique state+county FIPS directly from tract GEOIDs
+  const countySet = new Set<string>();
+  for (const feat of tractFC.features) {
+    const geoid = String((feat.properties as Record<string, string>)?.GEOID ?? "");
+    if (geoid.length >= 5) countySet.add(geoid.slice(0, 5));
+  }
 
-  if (!tractFC.features.length) return [];
+  // Step 3: fetch ACS for ALL counties in parallel (handles cross-county isochrones)
+  const acsResults = await Promise.all(
+    Array.from(countySet).map((fips5) =>
+      fetchAcsForCounty(fips5.slice(0, 2), fips5.slice(2, 5))
+    )
+  );
+  const acsData = new Map<string, { hhi: number | null; homeValue: number | null; households: number | null }>();
+  for (const m of acsResults) {
+    m.forEach((v, k) => acsData.set(k, v));
+  }
 
-  // Build centroid point for each tract to filter by polygon containment
   const results: TractData[] = [];
 
   for (const feat of tractFC.features) {
     const props = (feat.properties ?? {}) as Record<string, string>;
     const geoid = String(props.GEOID ?? "");
-    if (!geoid) continue;
+    if (geoid.length < 11) continue;
 
     const tractGeom = feat as Feature<Polygon | MultiPolygon>;
 
-    // Compute centroid of the tract geometry
     const tractBbox = bboxOf(tractGeom);
     const tractCentroid: Feature<Point> = {
       type: "Feature",
@@ -253,10 +235,8 @@ export async function fetchCensusTracts(
       properties: {},
     };
 
-    // Only include tracts whose centroid is inside the query polygon
     if (!booleanPointInPolygon(tractCentroid, polygon)) continue;
 
-    // Clip tract geometry to the query polygon
     let clipped: Feature<Polygon | MultiPolygon> | null = null;
     try {
       const fc: FeatureCollection<Polygon | MultiPolygon> = {
@@ -275,8 +255,8 @@ export async function fetchCensusTracts(
 
     results.push({
       geoid,
-      statefp:  fips.state,
-      countyfp: fips.county,
+      statefp:  geoid.slice(0, 2),
+      countyfp: geoid.slice(2, 5),
       tractce:  String(props.TRACT ?? ""),
       median_hhi:         acs?.hhi        ?? null,
       median_home_value:  acs?.homeValue  ?? null,

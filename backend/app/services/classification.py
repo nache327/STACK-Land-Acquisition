@@ -62,7 +62,8 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     # Mixed-use (test before commercial/residential since codes overlap).
     # Covers: MU, MX, TOD, CMX, T-M (Transit/Mixed), TMX, MXD, DT/D (Downtown SLC/Provo)
     # TM = Transit Mixed (Herriman); VC = Village Center (Springville); HDMU = High Density MU
-    (ZoneClass.mixed_use, re.compile(r"^(cmx|hdmu|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|tm|dt|d|vc)[-\s0-9a-z]*$", re.I)),
+    # RMX = Philadelphia Residential Mixed-Use; IRMX = Philadelphia Industrial/Residential Mixed-Use
+    (ZoneClass.mixed_use, re.compile(r"^(cmx|rmx|irmx|hdmu|mu|mx|tod|muo|mrd|tmx|mxd|t[-/]m|tm|dt|d|vc)[-\s0-9a-z]*$", re.I)),
     # Industrial: I-1/I-2, M-1/M-2, LI, HI, H/I (slash variant), IH, IL, IP, IND, IR, ICM
     (ZoneClass.industrial, re.compile(r"^(m|i|li|hi|h[/]i|ih|il|ip|ind|ir|icm|lm|gm|hm)[-\s0-9a-z/]*$", re.I)),
     # Open space / civic / public facilities — must come BEFORE commercial (CI starts with C)
@@ -72,7 +73,9 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
     (ZoneClass.open_space, re.compile(r"^(os|nos|o-s|p-?f|pl|ci|pz|ps|euo|ow)[-\s0-9a-z]*$", re.I)),
     # Special districts — must come BEFORE commercial
     # P-C = Planned Community; SD = Special District (Sandy, Bluffdale); SDP = Specific Dev Plan
-    (ZoneClass.special, re.compile(r"^(p-?c|pud|pd|pdz|spa|pdd|cpd|ssd|sdp|sd)[-\s0-9a-z]*$", re.I)),
+    # SP* = Philadelphia Special Purpose (SP-AIR/SPAIR, SP-CIV/SPCIV, SP-ENT/SPENT,
+    #        SP-INS/SPINS, SP-PO-A/SPPOA, SP-PO-P/SPPOP, SP-STA/SPSTA)
+    (ZoneClass.special, re.compile(r"^(p-?c|pud|pd|pdz|spa|spc|spe|spi|spp|sps|pdd|cpd|ssd|sdp|sd)[-\s0-9a-z/]*$", re.I)),
     # Commercial: C-\d, CB, CC, CG, CN, CO, CS, CBD, NC, GC, HC, LC, SC, B-\d, BP
     # P-O / PO = Professional Office; HBD = Highway Business District
     (ZoneClass.commercial, re.compile(

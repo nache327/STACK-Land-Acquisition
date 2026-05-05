@@ -94,6 +94,61 @@ async def get_layer_metadata(
     return resp.json()
 
 
+async def _get_all_object_ids(
+    endpoint_url: str,
+    where: str = "1=1",
+    client: httpx.AsyncClient | None = None,
+) -> list[int] | None:
+    """
+    Fetch all ObjectIDs for a layer. Returns None if the service doesn't
+    support returnIdsOnly (falls back to offset pagination).
+    """
+    params: dict[str, str] = {
+        "where": where,
+        "returnIdsOnly": "true",
+        "f": "json",
+    }
+    url = endpoint_url.rstrip("/") + "/query"
+    try:
+        if client is None:
+            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as local_client:
+                resp = await local_client.get(url, params=params)
+        else:
+            resp = await client.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        oids = data.get("objectIds")
+        if isinstance(oids, list):
+            return sorted(oids)
+    except Exception as exc:
+        logger.debug("returnIdsOnly not supported or failed: %s", exc)
+    return None
+
+
+async def _fetch_by_object_ids(
+    endpoint_url: str,
+    oid_chunk: list[int],
+    out_fields: str = "*",
+    client: httpx.AsyncClient | None = None,
+) -> list[dict]:
+    """Fetch a batch of features by explicit ObjectID list via POST (avoids URL length limits)."""
+    data = {
+        "objectIds": ",".join(str(o) for o in oid_chunk),
+        "outFields": out_fields,
+        "outSR": "4326",
+        "f": "geojson",
+        "returnGeometry": "true",
+    }
+    url = endpoint_url.rstrip("/") + "/query"
+    if client is None:
+        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as local_client:
+            resp = await local_client.post(url, data=data)
+    else:
+        resp = await client.post(url, data=data)
+    resp.raise_for_status()
+    return resp.json().get("features", [])
+
+
 async def download_all_features(
     endpoint_url: str,
     where: str = "1=1",
@@ -103,23 +158,13 @@ async def download_all_features(
     progress_callback: Any = None,
 ) -> gpd.GeoDataFrame:
     """
-    Download ALL features from an ArcGIS FeatureServer layer by paginating
-    through results. Returns a GeoDataFrame in EPSG:4326.
+    Download ALL features from an ArcGIS FeatureServer layer.
 
-    Args:
-        endpoint_url: Full URL to the FeatureServer layer (e.g., .../FeatureServer/11)
-        where: SQL WHERE clause filter (default "1=1" = all features)
-        out_fields: Comma-separated field names, or "*" for all
-        page_size: Max features per request (most servers cap at 1 000–2 000)
-        progress_callback: Optional async callable(downloaded, total) for progress
+    Tries ObjectID-based pagination first (works for large services that cap
+    offset-based pagination, e.g. Philadelphia OPA at 89K). Falls back to
+    offset pagination for services that don't support returnIdsOnly.
 
-    Returns:
-        GeoDataFrame with all features, CRS = EPSG:4326.
-        Empty GeoDataFrame if no features returned.
-
-    Raises:
-        httpx.HTTPStatusError: On non-2xx response from the FeatureServer.
-        ValueError: If the layer returns no usable features.
+    Returns a GeoDataFrame in EPSG:4326.
     """
     async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
         logger.info("Getting feature count from %s", endpoint_url)
@@ -129,54 +174,73 @@ async def download_all_features(
         if total == 0:
             return gpd.GeoDataFrame()
 
-        first_page = await query_feature_layer(
-            endpoint_url,
-            where=where,
-            out_fields=out_fields,
-            result_offset=0,
-            result_record_count=page_size,
-            client=client,
-        )
-        features = list(first_page.get("features", []))
-        downloaded = len(features)
+        # Try ObjectID pagination — required for services that 400 on large offsets
+        oids = await _get_all_object_ids(endpoint_url, where, client=client)
 
-        if progress_callback is not None:
-            await progress_callback(downloaded, total)
+        features: list[dict] = []
+        downloaded = 0
 
-        offsets = list(range(page_size, total, page_size))
-        pages = math.ceil(total / page_size)
-        chunk_size = max(1, min(max_concurrency, len(offsets) or 1))
+        if oids is not None:
+            logger.info("Using ObjectID pagination (%d OIDs)", len(oids))
+            total = len(oids)  # use actual OID count as authoritative total
+            oid_chunks = [oids[i : i + page_size] for i in range(0, len(oids), page_size)]
 
-        for chunk_start in range(0, len(offsets), chunk_size):
-            chunk = offsets[chunk_start : chunk_start + chunk_size]
-            logger.debug(
-                "Fetching pages %d-%d/%d",
-                (chunk_start // chunk_size) + 2,
-                (chunk_start // chunk_size) + 1 + len(chunk),
-                pages,
+            for chunk_start in range(0, len(oid_chunks), max_concurrency):
+                batch = oid_chunks[chunk_start : chunk_start + max_concurrency]
+                responses = await asyncio.gather(
+                    *[
+                        _fetch_by_object_ids(endpoint_url, chunk, out_fields=out_fields, client=client)
+                        for chunk in batch
+                    ]
+                )
+                for page_features in responses:
+                    features.extend(page_features)
+                    downloaded += len(page_features)
+                if progress_callback is not None:
+                    await progress_callback(downloaded, total)
+
+        else:
+            # Offset pagination fallback
+            logger.info("Using offset pagination")
+            first_page = await query_feature_layer(
+                endpoint_url,
+                where=where,
+                out_fields=out_fields,
+                result_offset=0,
+                result_record_count=page_size,
+                client=client,
             )
-            responses = await asyncio.gather(
-                *[
-                    query_feature_layer(
-                        endpoint_url,
-                        where=where,
-                        out_fields=out_fields,
-                        result_offset=offset,
-                        result_record_count=page_size,
-                        client=client,
-                    )
-                    for offset in chunk
-                ]
-            )
+            features = list(first_page.get("features", []))
+            downloaded = len(features)
 
-            for offset, data in zip(chunk, responses):
-                page_features = data.get("features", [])
-                if not page_features:
-                    logger.warning("Empty page at offset %d — skipping", offset)
-                    continue
-                features.extend(page_features)
-                downloaded += len(page_features)
-                logger.info("Downloaded %d / %d features", downloaded, total)
+            if progress_callback is not None:
+                await progress_callback(downloaded, total)
+
+            offsets = list(range(page_size, total, page_size))
+            chunk_size = max(1, min(max_concurrency, len(offsets) or 1))
+
+            for chunk_start in range(0, len(offsets), chunk_size):
+                chunk = offsets[chunk_start : chunk_start + chunk_size]
+                responses = await asyncio.gather(
+                    *[
+                        query_feature_layer(
+                            endpoint_url,
+                            where=where,
+                            out_fields=out_fields,
+                            result_offset=offset,
+                            result_record_count=page_size,
+                            client=client,
+                        )
+                        for offset in chunk
+                    ]
+                )
+                for offset, data in zip(chunk, responses):
+                    page_features = data.get("features", [])
+                    if not page_features:
+                        logger.warning("Empty page at offset %d — skipping", offset)
+                        continue
+                    features.extend(page_features)
+                    downloaded += len(page_features)
                 if progress_callback is not None:
                     await progress_callback(downloaded, total)
 
@@ -184,7 +248,5 @@ async def download_all_features(
         return gpd.GeoDataFrame()
 
     combined = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
-    logger.info(
-        "Downloaded %d total features from %s", len(combined), endpoint_url
-    )
+    logger.info("Downloaded %d total features from %s", len(combined), endpoint_url)
     return combined
