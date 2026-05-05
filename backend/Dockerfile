@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
-# Install system dependencies for GDAL / GeoPandas / PostGIS client
-# and Playwright Chromium browser runtime
+# System dependencies for GDAL / GeoPandas / PostGIS client.
+# Chromium runtime deps live in their own apt layer below so a Playwright
+# install failure can't invalidate the GIS toolchain layer.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     gdal-bin \
@@ -11,7 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
-    # Chromium runtime deps (required by Playwright)
+    && rm -rf /var/lib/apt/lists/*
+
+# Chromium runtime deps — separate apt layer to bound peak build memory.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 \
     libnspr4 \
     libatk1.0-0 \
@@ -31,9 +35,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python deps first (layer cache)
+# Install Python deps first (layer cache).
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e . && playwright install chromium
+RUN pip install --no-cache-dir -e .
+
+# Playwright browser binaries in a separate layer so their ~150MB extract
+# doesn't compound peak memory with pip's resolver.
+RUN playwright install chromium
 
 # Copy application source
 COPY . .
