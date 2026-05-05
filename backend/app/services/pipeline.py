@@ -869,7 +869,9 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 or_(Parcel.zoning_code.is_(None), Parcel.zoning_code == ""),
             )
         )
-        _skip_zd_download = (_zd_count or 0) > 0 and (_unzoned or 0) == 0
+        # Skip the ArcGIS download if districts are already cached — even if some
+        # parcels are still unzoned (backfill runs separately below regardless).
+        _skip_zd_download = (_zd_count or 0) > 0
         logger.info(
             "Zoning districts cache check: cached=%d unzoned=%d skip_download=%s",
             _zd_count or 0, _unzoned or 0, _skip_zd_download,
@@ -932,8 +934,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 "backfill_zoning",
                 {"jurisdiction_id": str(jurisdiction.id)},
             )
-            async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
-                updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
+            updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
             logger.info("zone_class backfill updated %d parcels", updated)
             await db.commit()
             _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
