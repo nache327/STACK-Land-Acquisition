@@ -28,16 +28,27 @@ def _asyncpg_dsn(url: str) -> str:
 
 
 async def _on_asyncpg_connect(connection: "asyncpg.Connection") -> None:
-    """asyncpg `init` hook — runs once per new pool connection.
+    """Reset known per-connection state inherited from a pgBouncer pool slot.
 
-    Why: pgBouncer transaction-mode pooling for Supabase sometimes returns a
-    server connection whose session-level `default_transaction_read_only` was
-    flipped to `on` by an earlier client. asyncpg's `server_settings` startup
-    options don't reliably survive the pooler. This async callback runs as the
-    first command on the brand-new pool connection — no greenlet context
-    issues because asyncpg invokes it inside its own async setup.
+    Two pieces of leakage to neutralise on every new connection:
+
+    1. `default_transaction_read_only` may be `on` from a prior client's
+       session-level SET (e.g. an audit script that did `SET … = on`).
+       asyncpg's `server_settings` startup option doesn't reliably survive
+       pgBouncer transaction-mode, so issue the SET explicitly.
+
+    2. Prepared statements with names like `__asyncpg_stmt_NN__` may already
+       exist on the underlying physical connection from a prior asyncpg
+       client. The next PREPARE of the same name would raise
+       `DuplicatePreparedStatementError`. `DEALLOCATE ALL` releases all
+       named prepared statements on the connection so our subsequent
+       PREPAREs use clean names.
     """
-    await connection.execute("SET default_transaction_read_only = off")
+    # Combined into one simple-query call so the DEALLOCATE itself doesn't
+    # need to PREPARE anything against the polluted name set.
+    await connection.execute(
+        "DEALLOCATE ALL; SET default_transaction_read_only = off"
+    )
 
 
 def _make_async_creator(database_url: str):
@@ -51,19 +62,17 @@ def _make_async_creator(database_url: str):
     dsn = _asyncpg_dsn(database_url)
 
     async def _create_conn() -> "asyncpg.Connection":
+        # NB: asyncpg.connect() doesn't accept `prepared_statement_name_func`
+        # (only the asyncpg.create_pool wrapper does). The real fix for the
+        # DuplicatePreparedStatementError class of bugs is to use Supabase's
+        # session-mode pooler (port 5432) instead of transaction-mode (port
+        # 6543) — set DATABASE_URL accordingly in deploy env. The asyncpg
+        # kwargs below are still useful for the session-mode case.
         conn = await asyncpg.connect(
             dsn,
             statement_cache_size=0,
             command_timeout=90,
             server_settings={"default_transaction_read_only": "off"},
-            # pgBouncer transaction-mode pooling reuses physical connections
-            # across logical sessions. asyncpg's default prepared-statement
-            # name pool (`__asyncpg_stmt_NN__`) collides when one client
-            # prepared a statement, was released back to the pool, and the
-            # next client tries to prepare the same name — raising
-            # DuplicatePreparedStatementError. Random per-statement names
-            # remove the collision surface.
-            prepared_statement_name_func=lambda: f"__asyncpg_{uuid.uuid4().hex}__",
         )
         # Belt-and-braces: pgBouncer transaction-mode pooling for Supabase
         # frequently strips startup options, so issue the SET explicitly on
