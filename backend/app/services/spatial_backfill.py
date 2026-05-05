@@ -43,71 +43,54 @@ async def backfill_parcel_zoning_from_districts(
     db: AsyncSession,
     *,
     fill_missing_zone_code: bool = True,
-    batch_size: int = 50_000,
 ) -> int:
     """
     Backfill `parcels.zone_class` using parcel/polygon intersection.
-    Runs in batches to avoid Supabase's server-side statement_timeout on large
-    jurisdictions (e.g. Philadelphia with 547K parcels × 29K zoning districts).
+
+    Disables Supabase's server-side statement_timeout for this query — the
+    spatial join of large jurisdictions (e.g. Philadelphia: 547K parcels ×
+    29K districts) is legitimately slow but correct; the timeout would cancel
+    it prematurely. SET LOCAL resets at transaction end.
     """
     zone_code_set = (
         ", zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)"
         if fill_missing_zone_code
         else ""
     )
-
-    # Disable server-side statement timeout for this session — the spatial join
-    # is legitimately slow on large jurisdictions and Supabase's default timeout
-    # would cancel it prematurely. SET LOCAL resets at transaction end.
     await db.execute(text("SET LOCAL statement_timeout = 0"))
-
-    # Fetch parcel IDs in sorted order for stable batching
-    id_rows = await db.execute(
-        text("SELECT id FROM parcels WHERE jurisdiction_id = :jid ORDER BY id"),
+    result = await db.execute(
+        text(
+            f"""
+            WITH ranked AS (
+                SELECT
+                    p.id AS parcel_id,
+                    zd.zone_class,
+                    zd.zone_code,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY p.id
+                        ORDER BY ST_Area(ST_Intersection(p.geom, zd.geom)) DESC NULLS LAST,
+                                 zd.id
+                    ) AS rn
+                FROM parcels p
+                JOIN zoning_districts zd
+                  ON zd.jurisdiction_id = p.jurisdiction_id
+                 AND p.jurisdiction_id = :jid
+                 AND p.geom IS NOT NULL
+                 AND zd.geom IS NOT NULL
+                 AND ST_Intersects(p.geom, zd.geom)
+            )
+            UPDATE parcels p
+            SET zone_class = ranked.zone_class
+                {zone_code_set}
+            FROM ranked
+            WHERE p.id = ranked.parcel_id
+              AND ranked.rn = 1
+            """
+        ),
         {"jid": jurisdiction_id},
     )
-    parcel_ids = [row[0] for row in id_rows]
-    total_updated = 0
-
-    for batch_start in range(0, len(parcel_ids), batch_size):
-        batch_ids = parcel_ids[batch_start : batch_start + batch_size]
-        await db.execute(text("SET LOCAL statement_timeout = 0"))
-        result = await db.execute(
-            text(
-                f"""
-                WITH ranked AS (
-                    SELECT
-                        p.id AS parcel_id,
-                        zd.zone_class,
-                        zd.zone_code,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY p.id
-                            ORDER BY ST_Area(ST_Intersection(p.geom, zd.geom)) DESC NULLS LAST,
-                                     zd.id
-                        ) AS rn
-                    FROM parcels p
-                    JOIN zoning_districts zd
-                      ON zd.jurisdiction_id = p.jurisdiction_id
-                     AND p.jurisdiction_id = :jid
-                     AND p.id = ANY(:ids)
-                     AND p.geom IS NOT NULL
-                     AND zd.geom IS NOT NULL
-                     AND ST_Intersects(p.geom, zd.geom)
-                )
-                UPDATE parcels p
-                SET zone_class = ranked.zone_class
-                    {zone_code_set}
-                FROM ranked
-                WHERE p.id = ranked.parcel_id
-                  AND ranked.rn = 1
-                """
-            ),
-            {"jid": jurisdiction_id, "ids": batch_ids},
-        )
-        total_updated += result.rowcount or 0
-        await db.flush()
-
-    return total_updated
+    await db.flush()
+    return result.rowcount or 0
 
 
 async def refresh_jurisdiction_coverage_level(

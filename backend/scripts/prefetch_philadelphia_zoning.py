@@ -89,16 +89,55 @@ async def main() -> None:
         await db.commit()
         logger.info("Ingested %d zoning districts in %.1fs", count, time.perf_counter() - t1)
 
-        # 5. Spatial backfill: assign zone_code + zone_class to every parcel
+        # 5. Spatial backfill via raw asyncpg — bypasses SQLAlchemy's connection
+        # handling and sets statement_timeout at the SESSION level (not LOCAL)
+        # so Supabase won't cancel the long-running spatial join.
         parcel_count = await db.scalar(
             select(func.count(Parcel.id)).where(
                 Parcel.jurisdiction_id == jurisdiction.id
             )
         )
-        logger.info("Running spatial backfill for %d parcels...", parcel_count or 0)
+        logger.info("Running spatial backfill for %d parcels via raw asyncpg...", parcel_count or 0)
         t2 = time.perf_counter()
-        updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
-        await db.commit()
+
+        import asyncpg as _asyncpg
+        raw_url = _session_url.replace("postgresql+asyncpg://", "postgresql://")
+        conn = await _asyncpg.connect(raw_url, statement_cache_size=0, command_timeout=7200)
+        try:
+            await conn.execute("SET statement_timeout = 0")
+            result = await conn.execute(
+                """
+                WITH ranked AS (
+                    SELECT
+                        p.id AS parcel_id,
+                        zd.zone_class,
+                        zd.zone_code,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY p.id
+                            ORDER BY ST_Area(ST_Intersection(p.geom, zd.geom)) DESC NULLS LAST,
+                                     zd.id
+                        ) AS rn
+                    FROM parcels p
+                    JOIN zoning_districts zd
+                      ON zd.jurisdiction_id = p.jurisdiction_id
+                     AND p.jurisdiction_id = $1
+                     AND p.geom IS NOT NULL
+                     AND zd.geom IS NOT NULL
+                     AND ST_Intersects(p.geom, zd.geom)
+                )
+                UPDATE parcels p
+                SET zone_class = ranked.zone_class,
+                    zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)
+                FROM ranked
+                WHERE p.id = ranked.parcel_id
+                  AND ranked.rn = 1
+                """,
+                jurisdiction.id,
+            )
+        finally:
+            await conn.close()
+
+        updated = int(result.split()[-1]) if result else 0
         logger.info(
             "Backfill complete: %d parcels updated in %.1fs",
             updated,
