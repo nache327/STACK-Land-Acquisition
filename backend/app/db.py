@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 import asyncpg
 from sqlalchemy.ext.asyncio import (
@@ -55,6 +56,14 @@ def _make_async_creator(database_url: str):
             statement_cache_size=0,
             command_timeout=90,
             server_settings={"default_transaction_read_only": "off"},
+            # pgBouncer transaction-mode pooling reuses physical connections
+            # across logical sessions. asyncpg's default prepared-statement
+            # name pool (`__asyncpg_stmt_NN__`) collides when one client
+            # prepared a statement, was released back to the pool, and the
+            # next client tries to prepare the same name — raising
+            # DuplicatePreparedStatementError. Random per-statement names
+            # remove the collision surface.
+            prepared_statement_name_func=lambda: f"__asyncpg_{uuid.uuid4().hex}__",
         )
         # Belt-and-braces: pgBouncer transaction-mode pooling for Supabase
         # frequently strips startup options, so issue the SET explicitly on
