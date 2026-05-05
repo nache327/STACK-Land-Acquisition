@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job_step import JobStep
+from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
 from app.models.zoning_record import EnrichmentCache, ZoningOverlay, ZoningRule
 from app.services.job_tracking import now_utc, truncate_error
@@ -19,19 +20,53 @@ logger = logging.getLogger(__name__)
 CACHE_TTL = timedelta(hours=24)
 
 
-def _parcel_city(parcel: Parcel) -> str:
+def _strip_state_suffix(name: str) -> str:
+    """Drop a trailing ', XX' state code so 'Salt Lake City, UT' → 'Salt Lake City'."""
+    if "," not in name:
+        return name.strip()
+    head, tail = name.rsplit(",", 1)
+    tail = tail.strip()
+    if len(tail) == 2 and tail.isalpha() and tail.isupper():
+        return head.strip()
+    return name.strip()
+
+
+async def _resolve_city(parcel: Parcel, db: AsyncSession) -> str:
+    """Jurisdiction-first city resolution.
+
+    Order of precedence:
+        1. parcel.city  (already backfilled from jurisdictions.name)
+        2. jurisdictions.name via parcel.jurisdiction_id
+        3. address parsing  — only as a last resort, since address strings
+           come from messy upstream parcel sources and frequently misclassify
+           a county as a city.
+        4. literal "unknown"
+    """
     if parcel.city:
-        return parcel.city
+        return _strip_state_suffix(parcel.city)
+    if parcel.jurisdiction_id is not None:
+        jurisdiction = await db.get(Jurisdiction, parcel.jurisdiction_id)
+        if jurisdiction and jurisdiction.name:
+            return _strip_state_suffix(jurisdiction.name)
     if parcel.address and "," in parcel.address:
         return parcel.address.split(",")[-2].strip()
     return "unknown"
 
 
-def _parcel_state(parcel: Parcel) -> str | None:
-    return parcel.state
+async def _resolve_state(parcel: Parcel, db: AsyncSession) -> str | None:
+    if parcel.state:
+        return parcel.state
+    if parcel.jurisdiction_id is not None:
+        jurisdiction = await db.get(Jurisdiction, parcel.jurisdiction_id)
+        if jurisdiction and jurisdiction.state:
+            return jurisdiction.state
+    return None
 
 
-async def lookup_zoning_for_parcel(parcel: Parcel) -> dict[str, Any] | None:
+async def lookup_zoning_for_parcel(
+    parcel: Parcel,
+    db: AsyncSession,
+) -> dict[str, Any] | None:
     """Fast deterministic lookup.
 
     This intentionally prefers already-owned parcel attributes. If a future
@@ -41,8 +76,8 @@ async def lookup_zoning_for_parcel(parcel: Parcel) -> dict[str, Any] | None:
     if not parcel.zoning_code:
         return None
     return {
-        "city": _parcel_city(parcel),
-        "state": _parcel_state(parcel),
+        "city": await _resolve_city(parcel, db),
+        "state": await _resolve_state(parcel, db),
         "zone_code": parcel.zoning_code,
         "density": None,
         "max_units": None,
@@ -105,7 +140,7 @@ async def ingest_zoning_for_parcel_db(
         if parcel is None:
             raise ValueError(f"Parcel {parcel_id} not found")
 
-        result = await lookup_zoning_for_parcel(parcel)
+        result = await lookup_zoning_for_parcel(parcel, db)
         if result is None:
             await _upsert_enrichment_cache(
                 db,
