@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 PARCEL_ENDPOINT = (
     "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest"
-    "/services/OPA_Properties_Public/FeatureServer/0"
+    "/services/PWD_PARCELS/FeatureServer/0"
 )
 
 

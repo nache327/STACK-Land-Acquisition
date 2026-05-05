@@ -33,14 +33,17 @@ logger = logging.getLogger(__name__)
 # ─── Candidate field-name lists (first match wins) ─────────────────────────
 
 _APN_FIELDS = [
-    "PARCEL", "APN", "PARCELNO", "PARCEL_NO", "PARCEL_ID", "PIN",
+    "PARCEL", "APN", "PARCELNO", "PARCEL_NO",
+    # PIN before PARCEL_ID: Philadelphia PWD_PARCELS uses `pin` as the OPA account number
+    # while `parcel_id` on that service is just a row-ID (1, 2, 3…).
+    "PIN", "PARCEL_ID",
     "SERIAL", "Serial", "serial",
     # NJ MOD-IV (statewide Parcels_Composite_NJ_WM + county services)
     "PAMS_PIN", "GIS_PIN", "PIN_NODUP", "pams_pin",
     # NYC MapPLUTO
     "BBL", "bbl",
-    # Philadelphia OPA
-    "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID",
+    # Philadelphia OPA / PWD_PARCELS BRT identifier
+    "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID", "brt_id", "BRT_ID",
     # Allentown PA City_Landuse service
     "WARDACCTNO",
 ]
@@ -216,15 +219,17 @@ def _normalize_geom(geom: Any) -> Polygon | MultiPolygon | None:
     """Return a valid Polygon/MultiPolygon or None."""
     if geom is None or geom.is_empty:
         return None
-    if not geom.is_valid:
-        geom = make_valid(geom)
-    if geom.is_empty:
-        return None
     if geom.geom_type == "GeometryCollection":
         polys = [g for g in geom.geoms if g.geom_type in ("Polygon", "MultiPolygon")]
         if not polys:
             return None
         geom = polys[0] if len(polys) == 1 else MultiPolygon(polys)
+    if geom.geom_type not in ("Polygon", "MultiPolygon"):
+        return None
+    if not geom.is_valid:
+        geom = make_valid(geom)
+    if geom.is_empty:
+        return None
     return geom
 
 
