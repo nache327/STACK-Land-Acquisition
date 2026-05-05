@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 PARCEL_FETCH_TIMEOUT_SECONDS = 180
 PARCEL_INGEST_TIMEOUT_SECONDS = 300
-ZONING_TIMEOUT_SECONDS = 240
+ZONING_TIMEOUT_SECONDS = 600
 ENRICHMENT_TIMEOUT_SECONDS = 240
 ORDINANCE_TIMEOUT_SECONDS = 240
 MAX_JOB_ERROR_LENGTH = 2000
@@ -500,6 +500,22 @@ async def _set_status(
     await db.flush()
 
 
+async def _heartbeat_locked_at(job_id: uuid.UUID, interval: int = 60) -> None:
+    """Refresh locked_at every interval seconds so the watchdog never kills an active job."""
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            async with async_session_maker() as hb_db:
+                result = await hb_db.execute(select(Job).where(Job.id == job_id))
+                hb_job = result.scalar_one_or_none()
+                if hb_job and hb_job.locked_at is not None:
+                    hb_job.locked_at = now_utc()
+                    await hb_db.commit()
+                    logger.debug("Heartbeat refreshed locked_at for job %s", job_id)
+        except Exception as exc:
+            logger.debug("Heartbeat failed for job %s: %s", job_id, exc)
+
+
 # ─── Public entry point ──────────────────────────────────────────────────────
 
 async def run_job_pipeline(job_id: uuid.UUID) -> None:
@@ -546,6 +562,7 @@ async def run_job_pipeline(job_id: uuid.UUID) -> None:
         job.attempts = (job.attempts or 0) + 1
         await db.commit()
 
+        heartbeat_task = asyncio.create_task(_heartbeat_locked_at(job_id))
         try:
             await _run(db, job)
             _stage_completed(job, "pipeline", pipeline_started, status=JobStatus.ready.value)
@@ -555,6 +572,12 @@ async def run_job_pipeline(job_id: uuid.UUID) -> None:
         except Exception as exc:
             _stage_failed(job, "pipeline", pipeline_started, exc)
             await mark_job_failed(db, job_id, _job_error_message(exc))
+        finally:
+            heartbeat_task.cancel()
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
 
 
 async def _run(db: AsyncSession, job: Job) -> None:
