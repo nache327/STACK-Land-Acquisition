@@ -1,7 +1,6 @@
 import logging
-import uuid
 
-import asyncpg
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -22,89 +21,64 @@ class Base(DeclarativeBase):
 logger.info("Connected to Postgres at %s (env=%s)", settings.database_url_sanitized, settings.environment)
 
 
-def _asyncpg_dsn(url: str) -> str:
-    """Strip the SQLAlchemy `+asyncpg` dialect marker so asyncpg.connect accepts it."""
-    return url.replace("postgresql+asyncpg://", "postgresql://", 1)
-
-
-async def _on_asyncpg_connect(connection: "asyncpg.Connection") -> None:
-    """Reset known per-connection state inherited from a pgBouncer pool slot.
-
-    Two pieces of leakage to neutralise on every new connection:
-
-    1. `default_transaction_read_only` may be `on` from a prior client's
-       session-level SET (e.g. an audit script that did `SET … = on`).
-       asyncpg's `server_settings` startup option doesn't reliably survive
-       pgBouncer transaction-mode, so issue the SET explicitly.
-
-    2. Prepared statements with names like `__asyncpg_stmt_NN__` may already
-       exist on the underlying physical connection from a prior asyncpg
-       client. The next PREPARE of the same name would raise
-       `DuplicatePreparedStatementError`. `DEALLOCATE ALL` releases all
-       named prepared statements on the connection so our subsequent
-       PREPAREs use clean names.
-    """
-    # Combined into one simple-query call so the DEALLOCATE itself doesn't
-    # need to PREPARE anything against the polluted name set.
-    await connection.execute(
-        "DEALLOCATE ALL; SET default_transaction_read_only = off"
-    )
-
-
-def _make_async_creator(database_url: str):
-    """Return an async creator coroutine that calls asyncpg.connect directly.
-
-    `init=` is an `asyncpg.create_pool()` parameter, NOT `asyncpg.connect()`.
-    Since we use SQLAlchemy's pool (NullPool) and not asyncpg's pool, we
-    must run the SET as an explicit statement on the brand-new connection
-    after asyncpg.connect() returns.
-    """
-    dsn = _asyncpg_dsn(database_url)
-
-    async def _create_conn() -> "asyncpg.Connection":
-        # NB: asyncpg.connect() doesn't accept `prepared_statement_name_func`
-        # (only the asyncpg.create_pool wrapper does). The real fix for the
-        # DuplicatePreparedStatementError class of bugs is to use Supabase's
-        # session-mode pooler (port 5432) instead of transaction-mode (port
-        # 6543) — set DATABASE_URL accordingly in deploy env. The asyncpg
-        # kwargs below are still useful for the session-mode case.
-        conn = await asyncpg.connect(
-            dsn,
-            statement_cache_size=0,
-            command_timeout=90,
-            server_settings={"default_transaction_read_only": "off"},
-        )
-        # Belt-and-braces: pgBouncer transaction-mode pooling for Supabase
-        # frequently strips startup options, so issue the SET explicitly on
-        # the connection before handing it to SQLAlchemy. This runs inside
-        # the asyncpg connection's own async context — no greenlet bridge.
-        await _on_asyncpg_connect(conn)
-        return conn
-
-    return _create_conn
-
-
 def make_engine(database_url: str | None = None):
-    """Build an AsyncEngine configured for Supabase pgBouncer + Dramatiq workers.
+    """Build an AsyncEngine compatible with both the API process and Dramatiq workers.
 
-    Used by both the API process (one shared engine) and the worker actors
-    (one fresh engine per task because asyncio locks can't cross
-    asyncio.run() calls). Centralising this guarantees the read-only-flag
-    workaround applies in both places.
+    No `async_creator` — that path requires a greenlet context Dramatiq's
+    `asyncio.run()` doesn't provide, and was the source of the
+    `MissingGreenlet: greenlet_spawn has not been called` crash on every
+    worker actor invocation.
+
+    Per-connection setup (clear leftover prepared statements, force RW
+    transactions) is wired up through SQLAlchemy's sync `connect` event
+    listener registered just below — which runs in the correct context
+    SQLAlchemy already manages for asyncpg's adapted DBAPI connection.
     """
     url = database_url or settings.database_url
-    return create_async_engine(
+    new_engine = create_async_engine(
         url,
         echo=False,
+        # NullPool: no SQLAlchemy-level connection pooling. Each request opens
+        # and closes its own connection. The upstream Supabase Supavisor pooler
+        # does the actual connection pooling. NullPool also avoids the asyncio
+        # Lock-bound-to-event-loop crash when a Dramatiq worker thread tears
+        # down its event loop and rebuilds it for the next task.
         poolclass=NullPool,
-        async_creator=_make_async_creator(url),
+        pool_pre_ping=True,
+        future=True,
+        connect_args={
+            # Required for transaction-mode pgBouncer compat. Harmless on
+            # session-mode (5432) but kept as belt-and-braces.
+            "statement_cache_size": 0,
+            # Per-command client-side timeout so a half-open TCP connection
+            # to the pooler can't hang a worker forever.
+            "command_timeout": 90,
+            # asyncpg startup option — ignored by some pooler configurations,
+            # so the `connect` listener below issues the SET explicitly.
+            "server_settings": {"default_transaction_read_only": "off"},
+        },
     )
 
+    @event.listens_for(new_engine.sync_engine, "connect")
+    def _set_connection_settings(dbapi_connection, _connection_record):
+        """Run on every new pool connection, in SQLAlchemy's sync wrapper context.
 
-# NullPool: no SQLAlchemy-level connection pooling. Each request opens and closes
-# its own connection. pgbouncer handles server-side pooling. This avoids zombie
-# connections from rapid redeployments exhausting Supabase's session-mode limit,
-# and avoids asyncio event-loop lock binding errors across worker threads.
+        DEALLOCATE ALL: clears any prepared statements left on the underlying
+            physical connection by a prior pooler tenant.
+        SET default_transaction_read_only = off: counteracts a leaked session-level
+            read-only flag from a prior client (e.g. an audit script that did
+            `SET … = on` and the pooler reused the connection).
+        """
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("DEALLOCATE ALL")
+            cursor.execute("SET default_transaction_read_only = off")
+        finally:
+            cursor.close()
+
+    return new_engine
+
+
 engine = make_engine()
 
 async_session_maker = async_sessionmaker(
