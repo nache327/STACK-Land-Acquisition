@@ -33,6 +33,9 @@ engine = create_async_engine(
         # if the TCP connection to pgBouncer becomes half-open (no server-side response).
         # Also caps asyncpg's internal cancel-request cleanup after asyncio.timeout fires.
         "command_timeout": 90,
+        # Override any PgBouncer server_reset_query or Supabase read-replica routing
+        # that can hand out a read-only backend connection.
+        "server_settings": {"default_transaction_read_only": "off"},
     },
 )
 
