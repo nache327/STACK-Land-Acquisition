@@ -38,10 +38,6 @@ engine = create_async_engine(
         # below to force BEGIN READ WRITE at the SQLAlchemy level.
         "server_settings": {"default_transaction_read_only": "off"},
     },
-    # Force SQLAlchemy to emit BEGIN READ WRITE for every transaction so that
-    # PgBouncer transaction-mode connections handed out in read-only state are
-    # immediately promoted to read-write before any DML is attempted.
-    execution_options={"postgresql_readonly": False},
 )
 
 async_session_maker = async_sessionmaker(
