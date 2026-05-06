@@ -185,9 +185,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   // Buy-box precompute state
   const [precomputeData, setPrecomputeData] = useState(new Map<string, PrecomputedParcelData>());
   const [precomputeStatus, setPrecomputeStatus] = useState<PrecomputeStatus | null>(null);
-  const [buyBoxFilter, setBuyBoxFilter] = useState<BuyBoxFilter>(
-    () => getDefaultPreset()?.filter ?? DEFAULT_FILTER,
-  );
+  const [buyBoxFilter, setBuyBoxFilter] = useState<BuyBoxFilter>(DEFAULT_FILTER);
   const precomputeAbortRef = useRef<AbortController | null>(null);
   const pendingBatchRef = useRef(new Map<string, PrecomputedParcelData>());
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

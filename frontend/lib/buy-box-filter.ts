@@ -32,8 +32,8 @@ export interface SavedPreset {
 
 export const DEFAULT_FILTER: BuyBoxFilter = {
   driveTimeMinutes: 10,
-  minPopulation: 30_000,
-  minMedianHHI: 150_000,
+  minPopulation: null,
+  minMedianHHI: null,
   minMedianHomeValue: null,
   minHnwHouseholds: null,
   minAADT: null,
