@@ -345,18 +345,18 @@ async def apply_aadt_overlay(
 
     logger.info("Assigning AADT from %d road segments to parcels in %s …", len(road_rows), jurisdiction_id)
 
-    # Build a VALUES list and use a single UPDATE with a lateral join:
-    # For each parcel, find the road center within 0.00135° (~150 m) with the
-    # highest AADT and assign that value.
-    values_sql = ", ".join(
-        f"(ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326), {aadt})"
-        for lng, lat, aadt in road_rows
-    )
+    lngs  = [r[0] for r in road_rows]
+    lats  = [r[1] for r in road_rows]
+    aadts = [r[2] for r in road_rows]
 
     result = await db.execute(
-        text(f"""
-            WITH roads(geom, aadt) AS (
-                VALUES {values_sql}
+        text("""
+            WITH roads AS (
+                SELECT
+                    ST_SetSRID(ST_MakePoint(r.lng, r.lat), 4326)::geography AS geom,
+                    r.aadt
+                FROM UNNEST(:lngs::float[], :lats::float[], :aadts::int[])
+                     AS r(lng, lat, aadt)
             ),
             best AS (
                 SELECT DISTINCT ON (p.id)
@@ -366,7 +366,7 @@ async def apply_aadt_overlay(
                 JOIN roads r
                   ON ST_DWithin(
                        COALESCE(p.centroid, ST_Centroid(p.geom))::geography,
-                       r.geom::geography,
+                       r.geom,
                        150
                      )
                 WHERE p.jurisdiction_id = :jid
@@ -378,7 +378,7 @@ async def apply_aadt_overlay(
             FROM best
             WHERE p.id = best.parcel_id
         """),
-        {"jid": str(jurisdiction_id)},
+        {"lngs": lngs, "lats": lats, "aadts": aadts, "jid": str(jurisdiction_id)},
     )
     await db.flush()
     updated = result.rowcount or 0

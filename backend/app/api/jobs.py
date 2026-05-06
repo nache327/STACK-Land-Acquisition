@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import urllib.parse
 import httpx
-from app.db import get_db
+from fastapi import BackgroundTasks
+from app.db import get_db, async_session_maker
 from app.models.job import Job, JobStatus
 from app.models.job_step import JobArtifact, JobStep
 from app.models.jurisdiction import Jurisdiction
@@ -158,9 +159,22 @@ async def get_job_steps(
     return list(result.scalars().all())
 
 
-@router.post("/jobs/{job_id}/backfill-aadt", status_code=200)
+async def _run_aadt_backfill(jurisdiction_id: uuid.UUID) -> None:
+    import logging
+    log = logging.getLogger(__name__)
+    try:
+        async with async_session_maker() as db:
+            updated = await apply_aadt_overlay(jurisdiction_id, db)
+            await db.commit()
+            log.info("AADT backfill complete: %d parcels updated for %s", updated, jurisdiction_id)
+    except Exception as exc:
+        log.error("AADT backfill failed for %s: %s", jurisdiction_id, exc)
+
+
+@router.post("/jobs/{job_id}/backfill-aadt", status_code=202)
 async def backfill_aadt(
     job_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     job = await db.get(Job, job_id)
@@ -198,15 +212,9 @@ async def backfill_aadt(
         except Exception as exc:
             overpass_error = str(exc)
 
-    apply_error = None
-    updated = 0
-    try:
-        updated = await apply_aadt_overlay(jid, db)
-    except Exception as exc:
-        apply_error = f"{type(exc).__name__}: {exc}"
-
+    background_tasks.add_task(_run_aadt_backfill, jid)
     return {
-        "updated": updated,
+        "status": "started",
         "jurisdiction_id": str(jid),
         "debug": {
             "total_parcels": parcel_count,
@@ -214,7 +222,6 @@ async def backfill_aadt(
             "bbox": bbox,
             "overpass_road_count": overpass_elements,
             "overpass_error": overpass_error,
-            "apply_error": apply_error,
         }
     }
 
