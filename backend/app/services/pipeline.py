@@ -15,6 +15,7 @@ Known jurisdictions remain as a fast-path cache to avoid network calls.
 from __future__ import annotations
 
 import asyncio
+import json as _json
 import logging
 import socket
 import re
@@ -32,6 +33,7 @@ from sqlalchemy import select as sa_select
 
 from app.db import async_session_maker
 from app.models.job import Job, JobStatus
+from app.models.job_step import JobStep
 from app.models.jurisdiction import CoverageLevel, Jurisdiction, ParcelSource
 from app.models.parcel import Parcel
 from app.services.arcgis_query import download_all_features
@@ -63,6 +65,29 @@ ZONING_TIMEOUT_SECONDS = 600
 ENRICHMENT_TIMEOUT_SECONDS = 240
 ORDINANCE_TIMEOUT_SECONDS = 240
 MAX_JOB_ERROR_LENGTH = 4000
+
+
+async def _step_completed(db: AsyncSession, job: Job, step_name: str) -> bool:
+    """Return True if this job already has a completed step with the given name."""
+    result = await db.execute(
+        select(JobStep).where(
+            JobStep.job_id == job.__dict__.get("id"),
+            JobStep.step == step_name,
+            JobStep.status == "completed",
+        ).limit(1)
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
+    """Write job.progress to DB using a fresh session to avoid sharing the
+    in-flight ingest transaction (which causes MissingGreenlet on commit)."""
+    async with async_session_maker() as pg:
+        await pg.execute(
+            text("UPDATE jobs SET progress = :p::jsonb WHERE id = :id"),
+            {"p": _json.dumps(progress), "id": str(job_id)},
+        )
+        await pg.commit()
 
 
 def _timestamp() -> str:
@@ -700,10 +725,14 @@ async def _run(db: AsyncSession, job: Job) -> None:
     existing_count = await db.scalar(
         select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction.id)
     )
-    # Always reuse cached parcels if they exist. force=True bypasses job dedup
-    # and re-runs analysis (zoning, overlays, feasibility), but re-downloading
-    # 30k+ geometries on every forced run spikes memory and kills the container.
-    parcels_cached = (existing_count or 0) > 0
+    # Skip download+ingest only when BOTH conditions hold:
+    #   1. parcels are already in the DB, AND
+    #   2. a prior ingest_parcels step completed successfully.
+    # If ingest previously failed mid-way (e.g. Marlboro at 216K/251K),
+    # we re-download and re-ingest so the missing parcels get added.
+    # The upsert in ingest_parcels is idempotent — no duplicates.
+    ingest_already_done = await _step_completed(db, job, "ingest_parcels")
+    parcels_cached = (existing_count or 0) > 0 and ingest_already_done
 
     if parcels_cached:
         logger.info(
@@ -731,19 +760,22 @@ async def _run(db: AsyncSession, job: Job) -> None:
         downloaded_count = [0]
         total_count = [0]
 
+        _job_id: uuid.UUID = job.__dict__["id"]
+
         async def _progress(downloaded: int, total: int) -> None:
             downloaded_count[0] = downloaded
             total_count[0] = total
-            job.progress = {
+            new_progress = {
                 **(job.progress or {}),
                 "parcels_downloaded": downloaded,
                 "parcels_total": total,
             }
-            # Commit every 500 parcels so the frontend can see progress.
-            # No explicit flush — commit implies flush and avoids triggering
-            # a sync lazy-load of job.steps/artifacts mid-transaction.
+            job.progress = new_progress
+            # Use a fresh session — sharing `db` with the in-flight download
+            # transaction causes MissingGreenlet when commit cascades through
+            # job.steps / job.artifacts relationships.
             if downloaded % 500 == 0:
-                await db.commit()
+                await _progress_commit(_job_id, new_progress)
 
         if cfg.parcel_source == ParcelSource.regrid:
             # Regrid path is stored in parcel_endpoint (e.g. "ut/salt_lake/draper")
@@ -803,16 +835,16 @@ async def _run(db: AsyncSession, job: Job) -> None:
 
         async def _ingest_progress(phase: str, completed: int, total: int) -> None:
             progress_key = "parcels_ingested" if phase == "upserting" else "parcels_mapped"
-            job.progress = {
+            new_progress = {
                 **(job.progress or {}),
                 "ingest_phase": phase,
                 progress_key: completed,
                 "parcels_total": total,
             }
-            # Commit implies flush — no explicit flush here to avoid triggering
-            # a sync lazy-load of job.steps/artifacts inside the ORM unit-of-work.
+            job.progress = new_progress
+            # Fresh session — same reason as _progress above.
             if completed % 2000 == 0 or completed == total:
-                await db.commit()
+                await _progress_commit(_job_id, new_progress)
 
         async with asyncio.timeout(PARCEL_INGEST_TIMEOUT_SECONDS):
             count = await ingest_parcels(
