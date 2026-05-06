@@ -84,7 +84,7 @@ async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
     in-flight ingest transaction (which causes MissingGreenlet on commit)."""
     async with async_session_maker() as pg:
         await pg.execute(
-            text("UPDATE jobs SET progress = :p::jsonb WHERE id = :id"),
+            text("UPDATE jobs SET progress = CAST(:p AS jsonb) WHERE id = CAST(:id AS uuid)"),
             {"p": _json.dumps(progress), "id": str(job_id)},
         )
         await pg.commit()
