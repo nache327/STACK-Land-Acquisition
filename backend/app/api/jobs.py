@@ -187,7 +187,11 @@ async def backfill_aadt(
         )
         try:
             async with httpx.AsyncClient(timeout=90) as client:
-                resp = await client.post("https://overpass-api.de/api/interpreter", data={"data": q})
+                resp = await client.post(
+                    "https://overpass-api.de/api/interpreter",
+                    content=f"data={q}".encode(),
+                    headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "ParcelLogic/1.0", "Accept": "application/json"},
+                )
                 resp.raise_for_status()
                 overpass_elements = len(resp.json().get("elements", []))
         except Exception as exc:

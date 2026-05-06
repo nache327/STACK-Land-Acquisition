@@ -306,7 +306,15 @@ async def apply_aadt_overlay(
     logger.info("Querying Overpass API for roads in bbox %s …", bbox)
     try:
         async with httpx.AsyncClient(timeout=90) as client:
-            resp = await client.post(_OVERPASS_URL, data={"data": overpass_query})
+            resp = await client.post(
+                _OVERPASS_URL,
+                content=f"data={overpass_query}".encode(),
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "ParcelLogic/1.0",
+                    "Accept": "application/json",
+                },
+            )
             resp.raise_for_status()
             data = resp.json()
     except Exception as exc:
