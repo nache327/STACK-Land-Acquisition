@@ -960,6 +960,14 @@ async def _run(db: AsyncSession, job: Job) -> None:
             zoning_fetch_step = await db.merge(zoning_fetch_step)
             await fail_job_step(db, zoning_fetch_step, exc, status="warning")
             await db.commit()
+            # Rollback expired job and jurisdiction — refresh so downstream
+            # attribute access doesn't trigger a sync lazy-load (MissingGreenlet).
+            try:
+                async with asyncio.timeout(5):
+                    await db.refresh(job)
+                    await db.refresh(jurisdiction)
+            except Exception:
+                pass
 
     # Cache-hit path: districts exist but some parcels may still be unzoned
     if zoning_endpoint and _skip_zd_download and (_unzoned or 0) > 0:
