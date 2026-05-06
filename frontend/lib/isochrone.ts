@@ -40,6 +40,7 @@ export interface TractData {
 
 const isochroneCache = new Map<string, IsochroneResult>();
 const tractCache = new Map<string, TractData[]>();
+const acsCountyCache = new Map<string, Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>>();
 
 export function getIsochroneCache(): ReadonlyMap<string, IsochroneResult> {
   return isochroneCache;
@@ -48,6 +49,7 @@ export function getIsochroneCache(): ReadonlyMap<string, IsochroneResult> {
 export function clearIsochroneCache(): void {
   isochroneCache.clear();
   tractCache.clear();
+  acsCountyCache.clear();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -135,13 +137,19 @@ async function fetchAcsForCounty(
   statefp: string,
   countyfp: string
 ): Promise<Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>> {
+  const cacheKey = `${statefp}${countyfp}`;
+  if (acsCountyCache.has(cacheKey)) return acsCountyCache.get(cacheKey)!;
+
   const url =
     `https://api.census.gov/data/2022/acs/acs5` +
     `?get=B01003_001E,B19013_001E,B25077_001E,B11001_001E` +
     `&for=tract:*&in=state:${statefp}&in=county:${countyfp}`;
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
-  if (!res.ok) return new Map();
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) {
+    console.warn(`[ACS] fetch failed for ${statefp}/${countyfp}: HTTP ${res.status}`);
+    return new Map();
+  }
 
   const rows = (await res.json()) as AcsRow[];
   const [headers, ...data] = rows;
@@ -164,6 +172,8 @@ async function fetchAcsForCounty(
       households: parseN(row[hhi2]),
     });
   }
+  console.log(`[ACS] ${statefp}/${countyfp} → ${out.size} tracts`);
+  acsCountyCache.set(cacheKey, out);
   return out;
 }
 
