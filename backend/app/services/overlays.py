@@ -286,14 +286,6 @@ async def apply_aadt_overlay(
 
     Returns the number of parcels updated.
     """
-    already = await db.scalar(
-        text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND aadt IS NOT NULL"),
-        {"jid": jurisdiction_id},
-    )
-    if already and already > 0:
-        logger.info("AADT overlay already applied for %s (%d parcels) — skipping", jurisdiction_id, already)
-        return 0
-
     bbox = await get_parcel_bbox(jurisdiction_id, db)
     if bbox is None:
         logger.warning("No parcel bbox for %s — skipping AADT overlay", jurisdiction_id)
@@ -363,9 +355,13 @@ async def apply_aadt_overlay(
                     r.aadt
                 FROM parcels p
                 JOIN roads r
-                  ON ST_DWithin(p.centroid::geography, r.geom::geography, 150)
+                  ON ST_DWithin(
+                       COALESCE(p.centroid, ST_Centroid(p.geom))::geography,
+                       r.geom::geography,
+                       150
+                     )
                 WHERE p.jurisdiction_id = :jid
-                  AND p.centroid IS NOT NULL
+                  AND (p.centroid IS NOT NULL OR p.geom IS NOT NULL)
                 ORDER BY p.id, r.aadt DESC
             )
             UPDATE parcels p
