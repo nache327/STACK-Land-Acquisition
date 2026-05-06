@@ -9,15 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import urllib.parse
-import httpx
 from fastapi import BackgroundTasks
 from app.db import get_db, async_session_maker
 from app.models.job import Job, JobStatus
 from app.models.job_step import JobArtifact, JobStep
 from app.models.jurisdiction import Jurisdiction
 from app.services.overlays import apply_aadt_overlay
-from app.services.arcgis_bbox import get_parcel_bbox
 from app.schemas.job import JobAdminRead, JobArtifactRead, JobCreate, JobRead, JobStepRead
 from app.services.job_queue import enqueue_pipeline_job
 from app.services.job_tracking import (
@@ -184,46 +181,8 @@ async def backfill_aadt(
         raise HTTPException(status_code=400, detail="Job has no jurisdiction")
 
     jid = job.jurisdiction_id
-
-    parcel_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid"), {"jid": jid})
-    centroid_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND centroid IS NOT NULL"), {"jid": jid})
-
-    bbox = await get_parcel_bbox(jid, db)
-
-    overpass_elements = None
-    overpass_error = None
-    if bbox:
-        west, south, east, north = bbox
-        q = (
-            f"[out:json][timeout:60];"
-            f'way({south},{west},{north},{east})'
-            f'[highway~"^(motorway|trunk|primary|secondary|tertiary|residential|service|unclassified)$"];'
-            f"out tags center;"
-        )
-        try:
-            async with httpx.AsyncClient(timeout=90) as client:
-                resp = await client.post(
-                    "https://overpass-api.de/api/interpreter",
-                    content=f"data={urllib.parse.quote(q)}".encode(),
-                    headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "ParcelLogic/1.0", "Accept": "application/json"},
-                )
-                resp.raise_for_status()
-                overpass_elements = len(resp.json().get("elements", []))
-        except Exception as exc:
-            overpass_error = str(exc)
-
     background_tasks.add_task(_run_aadt_backfill, jid)
-    return {
-        "status": "started",
-        "jurisdiction_id": str(jid),
-        "debug": {
-            "total_parcels": parcel_count,
-            "parcels_with_centroid": centroid_count,
-            "bbox": bbox,
-            "overpass_road_count": overpass_elements,
-            "overpass_error": overpass_error,
-        }
-    }
+    return {"status": "started", "jurisdiction_id": str(jid)}
 
 
 @router.get("/jobs/{job_id}/artifacts", response_model=list[JobArtifactRead])
