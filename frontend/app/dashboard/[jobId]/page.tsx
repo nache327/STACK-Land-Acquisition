@@ -454,6 +454,19 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     return { maxPopulation: Math.max(p99(pops), 200_000), maxHnwHouseholds: Math.max(p99(hnws), 5_000) };
   }, [precomputeData, buyBoxFilter.driveTimeMinutes]);
 
+  const bestActualValues = useMemo(() => {
+    if (!precomputeData.size) return null;
+    let pop = 0, hhi = 0, homeVal = 0, hnw = 0;
+    precomputeData.forEach((d) => {
+      const ring = d.rings[buyBoxFilter.driveTimeMinutes];
+      if (ring.totalPopulation > pop) pop = ring.totalPopulation;
+      if (ring.weightedMedianHHI > hhi) hhi = ring.weightedMedianHHI;
+      if (ring.weightedMedianHomeValue > homeVal) homeVal = ring.weightedMedianHomeValue;
+      if (ring.hnwHouseholds > hnw) hnw = ring.hnwHouseholds;
+    });
+    return { population: pop, medianHHI: hhi, homeValue: homeVal, hnwHouseholds: hnw };
+  }, [precomputeData, buyBoxFilter.driveTimeMinutes]);
+
   function handleBuyBoxChange(f: BuyBoxFilter) {
     if (buyBoxDebounceRef.current) clearTimeout(buyBoxDebounceRef.current);
     buyBoxDebounceRef.current = setTimeout(() => setBuyBoxFilter(f), 50);
@@ -673,6 +686,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               precomputeStatus={precomputeStatus}
               evaluationCounts={evaluationCounts}
               cityDataRanges={cityDataRanges}
+              bestActualValues={bestActualValues}
               onRecompute={handleRecompute}
             />
           )}
@@ -764,6 +778,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             }}
             parcelEvaluations={parcelEvaluations}
             buyBoxFilter={buyBoxFilter}
+            precomputedData={precomputeData}
           />
         </main>
 

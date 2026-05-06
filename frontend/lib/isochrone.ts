@@ -5,9 +5,8 @@
  * All results are module-level cached — never refetch a cached key.
  */
 import union from "@turf/union";
-import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import intersect from "@turf/intersect";
-import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from "geojson";
+import type { Feature, Polygon, MultiPolygon, FeatureCollection } from "geojson";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,6 +28,7 @@ export interface TractData {
   statefp: string;
   countyfp: string;
   tractce: string;
+  population: number | null;
   median_hhi: number | null;
   median_home_value: number | null;
   household_count: number | null;
@@ -134,10 +134,10 @@ type AcsRow = string[];
 async function fetchAcsForCounty(
   statefp: string,
   countyfp: string
-): Promise<Map<string, { hhi: number | null; homeValue: number | null; households: number | null }>> {
+): Promise<Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>> {
   const url =
     `https://api.census.gov/data/2022/acs/acs5` +
-    `?get=B19013_001E,B25077_001E,B11001_001E` +
+    `?get=B01003_001E,B19013_001E,B25077_001E,B11001_001E` +
     `&for=tract:*&in=state:${statefp}&in=county:${countyfp}`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
@@ -145,6 +145,7 @@ async function fetchAcsForCounty(
 
   const rows = (await res.json()) as AcsRow[];
   const [headers, ...data] = rows;
+  const pi = headers.indexOf("B01003_001E");
   const hi = headers.indexOf("B19013_001E");
   const hvi = headers.indexOf("B25077_001E");
   const hhi2 = headers.indexOf("B11001_001E");
@@ -152,11 +153,12 @@ async function fetchAcsForCounty(
   const ci = headers.indexOf("county");
   const ti = headers.indexOf("tract");
 
-  const out = new Map<string, { hhi: number | null; homeValue: number | null; households: number | null }>();
+  const out = new Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>();
   for (const row of data) {
     const geoid = row[si] + row[ci] + row[ti];
     const parseN = (v: string) => (v === null || v === "-666666666" || v === "" ? null : Number(v));
     out.set(geoid, {
+      population: parseN(row[pi]),
       hhi: parseN(row[hi]),
       homeValue: parseN(row[hvi]),
       households: parseN(row[hhi2]),
@@ -208,7 +210,7 @@ export async function fetchCensusTracts(
       fetchAcsForCounty(fips5.slice(0, 2), fips5.slice(2, 5))
     )
   );
-  const acsData = new Map<string, { hhi: number | null; homeValue: number | null; households: number | null }>();
+  const acsData = new Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>();
   for (const m of acsResults) {
     m.forEach((v, k) => acsData.set(k, v));
   }
@@ -222,21 +224,9 @@ export async function fetchCensusTracts(
 
     const tractGeom = feat as Feature<Polygon | MultiPolygon>;
 
-    const tractBbox = bboxOf(tractGeom);
-    const tractCentroid: Feature<Point> = {
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [
-          (tractBbox[0] + tractBbox[2]) / 2,
-          (tractBbox[1] + tractBbox[3]) / 2,
-        ],
-      },
-      properties: {},
-    };
-
-    if (!booleanPointInPolygon(tractCentroid, polygon)) continue;
-
+    // Compute intersection first — skip only if there is literally zero overlap.
+    // (The old centroid-based pre-filter dropped edge tracts that overlap the ring
+    // but have their center outside it, artificially deflating all metrics.)
     let clipped: Feature<Polygon | MultiPolygon> | null = null;
     try {
       const fc: FeatureCollection<Polygon | MultiPolygon> = {
@@ -251,6 +241,8 @@ export async function fetchCensusTracts(
       clipped = tractGeom as Feature<Polygon | MultiPolygon>;
     }
 
+    if (!clipped) continue;
+
     const acs = acsData.get(geoid);
 
     results.push({
@@ -258,6 +250,7 @@ export async function fetchCensusTracts(
       statefp:  geoid.slice(0, 2),
       countyfp: geoid.slice(2, 5),
       tractce:  String(props.TRACT ?? ""),
+      population:         acs?.population ?? null,
       median_hhi:         acs?.hhi        ?? null,
       median_home_value:  acs?.homeValue  ?? null,
       household_count:    acs?.households ?? null,

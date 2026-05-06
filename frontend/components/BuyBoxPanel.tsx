@@ -18,6 +18,7 @@ interface BuyBoxPanelProps {
   precomputeStatus: PrecomputeStatus | null;
   evaluationCounts: { match: number; borderline: number; fail: number; computing: number };
   cityDataRanges: { maxPopulation: number; maxHnwHouseholds: number } | null;
+  bestActualValues?: { population: number; medianHHI: number; homeValue: number; hnwHouseholds: number } | null;
   onRecompute?: () => void;
 }
 
@@ -36,6 +37,7 @@ export function BuyBoxPanel({
   precomputeStatus,
   evaluationCounts,
   cityDataRanges,
+  bestActualValues,
   onRecompute,
 }: BuyBoxPanelProps) {
   const [presets, setPresets] = useState<SavedPreset[]>(() => loadPresets());
@@ -303,9 +305,15 @@ export function BuyBoxPanel({
 
       {evaluationCounts.match === 0 && evaluationCounts.borderline === 0 && !isComputing && (
         hidden > 0 ? (
-          <p className="mb-2 text-[10px] text-amber-500/80">
-            All parcels hidden — thresholds may be above available data. Try Recompute if data looks stale.
-          </p>
+          <div className="mb-2 text-[10px] text-amber-500/80">
+            <p>All parcels hidden — thresholds may be above available data.</p>
+            {bestActualValues && (
+              <p className="mt-1 text-slate-400">
+                Best found: Pop {fmt(bestActualValues.population)} · HHI {fmt(bestActualValues.medianHHI, "$")} · Home {fmt(bestActualValues.homeValue, "$")} · HNW {fmt(bestActualValues.hnwHouseholds)}
+              </p>
+            )}
+            <p className="mt-1">Try Recompute if data looks stale.</p>
+          </div>
         ) : (
           <p className="mb-2 text-[10px] text-slate-500">
             No parcels match — try adjusting thresholds.

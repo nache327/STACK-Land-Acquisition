@@ -63,7 +63,9 @@ function parcelCentroid(parcel: CandidateParcelRow): [number, number] | null {
 
 function computeRingMetrics(tracts: TractData[]): PrecomputedRingMetrics {
   const valid = tracts.filter((t) => t.household_count != null && t.household_count > 0);
-  const totalPopulation = valid.reduce((s, t) => s + (t.household_count ?? 0), 0);
+  // Use actual population (B01003_001E) when available; fall back to household count
+  // for backwards-compat with any cached TractData that predates the population field.
+  const totalPopulation = valid.reduce((s, t) => s + (t.population ?? t.household_count ?? 0), 0);
 
   const hnwHouseholds = valid
     .filter((t) => t.median_hhi != null && t.median_hhi > 150_000)

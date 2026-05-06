@@ -11,6 +11,7 @@ import type { CandidateParcelRow, SaturationBatchResult } from "@/lib/schemas";
 import type { IsochronePolygons, TractData } from "@/lib/isochrone";
 import { scoreToColor, scoreToGrade, computeAllKeepScores } from "@/lib/keep-layer";
 import { isFilterActive, type EvaluationStatus, type BuyBoxFilter } from "@/lib/buy-box-filter";
+import type { PrecomputedParcelData } from "@/lib/isochrone-precompute";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -72,6 +73,7 @@ interface MapProps {
   onKeepChange?: (active: boolean, minScore: number) => void;
   parcelEvaluations?: Map<string, EvaluationStatus>;
   buyBoxFilter?: BuyBoxFilter;
+  precomputedData?: Map<string, PrecomputedParcelData>;
 }
 
 const PARCEL_SOURCE = "parcels";
@@ -303,6 +305,7 @@ export default function Map({
   onKeepChange,
   parcelEvaluations,
   buyBoxFilter,
+  precomputedData,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -362,6 +365,12 @@ export default function Map({
   // Ref so the tooltip handler always reads the latest scores without re-registering.
   const keepEffectiveScoresRef = useRef(keepEffectiveScores);
   useEffect(() => { keepEffectiveScoresRef.current = keepEffectiveScores; }, [keepEffectiveScores]);
+
+  const precomputedDataRef = useRef(precomputedData);
+  useEffect(() => { precomputedDataRef.current = precomputedData; }, [precomputedData]);
+
+  const buyBoxFilterRef = useRef(buyBoxFilter);
+  useEffect(() => { buyBoxFilterRef.current = buyBoxFilter; }, [buyBoxFilter]);
 
   // Point centroids used for the saturation heatmap overlay
   const heatCollection = useMemo<GeoJSON.FeatureCollection>(() => {
@@ -1090,6 +1099,44 @@ export default function Map({
           </div>`
         : "";
 
+      const bbFilter = buyBoxFilterRef.current;
+      const pcData = precomputedDataRef.current;
+      const parcelIdStr = String(props.parcel_id ?? "");
+      let demographicsHTML = "";
+      if (bbFilter && isFilterActive(bbFilter) && pcData) {
+        const pd = pcData.get(parcelIdStr);
+        if (pd) {
+          const m = pd.rings[bbFilter.driveTimeMinutes];
+          const fmt = (n: number) => n >= 1_000_000
+            ? `$${(n / 1_000_000).toFixed(1)}M`
+            : n >= 1_000
+              ? (n >= 100_000 ? `$${Math.round(n / 1_000)}K` : `${Math.round(n / 1_000).toLocaleString()}K`)
+              : String(Math.round(n));
+          const fmtPop = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${Math.round(n / 1_000)}K` : String(Math.round(n));
+          const row = (label: string, val: number, threshold: number | null, isCurrency: boolean) => {
+            if (threshold == null) return "";
+            const pass = val >= threshold;
+            const color = pass ? "#34d399" : "#f87171";
+            const mark = pass ? "✓" : "✗";
+            const valStr = isCurrency ? fmt(val) : fmtPop(val);
+            const thrStr = isCurrency ? fmt(threshold) : fmtPop(threshold);
+            return `<div style="color:${color}">${mark} ${label}: ${valStr} <span style="color:#94a3b8;font-size:10px">(need ${thrStr})</span></div>`;
+          };
+          const rows = [
+            row("Pop", m.totalPopulation, bbFilter.minPopulation, false),
+            row("HHI", m.weightedMedianHHI, bbFilter.minMedianHHI, true),
+            row("Home", m.weightedMedianHomeValue, bbFilter.minMedianHomeValue, true),
+            row("HNW", m.hnwHouseholds, bbFilter.minHnwHouseholds, false),
+          ].filter(Boolean).join("");
+          if (rows) {
+            demographicsHTML = `<div style="margin-top:5px;padding-top:5px;border-top:1px solid #334155;font-size:11px">
+              <div style="color:#94a3b8;font-size:10px;margin-bottom:2px">${bbFilter.driveTimeMinutes}-min drive</div>
+              ${rows}
+            </div>`;
+          }
+        }
+      }
+
       map.getCanvas().style.cursor = "pointer";
 
       popup
@@ -1123,6 +1170,7 @@ export default function Map({
             }
             ${saturationHTML}
             ${keepHTML}
+            ${demographicsHTML}
           </div>`
         )
         .addTo(map);
