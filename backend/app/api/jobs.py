@@ -13,6 +13,7 @@ from app.db import get_db
 from app.models.job import Job, JobStatus
 from app.models.job_step import JobArtifact, JobStep
 from app.models.jurisdiction import Jurisdiction
+from app.services.overlays import apply_aadt_overlay
 from app.schemas.job import JobAdminRead, JobArtifactRead, JobCreate, JobRead, JobStepRead
 from app.services.job_queue import enqueue_pipeline_job
 from app.services.job_tracking import (
@@ -152,6 +153,20 @@ async def get_job_steps(
         select(JobStep).where(JobStep.job_id == job_id).order_by(JobStep.created_at.asc())
     )
     return list(result.scalars().all())
+
+
+@router.post("/jobs/{job_id}/backfill-aadt", status_code=200)
+async def backfill_aadt(
+    job_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    job = await db.get(Job, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.jurisdiction_id is None:
+        raise HTTPException(status_code=400, detail="Job has no jurisdiction")
+    updated = await apply_aadt_overlay(job.jurisdiction_id, db)
+    return {"updated": updated, "jurisdiction_id": str(job.jurisdiction_id)}
 
 
 @router.get("/jobs/{job_id}/artifacts", response_model=list[JobArtifactRead])
