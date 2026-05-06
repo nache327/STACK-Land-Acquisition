@@ -9,11 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import httpx
 from app.db import get_db
 from app.models.job import Job, JobStatus
 from app.models.job_step import JobArtifact, JobStep
 from app.models.jurisdiction import Jurisdiction
 from app.services.overlays import apply_aadt_overlay
+from app.services.arcgis_bbox import get_parcel_bbox
 from app.schemas.job import JobAdminRead, JobArtifactRead, JobCreate, JobRead, JobStepRead
 from app.services.job_queue import enqueue_pipeline_job
 from app.services.job_tracking import (
@@ -168,11 +170,28 @@ async def backfill_aadt(
 
     jid = job.jurisdiction_id
 
-    # Debug: count parcels and how many have geom/centroid
     parcel_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid"), {"jid": jid})
-    geom_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL"), {"jid": jid})
     centroid_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND centroid IS NOT NULL"), {"jid": jid})
-    aadt_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND aadt IS NOT NULL"), {"jid": jid})
+
+    bbox = await get_parcel_bbox(jid, db)
+
+    overpass_elements = None
+    overpass_error = None
+    if bbox:
+        west, south, east, north = bbox
+        q = (
+            f"[out:json][timeout:60];"
+            f'way({south},{west},{north},{east})'
+            f'[highway~"^(motorway|trunk|primary|secondary|tertiary|residential|service|unclassified)$"];'
+            f"out tags center;"
+        )
+        try:
+            async with httpx.AsyncClient(timeout=90) as client:
+                resp = await client.post("https://overpass-api.de/api/interpreter", data={"data": q})
+                resp.raise_for_status()
+                overpass_elements = len(resp.json().get("elements", []))
+        except Exception as exc:
+            overpass_error = str(exc)
 
     updated = await apply_aadt_overlay(jid, db)
     return {
@@ -180,9 +199,10 @@ async def backfill_aadt(
         "jurisdiction_id": str(jid),
         "debug": {
             "total_parcels": parcel_count,
-            "parcels_with_geom": geom_count,
             "parcels_with_centroid": centroid_count,
-            "parcels_with_aadt_before": aadt_count,
+            "bbox": bbox,
+            "overpass_road_count": overpass_elements,
+            "overpass_error": overpass_error,
         }
     }
 
