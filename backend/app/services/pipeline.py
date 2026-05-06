@@ -739,8 +739,9 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 "parcels_downloaded": downloaded,
                 "parcels_total": total,
             }
-            await db.flush()
-            # Commit progress every 500 parcels so the frontend can see it
+            # Commit every 500 parcels so the frontend can see progress.
+            # No explicit flush — commit implies flush and avoids triggering
+            # a sync lazy-load of job.steps/artifacts mid-transaction.
             if downloaded % 500 == 0:
                 await db.commit()
 
@@ -808,7 +809,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 progress_key: completed,
                 "parcels_total": total,
             }
-            await db.flush()
+            # Commit implies flush — no explicit flush here to avoid triggering
+            # a sync lazy-load of job.steps/artifacts inside the ORM unit-of-work.
             if completed % 2000 == 0 or completed == total:
                 await db.commit()
 
