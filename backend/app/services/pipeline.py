@@ -62,7 +62,7 @@ PARCEL_INGEST_TIMEOUT_SECONDS = 300
 ZONING_TIMEOUT_SECONDS = 600
 ENRICHMENT_TIMEOUT_SECONDS = 240
 ORDINANCE_TIMEOUT_SECONDS = 240
-MAX_JOB_ERROR_LENGTH = 2000
+MAX_JOB_ERROR_LENGTH = 4000
 
 
 def _timestamp() -> str:
@@ -124,7 +124,9 @@ def _stage_failed(job: Job, stage: str, started_at: float, exc: Exception) -> No
 
 
 def _job_error_message(exc: Exception) -> str:
-    message = str(exc)
+    import traceback
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    message = tb if tb else str(exc)
     if len(message) <= MAX_JOB_ERROR_LENGTH:
         return message
     return f"{message[:MAX_JOB_ERROR_LENGTH]}... [truncated]"
