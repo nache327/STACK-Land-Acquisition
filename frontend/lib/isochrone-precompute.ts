@@ -195,16 +195,28 @@ export async function precomputeCityIsochrones(
     onProgress: (status: PrecomputeStatus) => void;
     onParcelComputed: (parcelId: string, data: PrecomputedParcelData) => void;
     signal?: AbortSignal;
+    existingData?: Map<string, PrecomputedParcelData>;
   },
 ): Promise<Map<string, PrecomputedParcelData>> {
-  const eligible = parcels.filter((p) =>
-    ["permitted", "conditional", "unclear"].includes(p.storage_permission ?? ""),
-  );
+  const skipIds = callbacks.existingData
+    ? new Set(callbacks.existingData.keys())
+    : new Set<string>();
+
+  const eligible = parcels
+    .filter((p) => ["permitted", "conditional", "unclear"].includes(p.storage_permission ?? ""))
+    .filter((p) => !skipIds.has(String(p.parcel_id)));
+
   const total = eligible.length;
-  const results = new Map<string, PrecomputedParcelData>();
+  // Pre-populate results with already-computed data so saveCityCache includes everything
+  const results = new Map<string, PrecomputedParcelData>(callbacks.existingData ?? []);
   let completed = 0;
 
-  console.log(`[precompute] Starting — ${total} eligible parcels`);
+  if (total === 0) {
+    console.log("[precompute] All parcels already computed — nothing to do");
+    return results;
+  }
+
+  console.log(`[precompute] Starting — ${total} parcels to compute (${skipIds.size} already cached)`);
 
   const CONCURRENCY = 4;
   const MIN_DELAY_MS = 250;

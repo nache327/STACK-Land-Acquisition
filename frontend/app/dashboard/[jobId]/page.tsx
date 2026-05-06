@@ -365,7 +365,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }, 500);
   }
 
-  function startPrecompute(cityId: string) {
+  function startPrecompute(cityId: string, existingData?: Map<string, PrecomputedParcelData>) {
     precomputeAbortRef.current?.abort();
     clearIsochroneCache(); // reset in-memory tractCache so Census calls are fresh
     const ctrl = new AbortController();
@@ -378,6 +378,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         scheduleFlush();
       },
       signal: ctrl.signal,
+      existingData,
     }).then((results) => {
       if (ctrl.signal.aborted) return;
       saveCityCache(cityId, results, results.size);
@@ -500,12 +501,8 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   function handleRecompute() {
     if (!jurisdictionId) return;
-    setPrecomputeData(new Map());
-    setPrecomputeStatus(null);
-    // Clear both IDB/localStorage cache AND the module-level tractCache in isochrone.ts
-    // so empty Census API results from previous failures aren't re-served from memory.
-    clearIsochroneCache();
-    clearCityCache(jurisdictionId).then(() => startPrecompute(jurisdictionId));
+    // Pass existing data so only missing parcels are fetched — already-computed ones are skipped
+    startPrecompute(jurisdictionId, precomputeData.size > 0 ? precomputeData : undefined);
   }
 
   // ─── Shortlist save ─────────────────────────────────────────────────────
