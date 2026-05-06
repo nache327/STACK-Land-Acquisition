@@ -75,12 +75,24 @@ def _format_extra(extra: dict[str, Any]) -> str:
     return " " + " ".join(f"{key}={value!r}" for key, value in extra.items())
 
 
+def _safe_job_id(job: Job) -> Any:
+    """Return job.id without triggering a sync ORM lazy-load.
+
+    After a transaction rollback the ORM attribute is expired; reading
+    `job.id` would synchronously emit a SELECT to refresh it, which fails
+    in the Dramatiq worker context with MissingGreenlet. Pulling the
+    cached value out of `__dict__` bypasses the InstrumentedAttribute
+    descriptor entirely.
+    """
+    return job.__dict__.get("id", "unknown")
+
+
 def _stage_started(job: Job, stage: str, **extra: Any) -> float:
     started_at = time.perf_counter()
     logger.info(
         "pipeline_event timestamp=%s job_id=%s stage=%s event=started duration_ms=0%s",
         _timestamp(),
-        job.id,
+        _safe_job_id(job),
         stage,
         _format_extra(extra),
     )
@@ -92,7 +104,7 @@ def _stage_completed(job: Job, stage: str, started_at: float, **extra: Any) -> N
     logger.info(
         "pipeline_event timestamp=%s job_id=%s stage=%s event=completed duration_ms=%s%s",
         _timestamp(),
-        job.id,
+        _safe_job_id(job),
         stage,
         duration_ms,
         _format_extra(extra),
@@ -104,7 +116,7 @@ def _stage_failed(job: Job, stage: str, started_at: float, exc: Exception) -> No
     logger.exception(
         "pipeline_event timestamp=%s job_id=%s stage=%s event=failed duration_ms=%s error=%r",
         _timestamp(),
-        job.id,
+        _safe_job_id(job),
         stage,
         duration_ms,
         str(exc),
@@ -963,6 +975,19 @@ async def _run(db: AsyncSession, job: Job) -> None:
                     await db.rollback()
             except Exception:
                 pass
+            # After rollback, ORM attributes on previously-loaded rows are
+            # expired. The very next stage call site reads `jurisdiction.id`
+            # synchronously when building log args, which would emit an
+            # implicit SELECT and crash with MissingGreenlet inside this
+            # Dramatiq worker. Refresh the two ORM objects we still need
+            # downstream so their attributes are fresh and synchronous reads
+            # are pure cache hits.
+            try:
+                async with asyncio.timeout(5):
+                    await db.refresh(job)
+                    await db.refresh(jurisdiction)
+            except Exception:
+                pass
 
     matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
     async with asyncio.timeout(30):
@@ -1065,9 +1090,18 @@ async def _run(db: AsyncSession, job: Job) -> None:
         except Exception as exc:
             _stage_failed(job, "ordinance_parse", ordinance_started, exc)
             logger.warning(
-                "Ordinance parsing failed (non-fatal) for job %s: %s", job.id, exc
+                "Ordinance parsing failed (non-fatal) for job %s: %s",
+                _safe_job_id(job),
+                exc,
             )
             await db.rollback()
+            # Refresh ORM objects after rollback so the next stage's
+            # synchronous attribute reads don't trigger MissingGreenlet.
+            try:
+                await db.refresh(job)
+                await db.refresh(jurisdiction)
+            except Exception:
+                pass
             ordinance_step = await db.merge(ordinance_step)
             await fail_job_step(db, ordinance_step, exc, status="warning")
             await db.commit()
@@ -1096,7 +1130,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await complete_job_step(db, feasibility_step, {"status": JobStatus.ready.value})
     await db.commit()
     logger.info(
-        "Job %s complete — %d parcels for %s", job.id, count, cfg.name
+        "Job %s complete — %d parcels for %s", _safe_job_id(job), count, cfg.name
     )
 
 
