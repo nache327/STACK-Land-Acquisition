@@ -1064,6 +1064,12 @@ async def _run(db: AsyncSession, job: Job) -> None:
         enrichment_step = await db.merge(enrichment_step)
         await fail_job_step(db, enrichment_step, exc, status="warning")
         await db.commit()
+        try:
+            async with asyncio.timeout(5):
+                await db.refresh(job)
+                await db.refresh(jurisdiction)
+        except Exception:
+            pass
 
     # ── Step 4: parse ordinance (optional — non-fatal if it fails) ───────
     ordinance_discovery_started = _stage_started(job, "ordinance_source")
