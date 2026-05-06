@@ -9,6 +9,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
+    Integer,
     Numeric,
     String,
     Text,
@@ -57,6 +58,7 @@ class Parcel(Base):
     in_flood_zone: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avg_slope_pct: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
     in_wetland: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    aadt: Mapped[int | None] = mapped_column(Integer, nullable=True)
     county_link: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     # PostGIS geometry columns — GEOMETRY (not POLYGON) to accept MultiPolygon

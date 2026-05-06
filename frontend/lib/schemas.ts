@@ -216,6 +216,7 @@ export const CandidateParcelRowSchema = z.object({
   garage_permission: z.string().nullable().optional(),
   in_flood_zone: z.boolean(),
   in_wetland: z.boolean(),
+  aadt: z.number().int().nullable().optional(),
   has_structure: z.boolean().nullable(),
   is_viable: z.boolean(),
   violation_reasons: z.array(z.string()),

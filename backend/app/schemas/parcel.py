@@ -112,6 +112,7 @@ class CandidateParcelRow(BaseModel):
     storage_conditional: bool
     in_flood_zone: bool
     in_wetland: bool
+    aadt: int | None = None
     has_structure: bool | None
     is_viable: bool
     violation_reasons: list[str]

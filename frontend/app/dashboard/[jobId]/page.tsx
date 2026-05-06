@@ -396,7 +396,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   }
 
   useEffect(() => {
-    if (!keepActive || !jurisdictionId) {
+    if (!jurisdictionId) {
       precomputeAbortRef.current?.abort();
       return;
     }
@@ -415,18 +415,44 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keepActive, jurisdictionId]);
+  }, [jurisdictionId]);
 
   const parcelEvaluations = useMemo<Map<string, EvaluationStatus>>(() => {
-    if (!keepActive || !isFilterActive(buyBoxFilter) || !precomputeData.size) {
+    if (!isFilterActive(buyBoxFilter)) {
       return new Map();
     }
     const ids = mapParcels.map((p) => String(p.parcel_id));
-    const results = evaluateAll(ids, precomputeData, buyBoxFilter);
     const out = new Map<string, EvaluationStatus>();
-    Array.from(results.entries()).forEach(([id, r]) => out.set(id, r.status));
+
+    // Demographic evaluation (requires precomputed isochrone data)
+    const needsDemographics =
+      buyBoxFilter.minPopulation != null ||
+      buyBoxFilter.minMedianHHI != null ||
+      buyBoxFilter.minMedianHomeValue != null ||
+      buyBoxFilter.minHnwHouseholds != null;
+
+    if (needsDemographics && precomputeData.size > 0) {
+      const results = evaluateAll(ids, precomputeData, buyBoxFilter);
+      Array.from(results.entries()).forEach(([id, r]) => out.set(id, r.status));
+    } else if (needsDemographics) {
+      // Isochrones not yet loaded — mark all as computing
+      ids.forEach((id) => out.set(id, "computing"));
+    }
+
+    // AADT override — parcel-level, no precompute needed
+    if (buyBoxFilter.minAADT != null) {
+      mapParcels.forEach((p) => {
+        const id = String(p.parcel_id);
+        if ((p.aadt ?? 0) < buyBoxFilter.minAADT!) {
+          out.set(id, "fail");
+        } else if (!out.has(id)) {
+          out.set(id, "match");
+        }
+      });
+    }
+
     return out;
-  }, [keepActive, buyBoxFilter, precomputeData, mapParcels]);
+  }, [buyBoxFilter, precomputeData, mapParcels]);
 
   const evaluationCounts = useMemo(() => {
     let match = 0, borderline = 0, fail = 0, computing = 0;
@@ -679,17 +705,15 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       <div className="flex flex-1 overflow-hidden">
 
         <aside className="w-64 border-r border-slate-800 bg-slate-950 overflow-y-auto">
-          {keepActive && (
-            <BuyBoxPanel
-              filter={buyBoxFilter}
-              onChange={handleBuyBoxChange}
-              precomputeStatus={precomputeStatus}
-              evaluationCounts={evaluationCounts}
-              cityDataRanges={cityDataRanges}
-              bestActualValues={bestActualValues}
-              onRecompute={handleRecompute}
-            />
-          )}
+          <BuyBoxPanel
+            filter={buyBoxFilter}
+            onChange={handleBuyBoxChange}
+            precomputeStatus={precomputeStatus}
+            evaluationCounts={evaluationCounts}
+            cityDataRanges={cityDataRanges}
+            bestActualValues={bestActualValues}
+            onRecompute={handleRecompute}
+          />
           <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
 
           {/* Saturation Settings */}

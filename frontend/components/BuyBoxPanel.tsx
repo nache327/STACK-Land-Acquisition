@@ -264,6 +264,15 @@ export function BuyBoxPanel({
           readout={fmt(filter.minHnwHouseholds)}
           onChange={(v) => onChange({ ...filter, minHnwHouseholds: v })}
         />
+        <SliderRow
+          label="Min Traffic (AADT)"
+          value={filter.minAADT}
+          min={0}
+          max={75_000}
+          step={1_000}
+          readout={filter.minAADT == null ? "off" : `${(filter.minAADT / 1_000).toFixed(0)}K/day`}
+          onChange={(v) => onChange({ ...filter, minAADT: v })}
+        />
       </div>
 
       {/* Match logic */}

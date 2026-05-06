@@ -346,6 +346,7 @@ export default function Map({
               storage_conditional: parcel.storage_conditional,
               in_flood_zone: parcel.in_flood_zone,
               in_wetland: parcel.in_wetland,
+              aadt: parcel.aadt ?? null,
               has_structure: parcel.has_structure,
               is_viable: parcel.is_viable,
               saturation_color: satColor,
@@ -1103,37 +1104,57 @@ export default function Map({
       const pcData = precomputedDataRef.current;
       const parcelIdStr = String(props.parcel_id ?? "");
       let demographicsHTML = "";
-      if (bbFilter && isFilterActive(bbFilter) && pcData) {
-        const pd = pcData.get(parcelIdStr);
-        if (pd) {
-          const m = pd.rings[bbFilter.driveTimeMinutes];
-          const fmt = (n: number) => n >= 1_000_000
-            ? `$${(n / 1_000_000).toFixed(1)}M`
-            : n >= 1_000
-              ? (n >= 100_000 ? `$${Math.round(n / 1_000)}K` : `${Math.round(n / 1_000).toLocaleString()}K`)
-              : String(Math.round(n));
-          const fmtPop = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${Math.round(n / 1_000)}K` : String(Math.round(n));
-          const row = (label: string, val: number, threshold: number | null, isCurrency: boolean) => {
-            if (threshold == null) return "";
-            const pass = val >= threshold;
-            const color = pass ? "#34d399" : "#f87171";
-            const mark = pass ? "✓" : "✗";
-            const valStr = isCurrency ? fmt(val) : fmtPop(val);
-            const thrStr = isCurrency ? fmt(threshold) : fmtPop(threshold);
-            return `<div style="color:${color}">${mark} ${label}: ${valStr} <span style="color:#94a3b8;font-size:10px">(need ${thrStr})</span></div>`;
-          };
-          const rows = [
-            row("Pop", m.totalPopulation, bbFilter.minPopulation, false),
-            row("HHI", m.weightedMedianHHI, bbFilter.minMedianHHI, true),
-            row("Home", m.weightedMedianHomeValue, bbFilter.minMedianHomeValue, true),
-            row("HNW", m.hnwHouseholds, bbFilter.minHnwHouseholds, false),
-          ].filter(Boolean).join("");
-          if (rows) {
-            demographicsHTML = `<div style="margin-top:5px;padding-top:5px;border-top:1px solid #334155;font-size:11px">
-              <div style="color:#94a3b8;font-size:10px;margin-bottom:2px">${bbFilter.driveTimeMinutes}-min drive</div>
-              ${rows}
-            </div>`;
+      if (bbFilter && isFilterActive(bbFilter)) {
+        const allRows: string[] = [];
+
+        // AADT row (parcel-level, no precompute needed)
+        if (bbFilter.minAADT != null) {
+          const aadtVal = (props.aadt as number | null) ?? 0;
+          const pass = aadtVal >= bbFilter.minAADT;
+          const color = pass ? "#34d399" : "#f87171";
+          const mark = pass ? "✓" : "✗";
+          const fmtAadt = (n: number) => n >= 1_000 ? `${Math.round(n / 1_000)}K/day` : `${n}/day`;
+          allRows.push(`<div style="color:${color}">${mark} Traffic: ${fmtAadt(aadtVal)} <span style="color:#94a3b8;font-size:10px">(need ${fmtAadt(bbFilter.minAADT)})</span></div>`);
+        }
+
+        // Demographic rows (require precomputed isochrone data)
+        if (pcData) {
+          const pd = pcData.get(parcelIdStr);
+          if (pd) {
+            const m = pd.rings[bbFilter.driveTimeMinutes];
+            const fmt = (n: number) => n >= 1_000_000
+              ? `$${(n / 1_000_000).toFixed(1)}M`
+              : n >= 1_000
+                ? (n >= 100_000 ? `$${Math.round(n / 1_000)}K` : `${Math.round(n / 1_000).toLocaleString()}K`)
+                : String(Math.round(n));
+            const fmtPop = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${Math.round(n / 1_000)}K` : String(Math.round(n));
+            const row = (label: string, val: number, threshold: number | null, isCurrency: boolean) => {
+              if (threshold == null) return "";
+              const pass = val >= threshold;
+              const color = pass ? "#34d399" : "#f87171";
+              const mark = pass ? "✓" : "✗";
+              const valStr = isCurrency ? fmt(val) : fmtPop(val);
+              const thrStr = isCurrency ? fmt(threshold) : fmtPop(threshold);
+              return `<div style="color:${color}">${mark} ${label}: ${valStr} <span style="color:#94a3b8;font-size:10px">(need ${thrStr})</span></div>`;
+            };
+            const demoRows = [
+              row("Pop", m.totalPopulation, bbFilter.minPopulation, false),
+              row("HHI", m.weightedMedianHHI, bbFilter.minMedianHHI, true),
+              row("Home", m.weightedMedianHomeValue, bbFilter.minMedianHomeValue, true),
+              row("HNW", m.hnwHouseholds, bbFilter.minHnwHouseholds, false),
+            ].filter(Boolean);
+            allRows.push(...demoRows);
           }
+        }
+
+        if (allRows.length > 0) {
+          const driveLabel = (bbFilter.minPopulation != null || bbFilter.minMedianHHI != null || bbFilter.minMedianHomeValue != null || bbFilter.minHnwHouseholds != null)
+            ? `<div style="color:#94a3b8;font-size:10px;margin-bottom:2px">${bbFilter.driveTimeMinutes}-min drive</div>`
+            : "";
+          demographicsHTML = `<div style="margin-top:5px;padding-top:5px;border-top:1px solid #334155;font-size:11px">
+            ${driveLabel}
+            ${allRows.join("")}
+          </div>`;
         }
       }
 

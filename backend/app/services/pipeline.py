@@ -1014,17 +1014,20 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await db.commit()
     await check_cancelled(db, job)
     try:
-        from app.services.overlays import apply_flood_overlay, apply_wetland_overlay
+        from app.services.overlays import apply_flood_overlay, apply_wetland_overlay, apply_aadt_overlay
         overlay_started = _stage_started(job, "overlays", jurisdiction_id=str(jurisdiction.id))
         async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
             flood_count, wetland_count = await asyncio.gather(
                 apply_flood_overlay(jurisdiction.id, db),
                 apply_wetland_overlay(jurisdiction.id, db),
             )
-        _stage_completed(job, "overlays", overlay_started, flood=flood_count, wetland=wetland_count)
+        # AADT runs after flood/wetland (sequential — Overpass has rate limits)
+        aadt_count = await apply_aadt_overlay(jurisdiction.id, db)
+        _stage_completed(job, "overlays", overlay_started, flood=flood_count, wetland=wetland_count, aadt=aadt_count)
         await db.commit()
         logger.info(
-            "Overlays: %d flood parcels, %d wetland parcels", flood_count, wetland_count
+            "Overlays: %d flood parcels, %d wetland parcels, %d aadt parcels",
+            flood_count, wetland_count, aadt_count,
         )
         _stage_completed(
             job,
@@ -1032,18 +1035,19 @@ async def _run(db: AsyncSession, job: Job) -> None:
             enrichment_started,
             flood_parcels=flood_count,
             wetland_parcels=wetland_count,
+            aadt_parcels=aadt_count,
         )
         await complete_job_step(
             db,
             enrichment_step,
-            {"flood_parcels": flood_count, "wetland_parcels": wetland_count},
+            {"flood_parcels": flood_count, "wetland_parcels": wetland_count, "aadt_parcels": aadt_count},
         )
         await add_job_artifact(
             db,
             job,
             "run_overlays",
             "overlay_metadata",
-            {"flood_parcels": flood_count, "wetland_parcels": wetland_count},
+            {"flood_parcels": flood_count, "wetland_parcels": wetland_count, "aadt_parcels": aadt_count},
         )
     except Exception as exc:
         _stage_failed(job, "enrichment", enrichment_started, exc)

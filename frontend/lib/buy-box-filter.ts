@@ -10,6 +10,7 @@ export interface BuyBoxFilter {
   minMedianHHI: number | null;
   minMedianHomeValue: number | null;
   minHnwHouseholds: number | null;
+  minAADT: number | null;
   matchLogic: "AND" | "OR";
 }
 
@@ -35,6 +36,7 @@ export const DEFAULT_FILTER: BuyBoxFilter = {
   minMedianHHI: 150_000,
   minMedianHomeValue: null,
   minHnwHouseholds: null,
+  minAADT: null,
   matchLogic: "AND",
 };
 
@@ -49,6 +51,7 @@ const DEFAULT_PRESETS: SavedPreset[] = [
       minMedianHHI: 200_000,
       minMedianHomeValue: 1_000_000,
       minHnwHouseholds: 2_500,
+      minAADT: null,
       matchLogic: "AND",
     },
     isDefault: true,
@@ -61,6 +64,7 @@ const DEFAULT_PRESETS: SavedPreset[] = [
       minMedianHHI: 150_000,
       minMedianHomeValue: null,
       minHnwHouseholds: null,
+      minAADT: null,
       matchLogic: "AND",
     },
   },
@@ -72,6 +76,7 @@ const DEFAULT_PRESETS: SavedPreset[] = [
       minMedianHHI: null,
       minMedianHomeValue: null,
       minHnwHouseholds: null,
+      minAADT: null,
       matchLogic: "AND",
     },
   },
@@ -84,7 +89,8 @@ export function isFilterActive(filter: BuyBoxFilter): boolean {
     filter.minPopulation != null ||
     filter.minMedianHHI != null ||
     filter.minMedianHomeValue != null ||
-    filter.minHnwHouseholds != null
+    filter.minHnwHouseholds != null ||
+    filter.minAADT != null
   );
 }
 

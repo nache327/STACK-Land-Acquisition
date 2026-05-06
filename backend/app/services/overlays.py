@@ -14,9 +14,11 @@ Approach:
 """
 from __future__ import annotations
 
+import json
 import logging
 import uuid
 
+import httpx
 from geoalchemy2 import WKTElement
 from shapely.ops import unary_union
 from sqlalchemy import delete, insert, text
@@ -246,3 +248,134 @@ async def _persist_overlay_polygons(
         len(rows), overlay_type.value, jurisdiction_id,
     )
     return len(rows)
+
+
+# ─── AADT overlay ─────────────────────────────────────────────────────────────
+
+# OSM highway class → estimated AADT (annual average daily traffic)
+_HIGHWAY_AADT: dict[str, int] = {
+    "motorway":       50_000,
+    "motorway_link":  30_000,
+    "trunk":          50_000,
+    "trunk_link":     30_000,
+    "primary":        25_000,
+    "primary_link":   15_000,
+    "secondary":      12_000,
+    "secondary_link":  8_000,
+    "tertiary":        5_000,
+    "tertiary_link":   3_000,
+    "residential":     2_000,
+    "living_street":   1_000,
+    "service":         1_000,
+    "unclassified":    1_000,
+}
+
+_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+
+
+async def apply_aadt_overlay(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession,
+) -> int:
+    """
+    Assign estimated AADT to parcels based on the nearest OSM road within ~150 m.
+
+    Uses a single Overpass API call to download all major roads in the jurisdiction
+    bbox, then a single PostGIS UPDATE to assign each parcel the AADT of its
+    closest road (highest class wins when multiple roads are equidistant).
+
+    Returns the number of parcels updated.
+    """
+    already = await db.scalar(
+        text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND aadt IS NOT NULL"),
+        {"jid": jurisdiction_id},
+    )
+    if already and already > 0:
+        logger.info("AADT overlay already applied for %s (%d parcels) — skipping", jurisdiction_id, already)
+        return 0
+
+    bbox = await get_parcel_bbox(jurisdiction_id, db)
+    if bbox is None:
+        logger.warning("No parcel bbox for %s — skipping AADT overlay", jurisdiction_id)
+        return 0
+
+    # bbox = [minLng, minLat, maxLng, maxLat]
+    west, south, east, north = bbox
+
+    overpass_query = (
+        f"[out:json][timeout:60];"
+        f'way({south},{west},{north},{east})'
+        f'[highway~"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link'
+        f'|secondary|secondary_link|tertiary|tertiary_link|residential|living_street'
+        f'|service|unclassified)$"];'
+        f"out tags center;"
+    )
+
+    logger.info("Querying Overpass API for roads in bbox %s …", bbox)
+    try:
+        async with httpx.AsyncClient(timeout=90) as client:
+            resp = await client.post(_OVERPASS_URL, data={"data": overpass_query})
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception as exc:
+        logger.warning("Overpass API query failed (non-fatal): %s", exc)
+        return 0
+
+    elements = data.get("elements", [])
+    if not elements:
+        logger.info("No roads found in Overpass response for %s", jurisdiction_id)
+        return 0
+
+    # Build list of (lng, lat, aadt) for each road center point
+    road_rows: list[tuple[float, float, int]] = []
+    for el in elements:
+        hw = (el.get("tags") or {}).get("highway", "")
+        aadt_val = _HIGHWAY_AADT.get(hw)
+        if aadt_val is None:
+            continue
+        center = el.get("center")
+        if not center:
+            continue
+        road_rows.append((center["lon"], center["lat"], aadt_val))
+
+    if not road_rows:
+        logger.info("No mappable road centers found for %s", jurisdiction_id)
+        return 0
+
+    logger.info("Assigning AADT from %d road segments to parcels in %s …", len(road_rows), jurisdiction_id)
+
+    # Build a VALUES list and use a single UPDATE with a lateral join:
+    # For each parcel, find the road center within 0.00135° (~150 m) with the
+    # highest AADT and assign that value.
+    values_sql = ", ".join(
+        f"(ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326), {aadt})"
+        for lng, lat, aadt in road_rows
+    )
+
+    result = await db.execute(
+        text(f"""
+            WITH roads(geom, aadt) AS (
+                VALUES {values_sql}
+            ),
+            best AS (
+                SELECT DISTINCT ON (p.id)
+                    p.id AS parcel_id,
+                    r.aadt
+                FROM parcels p
+                JOIN roads r
+                  ON ST_DWithin(p.centroid::geography, r.geom::geography, 150)
+                WHERE p.jurisdiction_id = :jid
+                  AND p.centroid IS NOT NULL
+                ORDER BY p.id, r.aadt DESC
+            )
+            UPDATE parcels p
+            SET aadt = best.aadt
+            FROM best
+            WHERE p.id = best.parcel_id
+        """),
+        {"jid": str(jurisdiction_id)},
+    )
+    await db.flush()
+    updated = result.rowcount or 0
+    logger.info("AADT overlay: %d parcels updated for %s", updated, jurisdiction_id)
+    return updated
