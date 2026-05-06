@@ -438,10 +438,12 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
 
     // AADT override — parcel-level, no precompute needed
+    // Parcels with null AADT (not yet populated) are not penalized
     if (buyBoxFilter.minAADT != null) {
       mapParcels.forEach((p) => {
         const id = String(p.parcel_id);
-        if ((p.aadt ?? 0) < buyBoxFilter.minAADT!) {
+        if (p.aadt == null) return; // unknown — skip
+        if (p.aadt < buyBoxFilter.minAADT!) {
           out.set(id, "fail");
         } else if (!out.has(id)) {
           out.set(id, "match");
