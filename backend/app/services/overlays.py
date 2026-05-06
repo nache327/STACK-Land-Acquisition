@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import urllib.parse
 import uuid
 
 import httpx
@@ -308,7 +309,7 @@ async def apply_aadt_overlay(
         async with httpx.AsyncClient(timeout=90) as client:
             resp = await client.post(
                 _OVERPASS_URL,
-                content=f"data={overpass_query}".encode(),
+                content=f"data={urllib.parse.quote(overpass_query)}".encode(),
                 headers={
                     "Content-Type": "application/x-www-form-urlencoded",
                     "User-Agent": "ParcelLogic/1.0",

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import urllib.parse
 import httpx
 from app.db import get_db
 from app.models.job import Job, JobStatus
@@ -189,7 +190,7 @@ async def backfill_aadt(
             async with httpx.AsyncClient(timeout=90) as client:
                 resp = await client.post(
                     "https://overpass-api.de/api/interpreter",
-                    content=f"data={q}".encode(),
+                    content=f"data={urllib.parse.quote(q)}".encode(),
                     headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "ParcelLogic/1.0", "Accept": "application/json"},
                 )
                 resp.raise_for_status()
