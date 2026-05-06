@@ -198,7 +198,13 @@ async def backfill_aadt(
         except Exception as exc:
             overpass_error = str(exc)
 
-    updated = await apply_aadt_overlay(jid, db)
+    apply_error = None
+    updated = 0
+    try:
+        updated = await apply_aadt_overlay(jid, db)
+    except Exception as exc:
+        apply_error = f"{type(exc).__name__}: {exc}"
+
     return {
         "updated": updated,
         "jurisdiction_id": str(jid),
@@ -208,6 +214,7 @@ async def backfill_aadt(
             "bbox": bbox,
             "overpass_road_count": overpass_elements,
             "overpass_error": overpass_error,
+            "apply_error": apply_error,
         }
     }
 
