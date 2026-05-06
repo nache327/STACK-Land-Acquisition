@@ -185,7 +185,7 @@ async function fetchTractGeometries(
     JSON.stringify({ xmin: w, ymin: s, xmax: e, ymax: n, spatialReference: { wkid: 4326 } })
   );
   const url =
-    `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/14/query` +
+    `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query` +
     `?geometry=${geometry}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects` +
     `&outFields=GEOID,STATE,COUNTY,TRACT&returnGeometry=true&f=geojson`;
 
