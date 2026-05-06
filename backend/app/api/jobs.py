@@ -165,8 +165,26 @@ async def backfill_aadt(
         raise HTTPException(status_code=404, detail="Job not found")
     if job.jurisdiction_id is None:
         raise HTTPException(status_code=400, detail="Job has no jurisdiction")
-    updated = await apply_aadt_overlay(job.jurisdiction_id, db)
-    return {"updated": updated, "jurisdiction_id": str(job.jurisdiction_id)}
+
+    jid = job.jurisdiction_id
+
+    # Debug: count parcels and how many have geom/centroid
+    parcel_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid"), {"jid": jid})
+    geom_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL"), {"jid": jid})
+    centroid_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND centroid IS NOT NULL"), {"jid": jid})
+    aadt_count = await db.scalar(text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND aadt IS NOT NULL"), {"jid": jid})
+
+    updated = await apply_aadt_overlay(jid, db)
+    return {
+        "updated": updated,
+        "jurisdiction_id": str(jid),
+        "debug": {
+            "total_parcels": parcel_count,
+            "parcels_with_geom": geom_count,
+            "parcels_with_centroid": centroid_count,
+            "parcels_with_aadt_before": aadt_count,
+        }
+    }
 
 
 @router.get("/jobs/{job_id}/artifacts", response_model=list[JobArtifactRead])
