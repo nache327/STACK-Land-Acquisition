@@ -345,25 +345,30 @@ async def apply_aadt_overlay(
 
     logger.info("Assigning AADT from %d road segments to parcels in %s …", len(road_rows), jurisdiction_id)
 
-    values_sql = ", ".join(
-        f"(ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326), {aadt})"
-        for lng, lat, aadt in road_rows
-    )
+    # Write roads to a temp table in batches to avoid a single massive SQL string
+    await db.execute(text(
+        "CREATE TEMPORARY TABLE IF NOT EXISTS _aadt_roads "
+        "(lng double precision, lat double precision, aadt integer)"
+    ))
+    await db.execute(text("TRUNCATE _aadt_roads"))
+
+    BATCH = 500
+    for i in range(0, len(road_rows), BATCH):
+        batch = road_rows[i : i + BATCH]
+        vals = ", ".join(f"({lng}, {lat}, {aadt})" for lng, lat, aadt in batch)
+        await db.execute(text(f"INSERT INTO _aadt_roads VALUES {vals}"))
 
     result = await db.execute(
-        text(f"""
-            WITH roads(geom, aadt) AS (
-                VALUES {values_sql}
-            ),
-            best AS (
+        text("""
+            WITH best AS (
                 SELECT DISTINCT ON (p.id)
                     p.id AS parcel_id,
                     r.aadt
                 FROM parcels p
-                JOIN roads r
+                JOIN _aadt_roads r
                   ON ST_DWithin(
                        COALESCE(p.centroid, ST_Centroid(p.geom))::geography,
-                       r.geom::geography,
+                       ST_SetSRID(ST_MakePoint(r.lng, r.lat), 4326)::geography,
                        150
                      )
                 WHERE p.jurisdiction_id = :jid
