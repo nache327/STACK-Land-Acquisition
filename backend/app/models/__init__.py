@@ -11,3 +11,8 @@ from app.models.overlay import Overlay, OverlayType  # noqa: F401
 from app.models.job import Job, JobStatus  # noqa: F401
 from app.models.job_step import JobArtifact, JobStep  # noqa: F401
 from app.models.shortlist import Shortlist  # noqa: F401
+from app.models.organization import Organization  # noqa: F401
+from app.models.use_case import UseCase  # noqa: F401
+from app.models.parcel_ring_metric import ParcelRingMetric  # noqa: F401
+from app.models.buybox_filter import BuyboxFilter  # noqa: F401
+from app.models.parcel_buybox_score import ParcelBuyboxScore  # noqa: F401
