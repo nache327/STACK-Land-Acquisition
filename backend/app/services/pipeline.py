@@ -903,7 +903,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
     async with asyncio.timeout(30):
         await refresh_jurisdiction_bbox(jurisdiction, db)
-    await db.flush()
+    await db.commit()
     _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
 
     # zoning_overlays/zoning_rules/enrichment_cache are not read by any API endpoint —
