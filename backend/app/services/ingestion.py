@@ -378,13 +378,13 @@ CREATE TEMP TABLE _stage_parcels (
     zoning_code text,
     zone_class text,
     land_use_code text,
-    acres numeric,
+    acres double precision,
     county_link text,
     in_flood_zone boolean,
     in_wetland boolean,
-    avg_slope_pct numeric,
+    avg_slope_pct double precision,
     has_structure boolean,
-    improvement_value numeric,
+    improvement_value double precision,
     geom_wkb bytea,
     centroid_wkb bytea,
     raw_json text
@@ -472,16 +472,33 @@ async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any) -> int:
         for i in range(0, total, CHUNK):
             chunk = rows[i : i + CHUNK]
             records = [_row_to_record(r) for r in chunk]
-            await conn.copy_records_to_table(
-                "_stage_parcels", records=records, columns=_STAGE_COLUMNS
-            )
+            try:
+                await conn.copy_records_to_table(
+                    "_stage_parcels", records=records, columns=_STAGE_COLUMNS
+                )
+            except Exception as exc:
+                logger.exception(
+                    "COPY chunk %d (%d rows) failed: %s",
+                    i // CHUNK + 1, len(chunk), exc,
+                )
+                raise
             staged = min(i + CHUNK, total)
             logger.info("COPY staged %d/%d parcels", staged, total)
             if progress_callback is not None:
                 await progress_callback("upserting", staged, total)
 
-        logger.info("Merging %d staged parcels into parcels …", total)
-        result = await conn.execute(_MERGE_SQL)
+        staged_count = await conn.fetchval("SELECT COUNT(*) FROM _stage_parcels")
+        logger.info(
+            "Stage table populated: %d rows (input=%d). Running merge …",
+            staged_count, total,
+        )
+        try:
+            result = await conn.execute(_MERGE_SQL)
+        except Exception as exc:
+            logger.exception("MERGE INTO parcels failed: %s", exc)
+            raise
+
+        logger.info("Merge result: %r", result)
         try:
             inserted = int(result.split()[-1])
         except (ValueError, IndexError):
