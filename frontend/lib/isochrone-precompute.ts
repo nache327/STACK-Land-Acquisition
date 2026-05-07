@@ -32,8 +32,11 @@ export interface PrecomputeStatus {
 
 // ── Storage keys ───────────────────────────────────────────────────────────────
 
-const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v1_${cityId}`;
-const DATA_KEY = (cityId: string) => `parcellogic_precompute_v1_${cityId}`;
+// v2: weighted-mean denominator bug fix (HHI / home value were divided by
+// totalPopulation instead of sum-of-household-counts, deflating values ~2.7×).
+// Bumping the cache version forces a recompute against the fixed formula.
+const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v2_${cityId}`;
+const DATA_KEY = (cityId: string) => `parcellogic_precompute_v2_${cityId}`;
 const IDB_DB = "parcellogic_precompute";
 const IDB_STORE = "cities";
 const SMALL_CITY_THRESHOLD = 500;
@@ -71,16 +74,22 @@ function computeRingMetrics(tracts: TractData[]): PrecomputedRingMetrics {
     .filter((t) => t.median_hhi != null && t.median_hhi > 150_000)
     .reduce((s, t) => s + (t.household_count ?? 0), 0);
 
+  // Household-weighted means: numerator is weighted by household_count, so the
+  // denominator must be sum(household_count) — NOT totalPopulation. Dividing
+  // a household-weighted sum by population deflated NJ values by ~2.7×
+  // (the average household size), e.g. Marlboro's $148K HHI showed ~$54K.
   const hhiTracts = valid.filter((t) => t.median_hhi != null);
+  const totalHHIHouseholds = hhiTracts.reduce((s, t) => s + (t.household_count ?? 0), 0);
   const weightedMedianHHI =
-    totalPopulation > 0
-      ? hhiTracts.reduce((s, t) => s + t.median_hhi! * t.household_count!, 0) / totalPopulation
+    totalHHIHouseholds > 0
+      ? hhiTracts.reduce((s, t) => s + t.median_hhi! * t.household_count!, 0) / totalHHIHouseholds
       : 0;
 
   const hvTracts = valid.filter((t) => t.median_home_value != null);
+  const totalHVHouseholds = hvTracts.reduce((s, t) => s + (t.household_count ?? 0), 0);
   const weightedMedianHomeValue =
-    totalPopulation > 0
-      ? hvTracts.reduce((s, t) => s + t.median_home_value! * t.household_count!, 0) / totalPopulation
+    totalHVHouseholds > 0
+      ? hvTracts.reduce((s, t) => s + t.median_home_value! * t.household_count!, 0) / totalHVHouseholds
       : 0;
 
   return {

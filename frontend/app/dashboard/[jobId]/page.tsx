@@ -441,13 +441,15 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       ids.forEach((id) => out.set(id, "computing"));
     }
 
-    // AADT override — parcel-level, no precompute needed
-    // Parcels with null AADT (not yet populated) are not penalized
+    // AADT override — parcel-level, no precompute needed.
+    // When an explicit minimum is set, treat null AADT (unknown) as failing.
+    // Otherwise the slider is invisible to the 80%+ of NJ parcels that
+    // aren't on a NJDOT-counted state route. To see "everything including
+    // unknowns" the user slides back to off.
     if (buyBoxFilter.minAADT != null) {
       mapParcels.forEach((p) => {
         const id = String(p.parcel_id);
-        if (p.aadt == null) return; // unknown — skip
-        if (p.aadt < buyBoxFilter.minAADT!) {
+        if (p.aadt == null || p.aadt < buyBoxFilter.minAADT!) {
           out.set(id, "fail");
         } else if (!out.has(id)) {
           out.set(id, "match");
