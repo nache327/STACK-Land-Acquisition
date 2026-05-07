@@ -741,17 +741,12 @@ async def _run(db: AsyncSession, job: Job) -> None:
     existing_count = await db.scalar(
         select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction.id)
     )
-    # Skip download+ingest only when BOTH conditions hold:
-    #   1. parcels are already in the DB, AND
-    #   2. a prior ingest_parcels step completed successfully.
-    # If ingest previously failed mid-way (e.g. Marlboro at 216K/251K),
-    # we re-download and re-ingest so the missing parcels get added.
-    # The upsert in ingest_parcels is idempotent — no duplicates.
-    ingest_already_done = await _step_completed(db, job, "ingest_parcels")
-    # Trust ingest_already_done alone — if ingest completed, parcels are in the DB.
-    # The existing_count guard was too conservative: a fresh jurisdiction might show
-    # count=0 briefly if the prior session hasn't committed yet.
-    parcels_cached = ingest_already_done
+    # Skip download+ingest if this jurisdiction already has substantial parcel data.
+    # Counting parcels directly is more reliable than checking job_steps state,
+    # which can be inconsistent across retries/cancellations.
+    # > 1000 threshold rules out empty or barely-started jurisdictions.
+    # Use force-rerun (not retry) to blow away existing data and start fresh.
+    parcels_cached = (existing_count or 0) > 1000
 
     if parcels_cached:
         logger.info(
