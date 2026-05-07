@@ -25,12 +25,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+import asyncpg
+
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import select as sa_select
 
+from app.config import settings
 from app.db import async_session_maker
 from app.models.job import Job, JobStatus
 from app.models.job_step import JobStep
@@ -79,15 +82,28 @@ async def _step_completed(db: AsyncSession, job: Job, step_name: str) -> bool:
     return result.scalar_one_or_none() is not None
 
 
+def _raw_asyncpg_url() -> str:
+    """Strip the SQLAlchemy driver tag to get a plain asyncpg-compatible URL."""
+    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+
+
 async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
-    """Write job.progress to DB using a fresh session to avoid sharing the
-    in-flight ingest transaction (which causes MissingGreenlet on commit)."""
-    async with async_session_maker() as pg:
-        await pg.execute(
-            text("UPDATE jobs SET progress = CAST(:p AS jsonb) WHERE id = CAST(:id AS uuid)"),
-            {"p": _json.dumps(progress), "id": str(job_id)},
+    """Write job.progress via a raw asyncpg connection that shares no state
+    with the in-flight SQLAlchemy session.
+
+    async_session_maker() still routes through the shared engine. Even with
+    NullPool the engine's greenlet coordinator can re-enter the ingest
+    transaction's greenlet context, raising MissingGreenlet. asyncpg.connect()
+    opens a brand-new TCP socket — SQLAlchemy is not involved at all."""
+    conn = await asyncpg.connect(_raw_asyncpg_url())
+    try:
+        await conn.execute(
+            "UPDATE jobs SET progress = $1::jsonb WHERE id = $2::uuid",
+            _json.dumps(progress),
+            str(job_id),
         )
-        await pg.commit()
+    finally:
+        await conn.close()
 
 
 def _timestamp() -> str:
@@ -1307,7 +1323,6 @@ async def _discover_jurisdiction_config(input_str: str) -> JurisdictionConfig:
     Try live ArcGIS discovery for an unknown jurisdiction, then Regrid fallback.
     Raises ValueError with a helpful message if everything fails.
     """
-    from app.config import settings
     from app.services.arcgis_discovery import discover_layers, geocode_jurisdiction
 
     geo = None

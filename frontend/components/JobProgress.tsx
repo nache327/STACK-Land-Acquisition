@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PIPELINE_STEPS, STAGE_LABELS, stepIndex } from "@/hooks/useJobPoller";
+import { api } from "@/lib/api";
 import type { Job } from "@/lib/schemas";
 
 interface JobProgressProps {
@@ -30,6 +33,19 @@ const DISCOVERY_SOURCE_LABELS: Record<string, string> = {
 };
 
 export function JobProgress({ job }: JobProgressProps) {
+  const router = useRouter();
+  const [retrying, setRetrying] = useState(false);
+
+  async function handleRetry() {
+    setRetrying(true);
+    try {
+      await api.retryJob(job.id);
+      router.refresh();
+    } catch {
+      setRetrying(false);
+    }
+  }
+
   const currentIdx = stepIndex(job.status as any);
   const parcelsDownloaded = (job.progress as any)?.parcels_downloaded as
     | number
@@ -182,8 +198,21 @@ export function JobProgress({ job }: JobProgressProps) {
           </div>
         )}
 
+        {/* Retry / cancel actions */}
+        {(job.status === "failed" || job.status === "cancelled") && (
+          <div className="flex justify-center">
+            <button
+              onClick={handleRetry}
+              disabled={retrying}
+              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
+            >
+              {retrying ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        )}
+
         {/* Footer note */}
-        {job.status !== "failed" && (
+        {job.status !== "failed" && job.status !== "cancelled" && (
           <p className="text-center text-xs text-slate-600">
             Typically 30–90 seconds for a full city
           </p>
