@@ -96,6 +96,7 @@ async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
     opens a brand-new TCP socket — SQLAlchemy is not involved at all."""
     conn = await asyncpg.connect(_raw_asyncpg_url())
     try:
+        await conn.execute("SET statement_timeout = 0")
         await conn.execute(
             "UPDATE jobs SET progress = $1::jsonb WHERE id = $2::uuid",
             _json.dumps(progress),

@@ -76,7 +76,10 @@ export default function DashboardPage({ params }: Props) {
       job.status === "running_overlays" ||
       job.status === "parsing_ordinance" ||
       (job.status === "ingesting_parcels" &&
-        (job.progress as any)?.ingest_phase === "cached")
+        (job.progress as any)?.ingest_phase === "cached") ||
+      // Failed/cancelled jobs that have a jurisdiction_id already have parcels in the
+      // DB — go straight to the map so the user isn't stuck on the error screen.
+      ((job.status === "failed" || job.status === "cancelled") && !!job.jurisdiction_id)
     )
   );
 
