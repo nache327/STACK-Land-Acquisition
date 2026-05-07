@@ -1074,12 +1074,17 @@ async def _run(db: AsyncSession, job: Job) -> None:
     try:
         from app.services.overlays import apply_flood_overlay, apply_wetland_overlay, apply_aadt_overlay
         overlay_started = _stage_started(job, "overlays", jurisdiction_id=str(jurisdiction.id))
+        # Run all overlays SEQUENTIALLY against the shared AsyncSession.
+        # asyncio.gather on the same session interleaves concurrent
+        # await db.execute() calls at the asyncpg connection level, mangles
+        # its greenlet binding, and the next operation (often apply_aadt_overlay
+        # or backfill_parcel_zoning_from_districts in a downstream stage)
+        # raises MissingGreenlet. AsyncSession is not concurrency-safe.
         async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
-            flood_count, wetland_count = await asyncio.gather(
-                apply_flood_overlay(jurisdiction.id, db),
-                apply_wetland_overlay(jurisdiction.id, db),
-            )
-        # AADT runs after flood/wetland (sequential — Overpass has rate limits)
+            flood_count = await apply_flood_overlay(jurisdiction.id, db)
+            wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+        # AADT also sequential — Overpass has rate limits AND we still need
+        # the same single-session-no-concurrency invariant.
         aadt_count = await apply_aadt_overlay(jurisdiction.id, db)
         _stage_completed(job, "overlays", overlay_started, flood=flood_count, wetland=wetland_count, aadt=aadt_count)
         await db.commit()
