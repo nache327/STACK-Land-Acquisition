@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { ParcelDetail } from "@/lib/schemas";
 import { useVerification } from "@/hooks/useVerification";
 import { useParcelSaturation } from "@/hooks/useParcelSaturation";
 import { VerificationPanel } from "./VerificationPanel";
+import {
+  computeScore,
+  TIER_BADGE_CLASSES,
+  TIER_LABELS,
+} from "@/lib/compositeScore";
 
 interface ParcelDrawerProps {
   parcel: ParcelDetail | null;
@@ -32,6 +37,11 @@ export function ParcelDrawer({
 
   const { data: saturation, isLoading: satLoading } = useParcelSaturation(
     parcel?.id ?? null
+  );
+
+  const score = useMemo(
+    () => (parcel ? computeScore(parcel) : null),
+    [parcel],
   );
 
   // Auto-run Layer 1 when drawer opens with a new parcel
@@ -69,6 +79,53 @@ export function ParcelDrawer({
       </header>
 
       <div className="space-y-4 p-4">
+        {/* Composite score */}
+        {score && (
+          <div className="rounded-lg border border-slate-200 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                Site Score
+              </h3>
+              <span
+                className={`inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums ${TIER_BADGE_CLASSES[score.tier]}`}
+              >
+                {score.score}
+                <span className="text-[10px] font-medium opacity-80">
+                  {TIER_LABELS[score.tier]}
+                </span>
+              </span>
+            </div>
+            <table className="w-full text-xs">
+              <tbody>
+                {score.factors.map((f, i) => {
+                  const positive = f.delta > 0;
+                  const negative = f.delta < 0;
+                  return (
+                    <tr key={i} className="border-t border-slate-100 first:border-t-0">
+                      <td className="py-1 pr-2 text-slate-500">{f.label}</td>
+                      <td className="py-1 pr-2 text-slate-400">{f.reason}</td>
+                      <td
+                        className={[
+                          "py-1 text-right font-mono tabular-nums",
+                          positive ? "text-emerald-700" : "",
+                          negative ? "text-red-600" : "",
+                          !positive && !negative ? "text-slate-500" : "",
+                        ].join(" ")}
+                      >
+                        {f.delta > 0 ? "+" : ""}
+                        {f.delta}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="mt-2 text-[10px] text-slate-400">
+              Placeholder formula — backend buy-box scoring will replace this.
+            </p>
+          </div>
+        )}
+
         {/* Parcel attributes */}
         <dl className="space-y-3 text-sm">
           <Row label="APN" value={parcel.apn} mono />

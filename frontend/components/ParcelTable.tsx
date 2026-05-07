@@ -1,14 +1,25 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import type { CandidateParcelRow } from "@/lib/schemas";
+import {
+  computeScore,
+  TIER_BADGE_CLASSES,
+  TIER_LABELS,
+  type CompositeScore,
+} from "@/lib/compositeScore";
 
-const columnHelper = createColumnHelper<CandidateParcelRow>();
+type RowWithScore = CandidateParcelRow & { _score: CompositeScore };
+
+const columnHelper = createColumnHelper<RowWithScore>();
 
 interface ParcelTableProps {
   parcels: CandidateParcelRow[];
@@ -25,6 +36,16 @@ export function ParcelTable({
   selectedIds = new Set(),
   onSelectionChange,
 }: ParcelTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "score", desc: true },
+  ]);
+
+  // Annotate every row with its composite score once per render.
+  const rows = useMemo<RowWithScore[]>(
+    () => parcels.map((p) => ({ ...p, _score: computeScore(p) })),
+    [parcels],
+  );
+
   const allVisibleIds = parcels.map((parcel) => parcel.parcel_id);
   const allChecked =
     allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
@@ -78,8 +99,25 @@ export function ParcelTable({
       ),
       size: 36,
     }),
+    columnHelper.accessor((row) => row._score.score, {
+      id: "score",
+      header: "Score",
+      sortDescFirst: true,
+      cell: ({ row }) => {
+        const s = row.original._score;
+        return (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${TIER_BADGE_CLASSES[s.tier]}`}
+            title={`${TIER_LABELS[s.tier]} — ${s.factors.map((f) => `${f.label} ${f.delta >= 0 ? "+" : ""}${f.delta}`).join(", ")}`}
+          >
+            {s.score}
+          </span>
+        );
+      },
+    }),
     columnHelper.accessor("apn", {
       header: "APN",
+      enableSorting: false,
       cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
     }),
     columnHelper.accessor("address", {
@@ -112,6 +150,8 @@ export function ParcelTable({
     }),
     columnHelper.accessor("acres", {
       header: "Acres",
+      sortDescFirst: true,
+      sortUndefined: "last",
       cell: (info) =>
         info.getValue() != null ? info.getValue()!.toFixed(2) : "—",
     }),
@@ -136,9 +176,12 @@ export function ParcelTable({
   ];
 
   const table = useReactTable({
-    data: parcels,
+    data: rows,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   if (parcels.length === 0) {
@@ -155,15 +198,30 @@ export function ParcelTable({
         <thead className="sticky top-0 border-b border-slate-200 bg-white">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-3 py-2 text-left text-xs font-medium text-slate-500"
-                  style={{ width: header.id === "select" ? 36 : undefined }}
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                </th>
-              ))}
+              {headerGroup.headers.map((header) => {
+                const canSort = header.column.getCanSort();
+                const sorted = header.column.getIsSorted();
+                return (
+                  <th
+                    key={header.id}
+                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    className={[
+                      "px-3 py-2 text-left text-xs font-medium text-slate-500",
+                      canSort ? "cursor-pointer select-none hover:text-slate-700" : "",
+                    ].join(" ")}
+                    style={{ width: header.id === "select" ? 36 : undefined }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {canSort && (
+                        <span aria-hidden className="text-[10px] text-slate-400">
+                          {sorted === "asc" ? "▲" : sorted === "desc" ? "▼" : "↕"}
+                        </span>
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
             </tr>
           ))}
         </thead>
