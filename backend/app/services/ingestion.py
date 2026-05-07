@@ -9,6 +9,7 @@ PROP_LOC, ZONING, etc.).  Future jurisdictions add their own field maps below.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 import uuid
@@ -385,7 +386,8 @@ async def ingest_parcels(
                 set_=update_cols,
             )
         )
-        await db.execute(stmt)
+        async with asyncio.timeout(60):
+            await db.execute(stmt)
         total_inserted += len(batch)
         logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
         if progress_callback is not None:

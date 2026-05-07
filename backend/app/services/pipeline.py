@@ -63,8 +63,7 @@ from app.services.zoning_system import bulk_ingest_zoning_for_jurisdiction, enqu
 logger = logging.getLogger(__name__)
 
 PARCEL_FETCH_TIMEOUT_SECONDS = 180
-PARCEL_INGEST_TIMEOUT_SECONDS = 300
-ZONING_TIMEOUT_SECONDS = 600
+ZONING_TIMEOUT_SECONDS = 1800
 ENRICHMENT_TIMEOUT_SECONDS = 240
 ORDINANCE_TIMEOUT_SECONDS = 240
 MAX_JOB_ERROR_LENGTH = 4000
@@ -862,13 +861,12 @@ async def _run(db: AsyncSession, job: Job) -> None:
             if completed % 2000 == 0 or completed == total:
                 await _progress_commit(_job_id, new_progress)
 
-        async with asyncio.timeout(PARCEL_INGEST_TIMEOUT_SECONDS):
-            count = await ingest_parcels(
-                gdf,
-                jurisdiction.id,
-                db,
-                progress_callback=_ingest_progress,
-            )
+        count = await ingest_parcels(
+            gdf,
+            jurisdiction.id,
+            db,
+            progress_callback=_ingest_progress,
+        )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
             db,
