@@ -9,22 +9,20 @@ PROP_LOC, ZONING, etc.).  Future jurisdictions add their own field maps below.
 """
 from __future__ import annotations
 
-import asyncio
+import json
 import logging
-import math
 import uuid
 from typing import Any
 
+import asyncpg
 import geopandas as gpd
-from geoalchemy2.shape import from_shape
 from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
-from sqlalchemy import func, text
-from sqlalchemy.dialects.postgresql import insert as pg_insert
+from shapely.wkb import dumps as wkb_dumps
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.parcel import Parcel
+from app.config import settings
 from app.services.classification import classify_zone_code
 from app.services.overlays import SFHA_ZONES
 from app.services.vacancy import is_vacant_by_landuse
@@ -296,8 +294,8 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         "avg_slope_pct": None,
         "has_structure": has_structure,
         "improvement_value": _safe_float(_first(row, _IMPROVEMENT_FIELDS)),
-        "geom": from_shape(geom, srid=4326),
-        "centroid": from_shape(centroid, srid=4326),
+        "geom": geom,
+        "centroid": centroid,
         "raw": raw,
     }
 
@@ -353,45 +351,141 @@ async def ingest_parcels(
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
 
-    BATCH = 25_000
-    total_inserted = 0
-    num_batches = math.ceil(len(rows) / BATCH)
-
-    # Upsert: on conflict (jurisdiction_id, apn) update all mutable fields.
-    # zoning_code and zone_class use COALESCE so a re-ingest from a GIS source
-    # that lacks zoning fields (e.g. UGRC) never clears values set by the
-    # spatial backfill or Zone Verifier.
-    update_cols = {
-        c.key: getattr(pg_insert(Parcel).excluded, c.key)
-        for c in Parcel.__table__.columns
-        if c.key not in ("id", "jurisdiction_id", "apn", "created_at", "zoning_code", "zone_class")
-    }
-    update_cols["zoning_code"] = func.coalesce(
-        pg_insert(Parcel).excluded.zoning_code,
-        text("parcels.zoning_code"),
-    )
-    update_cols["zone_class"] = func.coalesce(
-        pg_insert(Parcel).excluded.zone_class,
-        text("parcels.zone_class"),
-    )
-    for i in range(0, len(rows), BATCH):
-        batch = rows[i : i + BATCH]
-        stmt = (
-            pg_insert(Parcel)
-            .values(batch)
-            .on_conflict_do_update(
-                constraint="uq_parcels_jurisdiction_apn",
-                set_=update_cols,
-            )
-        )
-        async with asyncio.timeout(300):
-            await db.execute(stmt)
-        total_inserted += len(batch)
-        logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
-        if progress_callback is not None:
-            await progress_callback("upserting", total_inserted, len(rows))
+    total_inserted = await _copy_upsert_parcels(rows, progress_callback)
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id
     )
     return total_inserted
+
+
+# ─── COPY-based bulk upsert ────────────────────────────────────────────────
+
+_STAGE_COLUMNS = [
+    "jurisdiction_id", "apn", "address", "owner_name",
+    "zoning_code", "zone_class", "land_use_code", "acres",
+    "county_link", "in_flood_zone", "in_wetland", "avg_slope_pct",
+    "has_structure", "improvement_value",
+    "geom_wkb", "centroid_wkb", "raw_json",
+]
+
+_CREATE_STAGE_SQL = """
+CREATE TEMP TABLE _stage_parcels (
+    jurisdiction_id uuid,
+    apn text,
+    address text,
+    owner_name text,
+    zoning_code text,
+    zone_class text,
+    land_use_code text,
+    acres numeric,
+    county_link text,
+    in_flood_zone boolean,
+    in_wetland boolean,
+    avg_slope_pct numeric,
+    has_structure boolean,
+    improvement_value numeric,
+    geom_wkb bytea,
+    centroid_wkb bytea,
+    raw_json text
+)
+"""
+
+_MERGE_SQL = """
+INSERT INTO parcels (
+    jurisdiction_id, apn, address, owner_name, zoning_code, zone_class,
+    land_use_code, acres, county_link, in_flood_zone, in_wetland,
+    avg_slope_pct, has_structure, improvement_value, geom, centroid, raw
+)
+SELECT
+    s.jurisdiction_id, s.apn, s.address, s.owner_name,
+    s.zoning_code, s.zone_class::zone_class_enum,
+    s.land_use_code, s.acres, s.county_link,
+    s.in_flood_zone, s.in_wetland, s.avg_slope_pct,
+    s.has_structure, s.improvement_value,
+    ST_GeomFromEWKB(s.geom_wkb),
+    ST_GeomFromEWKB(s.centroid_wkb),
+    s.raw_json::jsonb
+FROM _stage_parcels s
+ON CONFLICT ON CONSTRAINT uq_parcels_jurisdiction_apn DO UPDATE SET
+    address = EXCLUDED.address,
+    owner_name = EXCLUDED.owner_name,
+    zoning_code = COALESCE(EXCLUDED.zoning_code, parcels.zoning_code),
+    zone_class = COALESCE(EXCLUDED.zone_class, parcels.zone_class),
+    land_use_code = EXCLUDED.land_use_code,
+    acres = EXCLUDED.acres,
+    county_link = EXCLUDED.county_link,
+    in_flood_zone = EXCLUDED.in_flood_zone,
+    in_wetland = EXCLUDED.in_wetland,
+    avg_slope_pct = EXCLUDED.avg_slope_pct,
+    has_structure = EXCLUDED.has_structure,
+    improvement_value = EXCLUDED.improvement_value,
+    geom = EXCLUDED.geom,
+    centroid = EXCLUDED.centroid,
+    raw = EXCLUDED.raw,
+    updated_at = NOW()
+"""
+
+
+def _row_to_record(r: dict) -> tuple:
+    raw = r.get("raw")
+    return (
+        r["jurisdiction_id"],
+        r["apn"],
+        r.get("address"),
+        r.get("owner_name"),
+        r.get("zoning_code"),
+        r.get("zone_class"),
+        r.get("land_use_code"),
+        r.get("acres"),
+        r.get("county_link"),
+        bool(r.get("in_flood_zone")),
+        bool(r.get("in_wetland")),
+        r.get("avg_slope_pct"),
+        r.get("has_structure"),
+        r.get("improvement_value"),
+        wkb_dumps(r["geom"], hex=False, srid=4326),
+        wkb_dumps(r["centroid"], hex=False, srid=4326),
+        json.dumps(raw) if raw is not None else None,
+    )
+
+
+def _raw_dsn() -> str:
+    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+
+
+async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any) -> int:
+    """COPY rows into a temp table, then INSERT...SELECT...ON CONFLICT into parcels.
+
+    Uses a raw asyncpg connection (no SQLAlchemy session) to bypass the
+    32,767 bind-parameter cap that limits batched INSERT to ~1,800 rows.
+    COPY streams data with no parameter cap, so the entire jurisdiction
+    can be staged in a handful of chunks.
+    """
+    conn = await asyncpg.connect(_raw_dsn())
+    try:
+        await conn.execute("SET statement_timeout = 0")
+        await conn.execute(_CREATE_STAGE_SQL)
+
+        CHUNK = 25_000
+        total = len(rows)
+        for i in range(0, total, CHUNK):
+            chunk = rows[i : i + CHUNK]
+            records = [_row_to_record(r) for r in chunk]
+            await conn.copy_records_to_table(
+                "_stage_parcels", records=records, columns=_STAGE_COLUMNS
+            )
+            staged = min(i + CHUNK, total)
+            logger.info("COPY staged %d/%d parcels", staged, total)
+            if progress_callback is not None:
+                await progress_callback("upserting", staged, total)
+
+        logger.info("Merging %d staged parcels into parcels …", total)
+        result = await conn.execute(_MERGE_SQL)
+        try:
+            inserted = int(result.split()[-1])
+        except (ValueError, IndexError):
+            inserted = total
+        return inserted
+    finally:
+        await conn.close()
