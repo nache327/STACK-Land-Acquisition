@@ -1,0 +1,226 @@
+"""
+Server-side composite scoring for parcels under a given BuyboxFilter.
+
+Python port of the placeholder formula in `frontend/lib/compositeScore.ts`,
+extended to honor the filter's slider thresholds (acreage min/max,
+storage permission requirements, AADT minimum, etc.). The output is one
+row per (parcel, buybox_filter_id) in `parcel_buybox_scores`.
+
+The scoring formula is intentionally tunable; the canonical doc lives
+above each branch in `score_for_parcel()`. Eventually this should
+move behind a config-driven weight table so business users can rebalance
+without a code deploy, but for now in-code is fine.
+
+Usage:
+    from app.services.buybox_scoring import score_jurisdiction
+    n = await score_jurisdiction(jurisdiction_id, buybox_filter_id, db)
+"""
+from __future__ import annotations
+
+import json
+import logging
+import uuid
+from dataclasses import dataclass, field
+from typing import Any
+
+import asyncpg
+
+from app.config import settings
+from app.models.zone_use_matrix import UsePermission
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Tier thresholds ─────────────────────────────────────────────────────
+
+TIER_THRESHOLDS: list[tuple[int, str]] = [
+    (80, "excellent"),
+    (60, "strong"),
+    (40, "decent"),
+    (20, "weak"),
+    (0,  "avoid"),
+]
+
+
+def tier_for(score: int) -> str:
+    for cutoff, name in TIER_THRESHOLDS:
+        if score >= cutoff:
+            return name
+    return "avoid"
+
+
+# ─── Per-parcel scoring ──────────────────────────────────────────────────
+
+@dataclass
+class ParcelInputs:
+    """Minimal struct the scorer reads off a parcel + matrix join."""
+    parcel_id: int
+    storage_permission: str | None      # 'permitted'/'conditional'/'unclear'/'prohibited'/None
+    acres: float | None
+    aadt: int | None
+    in_flood_zone: bool
+    in_wetland: bool
+    has_structure: bool | None
+
+
+@dataclass
+class ScoredParcel:
+    parcel_id: int
+    score: int
+    tier: str
+    factors: list[dict] = field(default_factory=list)
+
+
+def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> ScoredParcel:
+    """Compute a 0-100 composite score for a single parcel.
+
+    `filter_json` is the BuyboxFilter.filter_json blob — the same shape
+    the frontend uses (DEFAULT_FILTER from buy-box-filter.ts):
+      {
+        minPopulation, minMedianHHI, minMedianHomeValue, minHnwHouseholds,
+        minAADT, driveTimeMinutes, matchLogic, ...
+      }
+    For now we only use minAADT (since population data isn't on the parcel
+    row yet — that lives in parcel_ring_metrics, joined separately later).
+    """
+    factors: list[dict] = [{"label": "Base", "delta": 50, "reason": "Baseline"}]
+
+    # Storage permission
+    sp = (p.storage_permission or "").lower()
+    if sp == UsePermission.permitted.value:
+        factors.append({"label": "Storage", "delta": 30, "reason": "Permitted by zoning"})
+    elif sp == UsePermission.conditional.value:
+        factors.append({"label": "Storage", "delta": 15, "reason": "Conditional use"})
+    elif sp == UsePermission.prohibited.value:
+        factors.append({"label": "Storage", "delta": -25, "reason": "Prohibited by zoning"})
+    elif sp == UsePermission.unclear.value:
+        factors.append({"label": "Storage", "delta": 0, "reason": "Ordinance unclear — verify"})
+    else:
+        factors.append({"label": "Storage", "delta": 0, "reason": "No matrix entry yet"})
+
+    # Acreage bonus — bigger lots score higher (max +20 at 30 acres)
+    if p.acres is not None and p.acres > 0:
+        bonus = round(min(p.acres / 30, 1.0) * 20, 1)
+        factors.append({"label": "Acres", "delta": bonus, "reason": f"{p.acres:.1f} ac"})
+
+    # AADT bonus — visibility (5K = 0 pts, 50K = full +15)
+    if p.aadt is not None and p.aadt > 0:
+        bonus = round(max(min((p.aadt - 5000) / 45000, 1.0), 0.0) * 15, 1)
+        if bonus > 0:
+            factors.append({
+                "label": "Traffic",
+                "delta": bonus,
+                "reason": f"{p.aadt / 1000:.0f}K AADT",
+            })
+
+    # Flood / wetland penalties
+    if p.in_flood_zone:
+        factors.append({"label": "Flood zone", "delta": -25, "reason": "FEMA SFHA"})
+    if p.in_wetland:
+        factors.append({"label": "Wetland",    "delta": -15, "reason": "USFWS NWI"})
+
+    # Vacant land bonus
+    if p.has_structure is False:
+        factors.append({"label": "Vacant", "delta": 5, "reason": "No existing structure"})
+
+    # Filter-driven AADT threshold penalty (if user requires high traffic
+    # and parcel falls below, big penalty so they sort to bottom)
+    if filter_json and filter_json.get("minAADT") and (p.aadt or 0) < filter_json["minAADT"]:
+        delta = -20
+        factors.append({
+            "label": "AADT threshold",
+            "delta": delta,
+            "reason": f"Below filter min ({filter_json['minAADT']:,})",
+        })
+
+    raw = sum(f["delta"] for f in factors)
+    score = max(0, min(100, round(raw)))
+    return ScoredParcel(p.parcel_id, score, tier_for(score), factors)
+
+
+# ─── Bulk scoring ────────────────────────────────────────────────────────
+
+def _raw_dsn() -> str:
+    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+
+
+_SELECT_PARCELS_SQL = """
+SELECT
+    p.id                AS parcel_id,
+    zum.self_storage::text AS storage_permission,
+    p.acres,
+    p.aadt,
+    p.in_flood_zone,
+    p.in_wetland,
+    p.has_structure
+FROM parcels p
+LEFT JOIN zone_use_matrix zum
+    ON zum.jurisdiction_id = p.jurisdiction_id
+   AND zum.zone_code      = p.zoning_code
+WHERE p.jurisdiction_id = $1::uuid
+"""
+
+
+_UPSERT_SQL = """
+INSERT INTO parcel_buybox_scores (parcel_id, buybox_filter_id, score, tier, factors)
+VALUES ($1::bigint, $2::uuid, $3::int, $4::text, $5::jsonb)
+ON CONFLICT ON CONSTRAINT pk_parcel_buybox_scores DO UPDATE
+SET score       = EXCLUDED.score,
+    tier        = EXCLUDED.tier,
+    factors     = EXCLUDED.factors,
+    computed_at = NOW()
+"""
+
+
+async def score_jurisdiction(
+    jurisdiction_id: uuid.UUID,
+    buybox_filter_id: uuid.UUID,
+    filter_json: dict | None = None,
+    chunk_size: int = 5000,
+) -> int:
+    """Score every parcel in a jurisdiction under the given buy-box filter.
+
+    Reads parcels + zone_use_matrix joined on (jurisdiction, zone_code),
+    runs `score_for_parcel` per row in pure Python, then bulk-upserts the
+    results into parcel_buybox_scores via batched INSERT...ON CONFLICT.
+
+    Uses raw asyncpg (no SQLAlchemy session) to bypass the 32K bind-param
+    cap, matching the COPY-ingest pattern in ingestion.py.
+
+    Returns the count of parcels scored.
+    """
+    conn = await asyncpg.connect(_raw_dsn())
+    try:
+        await conn.execute("SET statement_timeout = 0")
+        rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id)
+        logger.info(
+            "Scoring %d parcels for jurisdiction %s under filter %s",
+            len(rows), jurisdiction_id, buybox_filter_id,
+        )
+
+        scored: list[tuple[int, uuid.UUID, int, str, str]] = []
+        for r in rows:
+            inputs = ParcelInputs(
+                parcel_id=r["parcel_id"],
+                storage_permission=r["storage_permission"],
+                acres=float(r["acres"]) if r["acres"] is not None else None,
+                aadt=r["aadt"],
+                in_flood_zone=bool(r["in_flood_zone"]),
+                in_wetland=bool(r["in_wetland"]),
+                has_structure=r["has_structure"],
+            )
+            s = score_for_parcel(inputs, filter_json)
+            scored.append((
+                s.parcel_id, buybox_filter_id, s.score, s.tier,
+                json.dumps(s.factors),
+            ))
+
+        # Batched UPSERT — chunk_size keeps the wire payload small
+        for i in range(0, len(scored), chunk_size):
+            chunk = scored[i:i + chunk_size]
+            await conn.executemany(_UPSERT_SQL, chunk)
+            logger.info("Upserted %d/%d scores", min(i + chunk_size, len(scored)), len(scored))
+
+        return len(scored)
+    finally:
+        await conn.close()
