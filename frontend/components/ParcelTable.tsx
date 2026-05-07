@@ -206,7 +206,7 @@ export function ParcelTable({
                     key={header.id}
                     onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                     className={[
-                      "px-3 py-2 text-left text-xs font-medium text-slate-500",
+                      "px-2 py-2 text-left text-xs font-medium text-slate-500",
                       canSort ? "cursor-pointer select-none hover:text-slate-700" : "",
                     ].join(" ")}
                     style={{ width: header.id === "select" ? 36 : undefined }}
@@ -239,7 +239,7 @@ export function ParcelTable({
                 ].join(" ")}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2">
+                  <td key={cell.id} className="px-2 py-2">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
