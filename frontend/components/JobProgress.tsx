@@ -36,6 +36,8 @@ export function JobProgress({ job }: JobProgressProps) {
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
 
+  const [cancelling, setCancelling] = useState(false);
+
   async function handleRetry() {
     setRetrying(true);
     try {
@@ -43,6 +45,16 @@ export function JobProgress({ job }: JobProgressProps) {
       router.refresh();
     } catch {
       setRetrying(false);
+    }
+  }
+
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      await api.cancelJob(job.id);
+      router.refresh();
+    } catch {
+      setCancelling(false);
     }
   }
 
@@ -207,6 +219,17 @@ export function JobProgress({ job }: JobProgressProps) {
               className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:opacity-50"
             >
               {retrying ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        )}
+        {job.status !== "failed" && job.status !== "cancelled" && job.status !== "ready" && (
+          <div className="flex justify-center">
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="rounded-lg border border-slate-700 px-5 py-2 text-sm font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200 disabled:opacity-50"
+            >
+              {cancelling ? "Cancelling…" : "Cancel"}
             </button>
           </div>
         )}
