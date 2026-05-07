@@ -62,7 +62,7 @@ from app.services.zoning_system import bulk_ingest_zoning_for_jurisdiction, enqu
 
 logger = logging.getLogger(__name__)
 
-PARCEL_FETCH_TIMEOUT_SECONDS = 180
+PARCEL_FETCH_TIMEOUT_SECONDS = 1800
 ZONING_TIMEOUT_SECONDS = 1800
 ENRICHMENT_TIMEOUT_SECONDS = 240
 ORDINANCE_TIMEOUT_SECONDS = 240
@@ -748,7 +748,10 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # we re-download and re-ingest so the missing parcels get added.
     # The upsert in ingest_parcels is idempotent — no duplicates.
     ingest_already_done = await _step_completed(db, job, "ingest_parcels")
-    parcels_cached = (existing_count or 0) > 0 and ingest_already_done
+    # Trust ingest_already_done alone — if ingest completed, parcels are in the DB.
+    # The existing_count guard was too conservative: a fresh jurisdiction might show
+    # count=0 briefly if the prior session hasn't committed yet.
+    parcels_cached = ingest_already_done
 
     if parcels_cached:
         logger.info(
