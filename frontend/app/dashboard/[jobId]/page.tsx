@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useJobPoller } from "@/hooks/useJobPoller";
 import { useCandidateParcelSearch, useParcelDetail } from "@/hooks/useParcels";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
+import { useParcelScores } from "@/hooks/useParcelScores";
 import { JobProgress } from "@/components/JobProgress";
 import { ParcelTable } from "@/components/ParcelTable";
 import { ParcelDrawer } from "@/components/ParcelDrawer";
@@ -204,6 +205,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   );
 
   const { data: jurisdictionBounds } = useJurisdictionBounds(jurisdictionId);
+  const { data: serverScores } = useParcelScores(jurisdictionId);
 
   // Reset selection on filter change
   useEffect(() => {
@@ -829,6 +831,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             selectedId={selectedParcelId}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
+            serverScores={serverScores}
           />
         </aside>
       </div>
@@ -840,6 +843,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           jurisdictionId={jurisdictionId ?? ""}
           onClose={() => setDrawerOpen(false)}
           onShowRing={() => setFlyTrigger((n) => n + 1)}
+          serverScore={parcelDetail ? serverScores?.get(parcelDetail.id) : undefined}
         />
       )}
 

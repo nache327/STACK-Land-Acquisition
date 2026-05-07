@@ -34,6 +34,17 @@ import {
   type ZoningDistrictList,
 } from "./schemas";
 
+/** A row from `parcel_buybox_scores` joined to a parcel — the same
+ *  shape the backend returns from `/api/jurisdictions/{id}/scores`. */
+export interface ServerParcelScore {
+  parcel_id: number;
+  buybox_filter_id: string;
+  score: number;
+  tier: "excellent" | "strong" | "decent" | "weak" | "avoid" | string;
+  factors: Array<{ label: string; delta: number; reason: string }>;
+  computed_at: string;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -295,6 +306,19 @@ export const api = {
   async getParcelSaturation(parcelId: number): Promise<SaturationResponse> {
     const raw = await fetchJSON<unknown>(`/api/parcels/${parcelId}/saturation`);
     return SaturationResponseSchema.parse(raw);
+  },
+
+  async getJurisdictionScores(
+    jurisdictionId: string,
+    opts: { minScore?: number; limit?: number } = {}
+  ): Promise<ServerParcelScore[]> {
+    const params = new URLSearchParams();
+    if (opts.minScore != null) params.set("min_score", String(opts.minScore));
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    const qs = params.toString();
+    return fetchJSON<ServerParcelScore[]>(
+      `/api/jurisdictions/${jurisdictionId}/scores${qs ? `?${qs}` : ""}`,
+    );
   },
 
   async getSaturationBatch(

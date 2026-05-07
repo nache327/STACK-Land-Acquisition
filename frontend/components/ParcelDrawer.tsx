@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import type { ParcelDetail } from "@/lib/schemas";
+import type { ServerParcelScore } from "@/lib/api";
 import { useVerification } from "@/hooks/useVerification";
 import { useParcelSaturation } from "@/hooks/useParcelSaturation";
 import { VerificationPanel } from "./VerificationPanel";
@@ -9,6 +10,7 @@ import {
   computeScore,
   TIER_BADGE_CLASSES,
   TIER_LABELS,
+  type ScoreTier,
 } from "@/lib/compositeScore";
 
 interface ParcelDrawerProps {
@@ -18,6 +20,9 @@ interface ParcelDrawerProps {
   isInShortlist?: boolean;
   onToggleShortlist?: () => void;
   onShowRing?: () => void;
+  /** Server-side score for this parcel from `parcel_buybox_scores`.
+   *  When present, overrides the placeholder client-side `computeScore`. */
+  serverScore?: ServerParcelScore;
 }
 
 export function ParcelDrawer({
@@ -27,6 +32,7 @@ export function ParcelDrawer({
   isInShortlist = false,
   onToggleShortlist,
   onShowRing,
+  serverScore,
 }: ParcelDrawerProps) {
   const { state, layer1Loading, layer3Loading, error, runLayer1, runLayer3, reset } =
     useVerification({
@@ -39,10 +45,21 @@ export function ParcelDrawer({
     parcel?.id ?? null
   );
 
-  const score = useMemo(
-    () => (parcel ? computeScore(parcel) : null),
-    [parcel],
-  );
+  const score = useMemo(() => {
+    if (!parcel) return null;
+    if (serverScore) {
+      return {
+        score: serverScore.score,
+        tier: serverScore.tier as ScoreTier,
+        factors: serverScore.factors.map((f) => ({
+          label: f.label,
+          delta: f.delta,
+          reason: f.reason,
+        })),
+      };
+    }
+    return computeScore(parcel);
+  }, [parcel, serverScore]);
 
   // Auto-run Layer 1 when drawer opens with a new parcel
   useEffect(() => {
@@ -121,7 +138,9 @@ export function ParcelDrawer({
               </tbody>
             </table>
             <p className="mt-2 text-[10px] text-slate-400">
-              Placeholder formula — backend buy-box scoring will replace this.
+              {serverScore
+                ? `Server-computed ${new Date(serverScore.computed_at).toLocaleDateString()}`
+                : "Client-computed (no server score yet — backend will populate after next scoring run)"}
             </p>
           </div>
         )}

@@ -10,14 +10,19 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type { CandidateParcelRow } from "@/lib/schemas";
+import type { ServerParcelScore } from "@/lib/api";
 import {
   computeScore,
   TIER_BADGE_CLASSES,
   TIER_LABELS,
   type CompositeScore,
+  type ScoreTier,
 } from "@/lib/compositeScore";
 
-type RowWithScore = CandidateParcelRow & { _score: CompositeScore };
+type RowWithScore = CandidateParcelRow & {
+  _score: CompositeScore;
+  _scoreSource: "server" | "client";
+};
 
 const columnHelper = createColumnHelper<RowWithScore>();
 
@@ -27,6 +32,10 @@ interface ParcelTableProps {
   selectedId?: number | null;
   selectedIds?: Set<number>;
   onSelectionChange?: (ids: Set<number>) => void;
+  /** Pre-computed server scores keyed by parcel_id. When a parcel's
+   *  score is in this map we use it directly; otherwise we fall back
+   *  to the client-side `computeScore` formula. */
+  serverScores?: Map<number, ServerParcelScore>;
 }
 
 export function ParcelTable({
@@ -35,15 +44,37 @@ export function ParcelTable({
   selectedId,
   selectedIds = new Set(),
   onSelectionChange,
+  serverScores,
 }: ParcelTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "score", desc: true },
   ]);
 
-  // Annotate every row with its composite score once per render.
+  // Annotate every row with its composite score. Prefer the server score
+  // when available (so all browsers see identical numbers); otherwise
+  // fall back to the client-side formula.
   const rows = useMemo<RowWithScore[]>(
-    () => parcels.map((p) => ({ ...p, _score: computeScore(p) })),
-    [parcels],
+    () =>
+      parcels.map((p) => {
+        const server = serverScores?.get(p.parcel_id);
+        if (server) {
+          return {
+            ...p,
+            _score: {
+              score: server.score,
+              tier: server.tier as ScoreTier,
+              factors: server.factors.map((f) => ({
+                label: f.label,
+                delta: f.delta,
+                reason: f.reason,
+              })),
+            },
+            _scoreSource: "server",
+          };
+        }
+        return { ...p, _score: computeScore(p), _scoreSource: "client" };
+      }),
+    [parcels, serverScores],
   );
 
   const allVisibleIds = parcels.map((parcel) => parcel.parcel_id);
