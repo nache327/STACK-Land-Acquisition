@@ -384,7 +384,14 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       existingData,
     }).then((results) => {
       if (ctrl.signal.aborted) return;
-      saveCityCache(cityId, results, results.size);
+      // Never persist an empty cache — that's almost always a race
+      // (parcels not yet loaded), and persisting it would poison
+      // subsequent loads.
+      if (results.size > 0) {
+        saveCityCache(cityId, results, results.size);
+      } else {
+        console.warn("[precompute] skipping save — empty results (parcels likely not loaded yet)");
+      }
       const meta = getCacheMetadata(cityId);
       setPrecomputeStatus({
         progress: results.size,
@@ -402,6 +409,13 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       precomputeAbortRef.current?.abort();
       return;
     }
+    // Wait until parcels have actually loaded before deciding whether to
+    // recompute. Without this guard, a v2-cache-miss + empty mapParcels
+    // race produced an empty results map that got persisted as the v2
+    // cache, permanently breaking the buy-box. (Trapped users behind a
+    // poisoned empty cache that no refresh could clear.)
+    if (mapParcels.length === 0) return;
+
     loadCityCacheAsync(jurisdictionId).then((cached) => {
       if (cached && cached.size > 0) {
         setPrecomputeData(cached);
@@ -417,7 +431,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jurisdictionId]);
+  }, [jurisdictionId, mapParcels.length === 0]);
 
   const parcelEvaluations = useMemo<Map<string, EvaluationStatus>>(() => {
     if (!isFilterActive(buyBoxFilter)) {

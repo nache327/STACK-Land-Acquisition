@@ -32,11 +32,12 @@ export interface PrecomputeStatus {
 
 // ── Storage keys ───────────────────────────────────────────────────────────────
 
+// v3: invalidate the empty caches v2 created on first load when mapParcels
+// hadn't populated yet (race condition fixed in dashboard/[jobId]/page.tsx).
 // v2: weighted-mean denominator bug fix (HHI / home value were divided by
 // totalPopulation instead of sum-of-household-counts, deflating values ~2.7×).
-// Bumping the cache version forces a recompute against the fixed formula.
-const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v2_${cityId}`;
-const DATA_KEY = (cityId: string) => `parcellogic_precompute_v2_${cityId}`;
+const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v3_${cityId}`;
+const DATA_KEY = (cityId: string) => `parcellogic_precompute_v3_${cityId}`;
 const IDB_DB = "parcellogic_precompute";
 const IDB_STORE = "cities";
 const SMALL_CITY_THRESHOLD = 500;
