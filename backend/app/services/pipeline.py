@@ -63,6 +63,7 @@ from app.services.zoning_system import bulk_ingest_zoning_for_jurisdiction, enqu
 logger = logging.getLogger(__name__)
 
 PARCEL_FETCH_TIMEOUT_SECONDS = 1800
+PARCEL_INGEST_TIMEOUT_SECONDS = 1800
 ZONING_TIMEOUT_SECONDS = 1800
 ENRICHMENT_TIMEOUT_SECONDS = 240
 ORDINANCE_TIMEOUT_SECONDS = 240

@@ -353,9 +353,7 @@ async def ingest_parcels(
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
 
-    # asyncpg caps bind parameters at 32,767. With 17 inserted parcel columns,
-    # 1,000 rows leaves headroom for SQLAlchemy-generated parameters.
-    BATCH = 1000
+    BATCH = 25_000
     total_inserted = 0
     num_batches = math.ceil(len(rows) / BATCH)
 
@@ -386,7 +384,7 @@ async def ingest_parcels(
                 set_=update_cols,
             )
         )
-        async with asyncio.timeout(60):
+        async with asyncio.timeout(300):
             await db.execute(stmt)
         total_inserted += len(batch)
         logger.info("Upserted batch %d/%d (%d parcels)", i // BATCH + 1, num_batches, total_inserted)
