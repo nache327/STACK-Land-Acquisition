@@ -45,6 +45,16 @@ class Settings(BaseSettings):
     # Optional data sources
     regrid_api_key: str = ""
 
+    # Resend (transactional email). When unset the daily-digest worker
+    # logs the rendered email instead of sending — useful for local dev
+    # and as a safety net before RESEND_API_KEY is provisioned in prod.
+    resend_api_key: str = ""
+    resend_from_address: str = "ParcelLogic <alerts@parcellogic.com>"
+    digest_dashboard_base_url: str = "https://zoning-finder.vercel.app"
+    # Until per-user email lands, the digest worker sends to this address
+    # for every email-enabled filter. Set in Railway env.
+    digest_default_recipient: str = ""
+
     # Redis — REQUIRED. API + worker must use the SAME url for the queue to work.
     redis_url: str
 
@@ -91,6 +101,10 @@ class Settings(BaseSettings):
     @property
     def regrid_enabled(self) -> bool:
         return bool(self.regrid_api_key)
+
+    @property
+    def resend_enabled(self) -> bool:
+        return bool(self.resend_api_key)
 
     @property
     def database_url_sanitized(self) -> str:
