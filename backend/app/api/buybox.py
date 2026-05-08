@@ -19,7 +19,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, delete, select, text, update
+from sqlalchemy import and_, delete, func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -137,13 +137,27 @@ async def update_filter(
 
 
 @router.post("/buybox-filters/_run-digest")
-async def run_digest_now() -> dict[str, int]:
+async def run_digest_now(
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int | str]:
     """Manual-trigger the daily digest worker. Used for smoke tests
     before cron is wired up; safe to leave enabled because the worker
     is idempotent (notified_at + 23h gate)."""
     from app.workers.daily_email import run_once
+    from app.config import settings as _settings
 
-    return await run_once()
+    enabled_total = await db.scalar(
+        select(func.count(BuyboxFilter.id)).where(
+            BuyboxFilter.daily_email_enabled.is_(True)
+        )
+    )
+    result = await run_once()
+    return {
+        **result,
+        "email_enabled_filters_in_db": int(enabled_total or 0),
+        "resend_configured": "yes" if _settings.resend_enabled else "no",
+        "recipient_configured": "yes" if _settings.digest_default_recipient else "no",
+    }
 
 
 @router.post("/buybox-filters/_score-jurisdiction/{jurisdiction_id}")
