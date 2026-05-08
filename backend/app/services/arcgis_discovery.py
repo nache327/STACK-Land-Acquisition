@@ -225,7 +225,29 @@ async def _hub_search(
     if not candidates:
         return None
     candidates.sort(key=lambda x: x[0])
-    return candidates[0][1]
+    for _, url in candidates:
+        if await _is_publicly_queryable(client, url):
+            return url
+        logger.info("Hub: skipping token-protected layer %s", url)
+    return None
+
+
+async def _is_publicly_queryable(client: httpx.AsyncClient, url: str) -> bool:
+    """Probe a FeatureServer/Layer URL — return False if it requires a token."""
+    try:
+        resp = await client.get(url, params={"f": "json"})
+        if resp.status_code != 200:
+            return False
+        data = resp.json()
+    except Exception as exc:
+        logger.warning("Probe failed for %s: %s", url, exc)
+        return False
+    err = data.get("error") if isinstance(data, dict) else None
+    if err:
+        # 499 = Token Required, 498 = Invalid Token, 403 = Forbidden
+        logger.info("Layer %s reported error: %s", url, err)
+        return False
+    return True
 
 
 # ─── Geocoding ────────────────────────────────────────────────────────────────
