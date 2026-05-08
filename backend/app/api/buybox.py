@@ -136,6 +136,16 @@ async def update_filter(
     return f
 
 
+@router.post("/buybox-filters/_run-digest")
+async def run_digest_now() -> dict[str, int]:
+    """Manual-trigger the daily digest worker. Used for smoke tests
+    before cron is wired up; safe to leave enabled because the worker
+    is idempotent (notified_at + 23h gate)."""
+    from app.workers.daily_email import run_once
+
+    return await run_once()
+
+
 @router.delete("/buybox-filters/{filter_id}", status_code=204)
 async def delete_filter(
     filter_id: uuid.UUID,
