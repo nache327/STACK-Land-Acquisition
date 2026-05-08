@@ -51,6 +51,7 @@ from app.services.job_tracking import (
     now_utc,
     start_job_step,
 )
+from app.services.buybox_scoring import auto_score_jurisdiction
 from app.services.matrix_bootstrap import bootstrap_zone_use_matrix
 from app.services.spatial_backfill import (
     backfill_parcel_zoning_from_districts,
@@ -1188,6 +1189,22 @@ async def _run(db: AsyncSession, job: Job) -> None:
         "complete_feasibility",
         {"jurisdiction_id": str(jurisdiction.id)},
     )
+
+    # ── Auto-rescore parcel_buybox_scores ────────────────────────────────
+    # Refresh server-side scores for this jurisdiction so the dashboard's
+    # Score column lights up immediately. Non-fatal: a scoring failure
+    # logs a warning but does NOT fail the job — parcels + zoning are
+    # already persisted regardless.
+    score_started = _stage_started(job, "auto_score", jurisdiction_id=str(jurisdiction.id))
+    try:
+        async with asyncio.timeout(900):  # 15 min cap; typical run is <1 min
+            scored = await auto_score_jurisdiction(jurisdiction.id)
+        _stage_completed(job, "auto_score", score_started, parcels_scored=scored)
+        logger.info("Auto-scored %d parcels for %s", scored, jurisdiction.name)
+    except Exception as exc:
+        _stage_failed(job, "auto_score", score_started, exc)
+        logger.warning("Auto-scoring failed (non-fatal): %s", exc)
+
     await _set_status(
         db, job, JobStatus.ready,
         progress={

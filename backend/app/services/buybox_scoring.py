@@ -172,6 +172,59 @@ SET score       = EXCLUDED.score,
 """
 
 
+# Stable IDs of the seed rows created in migration 0015. Auto-scoring
+# uses these to find the default BuyboxFilter without needing an auth /
+# session context.
+DEFAULT_ORG_ID            = uuid.UUID("00000000-0000-0000-0000-000000000001")
+SELF_STORAGE_USE_CASE_ID  = uuid.UUID("00000000-0000-0000-0000-000000000002")
+
+
+async def auto_score_jurisdiction(jurisdiction_id: uuid.UUID) -> int:
+    """Score every parcel in a freshly-ingested jurisdiction against the
+    Default Organization's `self_storage` default BuyboxFilter.
+
+    Used by the pipeline as the last step after parcels + zoning + matrix
+    + overlays are populated, so the dashboard's Score column lights up
+    immediately without a manual bootstrap run.
+
+    Safely returns 0 when the default filter doesn't exist (e.g. before
+    migration 0015 lands or in a test DB without the seeds). Caller
+    should already wrap in try/except so a scoring failure can't fail
+    the larger pipeline.
+    """
+    conn = await asyncpg.connect(_raw_dsn())
+    try:
+        await conn.execute("SET statement_timeout = 0")
+        row = await conn.fetchrow(
+            """
+            SELECT id, filter_json
+            FROM buybox_filters
+            WHERE organization_id = $1::uuid
+              AND use_case_id     = $2::uuid
+              AND is_default      = true
+            LIMIT 1
+            """,
+            DEFAULT_ORG_ID, SELF_STORAGE_USE_CASE_ID,
+        )
+    finally:
+        await conn.close()
+
+    if row is None:
+        logger.warning(
+            "auto_score_jurisdiction: no default BuyboxFilter for "
+            "(default org × self_storage). Skipping."
+        )
+        return 0
+
+    filter_json_raw = row["filter_json"]
+    if isinstance(filter_json_raw, str):
+        filter_json = json.loads(filter_json_raw)
+    else:
+        filter_json = filter_json_raw or {}
+
+    return await score_jurisdiction(jurisdiction_id, row["id"], filter_json)
+
+
 async def score_jurisdiction(
     jurisdiction_id: uuid.UUID,
     buybox_filter_id: uuid.UUID,
