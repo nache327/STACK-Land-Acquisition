@@ -177,7 +177,7 @@ export function BuyBoxPanel({
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded border border-slate-700 bg-slate-900 shadow-xl">
+            <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded border border-slate-700 bg-slate-900 shadow-xl">
               {!showManage ? (
                 <>
                   {!presetsLoaded ? (
@@ -261,7 +261,7 @@ export function BuyBoxPanel({
                           ✕
                         </button>
                       </div>
-                      <label className="mt-1 flex items-center gap-2 text-slate-400">
+                      <label className="mt-1 flex items-center gap-1.5 text-slate-400">
                         <input
                           type="checkbox"
                           checked={p.dailyEmailEnabled ?? false}
@@ -270,22 +270,22 @@ export function BuyBoxPanel({
                           className="h-3 w-3 accent-emerald-500"
                         />
                         Daily email
-                        {p.dailyEmailEnabled && (
-                          <>
-                            <span>·</span>
-                            <span>Top</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={100}
-                              defaultValue={p.dailyEmailTopN ?? 10}
-                              disabled={busyId === p.id}
-                              onBlur={(e) => void handleEmailTopN(p, parseInt(e.target.value, 10))}
-                              className="w-12 rounded bg-slate-800 px-1 py-0.5 text-[10px] text-slate-200 outline-none"
-                            />
-                          </>
-                        )}
                       </label>
+                      {p.dailyEmailEnabled && (
+                        <div className="mt-1 flex items-center gap-1.5 pl-5 text-slate-400">
+                          <span>Top</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            defaultValue={p.dailyEmailTopN ?? 10}
+                            disabled={busyId === p.id}
+                            onBlur={(e) => void handleEmailTopN(p, parseInt(e.target.value, 10))}
+                            className="w-12 rounded bg-slate-800 px-1 py-0.5 text-[10px] text-slate-200 outline-none"
+                          />
+                          <span>parcels/day</span>
+                        </div>
+                      )}
                       {p.lastEmailSentAt && (
                         <p className="mt-0.5 text-[9px] text-slate-600">
                           Last sent {new Date(p.lastEmailSentAt).toLocaleDateString()}
