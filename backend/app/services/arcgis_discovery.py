@@ -6,7 +6,8 @@ Discovery strategies (tried in order):
   2. ArcGIS Web Map URL        — parse the item's operationalLayers via REST
   3. ArcGIS Hub search         — geocode the city name, bbox-search Hub for datasets
 
-Regrid fallback is handled in pipeline.py (requires REGRID_API_KEY env var).
+If no public layer is found, pipeline.py falls back to state-level open data
+(e.g. UGRC for UT). Token-protected layers are skipped during Hub search.
 """
 from __future__ import annotations
 
@@ -104,7 +105,8 @@ async def discover_layers(map_url_or_name: str) -> LayerEndpoints:
 
     raise RuntimeError(
         f"Could not discover ArcGIS parcel layers for '{s}'. "
-        "Paste a direct FeatureServer URL, or set REGRID_API_KEY to enable the Regrid fallback."
+        "Paste a direct FeatureServer URL, or rely on the state-level "
+        "fallback in pipeline.py."
     )
 
 

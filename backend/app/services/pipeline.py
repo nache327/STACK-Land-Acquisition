@@ -4,7 +4,7 @@ Job pipeline service.
 Orchestrates the full data-collection workflow for a search job:
   1. Resolve the jurisdiction (create row if needed)
   2. Discover / validate FeatureServer endpoints
-  3. Download parcels from ArcGIS (or Regrid)
+  3. Download parcels from ArcGIS
   4. Ingest into PostGIS
   5. Parse ordinance → zone_use_matrix
   6. Apply overlays (flood / slope / wetland)
@@ -344,6 +344,10 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "american fork": _ugrc("Parcels_Utah", "American Fork", "American Fork, UT", "Utah"),
     "eagle mountain": _ugrc("Parcels_Utah", "Eagle Mountain", "Eagle Mountain, UT", "Utah"),
     "pleasant grove": _ugrc("Parcels_Utah", "Pleasant Grove", "Pleasant Grove, UT", "Utah"),
+    "cedar hills":   _ugrc("Parcels_Utah", "Cedar Hills",   "Cedar Hills, UT",   "Utah"),
+    "highland":      _ugrc("Parcels_Utah", "Highland",      "Highland, UT",      "Utah"),
+    "alpine":        _ugrc("Parcels_Utah", "Alpine",        "Alpine, UT",        "Utah"),
+    "saratoga springs": _ugrc("Parcels_Utah", "Saratoga Springs", "Saratoga Springs, UT", "Utah"),
     "springville":   _ugrc("Parcels_Utah", "Springville",   "Springville, UT",   "Utah"),
     "spanish fork":  _ugrc("Parcels_Utah", "Spanish Fork",  "Spanish Fork, UT",  "Utah"),
     "payson": JurisdictionConfig(
@@ -1340,19 +1344,19 @@ async def _parse_and_save_ordinance(
 
 async def _discover_jurisdiction_config(input_str: str) -> JurisdictionConfig:
     """
-    Try live ArcGIS discovery for an unknown jurisdiction, then Regrid fallback.
+    Try live ArcGIS Hub discovery; if that fails or yields a token-protected /
+    empty layer, fall back to state-level open data (UGRC for UT).
     Raises ValueError with a helpful message if everything fails.
     """
     from app.services.arcgis_discovery import discover_layers, geocode_jurisdiction
 
     geo = None
 
-    # ── Try ArcGIS discovery ──────────────────────────────────────────────────
+    # ── Try ArcGIS discovery (Hub / direct / webmap) ──────────────────────────
     try:
         endpoints = await discover_layers(input_str)
         geo = endpoints.geocoded
 
-        # If Hub/direct discovery didn't geocode, do it now for state/county
         if geo is None:
             try:
                 geo = await geocode_jurisdiction(input_str)
@@ -1379,31 +1383,26 @@ async def _discover_jurisdiction_config(input_str: str) -> JurisdictionConfig:
     except RuntimeError as discovery_err:
         logger.warning("ArcGIS discovery failed for %r: %s", input_str, discovery_err)
 
-    # ── Regrid fallback ───────────────────────────────────────────────────────
-    if settings.regrid_enabled:
-        logger.info("Trying Regrid fallback for %r", input_str)
-        try:
-            geo = await geocode_jurisdiction(input_str)
-        except Exception as exc:
-            raise ValueError(
-                f"Could not geocode {input_str!r} for Regrid fallback: {exc}"
-            ) from exc
+    # ── State-level open data fallback ────────────────────────────────────────
+    try:
+        geo = await geocode_jurisdiction(input_str)
+    except Exception as exc:
+        raise ValueError(
+            f"Could not geocode {input_str!r} for state-level fallback: {exc}"
+        ) from exc
 
-        regrid_path = _build_regrid_path(geo)
-        logger.info("Regrid path: %s", regrid_path)
-        return JurisdictionConfig(
-            name=geo.city,
-            state=geo.state,
-            county=geo.county,
-            parcel_source=ParcelSource.regrid,
-            parcel_endpoint=regrid_path,
-            zoning_endpoint=None,
+    fallback = await _state_open_data_fallback(geo)
+    if fallback is not None:
+        logger.info(
+            "State open-data fallback hit for %s, %s: %s (where=%s)",
+            geo.city, geo.state, fallback.parcel_endpoint, fallback.where_clause,
         )
+        return fallback
 
     raise ValueError(
-        f"Unknown jurisdiction {input_str!r}. "
-        "Paste a direct ArcGIS FeatureServer URL, or set REGRID_API_KEY "
-        "to enable the Regrid fallback."
+        f"Unknown jurisdiction {input_str!r}. No public ArcGIS layer found and "
+        f"no state-level fallback covers {geo.state!r}. Add it to "
+        "KNOWN_JURISDICTIONS or extend _state_open_data_fallback()."
     )
 
 
@@ -1413,13 +1412,80 @@ def _parse_state(s: str) -> str:
     return m.group(1) if m else ""
 
 
-def _build_regrid_path(geo: Any) -> str:
-    """Convert geocoded place to Regrid API path: 'ut/salt_lake/draper'."""
-    def slug(s: str) -> str:
-        s = re.sub(r"\b(county|parish|borough|municipality)\b", "", s, flags=re.I).strip()
-        return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_")
+# UGRC county-name → service-name (Parcels_<service>).
+# Names taken from services1.arcgis.com/99lidPhWCzftIe9K (UGRC org).
+_UGRC_COUNTY_SERVICES: dict[str, str] = {
+    "salt lake":  "Parcels_SaltLake",
+    "utah":       "Parcels_Utah",
+    "weber":      "Parcels_Weber",
+    "davis":      "Parcels_Davis",
+    "cache":      "Parcels_Cache",
+    "washington": "Parcels_Washington",
+    "iron":       "Parcels_Iron",
+}
 
-    return f"{geo.state.lower()}/{slug(geo.county)}/{slug(geo.city)}"
+
+async def _state_open_data_fallback(geo: Any) -> JurisdictionConfig | None:
+    """Look up a state-managed open parcel layer for a geocoded place.
+
+    Currently supports UT via UGRC. Returns None if no fallback is configured
+    for the state, or if the candidate layer returns 0 features for the city
+    (so we never silently land on an empty download).
+    """
+    if not geo or not geo.state:
+        return None
+
+    state = geo.state.upper()
+    if state == "UT":
+        return await _ut_ugrc_fallback(geo)
+    return None
+
+
+async def _ut_ugrc_fallback(geo: Any) -> JurisdictionConfig | None:
+    county_norm = re.sub(r"\s+county\s*$", "", (geo.county or "").lower()).strip()
+    service = _UGRC_COUNTY_SERVICES.get(county_norm)
+    if not service:
+        logger.warning(
+            "UT UGRC fallback: county %r not in UGRC service map", geo.county
+        )
+        return None
+
+    parcel_endpoint = f"{_UGRC}/{service}/FeatureServer/0"
+    where = f"PARCEL_CITY='{geo.city}'"
+
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{parcel_endpoint}/query",
+                params={"where": where, "returnCountOnly": "true", "f": "json"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception as exc:
+        logger.warning("UGRC count probe failed for %s: %s", geo.city, exc)
+        return None
+
+    count = data.get("count") if isinstance(data, dict) else None
+    if not count:
+        logger.warning(
+            "UGRC %s/PARCEL_CITY='%s' returned %s parcels — skipping",
+            service, geo.city, count,
+        )
+        return None
+
+    logger.info(
+        "UGRC fallback verified: %s parcels for %s (county=%s)",
+        count, geo.city, county_norm,
+    )
+    return JurisdictionConfig(
+        name=f"{geo.city}, UT",
+        state="UT",
+        county=county_norm.title(),
+        parcel_source=ParcelSource.city_gis,
+        parcel_endpoint=parcel_endpoint,
+        where_clause=where,
+    )
 
 
 # ─── Helpers added for NY/PA pivot ───────────────────────────────────────────
