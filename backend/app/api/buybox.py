@@ -146,6 +146,17 @@ async def run_digest_now() -> dict[str, int]:
     return await run_once()
 
 
+@router.post("/buybox-filters/_score-jurisdiction/{jurisdiction_id}")
+async def run_auto_score_now(jurisdiction_id: uuid.UUID) -> dict[str, int]:
+    """Manual-trigger auto-scoring for a jurisdiction against the default
+    BuyboxFilter. Useful for backfilling jurisdictions ingested before
+    auto-scoring was wired into the pipeline."""
+    from app.services.buybox_scoring import auto_score_jurisdiction
+
+    n = await auto_score_jurisdiction(jurisdiction_id)
+    return {"parcels_scored": n}
+
+
 @router.delete("/buybox-filters/{filter_id}", status_code=204)
 async def delete_filter(
     filter_id: uuid.UUID,
