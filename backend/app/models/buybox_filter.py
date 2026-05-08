@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, SmallInteger, String, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -41,6 +41,15 @@ class BuyboxFilter(Base):
     filter_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
     is_default: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    daily_email_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    daily_email_top_n: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=10, server_default=text("10")
+    )
+    last_email_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(

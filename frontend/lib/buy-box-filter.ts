@@ -23,9 +23,13 @@ export interface EvaluationResult {
 }
 
 export interface SavedPreset {
+  id: string;
   name: string;
   filter: BuyBoxFilter;
   isDefault?: boolean;
+  dailyEmailEnabled?: boolean;
+  dailyEmailTopN?: number;
+  lastEmailSentAt?: string | null;
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────────
@@ -40,47 +44,9 @@ export const DEFAULT_FILTER: BuyBoxFilter = {
   matchLogic: "AND",
 };
 
-export const PRESET_STORAGE_KEY = "parcellogic_presets_v1";
-
-const DEFAULT_PRESETS: SavedPreset[] = [
-  {
-    name: "Keep — Tier A",
-    filter: {
-      driveTimeMinutes: 10,
-      minPopulation: 30_000,
-      minMedianHHI: 200_000,
-      minMedianHomeValue: 1_000_000,
-      minHnwHouseholds: 2_500,
-      minAADT: null,
-      matchLogic: "AND",
-    },
-    isDefault: true,
-  },
-  {
-    name: "Keep — Tier B",
-    filter: {
-      driveTimeMinutes: 15,
-      minPopulation: 25_000,
-      minMedianHHI: 150_000,
-      minMedianHomeValue: null,
-      minHnwHouseholds: null,
-      minAADT: null,
-      matchLogic: "AND",
-    },
-  },
-  {
-    name: "Storage — Trade Area",
-    filter: {
-      driveTimeMinutes: 10,
-      minPopulation: 10_000,
-      minMedianHHI: null,
-      minMedianHomeValue: null,
-      minHnwHouseholds: null,
-      minAADT: null,
-      matchLogic: "AND",
-    },
-  },
-];
+// Legacy localStorage key — kept solely for the one-shot migration helper.
+export const LEGACY_PRESET_STORAGE_KEY = "parcellogic_presets_v1";
+const MIGRATION_FLAG_KEY = "parcellogic_presets_migrated_v1";
 
 // ── Pure evaluation ────────────────────────────────────────────────────────────
 
@@ -129,12 +95,10 @@ export function evaluateParcel(
     };
   }
 
-  // AND mode
   if (failing.length === 0) {
     return { status: "match", failedConditions: [], borderlineConditions: [] };
   }
 
-  // Borderline: ALL failed conditions are within 10% of threshold
   const borderlineConditions = failing.filter((c) => c.actual >= c.threshold * 0.9);
   const hardFails = failing.filter((c) => c.actual < c.threshold * 0.9);
 
@@ -157,42 +121,148 @@ export function evaluateAll(
   return out;
 }
 
-// ── Preset CRUD ────────────────────────────────────────────────────────────────
+// ── Server-backed preset CRUD ──────────────────────────────────────────────────
 
-export function loadPresets(): SavedPreset[] {
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+interface ServerFilterRow {
+  id: string;
+  organization_id: string;
+  use_case_id: string;
+  name: string;
+  filter_json: BuyBoxFilter;
+  is_default: boolean;
+  daily_email_enabled: boolean;
+  daily_email_top_n: number;
+  last_email_sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function rowToPreset(r: ServerFilterRow): SavedPreset {
+  return {
+    id: r.id,
+    name: r.name,
+    filter: r.filter_json,
+    isDefault: r.is_default,
+    dailyEmailEnabled: r.daily_email_enabled,
+    dailyEmailTopN: r.daily_email_top_n,
+    lastEmailSentAt: r.last_email_sent_at,
+  };
+}
+
+async function apiJSON<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...init?.headers },
+    ...init,
+  });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try { detail = (await res.json()).detail ?? detail; } catch { /* ignore */ }
+    throw new Error(detail);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+export async function loadPresets(): Promise<SavedPreset[]> {
+  const rows = await apiJSON<ServerFilterRow[]>("/api/buybox-filters");
+  if (rows.length === 0) {
+    await migrateLegacyPresets();
+    const after = await apiJSON<ServerFilterRow[]>("/api/buybox-filters");
+    return after.map(rowToPreset);
+  }
+  return rows.map(rowToPreset);
+}
+
+export async function savePreset(input: {
+  name: string;
+  filter: BuyBoxFilter;
+  isDefault?: boolean;
+  dailyEmailEnabled?: boolean;
+  dailyEmailTopN?: number;
+}): Promise<SavedPreset> {
+  const row = await apiJSON<ServerFilterRow>("/api/buybox-filters", {
+    method: "POST",
+    body: JSON.stringify({
+      name: input.name,
+      filter_json: input.filter,
+      is_default: input.isDefault ?? false,
+      daily_email_enabled: input.dailyEmailEnabled ?? false,
+      daily_email_top_n: input.dailyEmailTopN ?? 10,
+    }),
+  });
+  return rowToPreset(row);
+}
+
+export async function updatePreset(
+  id: string,
+  patch: Partial<{
+    name: string;
+    filter: BuyBoxFilter;
+    isDefault: boolean;
+    dailyEmailEnabled: boolean;
+    dailyEmailTopN: number;
+  }>,
+): Promise<SavedPreset> {
+  const body: Record<string, unknown> = {};
+  if (patch.name !== undefined) body.name = patch.name;
+  if (patch.filter !== undefined) body.filter_json = patch.filter;
+  if (patch.isDefault !== undefined) body.is_default = patch.isDefault;
+  if (patch.dailyEmailEnabled !== undefined) body.daily_email_enabled = patch.dailyEmailEnabled;
+  if (patch.dailyEmailTopN !== undefined) body.daily_email_top_n = patch.dailyEmailTopN;
+
+  const row = await apiJSON<ServerFilterRow>(`/api/buybox-filters/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return rowToPreset(row);
+}
+
+export async function deletePreset(id: string): Promise<void> {
+  await apiJSON<void>(`/api/buybox-filters/${id}`, { method: "DELETE" });
+}
+
+export async function setDefaultPreset(id: string): Promise<SavedPreset> {
+  return updatePreset(id, { isDefault: true });
+}
+
+export async function getDefaultPreset(): Promise<SavedPreset | null> {
+  const all = await loadPresets();
+  return all.find((p) => p.isDefault) ?? null;
+}
+
+// One-shot localStorage → server migration. Idempotent: skipped after the
+// first successful run via MIGRATION_FLAG_KEY. Best-effort — failures are
+// swallowed so a transient API outage doesn't strand the user.
+async function migrateLegacyPresets(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem(MIGRATION_FLAG_KEY) === "1") return;
+
   try {
-    const raw = typeof window !== "undefined" ? localStorage.getItem(PRESET_STORAGE_KEY) : null;
-    if (raw) return JSON.parse(raw) as SavedPreset[];
+    const raw = localStorage.getItem(LEGACY_PRESET_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(MIGRATION_FLAG_KEY, "1");
+      return;
+    }
+    const legacy = JSON.parse(raw) as Array<{
+      name: string;
+      filter: BuyBoxFilter;
+      isDefault?: boolean;
+    }>;
+    for (const p of legacy) {
+      try {
+        await savePreset({
+          name: p.name,
+          filter: p.filter,
+          isDefault: p.isDefault ?? false,
+        });
+      } catch {
+        // duplicate name (409) etc — keep going
+      }
+    }
+    localStorage.setItem(MIGRATION_FLAG_KEY, "1");
   } catch {
-    // fall through to seed defaults
+    // ignore
   }
-  if (typeof window !== "undefined") {
-    try { localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(DEFAULT_PRESETS)); } catch { /* quota */ }
-  }
-  return DEFAULT_PRESETS;
-}
-
-export function savePreset(preset: SavedPreset): void {
-  const existing = loadPresets().filter((p) => p.name !== preset.name);
-  try {
-    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify([...existing, preset]));
-  } catch { /* quota */ }
-}
-
-export function deletePreset(name: string): void {
-  const filtered = loadPresets().filter((p) => p.name !== name);
-  try {
-    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(filtered));
-  } catch { /* quota */ }
-}
-
-export function setDefaultPreset(name: string): void {
-  const presets = loadPresets().map((p) => ({ ...p, isDefault: p.name === name }));
-  try {
-    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets));
-  } catch { /* quota */ }
-}
-
-export function getDefaultPreset(): SavedPreset | null {
-  return loadPresets().find((p) => p.isDefault) ?? null;
 }

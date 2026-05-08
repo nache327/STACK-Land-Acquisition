@@ -26,7 +26,6 @@ import { PIPELINE_STEPS, STAGE_LABELS } from "@/hooks/useJobPoller";
 import { BuyBoxPanel } from "@/components/BuyBoxPanel";
 import {
   DEFAULT_FILTER,
-  getDefaultPreset,
   evaluateAll,
   isFilterActive,
   type BuyBoxFilter,
