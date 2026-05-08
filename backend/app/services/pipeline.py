@@ -1088,9 +1088,15 @@ async def _run(db: AsyncSession, job: Job) -> None:
         async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
             flood_count = await apply_flood_overlay(jurisdiction.id, db)
             wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
-        # AADT also sequential — Overpass has rate limits AND we still need
-        # the same single-session-no-concurrency invariant.
-        aadt_count = await apply_aadt_overlay(jurisdiction.id, db)
+        # AADT runs on a SEPARATE raw asyncpg connection inside
+        # apply_aadt_overlay (no shared state with the SQLAlchemy session).
+        # If it raises, contain it so the rest of the pipeline still
+        # completes cleanly — failing AADT is non-essential.
+        try:
+            aadt_count = await apply_aadt_overlay(jurisdiction.id, db)
+        except Exception as aadt_exc:
+            logger.warning("AADT overlay failed (non-fatal): %s", aadt_exc)
+            aadt_count = 0
         _stage_completed(job, "overlays", overlay_started, flood=flood_count, wetland=wetland_count, aadt=aadt_count)
         await db.commit()
         logger.info(

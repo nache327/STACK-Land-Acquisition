@@ -19,6 +19,7 @@ import logging
 import urllib.parse
 import uuid
 
+import asyncpg
 import httpx
 from geoalchemy2 import WKTElement
 from shapely.ops import unary_union
@@ -28,6 +29,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.arcgis_bbox import download_bbox_features, get_parcel_bbox
 from app.config import settings
 from app.models.overlay import Overlay, OverlayType
+
+
+def _raw_asyncpg_url() -> str:
+    """Strip the SQLAlchemy driver tag for plain asyncpg.connect()."""
+    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
 logger = logging.getLogger(__name__)
 
@@ -345,21 +351,31 @@ async def apply_aadt_overlay(
 
     logger.info("Assigning AADT from %d road segments to parcels in %s …", len(road_rows), jurisdiction_id)
 
-    # Write roads to a temp table in batches to avoid a single massive SQL string
-    await db.execute(text(
-        "CREATE TEMPORARY TABLE IF NOT EXISTS _aadt_roads "
-        "(lng double precision, lat double precision, aadt integer)"
-    ))
-    await db.execute(text("TRUNCATE _aadt_roads"))
-
-    BATCH = 500
-    for i in range(0, len(road_rows), BATCH):
-        batch = road_rows[i : i + BATCH]
-        vals = ", ".join(f"({lng}, {lat}, {aadt})" for lng, lat, aadt in batch)
-        await db.execute(text(f"INSERT INTO _aadt_roads VALUES {vals}"))
-
-    result = await db.execute(
-        text("""
+    # Run all heavy SQL on a raw asyncpg connection — DON'T use the shared
+    # SQLAlchemy AsyncSession `db`. The big spatial UPDATE runs for tens of
+    # seconds on large jurisdictions (Newark Essex: 175k parcels × ~10k road
+    # centers); SQLAlchemy's greenlet wrapper around `db.execute()` tears
+    # down its parent greenlet during long awaits and the next operation on
+    # the session raises MissingGreenlet, then the pipeline's rollback
+    # handler also fails on the corrupted session — and the whole job dies.
+    # Raw asyncpg has no greenlet bridge to break.
+    conn = await asyncpg.connect(_raw_asyncpg_url())
+    try:
+        # Disable server-side timeout for the spatial UPDATE — large
+        # jurisdictions can legitimately exceed any default cap.
+        await conn.execute("SET statement_timeout = 0")
+        await conn.execute(
+            "CREATE TEMPORARY TABLE IF NOT EXISTS _aadt_roads "
+            "(lng double precision, lat double precision, aadt integer)"
+        )
+        await conn.execute("TRUNCATE _aadt_roads")
+        await conn.copy_records_to_table(
+            "_aadt_roads",
+            records=road_rows,
+            columns=("lng", "lat", "aadt"),
+        )
+        result = await conn.execute(
+            """
             WITH best AS (
                 SELECT DISTINCT ON (p.id)
                     p.id AS parcel_id,
@@ -371,7 +387,7 @@ async def apply_aadt_overlay(
                        ST_SetSRID(ST_MakePoint(r.lng, r.lat), 4326)::geography,
                        150
                      )
-                WHERE p.jurisdiction_id = :jid
+                WHERE p.jurisdiction_id = $1::uuid
                   AND (p.centroid IS NOT NULL OR p.geom IS NOT NULL)
                 ORDER BY p.id, r.aadt DESC
             )
@@ -379,10 +395,17 @@ async def apply_aadt_overlay(
             SET aadt = best.aadt
             FROM best
             WHERE p.id = best.parcel_id
-        """),
-        {"jid": str(jurisdiction_id)},
-    )
-    await db.flush()
-    updated = result.rowcount or 0
+            """,
+            str(jurisdiction_id),
+        )
+    finally:
+        await conn.close()
+
+    # asyncpg's `execute()` returns a status string like "UPDATE 12345"; parse
+    # the row count out of it so the pipeline's progress reporting still works.
+    try:
+        updated = int(result.rsplit(" ", 1)[-1]) if isinstance(result, str) else 0
+    except (ValueError, AttributeError):
+        updated = 0
     logger.info("AADT overlay: %d parcels updated for %s", updated, jurisdiction_id)
     return updated
