@@ -147,14 +147,58 @@ async def run_digest_now() -> dict[str, int]:
 
 
 @router.post("/buybox-filters/_score-jurisdiction/{jurisdiction_id}")
-async def run_auto_score_now(jurisdiction_id: uuid.UUID) -> dict[str, int]:
-    """Manual-trigger auto-scoring for a jurisdiction against the default
-    BuyboxFilter. Useful for backfilling jurisdictions ingested before
-    auto-scoring was wired into the pipeline."""
-    from app.services.buybox_scoring import auto_score_jurisdiction
+async def run_auto_score_now(
+    jurisdiction_id: uuid.UUID,
+    filter_id: uuid.UUID | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str | int | None]:
+    """Manual-trigger auto-scoring for a jurisdiction. By default scores
+    against the org's default self_storage filter; pass ?filter_id=...
+    to score against a specific one. Returns diagnostic counts so we
+    can see why a 0-result happened (no parcels vs. no default filter)."""
+    from app.services.buybox_scoring import score_jurisdiction
+    import json as _json
 
-    n = await auto_score_jurisdiction(jurisdiction_id)
-    return {"parcels_scored": n}
+    parcel_count = await db.scalar(
+        text("SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid").bindparams(
+            jid=jurisdiction_id
+        )
+    )
+
+    if filter_id is None:
+        f = await db.scalar(
+            select(BuyboxFilter).where(
+                and_(
+                    BuyboxFilter.organization_id == DEFAULT_ORG_ID,
+                    BuyboxFilter.use_case_id == SELF_STORAGE_USE_CASE_ID,
+                    BuyboxFilter.is_default.is_(True),
+                )
+            )
+        )
+        if f is None:
+            return {
+                "parcels_scored": 0,
+                "parcel_count": parcel_count,
+                "filter_id": None,
+                "note": "no default BuyboxFilter for (default org × self_storage)",
+            }
+        filter_id = f.id
+        filter_json = f.filter_json
+    else:
+        f = await db.scalar(select(BuyboxFilter).where(BuyboxFilter.id == filter_id))
+        if f is None:
+            raise HTTPException(404, "filter not found")
+        filter_json = f.filter_json
+
+    if isinstance(filter_json, str):
+        filter_json = _json.loads(filter_json)
+
+    n = await score_jurisdiction(jurisdiction_id, filter_id, filter_json or {})
+    return {
+        "parcels_scored": n,
+        "parcel_count": parcel_count,
+        "filter_id": str(filter_id),
+    }
 
 
 @router.delete("/buybox-filters/{filter_id}", status_code=204)
