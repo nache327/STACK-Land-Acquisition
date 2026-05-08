@@ -253,12 +253,13 @@ async def _send_digest_for_filter(db: AsyncSession, f: BuyboxFilter) -> int:
     return len(parcels)
 
 
-async def run_once() -> dict[str, int]:
+async def run_once() -> dict:
     """Send the digest for every eligible filter. Returns
     ``{"filters": N, "parcels": M}`` for callers/CLI."""
     filters_processed = 0
     parcels_emailed = 0
     eligible_total = 0
+    errors: list[str] = []
     async with async_session_maker() as db:
         eligible = await _eligible_filters(db)
         eligible_total = len(eligible)
@@ -272,13 +273,15 @@ async def run_once() -> dict[str, int]:
                 sent = await _send_digest_for_filter(db, f)
                 filters_processed += 1
                 parcels_emailed += sent
-            except Exception:
+            except Exception as exc:
                 logger.exception("digest filter=%s failed; continuing", f.name)
+                errors.append(f"{f.name}: {type(exc).__name__}: {exc}")
                 await db.rollback()
     return {
         "filters": filters_processed,
         "parcels": parcels_emailed,
         "eligible_total": eligible_total,
+        "errors": errors,
     }
 
 

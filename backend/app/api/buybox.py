@@ -139,7 +139,7 @@ async def update_filter(
 @router.post("/buybox-filters/_run-digest")
 async def run_digest_now(
     db: AsyncSession = Depends(get_db),
-) -> dict[str, int | str]:
+) -> dict:
     """Manual-trigger the daily digest worker. Used for smoke tests
     before cron is wired up; safe to leave enabled because the worker
     is idempotent (notified_at + 23h gate)."""
