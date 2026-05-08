@@ -361,12 +361,16 @@ async def apply_aadt_overlay(
     # Raw asyncpg has no greenlet bridge to break.
     conn = await asyncpg.connect(_raw_asyncpg_url())
     try:
-        # Disable server-side timeout for the spatial UPDATE — large
-        # jurisdictions can legitimately exceed any default cap.
-        await conn.execute("SET statement_timeout = 0")
+        # 90s ceiling — past this we drop AADT for the jurisdiction rather
+        # than let it block the actor's 30-min budget and tombstone the job.
+        await conn.execute("SET statement_timeout = 90000")
+        # Pre-build a geography column + GiST index so ST_DWithin uses it.
+        # Without an index, the join is parcels (175k) × roads (~60k) =
+        # ~10 billion sequential comparisons and the UPDATE never finishes.
         await conn.execute(
             "CREATE TEMPORARY TABLE IF NOT EXISTS _aadt_roads "
-            "(lng double precision, lat double precision, aadt integer)"
+            "(lng double precision, lat double precision, aadt integer, "
+            "geom geography(POINT, 4326))"
         )
         await conn.execute("TRUNCATE _aadt_roads")
         await conn.copy_records_to_table(
@@ -374,6 +378,14 @@ async def apply_aadt_overlay(
             records=road_rows,
             columns=("lng", "lat", "aadt"),
         )
+        await conn.execute(
+            "UPDATE _aadt_roads SET geom = ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography "
+            "WHERE geom IS NULL"
+        )
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS _aadt_roads_geom_gix ON _aadt_roads USING GIST(geom)"
+        )
+        await conn.execute("ANALYZE _aadt_roads")
         result = await conn.execute(
             """
             WITH best AS (
@@ -384,7 +396,7 @@ async def apply_aadt_overlay(
                 JOIN _aadt_roads r
                   ON ST_DWithin(
                        COALESCE(p.centroid, ST_Centroid(p.geom))::geography,
-                       ST_SetSRID(ST_MakePoint(r.lng, r.lat), 4326)::geography,
+                       r.geom,
                        150
                      )
                 WHERE p.jurisdiction_id = $1::uuid
@@ -398,6 +410,15 @@ async def apply_aadt_overlay(
             """,
             str(jurisdiction_id),
         )
+    except (asyncpg.QueryCanceledError, asyncpg.exceptions.QueryCanceledError) as exc:
+        # PostgreSQL timed the UPDATE out at 90s. Don't kill the pipeline —
+        # AADT is non-essential enrichment, parcels and zoning are what
+        # matters for ready state.
+        logger.warning(
+            "AADT spatial UPDATE exceeded 90s for %s — skipping: %s",
+            jurisdiction_id, exc,
+        )
+        return 0
     finally:
         await conn.close()
 
