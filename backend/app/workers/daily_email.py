@@ -258,10 +258,16 @@ async def run_once() -> dict[str, int]:
     ``{"filters": N, "parcels": M}`` for callers/CLI."""
     filters_processed = 0
     parcels_emailed = 0
+    eligible_total = 0
     async with async_session_maker() as db:
         eligible = await _eligible_filters(db)
-        logger.info("digest sweep: %d eligible filter(s)", len(eligible))
+        eligible_total = len(eligible)
+        logger.info("digest sweep: %d eligible filter(s)", eligible_total)
         for f in eligible:
+            logger.info(
+                "digest considering filter id=%s name=%r enabled=%s last_sent=%s",
+                f.id, f.name, f.daily_email_enabled, f.last_email_sent_at,
+            )
             try:
                 sent = await _send_digest_for_filter(db, f)
                 filters_processed += 1
@@ -269,7 +275,11 @@ async def run_once() -> dict[str, int]:
             except Exception:
                 logger.exception("digest filter=%s failed; continuing", f.name)
                 await db.rollback()
-    return {"filters": filters_processed, "parcels": parcels_emailed}
+    return {
+        "filters": filters_processed,
+        "parcels": parcels_emailed,
+        "eligible_total": eligible_total,
+    }
 
 
 # ─── Dramatiq actor (for manual / ad-hoc triggers) ───────────────────────
