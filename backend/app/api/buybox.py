@@ -86,6 +86,8 @@ async def create_filter(
         name=payload.name,
         filter_json=payload.filter_json,
         is_default=payload.is_default,
+        daily_email_enabled=payload.daily_email_enabled,
+        daily_email_top_n=payload.daily_email_top_n,
     )
     db.add(new)
     try:
@@ -120,6 +122,10 @@ async def update_filter(
         f.filter_json = payload.filter_json
     if payload.is_default is not None:
         f.is_default = payload.is_default
+    if payload.daily_email_enabled is not None:
+        f.daily_email_enabled = payload.daily_email_enabled
+    if payload.daily_email_top_n is not None:
+        f.daily_email_top_n = payload.daily_email_top_n
 
     try:
         await db.commit()

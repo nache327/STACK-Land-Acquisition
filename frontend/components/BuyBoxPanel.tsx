@@ -8,6 +8,7 @@ import {
   loadPresets,
   savePreset,
   deletePreset,
+  updatePreset,
   setDefaultPreset,
 } from "@/lib/buy-box-filter";
 import type { PrecomputeStatus } from "@/lib/isochrone-precompute";
@@ -40,14 +41,31 @@ export function BuyBoxPanel({
   bestActualValues,
   onRecompute,
 }: BuyBoxPanelProps) {
-  const [presets, setPresets] = useState<SavedPreset[]>(() => loadPresets());
+  const [presets, setPresets] = useState<SavedPreset[]>([]);
+  const [presetsLoaded, setPresetsLoaded] = useState(false);
+  const [presetError, setPresetError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [savingName, setSavingName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [showManage, setShowManage] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const refreshPresets = useCallback(() => setPresets(loadPresets()), []);
+  const refreshPresets = useCallback(async () => {
+    try {
+      const fresh = await loadPresets();
+      setPresets(fresh);
+      setPresetError(null);
+    } catch (err) {
+      setPresetError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPresetsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPresets();
+  }, [refreshPresets]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -70,23 +88,67 @@ export function BuyBoxPanel({
     setShowManage(false);
   }
 
-  function handleSavePreset() {
-    if (!savingName.trim()) return;
-    savePreset({ name: savingName.trim(), filter });
-    refreshPresets();
-    setSavingName("");
-    setShowSaveInput(false);
-    setDropdownOpen(false);
+  async function handleSavePreset() {
+    const name = savingName.trim();
+    if (!name) return;
+    try {
+      await savePreset({ name, filter });
+      await refreshPresets();
+      setSavingName("");
+      setShowSaveInput(false);
+      setDropdownOpen(false);
+    } catch (err) {
+      setPresetError(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  function handleDeletePreset(name: string) {
-    deletePreset(name);
-    refreshPresets();
+  async function handleDeletePreset(id: string) {
+    setBusyId(id);
+    try {
+      await deletePreset(id);
+      await refreshPresets();
+    } catch (err) {
+      setPresetError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  function handleSetDefault(name: string) {
-    setDefaultPreset(name);
-    refreshPresets();
+  async function handleSetDefault(id: string) {
+    setBusyId(id);
+    try {
+      await setDefaultPreset(id);
+      await refreshPresets();
+    } catch (err) {
+      setPresetError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleToggleEmail(p: SavedPreset, enabled: boolean) {
+    setBusyId(p.id);
+    try {
+      await updatePreset(p.id, { dailyEmailEnabled: enabled });
+      await refreshPresets();
+    } catch (err) {
+      setPresetError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleEmailTopN(p: SavedPreset, topN: number) {
+    if (!Number.isFinite(topN) || topN < 1 || topN > 100) return;
+    setBusyId(p.id);
+    try {
+      await updatePreset(p.id, { dailyEmailTopN: topN });
+      await refreshPresets();
+    } catch (err) {
+      setPresetError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusyId(null);
+    }
   }
 
   const maxPop = cityDataRanges?.maxPopulation ?? 200_000;
@@ -111,26 +173,33 @@ export function BuyBoxPanel({
             onClick={() => { setDropdownOpen((o) => !o); setShowManage(false); setShowSaveInput(false); }}
             className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-slate-200"
           >
-            Presets ▾
+            Saved Filters ▾
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded border border-slate-700 bg-slate-900 shadow-xl">
+            <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded border border-slate-700 bg-slate-900 shadow-xl">
               {!showManage ? (
                 <>
-                  {presets.map((p) => (
-                    <button
-                      key={p.name}
-                      onClick={() => applyPreset(p)}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] hover:bg-slate-800"
-                    >
-                      {p.isDefault ? <span className="text-amber-400">★</span> : <span className="w-3" />}
-                      <span className="flex-1 truncate">{p.name}</span>
-                      {JSON.stringify(p.filter) === JSON.stringify(filter) && (
-                        <span className="text-emerald-400">✓</span>
-                      )}
-                    </button>
-                  ))}
+                  {!presetsLoaded ? (
+                    <p className="px-3 py-2 text-[10px] text-slate-500">Loading…</p>
+                  ) : presets.length === 0 ? (
+                    <p className="px-3 py-2 text-[10px] text-slate-500">No saved filters yet.</p>
+                  ) : (
+                    presets.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => applyPreset(p)}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] hover:bg-slate-800"
+                      >
+                        {p.isDefault ? <span className="text-amber-400">★</span> : <span className="w-3" />}
+                        <span className="flex-1 truncate">{p.name}</span>
+                        {p.dailyEmailEnabled && <span title="Daily email on" className="text-emerald-400">✉</span>}
+                        {JSON.stringify(p.filter) === JSON.stringify(filter) && (
+                          <span className="text-emerald-400">✓</span>
+                        )}
+                      </button>
+                    ))
+                  )}
                   <div className="my-1 border-t border-slate-700" />
                   {showSaveInput ? (
                     <div className="flex items-center gap-1 px-3 py-1.5">
@@ -138,11 +207,11 @@ export function BuyBoxPanel({
                         autoFocus
                         value={savingName}
                         onChange={(e) => setSavingName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleSavePreset(); if (e.key === "Escape") setShowSaveInput(false); }}
-                        placeholder="Preset name…"
+                        onKeyDown={(e) => { if (e.key === "Enter") void handleSavePreset(); if (e.key === "Escape") setShowSaveInput(false); }}
+                        placeholder="Filter name…"
                         className="flex-1 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-200 outline-none placeholder:text-slate-500"
                       />
-                      <button onClick={handleSavePreset} className="text-[10px] text-emerald-400 hover:text-emerald-300">Save</button>
+                      <button onClick={() => void handleSavePreset()} className="text-[10px] text-emerald-400 hover:text-emerald-300">Save</button>
                     </div>
                   ) : (
                     <button
@@ -156,26 +225,74 @@ export function BuyBoxPanel({
                     onClick={() => setShowManage(true)}
                     className="w-full px-3 py-1.5 text-left text-[11px] text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                   >
-                    ⚙ Manage presets…
+                    ⚙ Manage filters…
                   </button>
+                  {presetError && (
+                    <p className="px-3 py-1.5 text-[10px] text-red-400">{presetError}</p>
+                  )}
                 </>
               ) : (
                 <>
                   <div className="flex items-center gap-2 px-3 py-1.5">
                     <button onClick={() => setShowManage(false)} className="text-[10px] text-slate-400 hover:text-slate-200">← Back</button>
-                    <span className="text-[11px] font-medium text-slate-300">Manage presets</span>
+                    <span className="text-[11px] font-medium text-slate-300">Manage filters</span>
                   </div>
                   <div className="my-1 border-t border-slate-700" />
-                  {presets.filter((p) => !p.isDefault).map((p) => (
-                    <div key={p.name} className="flex items-center gap-1 px-3 py-1 text-[10px]">
-                      <span className="flex-1 truncate text-slate-300">{p.name}</span>
-                      <button onClick={() => handleSetDefault(p.name)} title="Set as default" className="text-slate-500 hover:text-amber-400">★</button>
-                      <button onClick={() => handleDeletePreset(p.name)} className="text-slate-500 hover:text-red-400">✕</button>
+                  {presets.length === 0 && (
+                    <p className="px-3 py-2 text-[10px] text-slate-500">No saved filters yet.</p>
+                  )}
+                  {presets.map((p) => (
+                    <div key={p.id} className="border-b border-slate-800 px-3 py-1.5 text-[10px] last:border-b-0">
+                      <div className="flex items-center gap-1">
+                        <span className="flex-1 truncate text-slate-300">{p.name}</span>
+                        <button
+                          onClick={() => void handleSetDefault(p.id)}
+                          disabled={busyId === p.id || p.isDefault}
+                          title={p.isDefault ? "Default" : "Set as default"}
+                          className={p.isDefault ? "text-amber-400" : "text-slate-500 hover:text-amber-400"}
+                        >
+                          ★
+                        </button>
+                        <button
+                          onClick={() => void handleDeletePreset(p.id)}
+                          disabled={busyId === p.id}
+                          className="text-slate-500 hover:text-red-400"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <label className="mt-1 flex items-center gap-2 text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={p.dailyEmailEnabled ?? false}
+                          disabled={busyId === p.id}
+                          onChange={(e) => void handleToggleEmail(p, e.target.checked)}
+                          className="h-3 w-3 accent-emerald-500"
+                        />
+                        Daily email
+                        {p.dailyEmailEnabled && (
+                          <>
+                            <span>·</span>
+                            <span>Top</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={100}
+                              defaultValue={p.dailyEmailTopN ?? 10}
+                              disabled={busyId === p.id}
+                              onBlur={(e) => void handleEmailTopN(p, parseInt(e.target.value, 10))}
+                              className="w-12 rounded bg-slate-800 px-1 py-0.5 text-[10px] text-slate-200 outline-none"
+                            />
+                          </>
+                        )}
+                      </label>
+                      {p.lastEmailSentAt && (
+                        <p className="mt-0.5 text-[9px] text-slate-600">
+                          Last sent {new Date(p.lastEmailSentAt).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
                   ))}
-                  {presets.filter((p) => !p.isDefault).length === 0 && (
-                    <p className="px-3 py-2 text-[10px] text-slate-500">No custom presets yet.</p>
-                  )}
                 </>
               )}
             </div>
@@ -342,7 +459,7 @@ export function BuyBoxPanel({
           onClick={() => { setDropdownOpen(true); setShowSaveInput(true); }}
           className="rounded px-2 py-1 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-slate-200"
         >
-          Save as preset…
+          Save as filter…
         </button>
         {onRecompute && precomputeStatus?.complete && (
           <button

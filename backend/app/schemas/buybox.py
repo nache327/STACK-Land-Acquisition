@@ -36,6 +36,9 @@ class BuyboxFilterRead(BaseModel):
     name: str
     filter_json: dict[str, Any]
     is_default: bool
+    daily_email_enabled: bool
+    daily_email_top_n: int
+    last_email_sent_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -48,9 +51,13 @@ class BuyboxFilterCreate(BaseModel):
     filter_json: dict[str, Any]
     use_case_id: uuid.UUID | None = None
     is_default: bool = False
+    daily_email_enabled: bool = False
+    daily_email_top_n: int = Field(default=10, ge=1, le=100)
 
 
 class BuyboxFilterUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     filter_json: dict[str, Any] | None = None
     is_default: bool | None = None
+    daily_email_enabled: bool | None = None
+    daily_email_top_n: int | None = Field(default=None, ge=1, le=100)
