@@ -138,11 +138,18 @@ async def update_filter(
 
 @router.post("/buybox-filters/_run-digest")
 async def run_digest_now(
+    force: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Manual-trigger the daily digest worker. Used for smoke tests
     before cron is wired up; safe to leave enabled because the worker
-    is idempotent (notified_at + 23h gate)."""
+    is idempotent (notified_at + 23h gate).
+
+    ``?force=true`` bypasses the 23h cooldown so manual smoke tests can
+    re-fire within the same day. Intended for manual testing only — do
+    not wire this flag into cron. The per-parcel notified_at gate still
+    applies, so force-running does not re-email parcels that already
+    went out for that filter."""
     from app.workers.daily_email import run_once
     from app.config import settings as _settings
 
@@ -151,7 +158,7 @@ async def run_digest_now(
             BuyboxFilter.daily_email_enabled.is_(True)
         )
     )
-    result = await run_once()
+    result = await run_once(force=force)
     return {
         **result,
         "email_enabled_filters_in_db": int(enabled_total or 0),

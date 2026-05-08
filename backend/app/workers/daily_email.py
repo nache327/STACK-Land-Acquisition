@@ -65,17 +65,24 @@ _RESEND_INTERVAL = timedelta(hours=23)
 _MIN_SCORE = 40
 
 
-async def _eligible_filters(db: AsyncSession) -> list[BuyboxFilter]:
-    cutoff = datetime.now(timezone.utc) - _RESEND_INTERVAL
-    stmt = (
-        select(BuyboxFilter)
-        .where(BuyboxFilter.daily_email_enabled.is_(True))
-        .where(
+async def _eligible_filters(
+    db: AsyncSession, force: bool = False
+) -> list[BuyboxFilter]:
+    """Return email-enabled filters that are due for a digest.
+
+    The 23h gate (last_email_sent_at) is skipped when ``force`` is true,
+    so manual smoke-test triggers can re-fire within the same day.
+    The per-parcel notified_at gate is independent and still applies —
+    re-running force=true won't re-email parcels that already went out.
+    """
+    stmt = select(BuyboxFilter).where(BuyboxFilter.daily_email_enabled.is_(True))
+    if not force:
+        cutoff = datetime.now(timezone.utc) - _RESEND_INTERVAL
+        stmt = stmt.where(
             (BuyboxFilter.last_email_sent_at.is_(None))
             | (BuyboxFilter.last_email_sent_at < cutoff)
         )
-        .order_by(BuyboxFilter.updated_at.desc())
-    )
+    stmt = stmt.order_by(BuyboxFilter.updated_at.desc())
     return list((await db.execute(stmt)).scalars())
 
 
@@ -253,15 +260,19 @@ async def _send_digest_for_filter(db: AsyncSession, f: BuyboxFilter) -> int:
     return len(parcels)
 
 
-async def run_once() -> dict:
+async def run_once(force: bool = False) -> dict:
     """Send the digest for every eligible filter. Returns
-    ``{"filters": N, "parcels": M}`` for callers/CLI."""
+    ``{"filters": N, "parcels": M}`` for callers/CLI.
+
+    ``force`` bypasses the 23h cooldown — intended for manual smoke
+    tests, not for cron use.
+    """
     filters_processed = 0
     parcels_emailed = 0
     eligible_total = 0
     errors: list[str] = []
     async with async_session_maker() as db:
-        eligible = await _eligible_filters(db)
+        eligible = await _eligible_filters(db, force=force)
         eligible_total = len(eligible)
         logger.info("digest sweep: %d eligible filter(s)", eligible_total)
         for f in eligible:
