@@ -5,17 +5,21 @@ GET  /api/jurisdictions/:id/zones               — zone→use matrix
 GET  /api/jurisdictions/:id/zones/:code         — single zone row (for Layer 3 verification)
 PATCH /api/jurisdictions/:id/zones/:code        — human override
 GET  /api/jurisdictions/:id/parcels/map         — GeoJSON FeatureCollection for MapLibre
+POST /api/jurisdictions/_cleanup-empty          — admin: dedupe empty jurisdictions
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, text
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.models.job import Job
 from app.models.jurisdiction import Jurisdiction
+from app.models.parcel import Parcel
 from app.models.zone_use_matrix import ZoneUseMatrix, ClassificationSource
+from app.models.zoning_district import ZoningDistrict
 from app.schemas.jurisdiction import JurisdictionList, JurisdictionRead
 from app.schemas.zone_use_matrix import (
     ZoneMatrixResponse,
@@ -222,3 +226,150 @@ async def get_parcels_map_layer(
         )
 
     return JSONResponse(content=row.fc, media_type="application/geo+json", headers=headers)
+
+
+# ─── Admin: cleanup empty / duplicate jurisdictions ──────────────────────────
+
+# Deletes jurisdictions that have:
+#   - parcels = 0
+#   - zoning_districts = 0
+#   - zone_use_matrix = 0
+# AND match one of the cleanup heuristics (state="NE" typo, or name-based dup
+# of another jurisdiction in the same county).
+#
+# Job rows pointing at a deleted jurisdiction are re-pointed to the canonical
+# sibling when one exists; otherwise their jurisdiction_id is set to NULL via
+# the FK's ondelete=SET NULL.
+
+# Map from "empty city name" (state="NE" typo) to canonical NJ county row name.
+# These city-keyed rows were created by the live discovery path that misparsed
+# state from the input; the county-keyed rows are doing the actual work.
+_NJ_NE_TYPO_TO_COUNTY = {
+    "elizabeth":      "Union County, NJ",
+    "paterson":       "Passaic County, NJ",
+    "new brunswick":  "Middlesex County, NJ",
+}
+
+# City rows that should be merged into county-level NJ rows even though their
+# state is correct. Marlboro is in Monmouth County which already has 251k
+# parcels under the county-level row.
+_NJ_CITY_TO_COUNTY = {
+    "marlboro": "Monmouth County, NJ",
+}
+
+
+@router.post("/jurisdictions/_cleanup-empty")
+async def cleanup_empty_jurisdictions(
+    confirm: bool = Query(default=False),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Identify and (optionally) delete empty / duplicate jurisdiction rows.
+
+    Default is dry-run: returns the candidate rows without modifying anything.
+    Pass ?confirm=true to actually delete.
+
+    Heuristics:
+      1. state='NE' rows (typo of NJ from live discovery) that have a clear
+         county-level NJ row to redirect to.
+      2. Name-based dups: city-level rows whose canonical county-level row
+         exists and has data.
+      3. Suffix-mismatch dups (e.g. 'Cedar Hills' vs 'Cedar Hills, UT').
+    Only rows with parcels=0 + zoning_districts=0 + matrix=0 are eligible.
+    """
+    # Pull all jurisdictions plus their counts in one round trip.
+    rows = (await db.execute(
+        text(
+            """
+            SELECT
+                j.id,
+                j.name,
+                j.state,
+                j.county,
+                COALESCE(p.cnt, 0)  AS parcels,
+                COALESCE(zd.cnt, 0) AS zones,
+                COALESCE(zm.cnt, 0) AS matrix
+            FROM jurisdictions j
+            LEFT JOIN (
+                SELECT jurisdiction_id, COUNT(*) AS cnt
+                FROM parcels GROUP BY jurisdiction_id
+            ) p  ON p.jurisdiction_id = j.id
+            LEFT JOIN (
+                SELECT jurisdiction_id, COUNT(*) AS cnt
+                FROM zoning_districts GROUP BY jurisdiction_id
+            ) zd ON zd.jurisdiction_id = j.id
+            LEFT JOIN (
+                SELECT jurisdiction_id, COUNT(*) AS cnt
+                FROM zone_use_matrix GROUP BY jurisdiction_id
+            ) zm ON zm.jurisdiction_id = j.id
+            """
+        )
+    )).mappings().all()
+
+    by_name_state = {(r["name"].strip().lower(), (r["state"] or "").upper()): r for r in rows}
+
+    candidates: list[dict] = []
+    for r in rows:
+        if r["parcels"] or r["zones"] or r["matrix"]:
+            continue  # has real data, never auto-delete
+
+        name_lc = r["name"].strip().lower()
+        state = (r["state"] or "").upper()
+        canonical_id = None
+        canonical_name = None
+        reason = None
+
+        # 1. state='NE' typo
+        if state == "NE" and name_lc in _NJ_NE_TYPO_TO_COUNTY:
+            canon = _NJ_NE_TYPO_TO_COUNTY[name_lc]
+            cr = by_name_state.get((canon.lower(), "NJ"))
+            if cr and cr["parcels"]:
+                canonical_id, canonical_name = cr["id"], cr["name"]
+                reason = "state=NE typo; redirect to NJ county row"
+
+        # 2. NJ city → county redirect
+        if reason is None and state == "NJ" and name_lc in _NJ_CITY_TO_COUNTY:
+            canon = _NJ_CITY_TO_COUNTY[name_lc]
+            cr = by_name_state.get((canon.lower(), "NJ"))
+            if cr and cr["parcels"]:
+                canonical_id, canonical_name = cr["id"], cr["name"]
+                reason = "city dup of populated NJ county row"
+
+        # 3. Suffix-mismatch dup (e.g. 'Cedar Hills' vs 'Cedar Hills, UT')
+        if reason is None and state and f", {state.lower()}" not in name_lc:
+            cr = by_name_state.get((f"{name_lc}, {state.lower()}", state))
+            if cr and cr["parcels"]:
+                canonical_id, canonical_name = cr["id"], cr["name"]
+                reason = "suffix-mismatch dup of populated row"
+
+        if reason is None:
+            continue
+
+        candidates.append({
+            "id": str(r["id"]),
+            "name": r["name"],
+            "state": r["state"],
+            "county": r["county"],
+            "parcels": r["parcels"],
+            "redirect_to_id": str(canonical_id) if canonical_id else None,
+            "redirect_to_name": canonical_name,
+            "reason": reason,
+        })
+
+    if not confirm:
+        return {"dry_run": True, "candidates": candidates, "count": len(candidates)}
+
+    # Live deletion: re-point jobs, then delete jurisdictions.
+    deleted = 0
+    for c in candidates:
+        if c["redirect_to_id"]:
+            await db.execute(
+                update(Job)
+                .where(Job.jurisdiction_id == uuid.UUID(c["id"]))
+                .values(jurisdiction_id=uuid.UUID(c["redirect_to_id"]))
+            )
+        await db.execute(
+            delete(Jurisdiction).where(Jurisdiction.id == uuid.UUID(c["id"]))
+        )
+        deleted += 1
+    await db.commit()
+    return {"dry_run": False, "deleted": deleted, "candidates": candidates}
