@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db import get_db
 from app.models.job import Job
 from app.models.jurisdiction import Jurisdiction
@@ -373,3 +374,114 @@ async def cleanup_empty_jurisdictions(
         deleted += 1
     await db.commit()
     return {"dry_run": False, "deleted": deleted, "candidates": candidates}
+
+
+# ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
+
+@router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")
+async def backfill_zoning(
+    jurisdiction_id: uuid.UUID,
+    zoning_url: str = Query(..., description="ArcGIS FeatureServer/MapServer layer URL"),
+    where: str = Query(default="1=1"),
+    replace: bool = Query(default=True),
+    spatial_join: bool = Query(default=True),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Download a zoning FeatureServer + ingest into zoning_districts +
+    spatial-join parcels.
+
+    Useful for backfilling counties whose initial pipeline ingest didn't
+    have a zoning endpoint configured. Idempotent when ``replace=true``
+    (default): existing zoning_districts rows for the jurisdiction are
+    deleted and re-inserted from the source.
+
+    Returns counts so the caller can verify the backfill landed.
+    """
+    from app.services.arcgis_query import download_all_features
+    from app.services.zoning_ingestion import ingest_zoning_districts
+
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(404, "jurisdiction not found")
+
+    parcel_count = await db.scalar(
+        select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction_id)
+    )
+    pre_zone_count = await db.scalar(
+        select(func.count(ZoningDistrict.id)).where(
+            ZoningDistrict.jurisdiction_id == jurisdiction_id
+        )
+    )
+
+    gdf = await download_all_features(zoning_url, where=where)
+    if gdf.empty:
+        return {
+            "jurisdiction": j.name,
+            "parcel_count": parcel_count,
+            "pre_zoning_count": pre_zone_count,
+            "downloaded": 0,
+            "ingested": 0,
+            "spatial_updated": 0,
+            "note": "downloaded 0 features — nothing to ingest",
+        }
+
+    ingested = await ingest_zoning_districts(gdf, jurisdiction_id, db, replace=replace)
+    await db.commit()
+
+    spatial_updated = 0
+    if spatial_join and parcel_count and parcel_count > 0:
+        # Mirror the philly prefetch pattern: raw asyncpg + session-mode
+        # 5432 + statement_timeout=0 so Supabase doesn't kill the join.
+        import asyncpg
+        session_url = settings.database_url.replace(":6543/", ":5432/").replace(
+            "postgresql+asyncpg://", "postgresql://"
+        )
+        conn = await asyncpg.connect(
+            session_url, statement_cache_size=0, command_timeout=7200
+        )
+        try:
+            await conn.execute("SET statement_timeout = 0")
+            result = await conn.execute(
+                """
+                WITH ranked AS (
+                    SELECT
+                        p.id AS parcel_id,
+                        zd.zone_class,
+                        zd.zone_code,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY p.id
+                            ORDER BY zd.id
+                        ) AS rn
+                    FROM parcels p
+                    JOIN zoning_districts zd
+                      ON zd.jurisdiction_id = p.jurisdiction_id
+                     AND p.jurisdiction_id = $1
+                     AND p.geom IS NOT NULL
+                     AND zd.geom IS NOT NULL
+                     AND ST_Within(ST_Centroid(p.geom), zd.geom)
+                )
+                UPDATE parcels p
+                SET zone_class = ranked.zone_class,
+                    zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)
+                FROM ranked
+                WHERE p.id = ranked.parcel_id
+                  AND ranked.rn = 1
+                """,
+                jurisdiction_id,
+            )
+        finally:
+            await conn.close()
+        # asyncpg's UPDATE returns 'UPDATE <n>'
+        try:
+            spatial_updated = int(result.split()[-1])
+        except Exception:
+            spatial_updated = 0
+
+    return {
+        "jurisdiction": j.name,
+        "parcel_count": parcel_count or 0,
+        "pre_zoning_count": pre_zone_count or 0,
+        "downloaded": int(len(gdf)),
+        "ingested": ingested,
+        "spatial_updated": spatial_updated,
+    }
