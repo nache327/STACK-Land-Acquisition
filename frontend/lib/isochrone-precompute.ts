@@ -32,12 +32,14 @@ export interface PrecomputeStatus {
 
 // ── Storage keys ───────────────────────────────────────────────────────────────
 
+// v4: HNW tract-median threshold raised from $150K to $200K. Invalidates
+// every cached metrics blob so the new cutoff takes effect.
 // v3: invalidate the empty caches v2 created on first load when mapParcels
 // hadn't populated yet (race condition fixed in dashboard/[jobId]/page.tsx).
 // v2: weighted-mean denominator bug fix (HHI / home value were divided by
 // totalPopulation instead of sum-of-household-counts, deflating values ~2.7×).
-const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v3_${cityId}`;
-const DATA_KEY = (cityId: string) => `parcellogic_precompute_v3_${cityId}`;
+const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v4_${cityId}`;
+const DATA_KEY = (cityId: string) => `parcellogic_precompute_v4_${cityId}`;
 const IDB_DB = "parcellogic_precompute";
 const IDB_STORE = "cities";
 const SMALL_CITY_THRESHOLD = 500;
@@ -71,8 +73,12 @@ function computeRingMetrics(tracts: TractData[]): PrecomputedRingMetrics {
   // for backwards-compat with any cached TractData that predates the population field.
   const totalPopulation = valid.reduce((s, t) => s + (t.population ?? t.household_count ?? 0), 0);
 
+  // Tract-median income > $200K threshold. Note: this is a rough proxy — it
+  // counts ALL households in tracts whose MEDIAN exceeds the cutoff, not
+  // actual high-income households. A real HNW count would come from ACS
+  // B19001 (households-by-income-bracket).
   const hnwHouseholds = valid
-    .filter((t) => t.median_hhi != null && t.median_hhi > 150_000)
+    .filter((t) => t.median_hhi != null && t.median_hhi > 200_000)
     .reduce((s, t) => s + (t.household_count ?? 0), 0);
 
   // Household-weighted means: numerator is weighted by household_count, so the
