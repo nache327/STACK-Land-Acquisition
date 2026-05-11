@@ -95,8 +95,23 @@ async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
     async_session_maker() still routes through the shared engine. Even with
     NullPool the engine's greenlet coordinator can re-enter the ingest
     transaction's greenlet context, raising MissingGreenlet. asyncpg.connect()
-    opens a brand-new TCP socket — SQLAlchemy is not involved at all."""
-    conn = await asyncpg.connect(_raw_asyncpg_url())
+    opens a brand-new TCP socket — SQLAlchemy is not involved at all.
+
+    statement_cache_size=0 is required because Supabase routes us through
+    pgbouncer in transaction mode, which leaks prepared statements across
+    asyncpg client connections.
+
+    Best-effort by design: progress writes are telemetry and must not bring
+    down the pipeline. Supabase's pgbouncer occasionally drops the underlying
+    server conn between asyncpg.connect() and the first execute, surfacing
+    as ConnectionDoesNotExistError. Losing one progress update is harmless;
+    losing a 6-minute MapPLUTO download is not.
+    """
+    try:
+        conn = await asyncpg.connect(_raw_asyncpg_url(), statement_cache_size=0)
+    except Exception as exc:
+        logger.warning("progress_commit connect failed (non-fatal): %r", exc)
+        return
     try:
         await conn.execute("SET statement_timeout = 0")
         await conn.execute(
@@ -104,8 +119,13 @@ async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
             _json.dumps(progress),
             str(job_id),
         )
+    except Exception as exc:
+        logger.warning("progress_commit write failed (non-fatal): %r", exc)
     finally:
-        await conn.close()
+        try:
+            await conn.close()
+        except Exception:
+            pass
 
 
 def _timestamp() -> str:
@@ -549,12 +569,72 @@ async def _set_status(
     progress: dict[str, Any] | None = None,
     error: str | None = None,
 ) -> None:
+    """Update job status/progress/error.
+
+    Tries SQLAlchemy first; on ConnectionDoesNotExistError (Supabase pgbouncer
+    silently drops the underlying server conn during long operations like a
+    6-minute MapPLUTO download), invalidates the session and falls back to a
+    raw asyncpg UPDATE so the pipeline can continue. The in-memory `job` ORM
+    state is always updated regardless — only the DB write may take the
+    fallback path.
+    """
     job.status = status
     if progress:
         job.progress = {**(job.progress or {}), **progress}
     if error:
         job.error_message = error
-    await db.flush()
+    try:
+        await db.flush()
+    except Exception as exc:
+        if "connection was closed in the middle of operation" in str(exc) \
+                or "ConnectionDoesNotExist" in type(exc).__name__:
+            logger.warning(
+                "_set_status flush hit dead conn (Supabase pgbouncer drop) — "
+                "falling back to raw asyncpg: %r", exc,
+            )
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            await _raw_status_update(
+                _safe_job_id(job),
+                status.value if hasattr(status, "value") else str(status),
+                job.progress,
+                job.error_message,
+            )
+        else:
+            raise
+
+
+async def _raw_status_update(
+    job_id: Any,
+    status: str,
+    progress: dict | None,
+    error: str | None,
+) -> None:
+    """Raw-asyncpg fallback for _set_status. Best-effort — swallows errors so
+    a transient pooler glitch doesn't kill the whole pipeline."""
+    try:
+        conn = await asyncpg.connect(_raw_asyncpg_url(), statement_cache_size=0)
+    except Exception as exc:
+        logger.warning("raw_status_update connect failed (non-fatal): %r", exc)
+        return
+    try:
+        await conn.execute("SET statement_timeout = 0")
+        await conn.execute(
+            "UPDATE jobs SET status = $1, progress = $2::jsonb, error_message = $3, updated_at = now() WHERE id = $4::uuid",
+            status,
+            _json.dumps(progress) if progress is not None else None,
+            error,
+            str(job_id),
+        )
+    except Exception as exc:
+        logger.warning("raw_status_update write failed (non-fatal): %r", exc)
+    finally:
+        try:
+            await conn.close()
+        except Exception:
+            pass
 
 
 async def _heartbeat_locked_at(job_id: uuid.UUID, interval: int = 60) -> None:
