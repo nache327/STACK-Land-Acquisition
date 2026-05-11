@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import uuid
 
+import asyncpg
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.jurisdiction import CoverageLevel, Jurisdiction
 
 
@@ -52,17 +54,26 @@ async def backfill_parcel_zoning_from_districts(
     Accurate for normal parcels; a parcel straddling a zone boundary gets the
     zone that contains its centroid.
 
-    Disables Supabase's server-side statement_timeout via SET LOCAL so the
-    query isn't cancelled prematurely on large cities.
+    Runs on a fresh raw asyncpg connection (session-mode 5432 + command_timeout
+    7200s + server-side statement_timeout=0) so Supabase doesn't cancel the
+    query mid-flight on jurisdictions with hundreds of thousands of parcels.
+    SQLAlchemy's asyncpg dialect imposes a much shorter per-statement timeout
+    that has killed this UPDATE on Philadelphia (547k parcels × 29k districts).
     """
     zone_code_set = (
         ", zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)"
         if fill_missing_zone_code
         else ""
     )
-    await db.execute(text("SET LOCAL statement_timeout = 0"))
-    result = await db.execute(
-        text(
+    session_url = settings.database_url.replace(":6543/", ":5432/").replace(
+        "postgresql+asyncpg://", "postgresql://"
+    )
+    conn = await asyncpg.connect(
+        session_url, statement_cache_size=0, command_timeout=7200
+    )
+    try:
+        await conn.execute("SET statement_timeout = 0")
+        status = await conn.execute(
             f"""
             WITH ranked AS (
                 SELECT
@@ -76,7 +87,7 @@ async def backfill_parcel_zoning_from_districts(
                 FROM parcels p
                 JOIN zoning_districts zd
                   ON zd.jurisdiction_id = p.jurisdiction_id
-                 AND p.jurisdiction_id = :jid
+                 AND p.jurisdiction_id = $1
                  AND p.geom IS NOT NULL
                  AND zd.geom IS NOT NULL
                  AND ST_Within(ST_Centroid(p.geom), zd.geom)
@@ -87,12 +98,15 @@ async def backfill_parcel_zoning_from_districts(
             FROM ranked
             WHERE p.id = ranked.parcel_id
               AND ranked.rn = 1
-            """
-        ),
-        {"jid": jurisdiction_id},
-    )
-    await db.flush()
-    return result.rowcount or 0
+            """,
+            jurisdiction_id,
+        )
+    finally:
+        await conn.close()
+    try:
+        return int(status.split()[-1])
+    except (ValueError, IndexError):
+        return 0
 
 
 async def refresh_jurisdiction_coverage_level(
