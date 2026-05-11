@@ -129,6 +129,35 @@ async def fix_zoning(
     }
 
 
+@router.post("/run-bulk-zoning-overlays/{jurisdiction_id}")
+async def run_bulk_zoning_overlays(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Run only the bulk_ingest_zoning_for_jurisdiction step.
+
+    For jurisdictions where parcels already have zoning_code populated but
+    zoning_overlays rows are missing (e.g. fix-zoning's HTTP request died
+    after the heavy spatial backfill committed but before this final step
+    ran). bulk_ingest_zoning_for_jurisdiction is fast (two SQL passes with
+    a 60s statement_timeout cap), so this endpoint comfortably fits inside
+    Railway's HTTP window.
+    """
+    from app.services.zoning_system import bulk_ingest_zoning_for_jurisdiction
+
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    overlays_created = await bulk_ingest_zoning_for_jurisdiction(jurisdiction_id, db)
+    await db.commit()
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "overlays_created": overlays_created,
+    }
+
+
 @router.post("/fix-zoning-all")
 async def fix_zoning_all() -> StreamingResponse:
     """Run fix-zoning for every jurisdiction that has a zoning_endpoint and unzoned parcels.
