@@ -32,6 +32,11 @@ export interface TractData {
   median_hhi: number | null;
   median_home_value: number | null;
   household_count: number | null;
+  /**
+   * ACS B19001_017E — count of households with income $200,000 or more.
+   * Replaces the previous tract-median-binary proxy for HNW counts.
+   */
+  households_over_200k: number | null;
   /** Polygon clipped to the query polygon. Null if no overlap. */
   clipped_geometry: Feature<Polygon | MultiPolygon> | null;
 }
@@ -40,7 +45,14 @@ export interface TractData {
 
 const isochroneCache = new Map<string, IsochroneResult>();
 const tractCache = new Map<string, TractData[]>();
-const acsCountyCache = new Map<string, Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>>();
+type AcsTractRow = {
+  population: number | null;
+  hhi: number | null;
+  homeValue: number | null;
+  households: number | null;
+  householdsOver200k: number | null;
+};
+const acsCountyCache = new Map<string, Map<string, AcsTractRow>>();
 
 export function getIsochroneCache(): ReadonlyMap<string, IsochroneResult> {
   return isochroneCache;
@@ -136,13 +148,16 @@ type AcsRow = string[];
 async function fetchAcsForCounty(
   statefp: string,
   countyfp: string
-): Promise<Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>> {
+): Promise<Map<string, AcsTractRow>> {
   const cacheKey = `${statefp}${countyfp}`;
   if (acsCountyCache.has(cacheKey)) return acsCountyCache.get(cacheKey)!;
 
+  // B19001_017E = count of households with income $200,000 or more.
+  // Top bracket of the B19001 series; replaces the prior tract-median proxy
+  // for HNW counts.
   const url =
     `https://api.census.gov/data/2022/acs/acs5` +
-    `?get=B01003_001E,B19013_001E,B25077_001E,B11001_001E` +
+    `?get=B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E` +
     `&for=tract:*&in=state:${statefp}&in=county:${countyfp}`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
@@ -153,15 +168,16 @@ async function fetchAcsForCounty(
 
   const rows = (await res.json()) as AcsRow[];
   const [headers, ...data] = rows;
-  const pi = headers.indexOf("B01003_001E");
-  const hi = headers.indexOf("B19013_001E");
-  const hvi = headers.indexOf("B25077_001E");
+  const pi   = headers.indexOf("B01003_001E");
+  const hi   = headers.indexOf("B19013_001E");
+  const hvi  = headers.indexOf("B25077_001E");
   const hhi2 = headers.indexOf("B11001_001E");
+  const o200 = headers.indexOf("B19001_017E");
   const si = headers.indexOf("state");
   const ci = headers.indexOf("county");
   const ti = headers.indexOf("tract");
 
-  const out = new Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>();
+  const out = new Map<string, AcsTractRow>();
   for (const row of data) {
     const geoid = row[si] + row[ci] + row[ti];
     const parseN = (v: string) => (v === null || v === "-666666666" || v === "" ? null : Number(v));
@@ -170,6 +186,7 @@ async function fetchAcsForCounty(
       hhi: parseN(row[hi]),
       homeValue: parseN(row[hvi]),
       households: parseN(row[hhi2]),
+      householdsOver200k: o200 >= 0 ? parseN(row[o200]) : null,
     });
   }
   console.log(`[ACS] ${statefp}/${countyfp} → ${out.size} tracts`);
@@ -220,7 +237,7 @@ export async function fetchCensusTracts(
       fetchAcsForCounty(fips5.slice(0, 2), fips5.slice(2, 5))
     )
   );
-  const acsData = new Map<string, { population: number | null; hhi: number | null; homeValue: number | null; households: number | null }>();
+  const acsData = new Map<string, AcsTractRow>();
   for (const m of acsResults) {
     m.forEach((v, k) => acsData.set(k, v));
   }
@@ -260,10 +277,11 @@ export async function fetchCensusTracts(
       statefp:  geoid.slice(0, 2),
       countyfp: geoid.slice(2, 5),
       tractce:  String(props.TRACT ?? ""),
-      population:         acs?.population ?? null,
-      median_hhi:         acs?.hhi        ?? null,
-      median_home_value:  acs?.homeValue  ?? null,
-      household_count:    acs?.households ?? null,
+      population:          acs?.population         ?? null,
+      median_hhi:          acs?.hhi                ?? null,
+      median_home_value:   acs?.homeValue          ?? null,
+      household_count:     acs?.households         ?? null,
+      households_over_200k: acs?.householdsOver200k ?? null,
       clipped_geometry: clipped,
     });
   }
