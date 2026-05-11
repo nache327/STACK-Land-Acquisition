@@ -286,20 +286,24 @@ async def debug_alembic_upgrade(
     cfg.set_main_option("sqlalchemy.url", settings.sync_database_url)
     cfg.set_main_option("script_location", str(backend_dir / "alembic"))
 
+    # Open one connection, SET timeouts directly on it, then hand it to
+    # alembic via cfg.attributes["connection"]. Alembic will reuse it for
+    # the migration transaction so the SETs persist for the entire upgrade.
+    # The earlier connect-event listener didn't take because alembic was
+    # opening a second connection through the engine, bypassing the cache.
+    from sqlalchemy import text as _text
     engine = create_engine(settings.sync_database_url, future=True)
-
-    @event.listens_for(engine, "connect")
-    def _set_timeouts(dbapi_conn, _conn_record):
-        cur = dbapi_conn.cursor()
-        try:
-            cur.execute(f"SET statement_timeout = {statement_timeout_ms}")
-            cur.execute(f"SET lock_timeout      = {lock_timeout_ms}")
-        finally:
-            cur.close()
 
     buf_out, buf_err = io.StringIO(), io.StringIO()
     try:
-        with engine.begin() as conn:
+        with engine.connect() as conn:
+            # SETs must run OUTSIDE alembic's transaction or it can roll
+            # them back. With `future=True` SQLAlchemy connections start
+            # in lazy-txn mode; execute + commit a no-op statement to
+            # close any implicit txn, then SET, then hand off.
+            conn.execute(_text(f"SET statement_timeout = {statement_timeout_ms}"))
+            conn.execute(_text(f"SET lock_timeout      = {lock_timeout_ms}"))
+            conn.commit()
             cfg.attributes["connection"] = conn
             with redirect_stdout(buf_out), redirect_stderr(buf_err):
                 command.upgrade(cfg, "head")
