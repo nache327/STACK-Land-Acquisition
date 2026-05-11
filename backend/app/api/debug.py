@@ -260,37 +260,56 @@ async def debug_alembic_status(db: AsyncSession = Depends(get_db)) -> dict:
 
 
 @router.post("/alembic-upgrade")
-async def debug_alembic_upgrade() -> dict:
+async def debug_alembic_upgrade(
+    statement_timeout_ms: int = Query(default=0, ge=0),
+    lock_timeout_ms: int = Query(default=5000, ge=0),
+) -> dict:
     """Run alembic upgrade head from inside the API process.
 
-    Idempotent — if the DB is already at head, this is a no-op. Use when
-    Railway's container-start `alembic upgrade head` step failed silently
-    (the `&&` in the Dockerfile CMD short-circuits without affecting the
-    uvicorn process, so the API comes up against a stale schema).
+    Idempotent — if the DB is already at head, this is a no-op.
+
+    Migrating large tables hits Supabase's 60s default statement_timeout
+    on any ALTER that has to wait for locks. We override both
+    statement_timeout and lock_timeout per-connection via a SQLAlchemy
+    connect-event hook so the migration session is unconstrained.
     """
     import io
-    import sys
     from contextlib import redirect_stdout, redirect_stderr
     from pathlib import Path
 
     from alembic import command
     from alembic.config import Config
+    from sqlalchemy import create_engine, event
 
     backend_dir = Path(__file__).resolve().parents[2]
     cfg = Config(str(backend_dir / "alembic.ini"))
-    # Use the sync URL — alembic uses psycopg2 / not asyncpg.
     cfg.set_main_option("sqlalchemy.url", settings.sync_database_url)
     cfg.set_main_option("script_location", str(backend_dir / "alembic"))
 
+    engine = create_engine(settings.sync_database_url, future=True)
+
+    @event.listens_for(engine, "connect")
+    def _set_timeouts(dbapi_conn, _conn_record):
+        cur = dbapi_conn.cursor()
+        try:
+            cur.execute(f"SET statement_timeout = {statement_timeout_ms}")
+            cur.execute(f"SET lock_timeout      = {lock_timeout_ms}")
+        finally:
+            cur.close()
+
     buf_out, buf_err = io.StringIO(), io.StringIO()
     try:
-        with redirect_stdout(buf_out), redirect_stderr(buf_err):
-            command.upgrade(cfg, "head")
+        with engine.begin() as conn:
+            cfg.attributes["connection"] = conn
+            with redirect_stdout(buf_out), redirect_stderr(buf_err):
+                command.upgrade(cfg, "head")
         success = True
         error = None
     except Exception as exc:
         success = False
         error = f"{type(exc).__name__}: {exc}"
+    finally:
+        engine.dispose()
 
     return {
         "success": success,
