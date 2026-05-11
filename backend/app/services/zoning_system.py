@@ -5,10 +5,12 @@ import time
 from datetime import timedelta
 from typing import Any
 
+import asyncpg
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.job_step import JobStep
 from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
@@ -302,12 +304,7 @@ async def bulk_ingest_zoning_for_jurisdiction(
     """
     jid = str(jurisdiction_id)
 
-    # Cap the INSERT statements so lock contention never hangs the pipeline.
-    await db.execute(text("SET LOCAL statement_timeout = '60s'"))
-    # Fail fast if we can't acquire a row lock — don't wait 60s for a stale connection to release.
-    await db.execute(text("SET LOCAL lock_timeout = '5s'"))
-
-    # Fast skip: if every zoned parcel already has an overlay, nothing to do.
+    # Cheap precheck on the shared session.
     zoned_count = await db.scalar(text(
         "SELECT COUNT(*) FROM parcels "
         "WHERE jurisdiction_id = CAST(:jid AS uuid) "
@@ -329,9 +326,25 @@ async def bulk_ingest_zoning_for_jurisdiction(
         )
         return 0
 
+    # Run the heavy INSERTs on a fresh raw asyncpg connection (session-mode
+    # 5432 + command_timeout=7200 + server statement_timeout=0). SQLAlchemy's
+    # asyncpg dialect imposes a per-statement timeout that kills the
+    # zoning_overlays INSERT on jurisdictions with hundreds of thousands of
+    # zoned parcels (e.g. Philadelphia, 547k).
+    session_url = settings.database_url.replace(":6543/", ":5432/").replace(
+        "postgresql+asyncpg://", "postgresql://"
+    )
+    conn = await asyncpg.connect(
+        session_url, statement_cache_size=0, command_timeout=7200
+    )
+    overlays_inserted = 0
     try:
+        await conn.execute("SET statement_timeout = 0")
+        await conn.execute("SET lock_timeout = '30s'")
+
         # Step 1: ensure a ZoningRule row exists for every distinct (city, zone_code) pair
-        await db.execute(text("""
+        await conn.execute(
+            """
             INSERT INTO zoning_rules (id, city, zone_code, source, confidence)
             SELECT
                 gen_random_uuid(),
@@ -340,15 +353,18 @@ async def bulk_ingest_zoning_for_jurisdiction(
                 'parcel_ingest',
                 0.75
             FROM parcels p
-            WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+            WHERE p.jurisdiction_id = $1
               AND p.zoning_code IS NOT NULL
               AND p.zoning_code != ''
             GROUP BY COALESCE(NULLIF(TRIM(p.city), ''), 'unknown'), p.zoning_code
             ON CONFLICT (city, zone_code) DO NOTHING
-        """), {"jid": jid})
+            """,
+            jurisdiction_id,
+        )
 
         # Step 2: insert ZoningOverlays for every parcel that has a zoning_code but no overlay yet
-        overlay_result = await db.execute(text("""
+        overlay_status = await conn.execute(
+            """
             INSERT INTO zoning_overlays (id, parcel_id, zoning_rule_id, source_type, raw_data)
             SELECT
                 gen_random_uuid(),
@@ -361,38 +377,40 @@ async def bulk_ingest_zoning_for_jurisdiction(
                 ON r.city = COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')
                AND r.zone_code = p.zoning_code
             LEFT JOIN zoning_overlays o ON o.parcel_id = p.id
-            WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+            WHERE p.jurisdiction_id = $1
               AND p.zoning_code IS NOT NULL
               AND p.zoning_code != ''
               AND o.id IS NULL
-        """), {"jid": jid})
-        overlays_inserted = overlay_result.rowcount
-    except Exception as exc:
-        # LockNotAvailable (55P03) or statement timeout — prior run's overlays are still intact.
-        logger.warning(
-            "bulk_ingest_zoning lock/timeout for %s — skipping inserts: %s",
-            jurisdiction_id, exc,
+            """,
+            jurisdiction_id,
         )
-        await db.rollback()
-        return 0
+        try:
+            overlays_inserted = int(overlay_status.split()[-1])
+        except (ValueError, IndexError):
+            overlays_inserted = 0
 
-    # Step 3: mark parcels without zoning_code as "missing" in enrichment_cache
-    # so enqueue_missing_zoning_for_jurisdiction doesn't queue them as workers
-    await db.execute(text("""
-        INSERT INTO enrichment_cache (id, parcel_id, zoning_status, raw_json, last_updated)
-        SELECT
-            gen_random_uuid(),
-            p.id,
-            'missing',
-            '{"reason": "no zoning_code in parcel data"}'::jsonb,
-            NOW()
-        FROM parcels p
-        LEFT JOIN enrichment_cache ec ON ec.parcel_id = p.id
-        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
-          AND (p.zoning_code IS NULL OR p.zoning_code = '')
-          AND ec.id IS NULL
-        ON CONFLICT (parcel_id) DO NOTHING
-    """), {"jid": jid})
+        # Step 3: mark parcels without zoning_code as "missing" in enrichment_cache
+        # so enqueue_missing_zoning_for_jurisdiction doesn't queue them as workers
+        await conn.execute(
+            """
+            INSERT INTO enrichment_cache (id, parcel_id, zoning_status, raw_json, last_updated)
+            SELECT
+                gen_random_uuid(),
+                p.id,
+                'missing',
+                '{"reason": "no zoning_code in parcel data"}'::jsonb,
+                NOW()
+            FROM parcels p
+            LEFT JOIN enrichment_cache ec ON ec.parcel_id = p.id
+            WHERE p.jurisdiction_id = $1
+              AND (p.zoning_code IS NULL OR p.zoning_code = '')
+              AND ec.id IS NULL
+            ON CONFLICT (parcel_id) DO NOTHING
+            """,
+            jurisdiction_id,
+        )
+    finally:
+        await conn.close()
 
     logger.info(
         "Bulk zoning ingest for jurisdiction %s: inserted %d ZoningOverlays",
