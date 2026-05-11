@@ -24,6 +24,7 @@ from geoalchemy2 import WKTElement
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
 from sqlalchemy import delete, insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.zoning_district import ZoneSource, ZoningDistrict
@@ -39,11 +40,17 @@ _ZONE_CODE_FIELDS = [
     "LONG_CODE", "ZONE_CODE_LABEL", "BASEZONE",
     "ZONINGCODE", "ZONECLASS", "ZONE_OR_LABEL",
     "ZONE_LE_LABEL",  # Utah County / Lehi zoning service
+    # Fairfax County, VA Zoning service (FeatureServer/0)
+    "ZONECODE",
+    # Loudoun County, VA Zoning service (MapServer/3) — short district code
+    # (e.g. "CCNC"); full text label lives in ZD_ZONE_NAME below.
+    "ZO_ZONE",
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
     "DESCRIPTION", "DESC", "NAME", "CODE_DEF",
     "ZONE_LE_DESC",   # Utah County / Lehi zoning service
+    "ZD_ZONE_NAME",   # Loudoun County zoning long name
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
@@ -189,13 +196,29 @@ async def ingest_zoning_districts(
                 ZoningDistrict.jurisdiction_id == jurisdiction_id
             )
         )
+        # Flush the DELETE so PostgreSQL sees those rows gone before the
+        # subsequent INSERT batches check the uq_zoning_districts_jur_code_hash
+        # constraint. Without this flush, the batched executemany INSERT
+        # statements in the same transaction can still see the pre-delete
+        # state for constraint checking (observed on Fairfax 2026-05-11).
+        await db.flush()
 
+    # Use INSERT ... ON CONFLICT DO NOTHING so duplicates within the same
+    # incoming GeoDataFrame don't crash the batch. Upstream zoning services
+    # occasionally publish multiple polygons with identical (zone_code, geom)
+    # under different OBJECTIDs (Fairfax's "I-3" zone shows up at least 4
+    # times). Silently dropping the duplicates is the correct behaviour:
+    # the (jurisdiction_id, zone_code, geom_hash) constraint is meant to
+    # enforce uniqueness of the *spatial* district, not the source row id.
     BATCH = 1000
     total = 0
     num_batches = math.ceil(len(rows) / BATCH)
     for i in range(0, len(rows), BATCH):
         batch = rows[i : i + BATCH]
-        await db.execute(insert(ZoningDistrict), batch)
+        stmt = pg_insert(ZoningDistrict).on_conflict_do_nothing(
+            constraint="uq_zoning_districts_jur_code_hash",
+        )
+        await db.execute(stmt, batch)
         total += len(batch)
         logger.info("Inserted zoning batch %d/%d (%d districts)", i // BATCH + 1, num_batches, total)
 
