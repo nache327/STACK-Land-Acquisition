@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -126,6 +126,98 @@ async def fix_zoning(
         "districts_ingested": districts_ingested,
         "parcels_updated": parcels_updated,
         "overlays_created": overlays_created,
+    }
+
+
+@router.get("/geom-info/{jurisdiction_id}")
+async def geom_info(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Diagnostic: report SRID + null-geom + count for parcels and
+    zoning_districts of one jurisdiction. Used to debug why the spatial
+    backfill UPDATE hangs (SRID mismatch is the usual cause)."""
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    row = (await db.execute(text(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid) AS parcels_total,
+            (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NULL) AS parcels_null_geom,
+            (SELECT array_agg(DISTINCT ST_SRID(geom)) FROM parcels WHERE jurisdiction_id = :jid AND geom IS NOT NULL) AS parcels_srids,
+            (SELECT COUNT(*) FROM zoning_districts WHERE jurisdiction_id = :jid) AS districts_total,
+            (SELECT COUNT(*) FROM zoning_districts WHERE jurisdiction_id = :jid AND geom IS NULL) AS districts_null_geom,
+            (SELECT array_agg(DISTINCT ST_SRID(geom)) FROM zoning_districts WHERE jurisdiction_id = :jid AND geom IS NOT NULL) AS districts_srids,
+            (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND zoning_code IS NOT NULL AND zoning_code <> '') AS parcels_zoned,
+            (SELECT COUNT(*) FROM zoning_overlays o
+                JOIN parcels p ON p.id = o.parcel_id
+                WHERE p.jurisdiction_id = :jid) AS overlays_total
+        """
+    ), {"jid": str(jurisdiction_id)})).one()
+
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "parcels_total": row.parcels_total,
+        "parcels_null_geom": row.parcels_null_geom,
+        "parcels_srids": list(row.parcels_srids) if row.parcels_srids else [],
+        "districts_total": row.districts_total,
+        "districts_null_geom": row.districts_null_geom,
+        "districts_srids": list(row.districts_srids) if row.districts_srids else [],
+        "parcels_zoned": row.parcels_zoned,
+        "overlays_total": row.overlays_total,
+        "srid_mismatch": (
+            row.parcels_srids != row.districts_srids
+            and row.parcels_srids is not None
+            and row.districts_srids is not None
+        ),
+    }
+
+
+@router.get("/explain-backfill/{jurisdiction_id}")
+async def explain_backfill(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Run EXPLAIN (no ANALYZE — that would actually execute the slow query)
+    against the spatial backfill UPDATE for a jurisdiction. Returns the
+    plan as a list of strings so we can see whether the planner picks the
+    GIST index on zoning_districts.geom or falls back to a sequential scan."""
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    plan_rows = (await db.execute(text(
+        """
+        EXPLAIN
+        WITH ranked AS (
+            SELECT
+                p.id AS parcel_id,
+                zd.zone_class,
+                zd.zone_code,
+                ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY zd.id) AS rn
+            FROM parcels p
+            JOIN zoning_districts zd
+              ON zd.jurisdiction_id = p.jurisdiction_id
+             AND p.jurisdiction_id = CAST(:jid AS uuid)
+             AND p.geom IS NOT NULL
+             AND zd.geom IS NOT NULL
+             AND ST_Within(ST_Centroid(p.geom), zd.geom)
+        )
+        UPDATE parcels p
+        SET zone_class = ranked.zone_class,
+            zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)
+        FROM ranked
+        WHERE p.id = ranked.parcel_id
+          AND ranked.rn = 1
+        """
+    ), {"jid": str(jurisdiction_id)})).all()
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "plan": [r[0] for r in plan_rows],
     }
 
 
