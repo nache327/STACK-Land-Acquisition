@@ -307,6 +307,51 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     }
 
 
+# ── Virginia counties (Phase 3) ─────────────────────────────────────────────
+# Each VA county publishes its own ArcGIS service; no statewide composite.
+# Zoning lives on a separate spatial layer (parcel layer carries only PIN +
+# address, with no zoning column).
+_VA_FAIRFAX_PARCELS = (
+    "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest"
+    "/services/Parcels/FeatureServer/0"
+)
+_VA_FAIRFAX_ZONING = (
+    "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest"
+    "/services/Zoning/FeatureServer/0"
+)
+_VA_LOUDOUN_PARCELS = (
+    "https://logis.loudoun.gov/gis/rest/services/COL/LandRecords/MapServer/5"
+)
+_VA_LOUDOUN_ZONING = (
+    "https://logis.loudoun.gov/gis/rest/services/COL/Zoning/MapServer/3"
+)
+
+
+def _va(
+    county_name: str,
+    full_name: str,
+    parcel_endpoint: str,
+    zoning_endpoint: str | None = None,
+    where_clause: str | None = None,
+) -> JurisdictionConfig:
+    """Build a VA county-backed JurisdictionConfig.
+
+    Each VA county publishes its own ArcGIS layer — no statewide composite
+    covers Fairfax or Loudoun. Zoning is published as a separate spatial
+    layer; the parcel layer carries no zoning code (Fairfax's Parcels has
+    only PIN + address; Loudoun's LandRecords/5 has only PA_MCPI + acres).
+    """
+    return JurisdictionConfig(
+        name=full_name,
+        state="VA",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=parcel_endpoint,
+        where_clause=where_clause,
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # ── Draper (city-specific layer with zoning codes — keep as-is) ───────────
     "draper": JurisdictionConfig(
@@ -548,6 +593,15 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # Zoning is municipal-level; Hudson uses Jersey City land use layer,
     # Essex uses Newark zoning layer as best available coverage.
     **{k: v for k, v in _build_nj_jurisdictions().items()},
+
+    # ── Virginia counties (Phase 3) ──────────────────────────────────────────
+    # Cherry-picked from orphan branch claude/agitated-khayyam-58c0d9 commit
+    # e184052. Without these explicit entries, live discovery in main routed
+    # Fairfax to a wrong (empty) zoning service id.
+    "fairfax county":      _va("Fairfax", "Fairfax County, VA", _VA_FAIRFAX_PARCELS, _VA_FAIRFAX_ZONING),
+    "fairfax county, va":  _va("Fairfax", "Fairfax County, VA", _VA_FAIRFAX_PARCELS, _VA_FAIRFAX_ZONING),
+    "loudoun county":      _va("Loudoun", "Loudoun County, VA", _VA_LOUDOUN_PARCELS, _VA_LOUDOUN_ZONING),
+    "loudoun county, va":  _va("Loudoun", "Loudoun County, VA", _VA_LOUDOUN_PARCELS, _VA_LOUDOUN_ZONING),
 }
 
 
@@ -1083,7 +1137,36 @@ async def _run(db: AsyncSession, job: Job) -> None:
             _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
             await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
 
-            logger.info("Zoning district backfill complete — skipping zoning_overlays (not used by API)")
+            # Populate zoning_overlays so per-parcel scoring + frontend
+            # storage_permission look-ups have an authoritative ZoningRule.
+            # bulk_ingest_zoning_for_jurisdiction is bounded by its own
+            # internal raw-asyncpg connection (commit 9c59baa) so this
+            # can't hang the pipeline. The earlier comment claiming
+            # zoning_overlays was "not used by API" was wrong — the
+            # buybox scorer + the frontend filter panel both read it.
+            zoning_overlays_started = _stage_started(
+                job, "zoning_overlays_bulk", jurisdiction_id=str(jurisdiction.id)
+            )
+            try:
+                overlays_inserted = await bulk_ingest_zoning_for_jurisdiction(
+                    jurisdiction.id, db
+                )
+                await db.commit()
+                _stage_completed(
+                    job,
+                    "zoning_overlays_bulk",
+                    zoning_overlays_started,
+                    overlays_inserted=overlays_inserted,
+                )
+            except Exception as exc:
+                logger.warning("bulk_ingest_zoning_for_jurisdiction failed (non-fatal): %s", exc)
+                try:
+                    async with asyncio.timeout(5):
+                        await db.rollback()
+                        await db.refresh(job)
+                        await db.refresh(jurisdiction)
+                except Exception:
+                    pass
         except Exception as exc:
             _stage_failed(job, "zoning", zoning_started, exc)
             logger.warning("Zoning ingest failed (non-fatal): %s", exc)
@@ -1127,6 +1210,39 @@ async def _run(db: AsyncSession, job: Job) -> None:
             # are pure cache hits.
             try:
                 async with asyncio.timeout(5):
+                    await db.refresh(job)
+                    await db.refresh(jurisdiction)
+            except Exception:
+                pass
+
+    # Cache-hit path: also populate zoning_overlays if missing. The earlier
+    # pipeline silently skipped this step under the assumption "not used by
+    # API" — that was wrong. The buybox scorer + frontend storage_permission
+    # both read zoning_overlays, so a cached re-run that doesn't refresh them
+    # leaves the jurisdiction with stale or zero overlay coverage. Run
+    # unconditionally on every cache-hit; bulk_ingest_zoning_for_jurisdiction
+    # has its own internal skip-check (zoning_system.py: returns early when
+    # overlay_count >= 0.99 × zoned_count) so this is cheap when complete.
+    if existing_count and existing_count > 0:
+        cached_overlays_started = _stage_started(
+            job, "cached_zoning_overlays", jurisdiction_id=str(jurisdiction.id)
+        )
+        try:
+            cached_overlays_inserted = await bulk_ingest_zoning_for_jurisdiction(
+                jurisdiction.id, db
+            )
+            await db.commit()
+            _stage_completed(
+                job,
+                "cached_zoning_overlays",
+                cached_overlays_started,
+                overlays_inserted=cached_overlays_inserted,
+            )
+        except Exception as exc:
+            logger.warning("Cached-hit bulk_ingest_zoning failed (non-fatal): %s", exc)
+            try:
+                async with asyncio.timeout(5):
+                    await db.rollback()
                     await db.refresh(job)
                     await db.refresh(jurisdiction)
             except Exception:
