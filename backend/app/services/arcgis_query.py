@@ -21,6 +21,69 @@ logger = logging.getLogger(__name__)
 _PAGE_SIZE = 1_000
 _MAX_CONCURRENT_PAGES = 4
 
+# Transient gateway errors (504/503/502) hit AGOL-hosted endpoints regularly
+# under bursty parallel pagination — Phase 3 saw Fairfax's
+# services1.arcgis.com node return 504 within 60 s of starting a 392K download
+# while Loudoun + Mont PA + MD ran in parallel. Retry with exponential backoff
+# instead of failing the whole job.
+_RETRY_STATUSES = {502, 503, 504}
+_MAX_RETRIES = 4
+_BACKOFF_BASE_SECONDS = 1.5
+
+
+async def _send_with_retry(
+    client: httpx.AsyncClient | None,
+    method: str,
+    url: str,
+    *,
+    params: dict | None = None,
+    data: dict | None = None,
+    timeout: float = 120.0,
+) -> httpx.Response:
+    """HTTP request with exponential-backoff retry on 502/503/504 + transport
+    errors. Honours the caller's `client` if provided (so connection pools and
+    timeouts are reused across the page batch); otherwise opens a one-shot
+    AsyncClient.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(_MAX_RETRIES):
+        try:
+            if client is None:
+                async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as local_client:
+                    resp = await local_client.request(method, url, params=params, data=data)
+            else:
+                resp = await client.request(method, url, params=params, data=data)
+            if resp.status_code in _RETRY_STATUSES:
+                last_exc = httpx.HTTPStatusError(
+                    f"{resp.status_code} {resp.reason_phrase}",
+                    request=resp.request,
+                    response=resp,
+                )
+                if attempt == _MAX_RETRIES - 1:
+                    resp.raise_for_status()
+                wait = _BACKOFF_BASE_SECONDS * (2 ** attempt)
+                logger.warning(
+                    "ArcGIS %s %s → %d, retrying in %.1fs (attempt %d/%d)",
+                    method, url, resp.status_code, wait, attempt + 1, _MAX_RETRIES,
+                )
+                await asyncio.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return resp
+        except (httpx.TransportError, httpx.RemoteProtocolError) as exc:
+            last_exc = exc
+            if attempt == _MAX_RETRIES - 1:
+                raise
+            wait = _BACKOFF_BASE_SECONDS * (2 ** attempt)
+            logger.warning(
+                "ArcGIS %s %s transport error %r, retrying in %.1fs (attempt %d/%d)",
+                method, url, exc, wait, attempt + 1, _MAX_RETRIES,
+            )
+            await asyncio.sleep(wait)
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("retry loop exited without response")  # unreachable
+
 
 async def query_feature_layer(
     endpoint_url: str,
@@ -45,12 +108,7 @@ async def query_feature_layer(
         "returnGeometry": "true",
     }
     url = endpoint_url.rstrip("/") + "/query"
-    if client is None:
-        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as local_client:
-            resp = await local_client.get(url, params=params)
-    else:
-        resp = await client.get(url, params=params)
-    resp.raise_for_status()
+    resp = await _send_with_retry(client, "GET", url, params=params, timeout=120.0)
     return resp.json()
 
 
@@ -66,12 +124,7 @@ async def get_layer_count(
         "f": "json",
     }
     url = endpoint_url.rstrip("/") + "/query"
-    if client is None:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as local_client:
-            resp = await local_client.get(url, params=params)
-    else:
-        resp = await client.get(url, params=params)
-    resp.raise_for_status()
+    resp = await _send_with_retry(client, "GET", url, params=params, timeout=30.0)
     data = resp.json()
     return int(data.get("count", 0))
 
@@ -85,12 +138,7 @@ async def get_layer_metadata(
     Used by arcgis_discovery to identify layer purposes.
     """
     url = endpoint_url.rstrip("/")
-    if client is None:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as local_client:
-            resp = await local_client.get(url, params={"f": "json"})
-    else:
-        resp = await client.get(url, params={"f": "json"})
-    resp.raise_for_status()
+    resp = await _send_with_retry(client, "GET", url, params={"f": "json"}, timeout=30.0)
     return resp.json()
 
 
@@ -110,12 +158,7 @@ async def _get_all_object_ids(
     }
     url = endpoint_url.rstrip("/") + "/query"
     try:
-        if client is None:
-            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as local_client:
-                resp = await local_client.get(url, params=params)
-        else:
-            resp = await client.get(url, params=params)
-        resp.raise_for_status()
+        resp = await _send_with_retry(client, "GET", url, params=params, timeout=60.0)
         data = resp.json()
         oids = data.get("objectIds")
         if isinstance(oids, list):
@@ -140,12 +183,7 @@ async def _fetch_by_object_ids(
         "returnGeometry": "true",
     }
     url = endpoint_url.rstrip("/") + "/query"
-    if client is None:
-        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as local_client:
-            resp = await local_client.post(url, data=data)
-    else:
-        resp = await client.post(url, data=data)
-    resp.raise_for_status()
+    resp = await _send_with_retry(client, "POST", url, data=data, timeout=120.0)
     return resp.json().get("features", [])
 
 
