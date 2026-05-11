@@ -232,10 +232,18 @@ def _normalize_geom(geom: Any) -> Polygon | MultiPolygon | None:
     return geom
 
 
-def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
+def _map_row(
+    row: Any,
+    jurisdiction_id: uuid.UUID,
+    state: str | None = None,
+) -> dict | None:
     """
     Convert a single GeoDataFrame row to a dict ready for Parcel bulk insert.
     Returns None if the row has no usable geometry or APN.
+
+    ``state`` (two-letter postal code) is used by parcel_value_mapper to
+    extract assessed_value + is_residential from the per-state source schema.
+    Passed in by the caller so it's looked up once per ingest, not per row.
     """
     geom = _normalize_geom(_row_geometry(row))
     if geom is None:
@@ -279,6 +287,12 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
 
     centroid = geom.centroid
 
+    # Per-state assessed-value + residential mapping. Centralized in
+    # parcel_value_mapper so we never scatter PROP_CLASS / DOR_UC / JV
+    # checks through the ingest path.
+    from app.services.parcel_value_mapper import map_value_and_residential
+    assessed_value, is_residential = map_value_and_residential(state, raw)
+
     return {
         "jurisdiction_id": jurisdiction_id,
         "apn": apn,
@@ -294,6 +308,8 @@ def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
         "avg_slope_pct": None,
         "has_structure": has_structure,
         "improvement_value": _safe_float(_first(row, _IMPROVEMENT_FIELDS)),
+        "assessed_value": assessed_value,
+        "is_residential": is_residential,
         "geom": geom,
         "centroid": centroid,
         "raw": raw,
@@ -318,13 +334,22 @@ async def ingest_parcels(
         logger.warning("Empty GeoDataFrame — nothing to ingest")
         return 0
 
+    # Look up the jurisdiction's state once so parcel_value_mapper can
+    # extract assessed_value + is_residential from the per-state source
+    # schema without a per-row DB hit.
+    from app.models.jurisdiction import Jurisdiction
+    from sqlalchemy import select as _sa_select
+    state: str | None = await db.scalar(
+        _sa_select(Jurisdiction.state).where(Jurisdiction.id == jurisdiction_id)
+    )
+
     logger.info("Mapping %d GDF rows → Parcel dicts …", len(gdf))
     rows_by_apn: dict[str, dict] = {}
     duplicate_apns = 0
     columns = list(gdf.columns)
     for idx, values in enumerate(gdf.itertuples(index=False, name=None), start=1):
         row = dict(zip(columns, values))
-        mapped = _map_row(row, jurisdiction_id)
+        mapped = _map_row(row, jurisdiction_id, state=state)
         if mapped is not None:
             apn = mapped["apn"]
             if apn in rows_by_apn:

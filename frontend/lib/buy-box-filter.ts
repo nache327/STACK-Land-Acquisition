@@ -11,6 +11,14 @@ export interface BuyBoxFilter {
   minMedianHomeValue: number | null;
   minHnwHouseholds: number | null;
   minAADT: number | null;
+  // "Wealth density" sliders — count of residential parcels with total
+  // assessed value above the threshold inside the drive-time ring. Sourced
+  // from per-state assessor data via POST /api/parcels/value-density and
+  // cached on the backend, so a filter being null means the user hasn't
+  // enabled this dimension (zero backend cost).
+  minHomesOver1M: number | null;
+  minHomesOver2M: number | null;
+  minHomesOver5M: number | null;
   matchLogic: "AND" | "OR";
 }
 
@@ -41,6 +49,9 @@ export const DEFAULT_FILTER: BuyBoxFilter = {
   minMedianHomeValue: null,
   minHnwHouseholds: null,
   minAADT: null,
+  minHomesOver1M: null,
+  minHomesOver2M: null,
+  minHomesOver5M: null,
   matchLogic: "AND",
 };
 
@@ -56,7 +67,21 @@ export function isFilterActive(filter: BuyBoxFilter): boolean {
     filter.minMedianHHI != null ||
     filter.minMedianHomeValue != null ||
     filter.minHnwHouseholds != null ||
-    filter.minAADT != null
+    filter.minAADT != null ||
+    filter.minHomesOver1M != null ||
+    filter.minHomesOver2M != null ||
+    filter.minHomesOver5M != null
+  );
+}
+
+/** True when ANY of the three wealth-density sliders is set. Drives the
+ * lazy backend fetch — precompute only hits /api/parcels/value-density
+ * when this returns true. */
+export function isHomeDensityActive(filter: BuyBoxFilter): boolean {
+  return (
+    filter.minHomesOver1M != null ||
+    filter.minHomesOver2M != null ||
+    filter.minHomesOver5M != null
   );
 }
 
@@ -81,6 +106,16 @@ export function evaluateParcel(
     active.push({ label: "homeValue", actual: metrics.weightedMedianHomeValue, threshold: filter.minMedianHomeValue });
   if (filter.minHnwHouseholds != null)
     active.push({ label: "hnwHouseholds", actual: metrics.hnwHouseholds, threshold: filter.minHnwHouseholds });
+  // Wealth-density: each contributes only when its slider is enabled. The
+  // metric is null until the user toggles the slider on (lazy backend
+  // fetch); treat null as 0 so an enabled slider can still fail-out a
+  // parcel whose ring hasn't been measured yet.
+  if (filter.minHomesOver1M != null)
+    active.push({ label: "homesOver1M", actual: metrics.homesOver1M ?? 0, threshold: filter.minHomesOver1M });
+  if (filter.minHomesOver2M != null)
+    active.push({ label: "homesOver2M", actual: metrics.homesOver2M ?? 0, threshold: filter.minHomesOver2M });
+  if (filter.minHomesOver5M != null)
+    active.push({ label: "homesOver5M", actual: metrics.homesOver5M ?? 0, threshold: filter.minHomesOver5M });
 
   if (active.length === 0) return { status: "match", failedConditions: [], borderlineConditions: [] };
 

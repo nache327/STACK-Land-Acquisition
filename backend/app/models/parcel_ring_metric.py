@@ -29,6 +29,12 @@ class ParcelRingMetric(Base):
     median_hhi: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     median_home_value: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     hnw_households: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Wealth-density counts: residential parcels with total assessed value
+    # >= 1M / 2M / 5M whose centroid falls inside this drive-time ring.
+    # Lazily populated by POST /api/parcels/value-density.
+    homes_over_1m: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    homes_over_2m: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    homes_over_5m: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

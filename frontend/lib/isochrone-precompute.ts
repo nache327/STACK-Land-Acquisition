@@ -1,3 +1,5 @@
+import type { Feature, Polygon, MultiPolygon } from "geojson";
+
 import { fetchIsochrone, fetchCensusTracts } from "@/lib/isochrone";
 import type { TractData } from "@/lib/isochrone";
 import type { CandidateParcelRow } from "@/lib/schemas";
@@ -9,6 +11,12 @@ export interface PrecomputedRingMetrics {
   hnwHouseholds: number;
   weightedMedianHHI: number;
   weightedMedianHomeValue: number;
+  // Wealth-density counts — populated only when the user enables one of
+  // the three home-density sliders (lazy backend fetch). null when not
+  // yet measured. See fetchHomeDensityForRing().
+  homesOver1M: number | null;
+  homesOver2M: number | null;
+  homesOver5M: number | null;
   tractCount: number;
   lastComputed: string; // ISO date string
 }
@@ -32,6 +40,12 @@ export interface PrecomputeStatus {
 
 // ── Storage keys ───────────────────────────────────────────────────────────────
 
+// v6: PrecomputedRingMetrics gained three homesOver{1,2,5}M fields. The
+// fields are nullable (only populated when the wealth-density sliders are
+// enabled) — but the shape change means v5 blobs deserialize without
+// them, which TS treats as undefined and the reducer treats as 0. Bump
+// to force a clean rebuild so cached entries don't silently miss values
+// after a user enables a slider for the first time.
 // v5: HNW count switched from tract-median-binary proxy to ACS B19001_017E
 // (actual count of households with income >= $200K per tract). Cached blobs
 // from v4 don't have the new field — must invalidate so the next paint
@@ -42,8 +56,8 @@ export interface PrecomputeStatus {
 // hadn't populated yet (race condition fixed in dashboard/[jobId]/page.tsx).
 // v2: weighted-mean denominator bug fix (HHI / home value were divided by
 // totalPopulation instead of sum-of-household-counts, deflating values ~2.7×).
-const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v5_${cityId}`;
-const DATA_KEY = (cityId: string) => `parcellogic_precompute_v5_${cityId}`;
+const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v6_${cityId}`;
+const DATA_KEY = (cityId: string) => `parcellogic_precompute_v6_${cityId}`;
 const IDB_DB = "parcellogic_precompute";
 const IDB_STORE = "cities";
 const SMALL_CITY_THRESHOLD = 500;
@@ -110,8 +124,49 @@ function computeRingMetrics(tracts: TractData[]): PrecomputedRingMetrics {
     hnwHouseholds,
     weightedMedianHHI,
     weightedMedianHomeValue,
+    homesOver1M: null,
+    homesOver2M: null,
+    homesOver5M: null,
     tractCount: tracts.length,
     lastComputed: new Date().toISOString(),
+  };
+}
+
+// ── Lazy backend fetch for wealth-density ──────────────────────────────────
+//
+// Calls POST /api/parcels/value-density for one ring polygon, asking the
+// server to count residential parcels above $1M / $2M / $5M and cache the
+// result in parcel_ring_metrics. Returns the three counts.
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+export async function fetchHomeDensityForRing(
+  polygon: { type: "Polygon" | "MultiPolygon"; coordinates: unknown },
+  options: { parcelId?: number; driveTimeMinutes?: 2 | 5 | 10 | 15 } = {},
+): Promise<{ homesOver1M: number; homesOver2M: number; homesOver5M: number }> {
+  const res = await fetch(`${API_BASE_URL}/api/parcels/value-density`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      polygon,
+      parcel_id: options.parcelId,
+      drive_time_minutes: options.driveTimeMinutes,
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) {
+    throw new Error(`value-density HTTP ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    homes_over_1m: number;
+    homes_over_2m: number;
+    homes_over_5m: number;
+  };
+  return {
+    homesOver1M: data.homes_over_1m,
+    homesOver2M: data.homes_over_2m,
+    homesOver5M: data.homes_over_5m,
   };
 }
 
@@ -218,6 +273,11 @@ export async function precomputeCityIsochrones(
     onParcelComputed: (parcelId: string, data: PrecomputedParcelData) => void;
     signal?: AbortSignal;
     existingData?: Map<string, PrecomputedParcelData>;
+    /** When true, also call POST /api/parcels/value-density for each ring
+     *  and merge `homesOver{1,2,5}M` into the ring metrics. Off by default
+     *  so the existing precompute path costs nothing extra. Dashboard sets
+     *  this when the user has a wealth-density slider enabled. */
+    fetchHomeDensity?: boolean;
   },
 ): Promise<Map<string, PrecomputedParcelData>> {
   const skipIds = callbacks.existingData
@@ -285,6 +345,34 @@ export async function precomputeCityIsochrones(
           15: computeRingMetrics(tracts15),
         },
       };
+
+      if (callbacks.fetchHomeDensity) {
+        // One backend call per ring. The endpoint caches by
+        // (parcel_id, drive_time_minutes) so repeat calls are O(1).
+        const parcelIdNum = Number(parcelId);
+        const ringPairs: Array<[2 | 5 | 10 | 15, Feature<Polygon | MultiPolygon>]> = [
+          [2,  isoResult.polygons.min2  as Feature<Polygon | MultiPolygon>],
+          [5,  isoResult.polygons.min5  as Feature<Polygon | MultiPolygon>],
+          [10, isoResult.polygons.min10 as Feature<Polygon | MultiPolygon>],
+          [15, isoResult.polygons.min15 as Feature<Polygon | MultiPolygon>],
+        ];
+        const densities = await Promise.all(
+          ringPairs.map(([dt, feat]) =>
+            fetchHomeDensityForRing(feat.geometry as never, {
+              parcelId: Number.isFinite(parcelIdNum) ? parcelIdNum : undefined,
+              driveTimeMinutes: dt,
+            }).catch(() => null),
+          ),
+        );
+        ringPairs.forEach(([dt], idx) => {
+          const d = densities[idx];
+          if (!d) return;
+          const ring = data.rings[dt];
+          ring.homesOver1M = d.homesOver1M;
+          ring.homesOver2M = d.homesOver2M;
+          ring.homesOver5M = d.homesOver5M;
+        });
+      }
 
       results.set(parcelId, data);
       completed++;

@@ -54,6 +54,12 @@ class Parcel(Base):
     )
     land_use_code: Mapped[str | None] = mapped_column(String(512), nullable=True)
     improvement_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    # Total assessed value (land + improvements) from the source assessor roll.
+    # Populated by app.services.parcel_value_mapper either at ingest or via the
+    # backfill script. Used by the buy-box "Wealth density" sliders to count
+    # residential parcels above $1M / $2M / $5M inside a drive-time ring.
+    assessed_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    is_residential: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     has_structure: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     in_flood_zone: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avg_slope_pct: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)

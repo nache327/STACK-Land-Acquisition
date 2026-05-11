@@ -28,6 +28,7 @@ import {
   DEFAULT_FILTER,
   evaluateAll,
   isFilterActive,
+  isHomeDensityActive,
   type BuyBoxFilter,
   type EvaluationStatus,
 } from "@/lib/buy-box-filter";
@@ -383,6 +384,10 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       },
       signal: ctrl.signal,
       existingData,
+      // Only hit the value-density endpoint when at least one
+      // wealth-density slider is enabled. Keeps the default flow free
+      // of any extra backend calls.
+      fetchHomeDensity: isHomeDensityActive(buyBoxFilter),
     }).then((results) => {
       if (ctrl.signal.aborted) return;
       // Never persist an empty cache — that's almost always a race
