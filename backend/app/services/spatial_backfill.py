@@ -61,7 +61,7 @@ async def backfill_parcel_zoning_from_districts(
     that has killed this UPDATE on Philadelphia (547k parcels × 29k districts).
     """
     zone_code_set = (
-        ", zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)"
+        ", zoning_code = COALESCE(NULLIF(p.zoning_code, ''), m.zone_code)"
         if fill_missing_zone_code
         else ""
     )
@@ -73,31 +73,32 @@ async def backfill_parcel_zoning_from_districts(
     )
     try:
         await conn.execute("SET statement_timeout = 0")
+        # LATERAL + LIMIT 1 instead of CTE + ROW_NUMBER. The earlier
+        # ROW_NUMBER OVER (PARTITION BY p.id ORDER BY zd.id) query
+        # materialised every parcel/district overlap (≈ N_parcels × 6 on
+        # Fairfax) and then sorted that 2.2M-row, 988-byte-wide result for
+        # the window function — the sort spilled to disk on Supabase and
+        # hung Fairfax for the full 30-min dramatiq time_limit.
+        # LATERAL with LIMIT 1 lets postgres stop at the first district
+        # matched per parcel via the GIST index on zoning_districts.geom,
+        # bounding work to O(N_parcels × log N_districts) instead of
+        # O(N_parcels × overlap × log N_districts).
         status = await conn.execute(
             f"""
-            WITH ranked AS (
-                SELECT
-                    p.id AS parcel_id,
-                    zd.zone_class,
-                    zd.zone_code,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY p.id
-                        ORDER BY zd.id
-                    ) AS rn
-                FROM parcels p
-                JOIN zoning_districts zd
-                  ON zd.jurisdiction_id = p.jurisdiction_id
-                 AND p.jurisdiction_id = $1
-                 AND p.geom IS NOT NULL
-                 AND zd.geom IS NOT NULL
-                 AND ST_Within(ST_Centroid(p.geom), zd.geom)
-            )
             UPDATE parcels p
-            SET zone_class = ranked.zone_class
+            SET zone_class = m.zone_class
                 {zone_code_set}
-            FROM ranked
-            WHERE p.id = ranked.parcel_id
-              AND ranked.rn = 1
+            FROM LATERAL (
+                SELECT zd.zone_class, zd.zone_code
+                FROM zoning_districts zd
+                WHERE zd.jurisdiction_id = $1
+                  AND zd.geom IS NOT NULL
+                  AND ST_Within(ST_Centroid(p.geom), zd.geom)
+                ORDER BY zd.id
+                LIMIT 1
+            ) m
+            WHERE p.jurisdiction_id = $1
+              AND p.geom IS NOT NULL
             """,
             jurisdiction_id,
         )
