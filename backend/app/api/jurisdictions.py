@@ -9,7 +9,7 @@ POST /api/jurisdictions/_cleanup-empty          — admin: dedupe empty jurisdic
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -484,4 +484,143 @@ async def backfill_zoning(
         "downloaded": int(len(gdf)),
         "ingested": ingested,
         "spatial_updated": spatial_updated,
+    }
+
+
+# ─── Admin: upload zoning shapefile/GeoJSON ──────────────────────────────────
+
+@router.post("/jurisdictions/{jurisdiction_id}/_upload-zoning")
+async def upload_zoning(
+    jurisdiction_id: uuid.UUID,
+    file: UploadFile = File(..., description=".geojson or zipped shapefile"),
+    replace: bool = Query(default=False, description="default false: append to existing districts"),
+    spatial_join: bool = Query(default=True),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ingest a uploaded zoning polygon file (.geojson or zipped .shp) into
+    ``zoning_districts``, then optionally spatial-join parcels.
+
+    Use this for municipalities that only publish PDF zoning maps — digitize
+    the PDF into a shapefile in QGIS / ArcGIS Pro, zip it up, and POST it.
+
+    Default is replace=false so you can stack multiple towns under one
+    county-level jurisdiction (e.g. Marlboro Township + Freehold Township
+    both under Monmouth County, NJ). Pass replace=true to wipe the
+    jurisdiction's existing zoning_districts first.
+
+    Note: zone_use_matrix has a uniqueness constraint on
+    (jurisdiction_id, zone_code) — if two towns under the same county use
+    the same zone_code with different rules, only one matrix row can win.
+    The spatial join itself is unaffected; only the rules table.
+    """
+    import io
+    import tempfile
+    from pathlib import Path
+
+    import geopandas as gpd
+
+    from app.services.zoning_ingestion import ingest_zoning_districts
+
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(404, "jurisdiction not found")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(422, "empty upload")
+
+    fname = (file.filename or "").lower()
+    try:
+        if fname.endswith(".geojson") or fname.endswith(".json"):
+            gdf = gpd.read_file(io.BytesIO(content))
+        elif fname.endswith(".zip"):
+            with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+            try:
+                gdf = gpd.read_file(f"zip://{tmp_path}")
+            finally:
+                Path(tmp_path).unlink(missing_ok=True)
+        else:
+            raise HTTPException(422, f"unsupported file type: {file.filename!r} (need .geojson, .json, or .zip)")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(422, f"could not parse upload: {exc}")
+
+    if gdf.empty:
+        raise HTTPException(422, "uploaded file contained 0 features")
+
+    # Ensure WGS84 — ingest_zoning_districts persists geom as 4326.
+    if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(epsg=4326)
+
+    parcel_count = await db.scalar(
+        select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction_id)
+    )
+    pre_zone_count = await db.scalar(
+        select(func.count(ZoningDistrict.id)).where(
+            ZoningDistrict.jurisdiction_id == jurisdiction_id
+        )
+    )
+
+    ingested = await ingest_zoning_districts(gdf, jurisdiction_id, db, replace=replace)
+    await db.commit()
+
+    spatial_updated = 0
+    if spatial_join and parcel_count and parcel_count > 0:
+        import asyncpg
+        from app.config import settings
+        session_url = settings.database_url.replace(":6543/", ":5432/").replace(
+            "postgresql+asyncpg://", "postgresql://"
+        )
+        conn = await asyncpg.connect(
+            session_url, statement_cache_size=0, command_timeout=7200
+        )
+        try:
+            await conn.execute("SET statement_timeout = 0")
+            result = await conn.execute(
+                """
+                WITH ranked AS (
+                    SELECT
+                        p.id AS parcel_id,
+                        zd.zone_class,
+                        zd.zone_code,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY p.id
+                            ORDER BY zd.id
+                        ) AS rn
+                    FROM parcels p
+                    JOIN zoning_districts zd
+                      ON zd.jurisdiction_id = p.jurisdiction_id
+                     AND p.jurisdiction_id = $1
+                     AND p.geom IS NOT NULL
+                     AND zd.geom IS NOT NULL
+                     AND ST_Within(ST_Centroid(p.geom), zd.geom)
+                )
+                UPDATE parcels p
+                SET zone_class = ranked.zone_class,
+                    zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)
+                FROM ranked
+                WHERE p.id = ranked.parcel_id
+                  AND ranked.rn = 1
+                """,
+                jurisdiction_id,
+            )
+        finally:
+            await conn.close()
+        try:
+            spatial_updated = int(result.split()[-1])
+        except Exception:
+            spatial_updated = 0
+
+    return {
+        "jurisdiction": j.name,
+        "filename": file.filename,
+        "parcel_count": parcel_count or 0,
+        "pre_zoning_count": pre_zone_count or 0,
+        "downloaded": int(len(gdf)),
+        "ingested": ingested,
+        "spatial_updated": spatial_updated,
+        "replace": replace,
     }
