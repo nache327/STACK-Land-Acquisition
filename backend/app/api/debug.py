@@ -226,3 +226,75 @@ async def fix_zoning_all() -> StreamingResponse:
         yield json.dumps({"status": "done"}) + "\n"
 
     return StreamingResponse(_stream(), media_type="application/x-ndjson")
+
+
+@router.get("/alembic-status")
+async def debug_alembic_status(db: AsyncSession = Depends(get_db)) -> dict:
+    """Return the current alembic head recorded in the DB + the head on disk.
+
+    Useful for diagnosing the kind of schema-vs-code drift that broke
+    parcel queries after the 0018 deploy. If `db_head` != `disk_head`,
+    alembic upgrade hasn't run successfully and the API is serving code
+    that expects columns the DB doesn't have yet.
+    """
+    from sqlalchemy import text as _text
+    try:
+        row = (await db.execute(_text("SELECT version_num FROM alembic_version"))).fetchone()
+        db_head = row[0] if row else None
+    except Exception as exc:
+        db_head = f"ERR: {exc}"
+
+    # Disk head — read the highest numeric prefix from versions/.
+    import re
+    from pathlib import Path
+    versions = Path(__file__).resolve().parents[2] / "alembic" / "versions"
+    disk_revs: list[str] = []
+    for p in versions.glob("*.py"):
+        m = re.search(r'^revision\s*(?::[^=]+)?\s*=\s*["\']([^"\']+)["\']', p.read_text(), re.M)
+        if m:
+            disk_revs.append(m.group(1))
+    return {
+        "db_head": db_head,
+        "disk_revisions": sorted(disk_revs),
+    }
+
+
+@router.post("/alembic-upgrade")
+async def debug_alembic_upgrade() -> dict:
+    """Run alembic upgrade head from inside the API process.
+
+    Idempotent — if the DB is already at head, this is a no-op. Use when
+    Railway's container-start `alembic upgrade head` step failed silently
+    (the `&&` in the Dockerfile CMD short-circuits without affecting the
+    uvicorn process, so the API comes up against a stale schema).
+    """
+    import io
+    import sys
+    from contextlib import redirect_stdout, redirect_stderr
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config
+
+    backend_dir = Path(__file__).resolve().parents[2]
+    cfg = Config(str(backend_dir / "alembic.ini"))
+    # Use the sync URL — alembic uses psycopg2 / not asyncpg.
+    cfg.set_main_option("sqlalchemy.url", settings.sync_database_url)
+    cfg.set_main_option("script_location", str(backend_dir / "alembic"))
+
+    buf_out, buf_err = io.StringIO(), io.StringIO()
+    try:
+        with redirect_stdout(buf_out), redirect_stderr(buf_err):
+            command.upgrade(cfg, "head")
+        success = True
+        error = None
+    except Exception as exc:
+        success = False
+        error = f"{type(exc).__name__}: {exc}"
+
+    return {
+        "success": success,
+        "error": error,
+        "stdout": buf_out.getvalue()[-4000:],
+        "stderr": buf_err.getvalue()[-4000:],
+    }
