@@ -17,7 +17,12 @@ redis_broker = RedisBroker(url=settings.redis_url)
 dramatiq.set_broker(redis_broker)
 
 
-@dramatiq.actor(max_retries=0, time_limit=30 * 60 * 1000)
+@dramatiq.actor(
+    max_retries=2,
+    min_backoff=30_000,
+    max_backoff=300_000,
+    time_limit=30 * 60 * 1000,
+)
 def process_pipeline_job(job_id: str) -> None:
     from app.services.pipeline import run_job_pipeline
 

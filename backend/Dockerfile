@@ -48,4 +48,11 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && dramatiq app.worker --processes 2 --threads 2 & uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run alembic migrations once at boot, then hand off to honcho so BOTH the web
+# (uvicorn) AND worker (dramatiq) processes are supervised. honcho exits with a
+# non-zero code as soon as ANY supervised process dies — Railway will then
+# restart the container instead of silently running with only one half up. The
+# previous `cmd1 & cmd2` pattern hid a 58-hour dramatiq outage (see STATUS.md:
+# "Critical Deployment Drift Incident") because the foreground uvicorn kept
+# the container "healthy" while the backgrounded dramatiq had never launched.
+CMD ["sh", "-c", "alembic upgrade head && exec honcho start --no-colour"]

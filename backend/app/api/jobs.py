@@ -198,26 +198,45 @@ async def get_job_artifacts(
     return list(result.scalars().all())
 
 
-@router.post("/jobs/{job_id}/cancel", response_model=JobRead)
+@router.post("/jobs/{job_id}/cancel")
 async def cancel_job(
     job_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-) -> Job:
+) -> dict:
+    """Cancel an in-flight job.
+
+    Returns a plain dict rather than a JobRead-shaped response. The full ORM
+    object includes relationships (steps, artifacts) whose lazy-load contract
+    isn't compatible with FastAPI's response_model validation in the
+    cancellation path — previous behaviour was a ResponseValidationError 500
+    even though the state mutation succeeded.
+    """
     job = await db.get(Job, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
-    if job.status in {JobStatus.ready, JobStatus.failed, JobStatus.cancelled}:
-        return job
-    job.cancel_requested_at = now_utc()
     terminal = {JobStatus.ready, JobStatus.failed, JobStatus.cancelled}
-    if job.status not in terminal:
-        job.status = JobStatus.cancelled
-        job.finished_at = now_utc()
-        job.locked_by = None
-        job.locked_at = None
+    if job.status in terminal:
+        return {
+            "job_id": str(job.id),
+            "status": job.status.value if hasattr(job.status, "value") else str(job.status),
+            "cancel_requested_at": job.cancel_requested_at.isoformat() if job.cancel_requested_at else None,
+            "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+            "already_terminal": True,
+        }
+    job.cancel_requested_at = now_utc()
+    job.status = JobStatus.cancelled
+    job.finished_at = now_utc()
+    job.locked_by = None
+    job.locked_at = None
     await db.flush()
     await db.commit()
-    return job
+    return {
+        "job_id": str(job.id),
+        "status": job.status.value if hasattr(job.status, "value") else str(job.status),
+        "cancel_requested_at": job.cancel_requested_at.isoformat() if job.cancel_requested_at else None,
+        "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+        "already_terminal": False,
+    }
 
 
 @router.post("/jobs/{job_id}/retry", response_model=JobRead)

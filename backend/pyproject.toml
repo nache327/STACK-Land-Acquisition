@@ -30,6 +30,11 @@ dependencies = [
     "aiofiles>=23.2.1",
     "dramatiq[redis]>=1.17.0",
 
+    # Process supervision — uvicorn + dramatiq run under honcho so either process
+    # dying kills the container (Railway then restarts). Avoids silent worker
+    # outages.
+    "honcho>=2.0.0",
+
     # Geo
     "shapely>=2.0.4",
     "geopandas>=0.14.4",
