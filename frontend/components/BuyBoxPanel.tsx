@@ -392,6 +392,44 @@ export function BuyBoxPanel({
         />
       </div>
 
+      {/* Wealth density — count of residential parcels above each value
+          threshold inside the drive-time ring. Source: per-state assessor
+          rolls (NJ MOD-IV / UT UGRC / FL DOR cadastral). Enabling any of
+          these sliders triggers a backend density fetch the first time
+          a ring is needed; counts are cached server-side. */}
+      <div className="mb-2 mt-3 text-[9px] uppercase tracking-wider text-slate-500">
+        Wealth density
+      </div>
+      <div className="mb-3 space-y-2">
+        <SliderRow
+          label="Homes ≥$1M"
+          value={filter.minHomesOver1M}
+          min={0}
+          max={2_000}
+          step={10}
+          readout={fmt(filter.minHomesOver1M)}
+          onChange={(v) => onChange({ ...filter, minHomesOver1M: v })}
+        />
+        <SliderRow
+          label="Homes ≥$2M"
+          value={filter.minHomesOver2M}
+          min={0}
+          max={500}
+          step={5}
+          readout={fmt(filter.minHomesOver2M)}
+          onChange={(v) => onChange({ ...filter, minHomesOver2M: v })}
+        />
+        <SliderRow
+          label="Homes ≥$5M"
+          value={filter.minHomesOver5M}
+          min={0}
+          max={100}
+          step={1}
+          readout={fmt(filter.minHomesOver5M)}
+          onChange={(v) => onChange({ ...filter, minHomesOver5M: v })}
+        />
+      </div>
+
       {/* Match logic */}
       <div className="mb-3 flex items-center gap-2">
         <span className="text-[9px] text-slate-500">Match</span>
