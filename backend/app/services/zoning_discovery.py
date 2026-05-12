@@ -830,7 +830,8 @@ def reproject_bbox_to_wgs84(
 
 def _pyproj_reproject(bbox: list[float], srid: int) -> list[float] | None:
     """Use cached pyproj Transformer to reproject one bbox to WGS84. Returns
-    None on any failure (unknown SRID, transform error)."""
+    None on any failure (unknown SRID, transform error, or corrupt
+    extent values that produce an absurd reprojected bbox)."""
     if srid in _TRANSFORMER_CACHE:
         t = _TRANSFORMER_CACHE[srid]
     else:
@@ -846,8 +847,21 @@ def _pyproj_reproject(bbox: list[float], srid: int) -> list[float] | None:
     try:
         x_min, y_min = t.transform(bbox[0], bbox[1])
         x_max, y_max = t.transform(bbox[2], bbox[3])
-        # pyproj returns NaN/inf on out-of-bounds inputs
+        # pyproj returns NaN/inf on out-of-bounds inputs.
         if any(_bad_coord(v) for v in (x_min, y_min, x_max, y_max)):
+            return None
+        # Sanity-check the reprojected bbox isn't absurdly large.
+        # No US municipal zoning layer is going to span >30° of lng/lat.
+        # The South Amboy "Zoning Districts" service publishes corrupt
+        # extent metadata (raw bbox in 3424 reprojects to a hemispheric
+        # span) — without this guard, Component F would fire +10 strong
+        # overlap for nonsense extents that happen to encompass any
+        # jurisdiction.
+        if (x_max - x_min) > 30 or (y_max - y_min) > 30:
+            return None
+        # Also reject out-of-bounds lat (>±90) or lng (>±180).
+        if not (-180 <= x_min <= 180 and -180 <= x_max <= 180
+                and -90 <= y_min <= 90 and -90 <= y_max <= 90):
             return None
         return [x_min, y_min, x_max, y_max]
     except Exception:

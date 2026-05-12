@@ -370,6 +370,25 @@ def test_reproject_nj_state_plane_3424_via_pyproj():
     assert 40.9 < out[1] < 41.05, f"ymin {out[1]} not near Paramus latitude"
 
 
+def test_reproject_corrupt_extent_returns_none():
+    """Some ArcGIS services publish corrupt extent metadata — values that
+    are nonsense in the declared CRS. Example from the Bergen sweep:
+    'South Amboy Zoning Districts' declares EPSG:3424 (NJ State Plane
+    Feet) but its extent values reproject to a hemispheric span. Without
+    a sanity check, Component F would fire +10 strong-overlap for any
+    jurisdiction the absurd bbox happens to encompass."""
+    # The actual corrupt extent from the prod spatial-check probe
+    corrupt_bbox = [-17954196.94, -46917675.86, 18938446.94, 18705319.75]
+    out = reproject_bbox_to_wgs84(corrupt_bbox, 3424)
+    try:
+        import pyproj  # noqa: F401
+    except ImportError:
+        # Closed-form fallback doesn't handle 3424; returns None anyway.
+        return
+    # With sanity check, reprojection should refuse this and return None.
+    assert out is None, f"corrupt extent should fail-safe, got {out}"
+
+
 def test_reproject_illinois_state_plane_3435_via_pyproj():
     """EPSG:3435 = Illinois State Plane (East). The SSMMA Chicago Heights
     layer used this; pyproj should reproject + Component F should then
