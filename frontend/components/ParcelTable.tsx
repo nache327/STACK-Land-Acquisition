@@ -195,15 +195,6 @@ export function ParcelTable({
           <span className="text-xs font-medium text-amber-700">Review</span>
         ),
     }),
-    columnHelper.accessor("in_flood_zone", {
-      header: "Flood",
-      cell: (info) =>
-        info.getValue() ? (
-          <span className="text-xs font-medium text-red-600">Yes</span>
-        ) : (
-          <span className="text-xs text-slate-400">No</span>
-        ),
-    }),
   ];
 
   const table = useReactTable({
