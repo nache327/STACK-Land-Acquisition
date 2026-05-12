@@ -873,16 +873,25 @@ def _bbox_overlap_ratio(
     juris: list[float] | None,
     layer: list[float] | None,
 ) -> float | None:
-    """Return the ratio of (jurisdiction ∩ layer) area to (jurisdiction) area,
-    both in EPSG:4326. Both bboxes are [minx, miny, maxx, maxy].
+    """Return a geographic-overlap score in [0, 1] between a jurisdiction
+    bbox and a candidate layer's bbox (both in EPSG:4326).
 
-    Returns None if either side is missing — the caller treats None as "no
-    signal" (Component F doesn't fire).
+    Returns max(inter/juris, inter/layer) — the higher of:
+      - "what fraction of the jurisdiction does this layer cover?"
+        (high = comprehensive countywide source)
+      - "what fraction of the layer is inside this jurisdiction?"
+        (high = a small in-scope source, e.g. a single town's zoning
+        inside its county's bbox)
 
-    Returns 0.0 for disjoint boxes (the strongest "wrong location" signal).
-    Returns up to 1.0 when the layer's bbox fully contains the
-    jurisdiction's. Can exceed 1.0 theoretically if the layer extent is
-    much larger than the jurisdiction (we clamp to 1.0).
+    Taking the max handles both per-county discovery (where the layer
+    should be ~county-sized) AND per-town discovery (where the layer
+    is a small subset of the county). Without this, a legitimate per-
+    town source would be penalized for "not covering" the whole county.
+
+    Returns None if either bbox is missing — the caller treats None
+    as "no signal" (Component F doesn't fire).
+
+    Returns 0.0 for disjoint boxes (strongest "wrong location" signal).
     """
     if not juris or not layer or len(juris) != 4 or len(layer) != 4:
         return None
@@ -901,10 +910,11 @@ def _bbox_overlap_ratio(
 
     inter_area = (inter_xmax - inter_xmin) * (inter_ymax - inter_ymin)
     juris_area = (j_xmax - j_xmin) * (j_ymax - j_ymin)
-    if juris_area <= 0:
+    layer_area = (l_xmax - l_xmin) * (l_ymax - l_ymin)
+    if juris_area <= 0 or layer_area <= 0:
         return None
 
-    return min(1.0, inter_area / juris_area)
+    return min(1.0, max(inter_area / juris_area, inter_area / layer_area))
 
 
 def _url_has_layer_index(url: str) -> bool:

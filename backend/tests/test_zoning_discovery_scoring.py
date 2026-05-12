@@ -422,11 +422,14 @@ def test_new_milford_ct_disjoint_from_bergen_nj():
 
 
 def test_bbox_overlap_ratio_calculation():
-    """The ratio is intersection_area / jurisdiction_area, clamped to [0, 1]."""
+    """The ratio is max(inter/juris, inter/layer), clamped to [0, 1]."""
     juris = [0.0, 0.0, 10.0, 10.0]  # 100 sq units
-    # Layer covers half: x in [0,5], y in [0,10] → intersection 5×10 = 50 → ratio 0.5
+    # Layer covers half the jurisdiction:
+    #   x in [0,5], y in [0,10] → intersection 5×10 = 50
+    #   inter/juris = 50/100 = 0.5  AND  inter/layer = 50/50 = 1.0
+    #   max = 1.0 (layer fully contained)
     layer = [0.0, 0.0, 5.0, 10.0]
-    assert _bbox_overlap_ratio(juris, layer) == 0.5
+    assert _bbox_overlap_ratio(juris, layer) == 1.0
 
     # Layer covers all: ratio 1.0
     layer = [-1.0, -1.0, 11.0, 11.0]
@@ -435,6 +438,30 @@ def test_bbox_overlap_ratio_calculation():
     # Disjoint: ratio 0.0
     layer = [20.0, 20.0, 30.0, 30.0]
     assert _bbox_overlap_ratio(juris, layer) == 0.0
+
+
+def test_per_town_layer_inside_county_scores_high():
+    """A small per-town layer fully inside a large county bbox should
+    score as a high overlap — the regression test for the Paramus case
+    where the old formula penalized in-county per-town layers."""
+    bergen_bbox = [-74.27, 40.76, -73.90, 41.13]
+    # Paramus's actual reprojected bbox (~3% of Bergen's area, but
+    # entirely inside Bergen).
+    paramus_layer = [-74.10, 40.91, -74.04, 40.98]
+    ratio = _bbox_overlap_ratio(bergen_bbox, paramus_layer)
+    assert ratio is not None
+    assert ratio >= 0.9, f"in-county per-town layer should score ~1.0, got {ratio}"
+
+
+def test_partial_overlap_between_adjacent_counties():
+    """A layer that straddles two counties (some inside, some outside)
+    gets a moderate ratio."""
+    juris = [0.0, 0.0, 10.0, 10.0]
+    # Layer is twice as big as the juris and partly outside
+    layer = [5.0, 0.0, 25.0, 10.0]  # intersect = 5×10=50, layer=200
+    # max(50/100, 50/200) = max(0.5, 0.25) = 0.5
+    ratio = _bbox_overlap_ratio(juris, layer)
+    assert abs(ratio - 0.5) < 0.001
 
 
 def test_score_clamped_zero_to_hundred():
