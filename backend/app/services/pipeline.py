@@ -924,10 +924,16 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 "parcels_downloaded": downloaded,
                 "parcels_total": total,
             }
-            job.progress = new_progress
-            # Use a fresh session — sharing `db` with the in-flight download
-            # transaction causes MissingGreenlet when commit cascades through
-            # job.steps / job.artifacts relationships.
+            # Do NOT mutate `job.progress` on the SQLAlchemy session entity
+            # here. The download can take many minutes (NYC MapPLUTO ~6.6 min),
+            # during which Supabase will silently kill the session's TCP
+            # connection. Mutating `job.progress` makes the session dirty;
+            # the next `db.flush()` after the download (in complete_job_step)
+            # then tries to push the change against a dead conn and the whole
+            # job fails with ConnectionDoesNotExistError. Write progress only
+            # via the raw-asyncpg `_progress_commit` (a fresh socket each
+            # call); the next _set_status will overwrite job.progress in the
+            # session with the final counts via its own raw-asyncpg fallback.
             if downloaded % 500 == 0:
                 await _progress_commit(_job_id, new_progress)
 
@@ -995,8 +1001,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 progress_key: completed,
                 "parcels_total": total,
             }
-            job.progress = new_progress
-            # Fresh session — same reason as _progress above.
+            # Same caveat as _progress above — do NOT mutate the session
+            # entity from inside a long-running ingest progress callback.
             if completed % 2000 == 0 or completed == total:
                 await _progress_commit(_job_id, new_progress)
 

@@ -395,7 +395,7 @@ _STAGE_COLUMNS = [
 ]
 
 _CREATE_STAGE_SQL = """
-CREATE TEMP TABLE _stage_parcels (
+CREATE TEMP TABLE IF NOT EXISTS _stage_parcels (
     jurisdiction_id uuid,
     apn text,
     address text,
@@ -415,6 +415,8 @@ CREATE TEMP TABLE _stage_parcels (
     raw_json text
 )
 """
+
+_TRUNCATE_STAGE_SQL = "TRUNCATE _stage_parcels"
 
 _MERGE_SQL = """
 INSERT INTO parcels (
@@ -487,41 +489,54 @@ async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any) -> int:
     COPY streams data with no parameter cap, so the entire jurisdiction
     can be staged in a handful of chunks.
     """
-    conn = await asyncpg.connect(_raw_dsn())
+    # statement_cache_size=0: Supabase routes through pgbouncer; stale
+    # prepared statements across asyncpg client connections cause
+    # DuplicatePreparedStatementError on the second call.
+    conn = await asyncpg.connect(_raw_dsn(), statement_cache_size=0)
     try:
         await conn.execute("SET statement_timeout = 0")
-        await conn.execute(_CREATE_STAGE_SQL)
+        # Wrap CREATE TEMP + COPY + MERGE in a single transaction. Without
+        # this, every implicit-tx boundary lets pgbouncer return the
+        # underlying server backend to another client; the next statement
+        # arrives on a fresh backend that has never seen `_stage_parcels`
+        # and fails with "relation _stage_parcels does not exist". Holding
+        # one tx keeps the same backend pinned. CREATE TEMP TABLE IF NOT
+        # EXISTS + TRUNCATE handles the case where pooling kept the temp
+        # table from a previous client.
+        async with conn.transaction():
+            await conn.execute(_CREATE_STAGE_SQL)
+            await conn.execute(_TRUNCATE_STAGE_SQL)
 
-        CHUNK = 25_000
-        total = len(rows)
-        for i in range(0, total, CHUNK):
-            chunk = rows[i : i + CHUNK]
-            records = [_row_to_record(r) for r in chunk]
+            CHUNK = 25_000
+            total = len(rows)
+            for i in range(0, total, CHUNK):
+                chunk = rows[i : i + CHUNK]
+                records = [_row_to_record(r) for r in chunk]
+                try:
+                    await conn.copy_records_to_table(
+                        "_stage_parcels", records=records, columns=_STAGE_COLUMNS
+                    )
+                except Exception as exc:
+                    logger.exception(
+                        "COPY chunk %d (%d rows) failed: %s",
+                        i // CHUNK + 1, len(chunk), exc,
+                    )
+                    raise
+                staged = min(i + CHUNK, total)
+                logger.info("COPY staged %d/%d parcels", staged, total)
+                if progress_callback is not None:
+                    await progress_callback("upserting", staged, total)
+
+            staged_count = await conn.fetchval("SELECT COUNT(*) FROM _stage_parcels")
+            logger.info(
+                "Stage table populated: %d rows (input=%d). Running merge …",
+                staged_count, total,
+            )
             try:
-                await conn.copy_records_to_table(
-                    "_stage_parcels", records=records, columns=_STAGE_COLUMNS
-                )
+                result = await conn.execute(_MERGE_SQL)
             except Exception as exc:
-                logger.exception(
-                    "COPY chunk %d (%d rows) failed: %s",
-                    i // CHUNK + 1, len(chunk), exc,
-                )
+                logger.exception("MERGE INTO parcels failed: %s", exc)
                 raise
-            staged = min(i + CHUNK, total)
-            logger.info("COPY staged %d/%d parcels", staged, total)
-            if progress_callback is not None:
-                await progress_callback("upserting", staged, total)
-
-        staged_count = await conn.fetchval("SELECT COUNT(*) FROM _stage_parcels")
-        logger.info(
-            "Stage table populated: %d rows (input=%d). Running merge …",
-            staged_count, total,
-        )
-        try:
-            result = await conn.execute(_MERGE_SQL)
-        except Exception as exc:
-            logger.exception("MERGE INTO parcels failed: %s", exc)
-            raise
 
         logger.info("Merge result: %r", result)
         try:
