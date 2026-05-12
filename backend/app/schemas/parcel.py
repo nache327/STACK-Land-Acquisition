@@ -21,6 +21,11 @@ class ParcelRead(BaseModel):
     zone_class: ZoneClass | None = None
     land_use_code: str | None
     improvement_value: float | None
+    # Total assessed value (land + improvements) from the per-state mapper.
+    # Populated at ingest from parcels.raw; null when the source layer
+    # doesn't publish enough fields to derive it.
+    assessed_value: float | None = None
+    is_residential: bool | None = None
     has_structure: bool | None
     in_flood_zone: bool
     avg_slope_pct: float | None
