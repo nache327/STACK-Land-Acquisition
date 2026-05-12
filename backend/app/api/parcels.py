@@ -279,7 +279,6 @@ async def value_density(
     Returns ``{homes_over_1m, homes_over_2m, homes_over_5m, cached}``.
     """
     import json as _json
-    import asyncpg
 
     # Fast-path: if the caller passed parcel_id + drive_time and the
     # row is already populated, skip the spatial query.
@@ -302,18 +301,15 @@ async def value_density(
                 cached=True,
             )
 
-    # Raw asyncpg + session mode + statement_timeout=0 so big rings (e.g.
-    # 15-min isochrones in NYC) don't get killed by Supabase's pgBouncer
-    # 60s default. Matches the pattern used by /_backfill-zoning.
-    session_url = settings.database_url.replace(":6543/", ":5432/").replace(
-        "postgresql+asyncpg://", "postgresql://"
-    )
-    conn = await asyncpg.connect(
-        session_url, statement_cache_size=0, command_timeout=300,
-    )
-    try:
-        await conn.execute("SET statement_timeout = 0")
-        row = await conn.fetchrow(
+    # Use the shared SQLAlchemy session/pool. The earlier version opened
+    # a fresh asyncpg connection per call which exhausted Supabase's
+    # connection limit under burst load (16+ concurrent ring fetches
+    # from the precompute) and 500'd. Pool handles that automatically;
+    # this query is a single SELECT + UPSERT, well under any reasonable
+    # statement_timeout.
+    polygon_json = _json.dumps(payload.polygon)
+    row = (await db.execute(
+        text(
             """
             SELECT
               COUNT(*) FILTER (WHERE assessed_value >= 1000000)::int AS o1,
@@ -322,30 +318,36 @@ async def value_density(
             FROM parcels
             WHERE is_residential IS TRUE
               AND assessed_value IS NOT NULL
-              AND ST_Within(centroid, ST_GeomFromGeoJSON($1))
-            """,
-            _json.dumps(payload.polygon),
-        )
-        o1 = row["o1"] or 0
-        o2 = row["o2"] or 0
-        o5 = row["o5"] or 0
+              AND ST_Within(centroid, ST_GeomFromGeoJSON(:poly))
+            """
+        ),
+        {"poly": polygon_json},
+    )).fetchone()
+    o1 = (row.o1 if row else 0) or 0
+    o2 = (row.o2 if row else 0) or 0
+    o5 = (row.o5 if row else 0) or 0
 
-        if payload.parcel_id is not None and payload.drive_time_minutes is not None:
-            await conn.execute(
+    if payload.parcel_id is not None and payload.drive_time_minutes is not None:
+        await db.execute(
+            text(
                 """
                 INSERT INTO parcel_ring_metrics
                   (parcel_id, drive_time_minutes, homes_over_1m, homes_over_2m, homes_over_5m)
-                VALUES ($1, $2, $3, $4, $5)
+                VALUES (:pid, :dt, :o1, :o2, :o5)
                 ON CONFLICT (parcel_id, drive_time_minutes) DO UPDATE
                   SET homes_over_1m = EXCLUDED.homes_over_1m,
                       homes_over_2m = EXCLUDED.homes_over_2m,
                       homes_over_5m = EXCLUDED.homes_over_5m,
                       computed_at   = NOW()
-                """,
-                payload.parcel_id, payload.drive_time_minutes, o1, o2, o5,
-            )
-    finally:
-        await conn.close()
+                """
+            ),
+            {
+                "pid": payload.parcel_id,
+                "dt": payload.drive_time_minutes,
+                "o1": o1, "o2": o2, "o5": o5,
+            },
+        )
+        await db.commit()
 
     return _ValueDensityResponse(
         homes_over_1m=o1, homes_over_2m=o2, homes_over_5m=o5, cached=False,

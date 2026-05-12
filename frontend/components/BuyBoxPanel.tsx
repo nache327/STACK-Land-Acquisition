@@ -27,8 +27,12 @@ interface BuyBoxPanelProps {
   wealthDensityAvailable?: boolean;
 }
 
-function fmt(value: number | null, prefix = ""): string {
-  if (value === null || value === 0) return "off";
+function fmt(value: number | null | undefined, prefix = ""): string {
+  // Treat undefined as null. Presets saved before the wealth-density
+  // fields existed will deserialize without minHomesOverNM keys, so the
+  // value coming into the slider readout is undefined for those rows.
+  // Before this guard, `value.toLocaleString()` crashed the dashboard.
+  if (value == null || value === 0) return "off";
   if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${prefix}${Math.round(value / 1_000)}K`;
   return `${prefix}${value.toLocaleString()}`;
@@ -87,7 +91,12 @@ export function BuyBoxPanel({
   }, [dropdownOpen]);
 
   function applyPreset(preset: SavedPreset) {
-    onChange(preset.filter);
+    // Spread DEFAULT_FILTER first so older presets — saved before fields
+    // like minHomesOverNM existed — land with explicit `null` instead of
+    // `undefined` for the missing keys. Downstream consumers (evaluator,
+    // SliderRow readout, etc.) all handle null but several would crash
+    // on undefined.
+    onChange({ ...DEFAULT_FILTER, ...preset.filter });
     setDropdownOpen(false);
     setShowSaveInput(false);
     setShowManage(false);
