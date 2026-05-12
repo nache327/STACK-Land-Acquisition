@@ -10,6 +10,15 @@ POST /api/jurisdictions/_cleanup-empty          — admin: dedupe empty jurisdic
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel
+
+
+class _MunicipalDiscoveryBody(BaseModel):
+    municipality_names: list[str] | None = None
+
+
+class _MunicipalIngestBody(BaseModel):
+    source_ids: list[uuid.UUID]
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -607,7 +616,7 @@ async def verify_zoning_source(
 @router.post("/jurisdictions/{county_id}/_discover-municipal-zoning")
 async def discover_municipal_zoning(
     county_id: uuid.UUID,
-    municipality_names: list[str] | None = None,
+    body: _MunicipalDiscoveryBody | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Per-town zoning-source discovery for an NJ county.
@@ -626,15 +635,16 @@ async def discover_municipal_zoning(
     70-town county like Bergen.
     """
     from app.services.nj_municipal_discovery import discover_municipal_zoning_for_county
+    munis = body.municipality_names if body else None
     return await discover_municipal_zoning_for_county(
-        county_id, db, municipality_names=municipality_names,
+        county_id, db, municipality_names=munis,
     )
 
 
 @router.post("/jurisdictions/{county_id}/_ingest-municipal-zoning")
 async def ingest_municipal_zoning(
     county_id: uuid.UUID,
-    source_ids: list[uuid.UUID],
+    body: _MunicipalIngestBody,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Ingest verified municipal zoning sources into the county's
@@ -648,7 +658,7 @@ async def ingest_municipal_zoning(
     overlay generation from bulk_ingest_zoning so re-runs are safe.
     """
     from app.services.nj_municipal_discovery import ingest_verified_municipal_zoning
-    return await ingest_verified_municipal_zoning(county_id, source_ids, db)
+    return await ingest_verified_municipal_zoning(county_id, body.source_ids, db)
 
 
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
