@@ -522,6 +522,88 @@ async def discover_zoning(
     }
 
 
+@router.get("/jurisdictions/{jurisdiction_id}/_sources")
+async def list_zoning_sources(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """List all zoning_sources rows for this jurisdiction.
+
+    Returns rows sorted by confidence_score DESC. Used by the operator to
+    review past discovery candidates without re-running the crawler.
+    """
+    from app.models.zoning_source import ZoningSource
+    result = await db.execute(
+        select(ZoningSource)
+        .where(ZoningSource.jurisdiction_id == jurisdiction_id)
+        .order_by(ZoningSource.confidence_score.desc().nulls_last())
+    )
+    rows = result.scalars().all()
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "count": len(rows),
+        "sources": [
+            {
+                "id": str(r.id),
+                "municipality_name": r.municipality_name,
+                "zoning_endpoint": r.zoning_endpoint,
+                "title": r.title,
+                "source_type": r.source_type,
+                "feature_count": r.feature_count,
+                "geometry_type": r.geometry_type,
+                "confidence_score": r.confidence_score,
+                "confidence_label": r.confidence_label,
+                "validation_status": r.validation_status,
+                "discovered_by": r.discovered_by,
+                "reasons": r.reasons,
+                "last_verified_at": r.last_verified_at.isoformat() if r.last_verified_at else None,
+                "notes": r.notes,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_sources/{source_id}/verify")
+async def verify_zoning_source(
+    jurisdiction_id: uuid.UUID,
+    source_id: uuid.UUID,
+    validation_status: str = Query(default="verified"),
+    notes: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Promote a discovered candidate to verified (or mark it rejected/empty/token_gated).
+
+    `validation_status` accepted values: 'verified' | 'rejected' | 'token_gated' |
+    'empty' | 'pending'. The 'verified' label freezes the row from
+    further automated overwrites by subsequent discovery runs.
+    """
+    from datetime import datetime, timezone
+    from app.models.zoning_source import ZoningSource
+
+    src = await db.get(ZoningSource, source_id)
+    if src is None or src.jurisdiction_id != jurisdiction_id:
+        raise HTTPException(404, "zoning_source not found")
+    valid = {"verified", "rejected", "token_gated", "empty", "pending"}
+    if validation_status not in valid:
+        raise HTTPException(400, f"validation_status must be one of {sorted(valid)}")
+    src.validation_status = validation_status
+    if validation_status == "verified":
+        src.confidence_label = "verified"
+        src.last_verified_at = datetime.now(timezone.utc)
+    if notes is not None:
+        src.notes = notes
+    src.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.commit()
+    return {
+        "id": str(src.id),
+        "validation_status": src.validation_status,
+        "confidence_label": src.confidence_label,
+        "last_verified_at": src.last_verified_at.isoformat() if src.last_verified_at else None,
+    }
+
+
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
 
 @router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")

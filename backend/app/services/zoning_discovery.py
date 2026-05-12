@@ -132,6 +132,19 @@ async def discover_zoning_for_jurisdiction(
             candidates.append(entry)
 
     candidates.sort(key=lambda c: c.confidence, reverse=True)
+    top_n = candidates[:_TOP_N]
+
+    # Persist the top-N into zoning_sources so the operator can review them
+    # later without re-running the discovery. Idempotent re-runs: identical
+    # (jurisdiction_id, municipality_name, zoning_endpoint) tuples updated
+    # in place rather than duplicated. Anything previously verified for this
+    # jurisdiction stays untouched (we only overwrite rows whose
+    # confidence_label is still 'discovered' or NULL).
+    try:
+        await _persist_candidates(db, j, top_n, municipality_name=None)
+    except Exception as exc:
+        logger.warning("persist zoning_sources failed (non-fatal): %r", exc)
+
     return DiscoveryResult(
         jurisdiction_id=str(j.id),
         jurisdiction_name=j.name or "",
@@ -407,3 +420,61 @@ async def _resolve_service_to_layer(
             return f"{service_url.rstrip('/')}/{lyr.get('id')}"
     # Otherwise just take the first one.
     return f"{service_url.rstrip('/')}/{polygon_layers[0].get('id')}"
+
+
+async def _persist_candidates(
+    db: AsyncSession,
+    jurisdiction,
+    candidates: list[ZoningCandidate],
+    municipality_name: str | None,
+) -> None:
+    """Upsert each candidate into zoning_sources.
+
+    Idempotent on (jurisdiction_id, COALESCE(municipality_name,''), zoning_endpoint):
+    re-running discovery overwrites the most recent confidence/scoring info
+    for the same source URL, but never overwrites a row whose
+    confidence_label has been promoted to 'verified' by the operator.
+    """
+    from sqlalchemy import select
+    from app.models.zoning_source import ZoningSource
+
+    for c in candidates:
+        # Look for an existing row that matches.
+        q = select(ZoningSource).where(
+            ZoningSource.jurisdiction_id == jurisdiction.id,
+            ZoningSource.zoning_endpoint == c.url,
+        )
+        if municipality_name is not None:
+            q = q.where(ZoningSource.municipality_name == municipality_name)
+        else:
+            q = q.where(ZoningSource.municipality_name.is_(None))
+        existing = (await db.execute(q)).scalar_one_or_none()
+
+        payload = dict(
+            jurisdiction_id=jurisdiction.id,
+            municipality_name=municipality_name,
+            county=jurisdiction.county,
+            state=jurisdiction.state,
+            source_type=c.source_type,
+            zoning_endpoint=c.url,
+            title=c.title,
+            feature_count=c.feature_count,
+            geometry_type=c.geometry_type,
+            field_matches=c.field_matches,
+            confidence_score=c.confidence,
+            confidence_label="discovered",
+            discovered_by="arcgis_hub",
+            reasons=c.reasons,
+        )
+
+        if existing is None:
+            db.add(ZoningSource(**payload))
+        elif existing.confidence_label != "verified":
+            # Re-discovery refreshes confidence + reasons but only when the
+            # row hasn't already been operator-verified.
+            for k, v in payload.items():
+                setattr(existing, k, v)
+            from datetime import datetime, timezone
+            existing.updated_at = datetime.now(timezone.utc)
+
+    await db.commit()
