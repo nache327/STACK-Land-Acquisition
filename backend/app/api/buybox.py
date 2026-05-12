@@ -287,7 +287,10 @@ async def list_scores_for_jurisdiction(
     if filter_id is None:
         filter_id = await _resolve_default_filter_id(db, SELF_STORAGE_USE_CASE_ID)
         if filter_id is None:
-            raise HTTPException(404, "no default filter configured")
+            # No default filter for this org × use case. Used to 404, which
+            # crashed the dashboard's react-query path. Return an empty
+            # list instead so the UI just shows no score badges.
+            return []
 
     # Join through parcels to filter by jurisdiction.
     sql = text(
