@@ -264,8 +264,9 @@ async def upload_listings(
 
     await db.commit()
 
-    # Step 4: background-task the matching cascade
-    async def _bg_match() -> None:
+    # Step 4: background-task the matching cascade + alert worker
+    async def _bg_match_and_alert() -> None:
+        from app.workers.listing_alerts import fire_alerts_for_upload
         async with async_session_maker() as bg_db:
             try:
                 counts = await match_pending_listings(jid, detected_source, bg_db)
@@ -275,8 +276,17 @@ async def upload_listings(
                 )
             except Exception as exc:
                 logger.error("Listing match failed for juris=%s source=%s: %s", jid, detected_source, exc)
+                return
+            try:
+                alert_counts = await fire_alerts_for_upload(jid, bg_db)
+                logger.info(
+                    "Listing alerts complete for juris=%s: %s",
+                    jid, alert_counts,
+                )
+            except Exception as exc:
+                logger.error("Listing alerts failed for juris=%s: %s", jid, exc)
 
-    background_tasks.add_task(_bg_match)
+    background_tasks.add_task(_bg_match_and_alert)
 
     return {
         "inserted": inserted,
