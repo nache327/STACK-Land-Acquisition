@@ -48,6 +48,10 @@ _ZONE_CODE_FIELDS = [
     # Montgomery County, PA — 180420_zoning_districts FeatureServer/1
     # publishes the short code as `Districts` (e.g. "R-A", "C-1").
     "Districts",
+    # NJ municipal layers (Paramus Zoning, etc.) — short code lives in
+    # `CLASS` ("R-100", "CR", "C-1") or its duplicate `Label`. Trailing
+    # entries so jurisdictions with proper ZONEDIST keep priority.
+    "Label",
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
@@ -59,6 +63,9 @@ _ZONE_NAME_FIELDS = [
     # uppercase; this lowercase variant is for callers whose dict keys
     # weren't case-normalised at the source.
     "Name",
+    # Paramus Zoning publishes the long human label as `Text`
+    # (e.g. "Residential One Family", "Conservation / Recreation").
+    "Text",
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
