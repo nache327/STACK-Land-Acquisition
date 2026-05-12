@@ -21,7 +21,11 @@ dramatiq.set_broker(redis_broker)
     max_retries=2,
     min_backoff=30_000,
     max_backoff=300_000,
-    time_limit=30 * 60 * 1000,
+    # 60 min so the largest jurisdictions (NYC MapPLUTO: 856k parcels at
+    # ~6 min download + 16 min ingest + 5 min zoning + 5 min overlays ≈
+    # 32 min total) finish in one pipeline run instead of being killed at
+    # 30 min mid-overlay and needing manual /run-bulk-zoning-overlays.
+    time_limit=60 * 60 * 1000,
 )
 def process_pipeline_job(job_id: str) -> None:
     from app.services.pipeline import run_job_pipeline
