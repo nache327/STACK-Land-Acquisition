@@ -294,6 +294,60 @@ _NJ_CITY_TO_COUNTY = {
 }
 
 
+@router.post("/admin/coverage/refresh")
+async def admin_coverage_refresh(
+    jurisdiction_id: uuid.UUID | None = Query(default=None),
+    source: str = Query(default="manual"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Run the coverage audit and persist snapshots.
+
+    Optional `jurisdiction_id` scopes the refresh to one jurisdiction
+    (fast — ~3s). Without it, all ~75 jurisdictions get a fresh snapshot
+    (~2-3 min for a full sweep). `source` is a free-text tag stored on
+    each row (e.g. 'manual', 'scheduled', 'post-ingest').
+
+    Returns the count of rows written + the audit summary.
+    """
+    from app.services.coverage_audit import refresh_all_snapshots
+    result = await refresh_all_snapshots(db, jurisdiction_id=jurisdiction_id, source=source)
+    return result
+
+
+@router.get("/admin/coverage")
+async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
+    """Return the latest coverage snapshot per jurisdiction.
+
+    Reads only from `coverage_snapshots` — sub-second response regardless
+    of `parcels` / `zoning_overlays` table size. Run
+    `POST /api/admin/coverage/refresh` to update.
+    """
+    from app.services.coverage_audit import latest_snapshots
+    snaps = await latest_snapshots(db)
+    return {
+        "count": len(snaps),
+        "jurisdictions": [
+            {
+                "jurisdiction_id": str(s.jurisdiction_id),
+                "jurisdiction_name": s.jurisdiction_name,
+                "state": s.state,
+                "county": s.county,
+                "coverage_level": s.coverage_level,
+                "captured_at": s.captured_at.isoformat() if s.captured_at else None,
+                "parcel_count": s.parcel_count,
+                "parcel_with_zoning_code_count": s.parcel_with_zoning_code_count,
+                "zoning_district_count": s.zoning_district_count,
+                "matrix_zone_count": s.matrix_zone_count,
+                "operational_readiness": s.operational_readiness,
+                "blocking_gaps": s.blocking_gaps,
+                "self_storage_classified_parcel_pct": s.self_storage_classified_parcel_pct,
+                "parcel_zoning_code_coverage_pct": s.parcel_zoning_code_coverage_pct,
+            }
+            for s in snaps
+        ],
+    }
+
+
 @router.post("/jurisdictions/_cleanup-empty")
 async def cleanup_empty_jurisdictions(
     confirm: bool = Query(default=False),
@@ -466,6 +520,135 @@ async def discover_zoning(
         "candidates_total": result.candidates_total,
         "candidates": result.candidates,
     }
+
+
+@router.get("/jurisdictions/{jurisdiction_id}/_sources")
+async def list_zoning_sources(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """List all zoning_sources rows for this jurisdiction.
+
+    Returns rows sorted by confidence_score DESC. Used by the operator to
+    review past discovery candidates without re-running the crawler.
+    """
+    from app.models.zoning_source import ZoningSource
+    result = await db.execute(
+        select(ZoningSource)
+        .where(ZoningSource.jurisdiction_id == jurisdiction_id)
+        .order_by(ZoningSource.confidence_score.desc().nulls_last())
+    )
+    rows = result.scalars().all()
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "count": len(rows),
+        "sources": [
+            {
+                "id": str(r.id),
+                "municipality_name": r.municipality_name,
+                "zoning_endpoint": r.zoning_endpoint,
+                "title": r.title,
+                "source_type": r.source_type,
+                "feature_count": r.feature_count,
+                "geometry_type": r.geometry_type,
+                "confidence_score": r.confidence_score,
+                "confidence_label": r.confidence_label,
+                "validation_status": r.validation_status,
+                "discovered_by": r.discovered_by,
+                "reasons": r.reasons,
+                "last_verified_at": r.last_verified_at.isoformat() if r.last_verified_at else None,
+                "notes": r.notes,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_sources/{source_id}/verify")
+async def verify_zoning_source(
+    jurisdiction_id: uuid.UUID,
+    source_id: uuid.UUID,
+    validation_status: str = Query(default="verified"),
+    notes: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Promote a discovered candidate to verified (or mark it rejected/empty/token_gated).
+
+    `validation_status` accepted values: 'verified' | 'rejected' | 'token_gated' |
+    'empty' | 'pending'. The 'verified' label freezes the row from
+    further automated overwrites by subsequent discovery runs.
+    """
+    from datetime import datetime, timezone
+    from app.models.zoning_source import ZoningSource
+
+    src = await db.get(ZoningSource, source_id)
+    if src is None or src.jurisdiction_id != jurisdiction_id:
+        raise HTTPException(404, "zoning_source not found")
+    valid = {"verified", "rejected", "token_gated", "empty", "pending"}
+    if validation_status not in valid:
+        raise HTTPException(400, f"validation_status must be one of {sorted(valid)}")
+    src.validation_status = validation_status
+    if validation_status == "verified":
+        src.confidence_label = "verified"
+        src.last_verified_at = datetime.now(timezone.utc)
+    if notes is not None:
+        src.notes = notes
+    src.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.commit()
+    return {
+        "id": str(src.id),
+        "validation_status": src.validation_status,
+        "confidence_label": src.confidence_label,
+        "last_verified_at": src.last_verified_at.isoformat() if src.last_verified_at else None,
+    }
+
+
+@router.post("/jurisdictions/{county_id}/_discover-municipal-zoning")
+async def discover_municipal_zoning(
+    county_id: uuid.UUID,
+    municipality_names: list[str] | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Per-town zoning-source discovery for an NJ county.
+
+    Reads the county's municipality list from
+    `backend/data/nj_municipalities.json` (or accepts `municipality_names`
+    override in the body), runs the existing zoning_discovery for each
+    town, and persists top candidates into `zoning_sources` keyed by
+    (county_id, town). Operator then reviews via `_sources` GET +
+    promotes via `_sources/{id}/verify`.
+
+    Body (optional): `{"municipality_names": ["Paramus", "Mahwah"]}` to
+    scope the run. Default sweeps every municipality.
+
+    Per-town concurrency is capped at 4 to avoid Hub rate-limiting on a
+    70-town county like Bergen.
+    """
+    from app.services.nj_municipal_discovery import discover_municipal_zoning_for_county
+    return await discover_municipal_zoning_for_county(
+        county_id, db, municipality_names=municipality_names,
+    )
+
+
+@router.post("/jurisdictions/{county_id}/_ingest-municipal-zoning")
+async def ingest_municipal_zoning(
+    county_id: uuid.UUID,
+    source_ids: list[uuid.UUID],
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ingest verified municipal zoning sources into the county's
+    zoning_districts table.
+
+    Body: `{"source_ids": ["<uuid>", "<uuid>", ...]}` — must all be rows
+    in zoning_sources for this county AND have `confidence_label=verified`.
+
+    Calls the existing _backfill-zoning code path per source with
+    `replace=false` so towns aggregate. Uses ON CONFLICT idempotent
+    overlay generation from bulk_ingest_zoning so re-runs are safe.
+    """
+    from app.services.nj_municipal_discovery import ingest_verified_municipal_zoning
+    return await ingest_verified_municipal_zoning(county_id, source_ids, db)
 
 
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
