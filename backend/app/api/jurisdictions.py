@@ -604,6 +604,53 @@ async def verify_zoning_source(
     }
 
 
+@router.post("/jurisdictions/{county_id}/_discover-municipal-zoning")
+async def discover_municipal_zoning(
+    county_id: uuid.UUID,
+    municipality_names: list[str] | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Per-town zoning-source discovery for an NJ county.
+
+    Reads the county's municipality list from
+    `backend/data/nj_municipalities.json` (or accepts `municipality_names`
+    override in the body), runs the existing zoning_discovery for each
+    town, and persists top candidates into `zoning_sources` keyed by
+    (county_id, town). Operator then reviews via `_sources` GET +
+    promotes via `_sources/{id}/verify`.
+
+    Body (optional): `{"municipality_names": ["Paramus", "Mahwah"]}` to
+    scope the run. Default sweeps every municipality.
+
+    Per-town concurrency is capped at 4 to avoid Hub rate-limiting on a
+    70-town county like Bergen.
+    """
+    from app.services.nj_municipal_discovery import discover_municipal_zoning_for_county
+    return await discover_municipal_zoning_for_county(
+        county_id, db, municipality_names=municipality_names,
+    )
+
+
+@router.post("/jurisdictions/{county_id}/_ingest-municipal-zoning")
+async def ingest_municipal_zoning(
+    county_id: uuid.UUID,
+    source_ids: list[uuid.UUID],
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ingest verified municipal zoning sources into the county's
+    zoning_districts table.
+
+    Body: `{"source_ids": ["<uuid>", "<uuid>", ...]}` — must all be rows
+    in zoning_sources for this county AND have `confidence_label=verified`.
+
+    Calls the existing _backfill-zoning code path per source with
+    `replace=false` so towns aggregate. Uses ON CONFLICT idempotent
+    overlay generation from bulk_ingest_zoning so re-runs are safe.
+    """
+    from app.services.nj_municipal_discovery import ingest_verified_municipal_zoning
+    return await ingest_verified_municipal_zoning(county_id, source_ids, db)
+
+
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
 
 @router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")

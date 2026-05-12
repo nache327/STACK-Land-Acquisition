@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "source": "NJ Department of Community Affairs municipal directory (authoritative as of 2026)",
+    "notes": "Counties are keyed by lowercase name. Each entry is the list of incorporated municipalities (boroughs, townships, towns, cities) within that county. Used by backend/app/services/nj_municipal_discovery.py to drive per-town zoning-source discovery.",
+    "schema_version": 1
+  },
+  "bergen": [
+    "Allendale", "Alpine", "Bergenfield", "Bogota", "Carlstadt",
+    "Cliffside Park", "Closter", "Cresskill", "Demarest", "Dumont",
+    "East Rutherford", "Edgewater", "Elmwood Park", "Emerson",
+    "Englewood", "Englewood Cliffs", "Fair Lawn", "Fairview",
+    "Fort Lee", "Franklin Lakes", "Garfield", "Glen Rock",
+    "Hackensack", "Harrington Park", "Hasbrouck Heights", "Haworth",
+    "Hillsdale", "Ho-Ho-Kus", "Leonia", "Little Ferry", "Lodi",
+    "Lyndhurst", "Mahwah", "Maywood", "Midland Park", "Montvale",
+    "Moonachie", "New Milford", "North Arlington", "Northvale",
+    "Norwood", "Oakland", "Old Tappan", "Oradell", "Palisades Park",
+    "Paramus", "Park Ridge", "Ramsey", "Ridgefield", "Ridgefield Park",
+    "Ridgewood", "River Edge", "River Vale", "Rochelle Park", "Rockleigh",
+    "Rutherford", "Saddle Brook", "Saddle River", "South Hackensack",
+    "Teaneck", "Tenafly", "Teterboro", "Upper Saddle River", "Waldwick",
+    "Wallington", "Washington Township", "Westwood", "Woodcliff Lake",
+    "Wood-Ridge", "Wyckoff"
+  ],
+  "morris": [
+    "Boonton Town", "Boonton Township", "Butler", "Chatham Borough",
+    "Chatham Township", "Chester Borough", "Chester Township", "Denville",
+    "Dover", "East Hanover", "Florham Park", "Hanover Township",
+    "Harding Township", "Jefferson Township", "Kinnelon", "Lincoln Park",
+    "Long Hill Township", "Madison", "Mendham Borough", "Mendham Township",
+    "Mine Hill", "Montville Township", "Morris Township", "Morris Plains",
+    "Morristown", "Mount Arlington", "Mount Olive Township",
+    "Mountain Lakes", "Netcong", "Parsippany-Troy Hills Township",
+    "Pequannock Township", "Randolph Township", "Riverdale",
+    "Rockaway Borough", "Rockaway Township", "Roxbury Township",
+    "Victory Gardens", "Washington Township", "Wharton"
+  ],
+  "hunterdon": [
+    "Alexandria Township", "Bethlehem Township", "Bloomsbury",
+    "Califon", "Clinton Town", "Clinton Township", "Delaware Township",
+    "East Amwell Township", "Flemington", "Franklin Township",
+    "Frenchtown", "Glen Gardner", "Hampton", "High Bridge",
+    "Holland Township", "Kingwood Township", "Lambertville",
+    "Lebanon Borough", "Lebanon Township", "Milford",
+    "Raritan Township", "Readington Township", "Stockton",
+    "Tewksbury Township", "Union Township", "West Amwell Township"
+  ]
+}
