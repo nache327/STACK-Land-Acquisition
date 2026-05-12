@@ -156,6 +156,28 @@ async def upload_listings(
         logger.exception("Listings parse failed: %s", exc)
         raise HTTPException(422, f"Failed to parse {file.filename}: {exc}")
 
+    # Wrap the rest in a single try so any DB/UPSERT failure surfaces as
+    # JSON {detail: ...} instead of the Railway-edge "Internal Server Error"
+    # string that drops the stack trace.
+    try:
+        return await _persist_and_match(
+            db, file.filename, result, jurisdiction_id, background_tasks,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Listings upload failed for %s: %s", file.filename, exc)
+        raise HTTPException(500, f"Listings ingest failed: {type(exc).__name__}: {exc}")
+
+
+async def _persist_and_match(
+    db: AsyncSession,
+    filename: str,
+    result: ParseResult,
+    jurisdiction_id: uuid.UUID | None,
+    background_tasks: BackgroundTasks,
+) -> dict:
+
     detected_source = result.detected_source
     rows = result.rows
     if not rows:
@@ -217,7 +239,7 @@ async def upload_listings(
     # Step 3: UPSERT each row
     if rows:
         records = [
-            _listing_row_to_dict(r, jid, detected_source, file.filename)
+            _listing_row_to_dict(r, jid, detected_source, filename)
             for r in rows
         ]
         stmt = pg_insert(ForsaleListing).values(records)
