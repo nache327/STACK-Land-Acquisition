@@ -92,9 +92,15 @@ async def refresh_all_snapshots(
     written = 0
     for audit in audits:
         data = asdict(audit)
+        jid = uuid.UUID(data["id"])
+        # Per-municipality rollup — degrades gracefully to a single 'unknown'
+        # bucket if `parcels.city` is null across the board for this
+        # jurisdiction. Skipped silently on any error so a rollup hiccup
+        # doesn't break the broader audit refresh.
+        muni_breakdown = await _per_municipality_breakdown(conn, jid)
         # `JurisdictionAudit.id` is a string; cast to UUID for the FK column.
         snap = CoverageSnapshot(
-            jurisdiction_id=uuid.UUID(data["id"]),
+            jurisdiction_id=jid,
             jurisdiction_name=data["name"],
             state=data.get("state"),
             county=data.get("county"),
@@ -135,6 +141,7 @@ async def refresh_all_snapshots(
             operational_readiness=data.get("operational_readiness"),
             blocking_gaps=data.get("blocking_gaps"),
             unmatched_zone_samples=data.get("unmatched_zone_samples"),
+            municipality_breakdown=muni_breakdown,
             source=source,
         )
         db.add(snap)
@@ -177,4 +184,79 @@ def _parse_iso(value: Any) -> Any:
     try:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except Exception:
+        return None
+
+
+async def _per_municipality_breakdown(
+    conn, jurisdiction_id: uuid.UUID,
+) -> dict | None:
+    """Roll up parcels + zoning_overlays per `parcels.city` for one jurisdiction.
+
+    Returns a dict shaped like:
+      {town_name: {parcels, parcels_with_zoning, zoning_overlays}}
+
+    Skips zoning_districts per-town (no city column on zoning_districts).
+    Returns None if the jurisdiction has zero parcels with a non-null
+    city — i.e. when the per-muni rollup would be a single 'unknown'
+    bucket equal to the per-jurisdiction count anyway.
+
+    Defensive: ANY exception swallows + returns None so a rollup hiccup
+    doesn't break the broader audit refresh.
+    """
+    from sqlalchemy import text as _text
+    try:
+        rows = (await conn.execute(
+            _text(
+                """
+                SELECT
+                    COALESCE(NULLIF(TRIM(city), ''), 'unknown') AS town,
+                    COUNT(*)::int AS parcels,
+                    COUNT(*) FILTER (
+                        WHERE zoning_code IS NOT NULL AND zoning_code != ''
+                    )::int AS parcels_with_zoning
+                FROM parcels
+                WHERE jurisdiction_id = :jid
+                GROUP BY COALESCE(NULLIF(TRIM(city), ''), 'unknown')
+                HAVING COUNT(*) > 0
+                """
+            ),
+            {"jid": jurisdiction_id},
+        )).mappings().all()
+
+        if not rows:
+            return None
+        # Skip the rollup if every parcel is in the single 'unknown' bucket
+        # — that's no better than the per-jurisdiction count.
+        if len(rows) == 1 and rows[0]["town"] == "unknown":
+            return None
+
+        overlay_rows = (await conn.execute(
+            _text(
+                """
+                SELECT
+                    COALESCE(NULLIF(TRIM(p.city), ''), 'unknown') AS town,
+                    COUNT(*)::int AS overlays
+                FROM zoning_overlays o
+                JOIN parcels p ON p.id = o.parcel_id
+                WHERE p.jurisdiction_id = :jid
+                GROUP BY COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')
+                """
+            ),
+            {"jid": jurisdiction_id},
+        )).mappings().all()
+        overlays_by_town = {r["town"]: r["overlays"] for r in overlay_rows}
+
+        return {
+            r["town"]: {
+                "parcels": r["parcels"],
+                "parcels_with_zoning": r["parcels_with_zoning"],
+                "zoning_overlays": overlays_by_town.get(r["town"], 0),
+            }
+            for r in rows
+        }
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "per-muni rollup failed for %s: %r", jurisdiction_id, exc,
+        )
         return None

@@ -8,9 +8,10 @@ GET  /api/jurisdictions/:id/parcels/map         — GeoJSON FeatureCollection fo
 POST /api/jurisdictions/_cleanup-empty          — admin: dedupe empty jurisdictions
 """
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class _MunicipalDiscoveryBody(BaseModel):
@@ -19,6 +20,22 @@ class _MunicipalDiscoveryBody(BaseModel):
 
 class _MunicipalIngestBody(BaseModel):
     source_ids: list[uuid.UUID]
+
+
+class _SourceReviewBody(BaseModel):
+    """Body for POST /_sources/{id}/_review — generalizes /verify with
+    reject + needs_review + unverify actions."""
+    action: Literal["verify", "reject", "needs_review", "unverify"]
+    notes: str | None = None
+    rejected_reason: str | None = None  # required if action == "reject"
+
+
+class _BulkReviewBody(BaseModel):
+    """Body for POST /_sources/_bulk-review — batch verify/reject for
+    operators clearing a queue of obvious matches/junk."""
+    action: Literal["verify", "reject", "needs_review"]
+    source_ids: list[uuid.UUID] = Field(..., max_length=50)
+    rejected_reason: str | None = None
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -351,6 +368,7 @@ async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
                 "blocking_gaps": s.blocking_gaps,
                 "self_storage_classified_parcel_pct": s.self_storage_classified_parcel_pct,
                 "parcel_zoning_code_coverage_pct": s.parcel_zoning_code_coverage_pct,
+                "municipality_breakdown": s.municipality_breakdown,
             }
             for s in snaps
         ],
@@ -534,23 +552,67 @@ async def discover_zoning(
 @router.get("/jurisdictions/{jurisdiction_id}/_sources")
 async def list_zoning_sources(
     jurisdiction_id: uuid.UUID,
+    status: str | None = Query(default=None,
+        description="Filter by validation_status (pending|verified|rejected|needs_review|token_gated|empty)"),
+    confidence_min: int | None = Query(default=None, ge=0, le=100,
+        description="Only include sources with confidence_score >= this"),
+    municipality: str | None = Query(default=None,
+        description="Filter to a specific municipality_name (exact match)"),
+    sort_by: str = Query(default="confidence",
+        description="Sort by 'confidence' (default desc), 'municipality', or 'updated_at'"),
+    limit: int = Query(default=200, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """List all zoning_sources rows for this jurisdiction.
+    """List zoning_sources rows for this jurisdiction with filtering + sort.
 
-    Returns rows sorted by confidence_score DESC. Used by the operator to
-    review past discovery candidates without re-running the crawler.
+    Used by the operator review workflow:
+      - `?status=pending&confidence_min=70&sort_by=confidence` — shortlist
+        of high-confidence candidates that haven't been triaged yet.
+      - `?status=verified` — all verified sources ready for ingest.
+      - `?status=rejected` — audit which URLs the operator has rejected.
+
+    Each row includes `confidence_breakdown` (structured per-component
+    score deltas from scoring v2) and `rejected_reason` for inspection.
     """
     from app.models.zoning_source import ZoningSource
-    result = await db.execute(
-        select(ZoningSource)
-        .where(ZoningSource.jurisdiction_id == jurisdiction_id)
-        .order_by(ZoningSource.confidence_score.desc().nulls_last())
-    )
-    rows = result.scalars().all()
+
+    q = select(ZoningSource).where(ZoningSource.jurisdiction_id == jurisdiction_id)
+    if status is not None:
+        q = q.where(ZoningSource.validation_status == status)
+    if confidence_min is not None:
+        q = q.where(ZoningSource.confidence_score >= confidence_min)
+    if municipality is not None:
+        q = q.where(ZoningSource.municipality_name == municipality)
+
+    if sort_by == "municipality":
+        q = q.order_by(ZoningSource.municipality_name.asc().nulls_last(),
+                       ZoningSource.confidence_score.desc().nulls_last())
+    elif sort_by == "updated_at":
+        q = q.order_by(ZoningSource.updated_at.desc())
+    else:
+        q = q.order_by(ZoningSource.confidence_score.desc().nulls_last())
+
+    # Total count (before pagination) — useful for operator UIs to know
+    # how many candidates remain after applying filters.
+    count_q = select(func.count()).select_from(q.subquery())
+    total = (await db.execute(count_q)).scalar_one()
+
+    q = q.limit(limit).offset(offset)
+    rows = (await db.execute(q)).scalars().all()
+
     return {
         "jurisdiction_id": str(jurisdiction_id),
         "count": len(rows),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "filters": {
+            "status": status,
+            "confidence_min": confidence_min,
+            "municipality": municipality,
+            "sort_by": sort_by,
+        },
         "sources": [
             {
                 "id": str(r.id),
@@ -562,14 +624,78 @@ async def list_zoning_sources(
                 "geometry_type": r.geometry_type,
                 "confidence_score": r.confidence_score,
                 "confidence_label": r.confidence_label,
+                "confidence_breakdown": r.confidence_breakdown,
                 "validation_status": r.validation_status,
                 "discovered_by": r.discovered_by,
                 "reasons": r.reasons,
                 "last_verified_at": r.last_verified_at.isoformat() if r.last_verified_at else None,
+                "rejected_reason": r.rejected_reason,
                 "notes": r.notes,
             }
             for r in rows
         ],
+    }
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_sources/{source_id}/_review")
+async def review_zoning_source(
+    jurisdiction_id: uuid.UUID,
+    source_id: uuid.UUID,
+    body: _SourceReviewBody,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Operator review of a single discovered candidate.
+
+    Actions:
+      - 'verify'        → status=verified, label=verified, last_verified_at=now()
+      - 'reject'        → status=rejected, rejected_reason=<from body>; URL
+                          enters the cross-jurisdiction deny-list and gets
+                          a -80 penalty on future scoring.
+      - 'needs_review'  → status=needs_review (operator-deferred)
+      - 'unverify'      → status=pending, label=discovered (escape hatch if
+                          a verify was wrong; rejection can be similarly
+                          undone by re-issuing 'unverify' then redoing
+                          discovery).
+    """
+    from datetime import datetime, timezone
+    from app.models.zoning_source import ZoningSource
+
+    src = await db.get(ZoningSource, source_id)
+    if src is None or src.jurisdiction_id != jurisdiction_id:
+        raise HTTPException(404, "zoning_source not found")
+
+    now = datetime.now(timezone.utc)
+    if body.action == "verify":
+        src.validation_status = "verified"
+        src.confidence_label = "verified"
+        src.last_verified_at = now
+        src.rejected_reason = None
+    elif body.action == "reject":
+        src.validation_status = "rejected"
+        src.confidence_label = "rejected"
+        src.last_verified_at = None
+        src.rejected_reason = body.rejected_reason or "operator rejected"
+    elif body.action == "needs_review":
+        src.validation_status = "needs_review"
+    elif body.action == "unverify":
+        src.validation_status = "pending"
+        src.confidence_label = "discovered"
+        src.last_verified_at = None
+        src.rejected_reason = None
+
+    if body.notes is not None:
+        src.notes = body.notes
+    src.updated_at = now
+
+    await db.flush()
+    await db.commit()
+    return {
+        "id": str(src.id),
+        "action": body.action,
+        "validation_status": src.validation_status,
+        "confidence_label": src.confidence_label,
+        "last_verified_at": src.last_verified_at.isoformat() if src.last_verified_at else None,
+        "rejected_reason": src.rejected_reason,
     }
 
 
@@ -581,35 +707,80 @@ async def verify_zoning_source(
     notes: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Promote a discovered candidate to verified (or mark it rejected/empty/token_gated).
+    """Back-compat alias for the old /verify endpoint.
 
-    `validation_status` accepted values: 'verified' | 'rejected' | 'token_gated' |
-    'empty' | 'pending'. The 'verified' label freezes the row from
-    further automated overwrites by subsequent discovery runs.
+    Maps the old `?validation_status=X` query-param call to the new
+    `_review` body schema. New integrations should use `_review` directly.
+    """
+    # Map the old taxonomy onto the new action.
+    action_map = {
+        "verified": "verify",
+        "rejected": "reject",
+        "pending": "unverify",
+    }
+    action = action_map.get(validation_status, "verify")
+    body = _SourceReviewBody(action=action, notes=notes,
+                              rejected_reason=None if action != "reject" else "legacy verify")
+    return await review_zoning_source(
+        jurisdiction_id=jurisdiction_id, source_id=source_id, body=body, db=db,
+    )
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_sources/_bulk-review")
+async def bulk_review_zoning_sources(
+    jurisdiction_id: uuid.UUID,
+    body: _BulkReviewBody,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Batch verify/reject/needs_review across up to 50 source IDs.
+
+    Use for clear-bulk-reject (e.g. drop all generic-Zoning false-positives
+    in one shot) or clear-bulk-verify after a scoring re-run surfaces
+    several true positives.
+
+    Each row is updated to the requested action with the same semantics
+    as the single-row `_review` endpoint. Rows whose jurisdiction_id
+    doesn't match the URL are silently skipped (returns updated_count).
     """
     from datetime import datetime, timezone
     from app.models.zoning_source import ZoningSource
 
-    src = await db.get(ZoningSource, source_id)
-    if src is None or src.jurisdiction_id != jurisdiction_id:
-        raise HTTPException(404, "zoning_source not found")
-    valid = {"verified", "rejected", "token_gated", "empty", "pending"}
-    if validation_status not in valid:
-        raise HTTPException(400, f"validation_status must be one of {sorted(valid)}")
-    src.validation_status = validation_status
-    if validation_status == "verified":
-        src.confidence_label = "verified"
-        src.last_verified_at = datetime.now(timezone.utc)
-    if notes is not None:
-        src.notes = notes
-    src.updated_at = datetime.now(timezone.utc)
-    await db.flush()
+    if not body.source_ids:
+        return {"updated": 0, "skipped": 0}
+
+    now = datetime.now(timezone.utc)
+
+    # Build the UPDATE values based on action.
+    values: dict = {"updated_at": now}
+    if body.action == "verify":
+        values.update({
+            "validation_status": "verified",
+            "confidence_label": "verified",
+            "last_verified_at": now,
+            "rejected_reason": None,
+        })
+    elif body.action == "reject":
+        values.update({
+            "validation_status": "rejected",
+            "confidence_label": "rejected",
+            "last_verified_at": None,
+            "rejected_reason": body.rejected_reason or "operator bulk-rejected",
+        })
+    elif body.action == "needs_review":
+        values.update({"validation_status": "needs_review"})
+
+    result = await db.execute(
+        update(ZoningSource)
+        .where(ZoningSource.id.in_(body.source_ids))
+        .where(ZoningSource.jurisdiction_id == jurisdiction_id)
+        .values(**values)
+    )
     await db.commit()
+    updated = result.rowcount or 0
     return {
-        "id": str(src.id),
-        "validation_status": src.validation_status,
-        "confidence_label": src.confidence_label,
-        "last_verified_at": src.last_verified_at.isoformat() if src.last_verified_at else None,
+        "updated": updated,
+        "skipped": len(body.source_ids) - updated,
+        "action": body.action,
     }
 
 

@@ -77,4 +77,9 @@ class CoverageSnapshot(Base):
     blocking_gaps: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
     unmatched_zone_samples: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
 
+    # Per-town rollup: {town_name: {parcels, parcels_with_zoning,
+    # zoning_overlays, districts}}. Populated by coverage_audit when
+    # parcels.city is set; null if jurisdiction has no per-muni data.
+    municipality_breakdown: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
     source: Mapped[str | None] = mapped_column(Text, nullable=True)
