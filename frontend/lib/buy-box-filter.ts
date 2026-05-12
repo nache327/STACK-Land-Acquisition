@@ -20,6 +20,10 @@ export interface BuyBoxFilter {
   minHomesOver2M: number | null;
   minHomesOver5M: number | null;
   matchLogic: "AND" | "OR";
+  // Layer 4: For-Sale Listings. Both optional — null/undefined means
+  // the listings dimension is inactive for this filter.
+  requireListed?: boolean;
+  listingScoreBoost?: number;
 }
 
 export type EvaluationStatus = "match" | "borderline" | "fail" | "computing";
@@ -53,6 +57,8 @@ export const DEFAULT_FILTER: BuyBoxFilter = {
   minHomesOver2M: null,
   minHomesOver5M: null,
   matchLogic: "AND",
+  requireListed: false,
+  listingScoreBoost: 0,
 };
 
 // Legacy localStorage key — kept solely for the one-shot migration helper.

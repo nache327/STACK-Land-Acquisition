@@ -463,6 +463,27 @@ export function BuyBoxPanel({
         />
       </div>
 
+      {/* Listings (Layer 4) */}
+      <div className="mb-3">
+        <div className="mb-1 text-[9px] uppercase tracking-wide text-slate-500">
+          Listings
+        </div>
+        <label className="flex items-center gap-2 text-[11px] text-slate-300">
+          <input
+            type="checkbox"
+            checked={!!filter.requireListed}
+            onChange={(e) =>
+              onChange({ ...filter, requireListed: e.target.checked })
+            }
+            className="h-3 w-3 rounded border-slate-500"
+          />
+          Listed for sale only
+          <span className="text-[9px] text-slate-500" title="Hard filter — drops parcels with no current matched listing">
+            (hard filter)
+          </span>
+        </label>
+      </div>
+
       {/* Match logic */}
       <div className="mb-3 flex items-center gap-2">
         <span className="text-[9px] text-slate-500">Match</span>

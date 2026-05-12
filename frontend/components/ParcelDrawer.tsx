@@ -5,6 +5,8 @@ import type { ParcelDetail } from "@/lib/schemas";
 import type { ServerParcelScore } from "@/lib/api";
 import { useVerification } from "@/hooks/useVerification";
 import { useParcelSaturation } from "@/hooks/useParcelSaturation";
+import { useJurisdictionListings } from "@/hooks/useJurisdictionListings";
+import type { JurisdictionListing } from "@/hooks/useJurisdictionListings";
 import { VerificationPanel } from "./VerificationPanel";
 import {
   computeScore,
@@ -56,6 +58,18 @@ export function ParcelDrawer({
   const { data: saturation, isLoading: satLoading } = useParcelSaturation(
     parcel?.id ?? null
   );
+
+  // Pull listings for this jurisdiction once per drawer-open. Find the
+  // current one matching this parcel (if any). One fetch, used by both
+  // the ListingCard above and any future filter logic.
+  const { data: listings } = useJurisdictionListings(
+    parcel ? jurisdictionId : null,
+  );
+  const matchedListing: JurisdictionListing | undefined = parcel
+    ? listings?.find(
+        (l) => l.matched_parcel_id === parcel.id && l.is_current,
+      )
+    : undefined;
 
   const score = useMemo(() => {
     if (!parcel) return null;
@@ -156,6 +170,10 @@ export function ParcelDrawer({
             </p>
           </div>
         )}
+
+        {/* Listing card — surfaces when this parcel matches a current
+            for-sale listing (any source, confidence >= 0.85). */}
+        {matchedListing && <ListingCard listing={matchedListing} />}
 
         {/* Parcel attributes */}
         <dl className="space-y-3 text-sm">
@@ -546,6 +564,71 @@ function BuyBoxMatchPanel({
             {verdictStyle[verdict].label}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function ListingCard({ listing }: { listing: JurisdictionListing }) {
+  const price =
+    listing.sale_price != null
+      ? `$${listing.sale_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      : "Price n/a";
+  const dom =
+    listing.days_on_market != null ? `${listing.days_on_market} days on market` : null;
+  const brokerLine = [listing.listing_broker_contact, listing.listing_broker_company]
+    .filter(Boolean)
+    .join(", ");
+  const contactLine = [listing.listing_broker_phone, listing.listing_broker_email]
+    .filter(Boolean)
+    .join(" · ");
+  const statusColor =
+    listing.sale_status?.toLowerCase() === "active"
+      ? "#059669"
+      : listing.sale_status?.toLowerCase() === "under contract"
+      ? "#d97706"
+      : "#64748b";
+  return (
+    <div
+      className="rounded-lg border p-3 text-sm"
+      style={{
+        backgroundColor: "#fef3c7",
+        borderColor: "#fcd34d",
+        color: "#92400e",
+      }}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide">
+          🏷️ Listed for sale
+        </h3>
+        <span
+          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+          style={{ backgroundColor: statusColor, color: "#fff" }}
+        >
+          {listing.sale_status || "Active"}
+        </span>
+      </div>
+      <div className="font-mono text-base font-semibold text-slate-900">
+        {price}
+      </div>
+      <div className="mt-0.5 text-xs text-slate-700">
+        via <strong>{listing.source}</strong>
+        {dom ? <span> · {dom}</span> : null}
+      </div>
+      {brokerLine && (
+        <div className="mt-2 text-xs text-slate-800">
+          Broker: <strong>{brokerLine}</strong>
+        </div>
+      )}
+      {contactLine && (
+        <div className="mt-0.5 text-xs text-slate-800">
+          Contact: <span className="font-mono">{contactLine}</span>
+        </div>
+      )}
+      {listing.match_confidence != null && listing.match_confidence < 1.0 && (
+        <div className="mt-2 text-[10px] text-slate-500">
+          Match confidence {(listing.match_confidence * 100).toFixed(0)}% · {listing.match_method}
+        </div>
       )}
     </div>
   );

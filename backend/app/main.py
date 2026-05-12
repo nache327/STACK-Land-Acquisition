@@ -12,6 +12,7 @@ from app.api import (
     debug,
     jobs,
     jurisdictions,
+    listings,
     ordinances,
     parcels,
     pdf_parser,
@@ -93,6 +94,7 @@ app.include_router(shortlist.router, prefix="/api")
 app.include_router(zoning_districts.router, prefix="/api")
 app.include_router(buybox.router, prefix="/api")
 app.include_router(census_proxy.router, prefix="/api")
+app.include_router(listings.router, prefix="/api")
 
 
 @app.get("/health", tags=["meta"])
