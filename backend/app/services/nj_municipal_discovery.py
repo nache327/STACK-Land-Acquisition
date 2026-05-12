@@ -123,12 +123,17 @@ async def discover_municipal_zoning_for_county(
         }
 
     sem = asyncio.Semaphore(_PER_TOWN_CONCURRENCY)
+    # AsyncSession isn't safe for concurrent access. Hub probes happen in
+    # parallel (network-bound), but the persist/commit critical section
+    # must serialize — otherwise commits race and persisted_count returns
+    # 0 even when rows landed in the DB.
+    db_lock = asyncio.Lock()
     results: list[TownDiscoveryResult] = []
 
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
         async def _one(town: str) -> TownDiscoveryResult:
             async with sem:
-                return await _discover_one_town(client, db, j, town)
+                return await _discover_one_town(client, db, j, town, db_lock)
         results = await asyncio.gather(*[_one(t) for t in towns])
 
     return {
@@ -153,6 +158,7 @@ async def _discover_one_town(
     db: AsyncSession,
     county: Jurisdiction,
     town: str,
+    db_lock: asyncio.Lock | None = None,
 ) -> TownDiscoveryResult:
     """Discover candidates for one town and persist them into zoning_sources."""
     # Query string scopes the Hub search to this specific town.
@@ -186,11 +192,11 @@ async def _discover_one_town(
     top_n = candidates[:_TOP_N]
 
     persisted = 0
-    try:
+
+    async def _do_persist() -> int:
         await _persist_candidates(db, county, top_n, municipality_name=town)
-        # Tighten confidence label below threshold so operator can filter.
         if top_n:
-            from sqlalchemy import select, update
+            from sqlalchemy import update
             await db.execute(
                 update(ZoningSource)
                 .where(
@@ -202,7 +208,14 @@ async def _discover_one_town(
                 .values(confidence_label="discovered_low")
             )
             await db.commit()
-        persisted = len(top_n)
+        return len(top_n)
+
+    try:
+        if db_lock is not None:
+            async with db_lock:
+                persisted = await _do_persist()
+        else:
+            persisted = await _do_persist()
     except Exception as exc:
         logger.warning("persist for %r failed: %r", town, exc)
 
