@@ -246,8 +246,18 @@ async def get_parcel_zoning(
 # buy-box sliders. Result is upserted into parcel_ring_metrics so a
 # repeat call for the same (parcel_id, drive_time_minutes) is cached.
 
+import asyncio  # noqa: E402
+
 from pydantic import BaseModel  # noqa: E402  (kept local to the endpoint)
 from app.config import settings  # noqa: E402
+
+
+# Cap concurrent value-density requests so the SQLAlchemy pool
+# (5 + 10 overflow = 15) isn't exhausted by burst-precompute. The
+# frontend's precompute pass kicks off ~16 simultaneous ring fetches
+# per CONCURRENCY=4 cohort; without this gate 5 of every 20 calls
+# returned 500 'QueuePool limit of size 5 overflow 10 reached'.
+_value_density_sem = asyncio.Semaphore(8)
 
 
 class _ValueDensityRequest(BaseModel):
@@ -278,6 +288,13 @@ async def value_density(
 
     Returns ``{homes_over_1m, homes_over_2m, homes_over_5m, cached}``.
     """
+    async with _value_density_sem:
+        return await _value_density_impl(payload, db)
+
+
+async def _value_density_impl(
+    payload: "_ValueDensityRequest", db: AsyncSession
+) -> "_ValueDensityResponse":
     import json as _json
 
     # Fast-path: if the caller passed parcel_id + drive_time and the
