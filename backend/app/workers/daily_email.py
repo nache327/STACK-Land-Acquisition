@@ -52,6 +52,17 @@ class DigestParcel:
     factors: list[dict]
     jurisdiction_id: str
     jurisdiction_name: str
+    # Listing info — populated when the parcel has a current matched
+    # listing (any source, confidence >= 0.85). When present, the
+    # renderer prints a 🏷️ banner block above the score with broker
+    # contact prominent. None means no current listing.
+    listing_source: str | None = None
+    listing_sale_price: float | None = None
+    listing_dom: int | None = None
+    listing_broker_company: str | None = None
+    listing_broker_contact: str | None = None
+    listing_broker_phone: str | None = None
+    listing_broker_email: str | None = None
 
 
 # ─── Selection ────────────────────────────────────────────────────────────
@@ -89,6 +100,13 @@ async def _eligible_filters(
 async def _top_parcels_for_filter(
     db: AsyncSession, f: BuyboxFilter
 ) -> list[DigestParcel]:
+    filter_json = f.filter_json or {}
+    require_listed = bool(filter_json.get("require_listed"))
+
+    # ``require_listed`` is a hard filter: drop parcels with no current
+    # matched listing (confidence >= 0.85). The LATERAL join below
+    # picks the most-recently-seen listing per parcel; the WHERE branch
+    # turns the requirement on/off without two SQL paths.
     sql = text(
         """
         SELECT
@@ -100,23 +118,49 @@ async def _top_parcels_for_filter(
             pbs.tier        AS tier,
             pbs.factors     AS factors,
             j.id            AS jurisdiction_id,
-            j.name          AS jurisdiction_name
+            j.name          AS jurisdiction_name,
+            lst.source                  AS listing_source,
+            lst.sale_price              AS listing_sale_price,
+            lst.days_on_market          AS listing_dom,
+            lst.listing_broker_company  AS listing_broker_company,
+            lst.listing_broker_contact  AS listing_broker_contact,
+            lst.listing_broker_phone    AS listing_broker_phone,
+            lst.listing_broker_email    AS listing_broker_email
         FROM parcel_buybox_scores pbs
         JOIN parcels p       ON p.id = pbs.parcel_id
         JOIN jurisdictions j ON j.id = p.jurisdiction_id
+        LEFT JOIN LATERAL (
+            SELECT source, sale_price, days_on_market,
+                   listing_broker_company, listing_broker_contact,
+                   listing_broker_phone, listing_broker_email
+              FROM forsale_listings
+             WHERE matched_parcel_id = p.id
+               AND is_current = true
+               AND match_confidence >= 0.85
+             ORDER BY last_seen_at DESC
+             LIMIT 1
+        ) lst ON true
         WHERE pbs.buybox_filter_id = :fid
           AND pbs.notified_at IS NULL
           AND pbs.score >= :min_score
+          AND (NOT :require_listed OR lst.source IS NOT NULL)
         ORDER BY pbs.score DESC, pbs.parcel_id
         LIMIT :lim
         """
     )
     rows = await db.execute(
-        sql, {"fid": f.id, "min_score": _MIN_SCORE, "lim": f.daily_email_top_n}
+        sql,
+        {
+            "fid": f.id,
+            "min_score": _MIN_SCORE,
+            "lim": f.daily_email_top_n,
+            "require_listed": require_listed,
+        },
     )
     out: list[DigestParcel] = []
     for r in rows:
         m = r._mapping
+        sp = m["listing_sale_price"]
         out.append(
             DigestParcel(
                 parcel_id=m["parcel_id"],
@@ -128,6 +172,13 @@ async def _top_parcels_for_filter(
                 factors=list(m["factors"] or []),
                 jurisdiction_id=str(m["jurisdiction_id"]),
                 jurisdiction_name=m["jurisdiction_name"],
+                listing_source=m["listing_source"],
+                listing_sale_price=float(sp) if sp is not None else None,
+                listing_dom=m["listing_dom"],
+                listing_broker_company=m["listing_broker_company"],
+                listing_broker_contact=m["listing_broker_contact"],
+                listing_broker_phone=m["listing_broker_phone"],
+                listing_broker_email=m["listing_broker_email"],
             )
         )
     return out
@@ -153,10 +204,64 @@ def _render_subject(filter_name: str, parcels: list[DigestParcel]) -> str:
     return f"{n} new match{'es' if n != 1 else ''} in your buy-box ({filter_name})"
 
 
+def _listing_banner_html(p: DigestParcel) -> str:
+    if not p.listing_source:
+        return ""
+    price = (
+        f"${int(p.listing_sale_price):,}" if p.listing_sale_price is not None else "Price n/a"
+    )
+    dom = f" · DOM {p.listing_dom} days" if p.listing_dom is not None else ""
+    src = html_lib.escape(p.listing_source)
+    broker_line = ""
+    if p.listing_broker_company or p.listing_broker_contact:
+        broker = html_lib.escape(", ".join(
+            x for x in [p.listing_broker_contact, p.listing_broker_company] if x
+        ))
+        broker_line = f"<div style='margin-top:2px'>Broker: <strong>{broker}</strong></div>"
+    contact_line = ""
+    contact_parts = [x for x in [p.listing_broker_phone, p.listing_broker_email] if x]
+    if contact_parts:
+        contact_line = (
+            "<div style='margin-top:2px'>Contact: "
+            + html_lib.escape(" · ".join(contact_parts))
+            + "</div>"
+        )
+    return (
+        f"<div style='margin-top:8px;padding:8px 10px;background:#fef3c7;"
+        f"border:1px solid #fcd34d;border-radius:6px;font-size:13px;color:#92400e'>"
+        f"<div>\U0001f3f7️ <strong>Listed for sale</strong> — {price}{dom} · via {src}</div>"
+        f"{broker_line}{contact_line}"
+        f"</div>"
+    )
+
+
+def _listing_banner_text(p: DigestParcel) -> list[str]:
+    """Render the 🏷️ listing block for a parcel — only when listed."""
+    if not p.listing_source:
+        return []
+    price_part = (
+        f"${int(p.listing_sale_price):,}" if p.listing_sale_price is not None else "Price n/a"
+    )
+    dom_part = f" (DOM: {p.listing_dom} days)" if p.listing_dom is not None else ""
+    lines = [
+        f"  🏷️ Listed for sale — {price_part}{dom_part} · via {p.listing_source}",
+    ]
+    if p.listing_broker_company or p.listing_broker_contact:
+        broker = ", ".join(
+            x for x in [p.listing_broker_contact, p.listing_broker_company] if x
+        )
+        lines.append(f"     Broker: {broker}")
+    contact_parts = [x for x in [p.listing_broker_phone, p.listing_broker_email] if x]
+    if contact_parts:
+        lines.append(f"     Contact: {' · '.join(contact_parts)}")
+    return lines
+
+
 def _render_text(filter_name: str, parcels: list[DigestParcel]) -> str:
     lines = [f"Daily buy-box digest — {filter_name}", ""]
     for p in parcels:
         lines.append(f"• {p.address or p.apn} ({p.jurisdiction_name})")
+        lines.extend(_listing_banner_text(p))
         if p.owner_name:
             lines.append(f"  Owner: {p.owner_name}")
         lines.append(f"  Score: {p.score} ({p.tier})")
@@ -184,6 +289,7 @@ def _render_html(filter_name: str, parcels: list[DigestParcel]) -> str:
             for f in _top_factors(p)
         )
         owner_html = f"<div style='color:#64748b;font-size:13px'>Owner: {owner}</div>" if owner else ""
+        listing_html = _listing_banner_html(p)
         rows.append(
             f"""
             <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin:12px 0;background:#fff">
@@ -191,6 +297,7 @@ def _render_html(filter_name: str, parcels: list[DigestParcel]) -> str:
                 <a href="{link}" style="color:#0f172a;text-decoration:none">{title}</a>
               </div>
               <div style="color:#475569;font-size:13px;margin-top:2px">{city}</div>
+              {listing_html}
               {owner_html}
               <div style="margin-top:8px;font-size:13px;color:#0f172a">
                 Score <strong>{p.score}</strong> · {html_lib.escape(p.tier)}
