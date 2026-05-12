@@ -60,5 +60,7 @@ docker-compose.override.yml
 .vercel
 .env*.local
 
-# Operator-uploaded listings exports (CoStar/LoopNet/Crexi) — never commit data
-backend/uploads/
+# Operator-uploaded listings exports (CoStar/LoopNet/Crexi) — never commit data,
+# but keep the README so the folder's purpose is documented in-repo.
+backend/uploads/*
+!backend/uploads/README.md
