@@ -61,6 +61,12 @@ class ParcelInputs:
     in_flood_zone: bool
     in_wetland: bool
     has_structure: bool | None
+    # Wealth-density counts for the FILTER's drive-time ring, joined from
+    # parcel_ring_metrics. None when the ring hasn't been measured yet
+    # (the frontend value-density endpoint populates these lazily).
+    homes_over_1m: int | None = None
+    homes_over_2m: int | None = None
+    homes_over_5m: int | None = None
 
 
 @dataclass
@@ -133,6 +139,53 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
             "reason": f"Below filter min ({filter_json['minAADT']:,})",
         })
 
+    # Wealth-density contributions. Three signals, decreasing weight as
+    # the threshold gets rarer ($1M > $2M > $5M). Each fires when the
+    # user has enabled the corresponding slider AND the parcel's ring
+    # has been measured (homes_over_NM is non-null). Behaviour for each:
+    #   - When the ring meets the filter min, add a positive bonus
+    #     proportional to how far above the min we are (capped).
+    #   - When the ring is below the filter min, add a fixed penalty so
+    #     these parcels sort to the bottom (same shape as minAADT).
+    # The frontend already gates the slider with wealth_density_available
+    # so we don't see these filter keys on UT/UGRC cities at all.
+    _wealth_specs = (
+        ("minHomesOver1M", p.homes_over_1m, "Homes ≥$1M", 8.0),  # max +8 contribution
+        ("minHomesOver2M", p.homes_over_2m, "Homes ≥$2M", 6.0),  # max +6
+        ("minHomesOver5M", p.homes_over_5m, "Homes ≥$5M", 4.0),  # max +4
+    )
+    if filter_json:
+        for key, actual, label, max_bonus in _wealth_specs:
+            min_v = filter_json.get(key)
+            if min_v is None or min_v <= 0:
+                continue
+            if actual is None:
+                # Ring not measured yet; transparent factor with no delta
+                # so the dashboard knows the signal is pending.
+                factors.append({
+                    "label": label,
+                    "delta": 0,
+                    "reason": "Ring not yet measured",
+                })
+                continue
+            if actual >= min_v:
+                # Bonus: scaled by how far above min we are. min meet = 50%
+                # of max bonus; 2× min = full bonus.
+                ratio = min(actual / max(min_v, 1), 2.0)
+                delta = round(max_bonus * (0.5 + (ratio - 1) * 0.5), 1)
+                factors.append({
+                    "label": label,
+                    "delta": delta,
+                    "reason": f"{actual:,} in ring (min {min_v:,})",
+                })
+            else:
+                delta = -10
+                factors.append({
+                    "label": label,
+                    "delta": delta,
+                    "reason": f"Only {actual:,} in ring (min {min_v:,})",
+                })
+
     raw = sum(f["delta"] for f in factors)
     score = max(0, min(100, round(raw)))
     return ScoredParcel(p.parcel_id, score, tier_for(score), factors)
@@ -152,11 +205,17 @@ SELECT
     p.aadt,
     p.in_flood_zone,
     p.in_wetland,
-    p.has_structure
+    p.has_structure,
+    prm.homes_over_1m,
+    prm.homes_over_2m,
+    prm.homes_over_5m
 FROM parcels p
 LEFT JOIN zone_use_matrix zum
     ON zum.jurisdiction_id = p.jurisdiction_id
    AND zum.zone_code      = p.zoning_code
+LEFT JOIN parcel_ring_metrics prm
+    ON prm.parcel_id = p.id
+   AND prm.drive_time_minutes = $2::int
 WHERE p.jurisdiction_id = $1::uuid
 """
 
@@ -242,13 +301,23 @@ async def score_jurisdiction(
 
     Returns the count of parcels scored.
     """
+    # The wealth-density signal is read from parcel_ring_metrics for the
+    # ring the FILTER is configured on (driveTimeMinutes). Default to 10
+    # when the filter doesn't carry one, matching DEFAULT_FILTER.
+    drive_time = 10
+    if filter_json:
+        try:
+            drive_time = int(filter_json.get("driveTimeMinutes") or 10)
+        except (TypeError, ValueError):
+            drive_time = 10
+
     conn = await asyncpg.connect(_raw_dsn())
     try:
         await conn.execute("SET statement_timeout = 0")
-        rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id)
+        rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id, drive_time)
         logger.info(
-            "Scoring %d parcels for jurisdiction %s under filter %s",
-            len(rows), jurisdiction_id, buybox_filter_id,
+            "Scoring %d parcels for jurisdiction %s under filter %s (ring=%d min)",
+            len(rows), jurisdiction_id, buybox_filter_id, drive_time,
         )
 
         scored: list[tuple[int, uuid.UUID, int, str, str]] = []
@@ -261,6 +330,9 @@ async def score_jurisdiction(
                 in_flood_zone=bool(r["in_flood_zone"]),
                 in_wetland=bool(r["in_wetland"]),
                 has_structure=r["has_structure"],
+                homes_over_1m=r["homes_over_1m"],
+                homes_over_2m=r["homes_over_2m"],
+                homes_over_5m=r["homes_over_5m"],
             )
             s = score_for_parcel(inputs, filter_json)
             scored.append((
