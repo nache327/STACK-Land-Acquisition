@@ -267,6 +267,7 @@ async def _probe_layer(
     geometry_type: str | None = None
     field_matches: list[str] = []
     layer_bbox: list[float] | None = None
+    layer_bbox_srid: int | None = None
     if _url_has_layer_index(full_url):
         try:
             meta = await client.get(full_url, params={"f": "json"}, timeout=15.0)
@@ -276,6 +277,10 @@ async def _probe_layer(
                 extent = mdata.get("extent") or {}
                 if all(k in extent for k in ("xmin", "ymin", "xmax", "ymax")):
                     layer_bbox = [extent["xmin"], extent["ymin"], extent["xmax"], extent["ymax"]]
+                    # ArcGIS extent.spatialReference can have wkid (Esri code)
+                    # or latestWkid (EPSG). 102100 == EPSG:3857 (WebMercator).
+                    sr = extent.get("spatialReference") or {}
+                    layer_bbox_srid = sr.get("latestWkid") or sr.get("wkid") or None
                 for f in mdata.get("fields", []) or []:
                     fname = (f.get("name") or "").lower()
                     if any(frag in fname for frag in _ZONING_FIELDS):
@@ -292,11 +297,25 @@ async def _probe_layer(
         except Exception as exc:
             logger.debug("probe %s failed: %s", full_url, exc)
 
-    bbox_overlaps = (
-        jurisdiction_bbox is not None
-        and layer_bbox is not None
-        and _bboxes_overlap(jurisdiction_bbox, layer_bbox)
+    # Reproject layer extent to WGS84 + compute overlap ratio vs jurisdiction
+    # bbox. None when either side is missing or reprojection is unsupported
+    # (e.g. exotic State Plane CRS). The ratio drives Component F (bbox
+    # overlap scoring); preserves the old bool for backward compat on the
+    # ZoningCandidate dataclass.
+    #
+    # Per-town municipal discovery calls _probe_layer with the positional
+    # `jurisdiction_bbox=None` (towns are too small to geocode cheaply) but
+    # still passes the COUNTY's Jurisdiction object via keyword. Fall back
+    # to county.bbox so Component F can fire even for per-town candidates
+    # (catches New Milford CT vs Bergen NJ — disjoint bboxes).
+    effective_juris_bbox = jurisdiction_bbox or (
+        jurisdiction.bbox if jurisdiction is not None else None
     )
+    layer_bbox_4326 = reproject_bbox_to_wgs84(layer_bbox, layer_bbox_srid)
+    bbox_overlap_ratio = _bbox_overlap_ratio(
+        effective_juris_bbox, layer_bbox_4326,
+    )
+    bbox_overlaps = bool(bbox_overlap_ratio and bbox_overlap_ratio > 0)
 
     name_signals = _name_match_signals(title, name_tokens or {})
 
@@ -308,7 +327,7 @@ async def _probe_layer(
         geometry_type=geometry_type,
         feature_count=feature_count,
         field_matches=field_matches,
-        bbox_overlaps=bbox_overlaps,
+        bbox_overlap_ratio=bbox_overlap_ratio,
         name_signals=name_signals,
         jurisdiction=jurisdiction,
         denylist=denylist,
@@ -340,7 +359,7 @@ def _score_candidate(
     geometry_type: str | None,
     feature_count: int | None,
     field_matches: list[str],
-    bbox_overlaps: bool,
+    bbox_overlap_ratio: float | None,
     name_signals: dict,
     jurisdiction: Jurisdiction | None = None,
     denylist: set[str] | None = None,
@@ -384,11 +403,32 @@ def _score_candidate(
         components.append(ScoreComponent(
             "field_matches", min(20, 5 * len(field_matches)),
             f"fields look zoning-shaped: {field_matches[:5]}"))
-    # Bbox overlap
-    if bbox_overlaps:
-        components.append(ScoreComponent(
-            "bbox_overlap", 10,
-            "layer bbox overlaps jurisdiction bbox"))
+    # Component F — bbox overlap ratio (replaces the old bbox_overlaps bool).
+    # ratio == None: no signal (CRS unsupported or extent missing).
+    # ratio >= 0.5: strong overlap — likely covers the jurisdiction.
+    # 0.05 <= ratio < 0.5: weak overlap — possible adjacent-county / partial.
+    # 0 < ratio < 0.05: barely-touching — almost certainly wrong location.
+    # ratio == 0.0: disjoint — different state / wrong-jurisdiction (e.g.
+    #   New Milford CT vs New Milford NJ; layer extent in CT, jurisdiction
+    #   bbox in NJ).
+    if bbox_overlap_ratio is not None:
+        if bbox_overlap_ratio >= 0.5:
+            components.append(ScoreComponent(
+                "bbox_overlap_strong", 10,
+                f"layer bbox covers {int(bbox_overlap_ratio*100)}% of jurisdiction bbox"))
+        elif bbox_overlap_ratio >= 0.05:
+            # Weak overlap — could be a neighboring town or a partial
+            # cover. No score signal; we don't have enough info.
+            pass
+        elif bbox_overlap_ratio > 0:
+            components.append(ScoreComponent(
+                "bbox_overlap_tiny", -30,
+                f"layer bbox barely overlaps jurisdiction ({bbox_overlap_ratio*100:.1f}%)"))
+        else:  # == 0.0
+            components.append(ScoreComponent(
+                "bbox_overlap_disjoint", -60,
+                "layer bbox is completely disjoint from jurisdiction bbox "
+                "(likely wrong city/state)"))
 
     # Component A — name match (word-boundary, tiered)
     multi = name_signals.get("multi_word_match", False)
@@ -615,6 +655,82 @@ def _service_host_bonus(
     return 0, None
 
 
+async def spatial_check_for_url(
+    zoning_url: str,
+    jurisdiction_bbox: list[float] | None,
+    client: httpx.AsyncClient | None = None,
+) -> dict:
+    """Probe a FeatureServer/MapServer layer URL and report its geographic
+    alignment with a jurisdiction's bbox.
+
+    Used by:
+      - the operator-facing /_spatial-check endpoint (visibility)
+      - the pre-flight bbox check in ingest (refuse disjoint sources)
+
+    Returns:
+      {
+        "layer_extent_raw":      [xmin, ymin, xmax, ymax] | None,
+        "layer_extent_srid":     int | None,    # 4326 / 3857 / 102100 / etc.
+        "layer_extent_wgs84":    [xmin, ymin, xmax, ymax] | None,  # reprojected
+        "jurisdiction_bbox":     [xmin, ymin, xmax, ymax] | None,
+        "bbox_overlap_ratio":    float | None,   # None = unknown
+        "verdict":               "good" | "partial" | "tiny" | "disjoint" | "unknown",
+        "error":                 str | None,
+      }
+    """
+    own_client = client is None
+    if own_client:
+        client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
+
+    result: dict[str, Any] = {
+        "layer_extent_raw": None,
+        "layer_extent_srid": None,
+        "layer_extent_wgs84": None,
+        "jurisdiction_bbox": jurisdiction_bbox,
+        "bbox_overlap_ratio": None,
+        "verdict": "unknown",
+        "error": None,
+    }
+
+    try:
+        resp = await client.get(zoning_url, params={"f": "json"}, timeout=15.0)
+        if resp.status_code != 200:
+            result["error"] = f"HTTP {resp.status_code}"
+            return result
+        meta = resp.json() or {}
+        ext = meta.get("extent") or {}
+        if all(k in ext for k in ("xmin", "ymin", "xmax", "ymax")):
+            result["layer_extent_raw"] = [
+                ext["xmin"], ext["ymin"], ext["xmax"], ext["ymax"],
+            ]
+            sr = ext.get("spatialReference") or {}
+            result["layer_extent_srid"] = sr.get("latestWkid") or sr.get("wkid")
+            result["layer_extent_wgs84"] = reproject_bbox_to_wgs84(
+                result["layer_extent_raw"], result["layer_extent_srid"],
+            )
+
+        result["bbox_overlap_ratio"] = _bbox_overlap_ratio(
+            jurisdiction_bbox, result["layer_extent_wgs84"],
+        )
+        r = result["bbox_overlap_ratio"]
+        if r is None:
+            result["verdict"] = "unknown"
+        elif r >= 0.5:
+            result["verdict"] = "good"
+        elif r >= 0.05:
+            result["verdict"] = "partial"
+        elif r > 0:
+            result["verdict"] = "tiny"
+        else:
+            result["verdict"] = "disjoint"
+    except Exception as exc:
+        result["error"] = repr(exc)[:200]
+    finally:
+        if own_client:
+            await client.aclose()
+    return result
+
+
 async def _fetch_rejected_endpoints(db: AsyncSession) -> set[str]:
     """One-shot fetch of all currently-rejected zoning_endpoints for the
     cross-jurisdiction deny-list (Component D). Returns a set[str] for
@@ -634,13 +750,112 @@ async def _fetch_rejected_endpoints(db: AsyncSession) -> set[str]:
 
 
 def _bboxes_overlap(a: list[float], b: list[float]) -> bool:
-    # a, b: [minx, miny, maxx, maxy]. Layer extent may be in a different CRS
-    # (often EPSG:3857 Web Mercator) — we only check if degenerate, not exact.
+    """Back-compat: returns True if both bboxes are well-formed. Kept for
+    callers that still want the bool; new code should use
+    `_bbox_overlap_ratio` for an actual geographic test."""
     if not a or not b or len(a) != 4 or len(b) != 4:
         return False
-    # Treat any non-zero extent as plausibly overlapping; precise CRS-aware
-    # overlap-checking is overkill at the candidate-ranking stage.
     return all(v is not None for v in a + b)
+
+
+# EPSG / Esri WKID codes that mean WGS84 lat/lng (EPSG:4326)
+_WGS84_CODES = {4326}
+# Codes that mean Web Mercator (EPSG:3857; Esri's code is 102100)
+_WEB_MERCATOR_CODES = {3857, 102100, 900913}
+
+
+def reproject_bbox_to_wgs84(
+    bbox: list[float] | None,
+    srid: int | None,
+) -> list[float] | None:
+    """Reproject [xmin, ymin, xmax, ymax] to WGS84 lat/lng (EPSG:4326).
+
+    Supports the two CRSes that cover ~95% of ArcGIS services:
+      - EPSG:4326 (WGS84)              → no-op
+      - EPSG:3857 / Esri:102100 (WebMercator) → closed-form formula
+
+    For other CRSes (state plane, etc.) returns None — Component F then
+    fails closed (no signal) rather than scoring on misaligned coords.
+
+    `bbox` may already be in WGS84 if `srid` is None (the common case where
+    the layer published an unmarked extent). We assume that's lat/lng if
+    the values fall in [-180, 180] x [-90, 90].
+    """
+    if not bbox or len(bbox) != 4:
+        return None
+    if any(v is None for v in bbox):
+        return None
+
+    if srid is None:
+        # Unmarked extent. If values look like lat/lng, treat as 4326;
+        # otherwise we can't reason about it.
+        if (-180.0 <= bbox[0] <= 180.0 and -180.0 <= bbox[2] <= 180.0
+                and -90.0 <= bbox[1] <= 90.0 and -90.0 <= bbox[3] <= 90.0):
+            return list(bbox)
+        return None
+
+    if srid in _WGS84_CODES:
+        return list(bbox)
+
+    if srid in _WEB_MERCATOR_CODES:
+        return [
+            _mercator_x_to_lng(bbox[0]),
+            _mercator_y_to_lat(bbox[1]),
+            _mercator_x_to_lng(bbox[2]),
+            _mercator_y_to_lat(bbox[3]),
+        ]
+
+    # Unsupported CRS — could plug pyproj here, but state plane is rare
+    # enough that "no signal" is acceptable.
+    return None
+
+
+def _mercator_x_to_lng(x: float) -> float:
+    import math
+    return (x / 6378137.0) * (180.0 / math.pi)
+
+
+def _mercator_y_to_lat(y: float) -> float:
+    import math
+    return (math.atan(math.exp(y / 6378137.0)) * 2.0 - math.pi / 2.0) * (180.0 / math.pi)
+
+
+def _bbox_overlap_ratio(
+    juris: list[float] | None,
+    layer: list[float] | None,
+) -> float | None:
+    """Return the ratio of (jurisdiction ∩ layer) area to (jurisdiction) area,
+    both in EPSG:4326. Both bboxes are [minx, miny, maxx, maxy].
+
+    Returns None if either side is missing — the caller treats None as "no
+    signal" (Component F doesn't fire).
+
+    Returns 0.0 for disjoint boxes (the strongest "wrong location" signal).
+    Returns up to 1.0 when the layer's bbox fully contains the
+    jurisdiction's. Can exceed 1.0 theoretically if the layer extent is
+    much larger than the jurisdiction (we clamp to 1.0).
+    """
+    if not juris or not layer or len(juris) != 4 or len(layer) != 4:
+        return None
+    j_xmin, j_ymin, j_xmax, j_ymax = juris
+    l_xmin, l_ymin, l_xmax, l_ymax = layer
+    if any(v is None for v in (*juris, *layer)):
+        return None
+
+    inter_xmin = max(j_xmin, l_xmin)
+    inter_ymin = max(j_ymin, l_ymin)
+    inter_xmax = min(j_xmax, l_xmax)
+    inter_ymax = min(j_ymax, l_ymax)
+
+    if inter_xmax <= inter_xmin or inter_ymax <= inter_ymin:
+        return 0.0  # disjoint
+
+    inter_area = (inter_xmax - inter_xmin) * (inter_ymax - inter_ymin)
+    juris_area = (j_xmax - j_xmin) * (j_ymax - j_ymin)
+    if juris_area <= 0:
+        return None
+
+    return min(1.0, inter_area / juris_area)
 
 
 def _url_has_layer_index(url: str) -> bool:

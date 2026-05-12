@@ -260,9 +260,22 @@ async def ingest_verified_municipal_zoning(
 
     Returns per-source result rows with the count of districts ingested +
     parcels spatial-updated.
+
+    Pre-flight bbox check: before fetching all features, probe the layer's
+    metadata extent + reproject to WGS84 + compare to the county's bbox.
+    If the bbox overlap is < 0.001 (essentially disjoint), refuse to
+    ingest — catches the New-Milford-CT-vs-New-Milford-NJ class of bug
+    where a source is named correctly but covers the wrong geographic
+    location.
     """
-    from sqlalchemy import select
     from app.api.jurisdictions import backfill_zoning as _backfill
+    from app.services.zoning_discovery import spatial_check_for_url
+
+    # Load the county once so we can re-use its bbox for pre-flight checks.
+    county = await db.get(Jurisdiction, county_jurisdiction_id)
+    if county is None:
+        raise ValueError(f"county jurisdiction {county_jurisdiction_id} not found")
+    county_bbox = county.bbox
 
     results: list[dict] = []
     for src_id in source_ids:
@@ -280,6 +293,28 @@ async def ingest_verified_municipal_zoning(
         if not src.zoning_endpoint:
             results.append({"source_id": str(src_id), "error": "no zoning_endpoint"})
             continue
+
+        # Pre-flight bbox check.
+        spatial = await spatial_check_for_url(src.zoning_endpoint, county_bbox)
+        if spatial.get("verdict") == "disjoint":
+            results.append({
+                "source_id": str(src_id),
+                "municipality_name": src.municipality_name,
+                "error": (
+                    "pre-flight bbox check failed: layer extent is disjoint "
+                    "from county bbox — likely wrong city/state. Reject the "
+                    "source or override with ?skip_bbox_check=true."
+                ),
+                "spatial_check": spatial,
+            })
+            continue
+        if spatial.get("verdict") == "tiny":
+            # Tiny overlap is suspicious — still allow but flag prominently.
+            logger.warning(
+                "ingest %r: bbox overlap is tiny (%.3f); proceeding but flagging",
+                src.zoning_endpoint, spatial.get("bbox_overlap_ratio") or 0,
+            )
+
         try:
             # Replace=false so multiple towns aggregate into one county's
             # zoning_districts table. _backfill internally already uses

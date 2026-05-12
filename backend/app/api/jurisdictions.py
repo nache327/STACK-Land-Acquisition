@@ -759,6 +759,43 @@ async def verify_zoning_source(
     )
 
 
+@router.get("/jurisdictions/{jurisdiction_id}/_sources/{source_id}/_spatial-check")
+async def spatial_check_source(
+    jurisdiction_id: uuid.UUID,
+    source_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Diagnose whether a candidate source's bbox overlaps the jurisdiction.
+
+    Operators use this to explain why a verified-and-ingested source
+    produced 0 spatial-join matches (e.g. New Milford CT layer was
+    ingested into Bergen NJ — geometries stored correctly in WGS84 but
+    100km north in the wrong state, so ST_Within returned 0 hits).
+
+    Returns the layer's raw extent, its SRID, the reprojected WGS84
+    extent, the jurisdiction bbox, and a verdict: good / partial / tiny
+    / disjoint / unknown. The verdict drives the pre-flight gate in
+    _ingest-municipal-zoning.
+    """
+    from app.models.zoning_source import ZoningSource
+    from app.services.zoning_discovery import spatial_check_for_url
+    src = await db.get(ZoningSource, source_id)
+    if src is None or src.jurisdiction_id != jurisdiction_id:
+        raise HTTPException(404, "zoning_source not found")
+    if not src.zoning_endpoint:
+        raise HTTPException(400, "source has no zoning_endpoint")
+    juris = await db.get(Jurisdiction, jurisdiction_id)
+    return {
+        "source_id": str(source_id),
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": juris.name if juris else None,
+        "zoning_endpoint": src.zoning_endpoint,
+        **(await spatial_check_for_url(
+            src.zoning_endpoint, juris.bbox if juris else None,
+        )),
+    }
+
+
 @router.post("/jurisdictions/{jurisdiction_id}/_sources/_bulk-review")
 async def bulk_review_zoning_sources(
     jurisdiction_id: uuid.UUID,
