@@ -113,15 +113,27 @@ def to_str(v: Any) -> str | None:
 def to_decimal(v: Any) -> Decimal | None:
     if v is None or v == "":
         return None
+    # pandas reads blank Excel cells as float('nan'); guard before Decimal()
+    # since Decimal("nan") succeeds and produces Decimal('NaN'), which
+    # breaks Postgres numeric inserts downstream.
+    try:
+        import math
+        if isinstance(v, float) and math.isnan(v):
+            return None
+    except Exception:
+        pass
     if isinstance(v, Decimal):
+        if v.is_nan():
+            return None
         return v
     try:
         s = str(v).strip()
-        if s in {"", "-", "N/A", "n/a", "NA", "--"}:
+        if s.lower() in {"", "-", "n/a", "na", "--", "nan", "none"}:
             return None
         # Strip $ , % for currency / rate columns
         s = s.replace("$", "").replace(",", "").replace("%", "").strip()
-        return Decimal(s)
+        d = Decimal(s)
+        return None if d.is_nan() else d
     except (InvalidOperation, ValueError):
         return None
 
