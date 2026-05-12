@@ -153,8 +153,15 @@ export function ParcelTable({
     }),
     columnHelper.accessor("address", {
       header: "Address",
-      cell: (info) =>
-        info.getValue() ?? <span className="text-slate-400">—</span>,
+      cell: (info) => {
+        const v = info.getValue();
+        if (!v) return <span className="text-slate-400">—</span>;
+        return (
+          <span className="block max-w-[200px] truncate" title={v}>
+            {v}
+          </span>
+        );
+      },
     }),
     columnHelper.accessor("zoning_code", {
       header: "Zone",

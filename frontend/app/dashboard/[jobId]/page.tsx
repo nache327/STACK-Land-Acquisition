@@ -894,7 +894,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           />
         </main>
 
-        <aside className="w-[640px] border-l bg-white">
+        <aside className="w-[720px] border-l bg-white">
           <ParcelTable
             parcels={parcels}
             onRowClick={handleParcelClick}
