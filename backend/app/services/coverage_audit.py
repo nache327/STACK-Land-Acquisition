@@ -187,6 +187,113 @@ def _parse_iso(value: Any) -> Any:
         return None
 
 
+async def source_distribution_for_all(
+    db: AsyncSession,
+) -> dict[str, dict]:
+    """Compute per-jurisdiction source-confidence distribution + counts.
+
+    Returns a dict keyed by jurisdiction_id (str), with each value:
+      {
+        "source_count_total": int,
+        "source_count_verified": int,
+        "source_count_rejected": int,
+        "source_count_pending": int,
+        "source_confidence_distribution": {
+          "0-30": int, "30-50": int, "50-70": int, "70-90": int, "90-100": int
+        }
+      }
+
+    Computed via a single SQL aggregate; safe to embed inline in the
+    /admin/coverage GET response.
+    """
+    from sqlalchemy import text as _text
+    try:
+        rows = (await db.execute(
+            _text(
+                """
+                SELECT
+                    jurisdiction_id::text AS jid,
+                    COUNT(*)::int AS total,
+                    COUNT(*) FILTER (WHERE validation_status = 'verified')::int AS verified,
+                    COUNT(*) FILTER (WHERE validation_status = 'rejected')::int AS rejected,
+                    COUNT(*) FILTER (WHERE validation_status = 'pending')::int AS pending,
+                    COUNT(*) FILTER (WHERE confidence_score >= 0  AND confidence_score < 30)::int AS b0_30,
+                    COUNT(*) FILTER (WHERE confidence_score >= 30 AND confidence_score < 50)::int AS b30_50,
+                    COUNT(*) FILTER (WHERE confidence_score >= 50 AND confidence_score < 70)::int AS b50_70,
+                    COUNT(*) FILTER (WHERE confidence_score >= 70 AND confidence_score < 90)::int AS b70_90,
+                    COUNT(*) FILTER (WHERE confidence_score >= 90)::int AS b90_100
+                FROM zoning_sources
+                WHERE jurisdiction_id IS NOT NULL
+                GROUP BY jurisdiction_id
+                """
+            )
+        )).mappings().all()
+        return {
+            r["jid"]: {
+                "source_count_total": r["total"],
+                "source_count_verified": r["verified"],
+                "source_count_rejected": r["rejected"],
+                "source_count_pending": r["pending"],
+                "source_confidence_distribution": {
+                    "0-30": r["b0_30"],
+                    "30-50": r["b30_50"],
+                    "50-70": r["b50_70"],
+                    "70-90": r["b70_90"],
+                    "90-100": r["b90_100"],
+                },
+            }
+            for r in rows
+        }
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "source_distribution_for_all failed: %r", exc,
+        )
+        return {}
+
+
+async def progression_for_jurisdiction(
+    db: AsyncSession,
+    jurisdiction_id: uuid.UUID,
+    days: int = 30,
+) -> list[dict]:
+    """Return a time-series of coverage_snapshots for one jurisdiction over
+    the last N days. Cheap query — single index scan on coverage_snapshots.
+
+    Each row: {captured_at, parcel_with_zoning_code_count, zoning_district_count,
+    operational_readiness}. Used by operators to see progression without
+    raw SQL.
+    """
+    from sqlalchemy import text as _text
+    rows = (await db.execute(
+        _text(
+            """
+            SELECT
+                captured_at,
+                parcel_count,
+                parcel_with_zoning_code_count,
+                zoning_district_count,
+                operational_readiness
+            FROM coverage_snapshots
+            WHERE jurisdiction_id = :jid
+              AND captured_at > NOW() - (:days || ' days')::interval
+            ORDER BY captured_at
+            """
+        ),
+        {"jid": jurisdiction_id, "days": str(days)},
+    )).mappings().all()
+    return [
+        {
+            "captured_at": r["captured_at"].isoformat() if r["captured_at"] else None,
+            "parcel_count": r["parcel_count"],
+            "parcel_with_zoning_code_count": r["parcel_with_zoning_code_count"],
+            "zoning_district_count": r["zoning_district_count"],
+            "operational_readiness": r["operational_readiness"],
+        }
+        for r in rows
+    ]
+
+
 async def _per_municipality_breakdown(
     conn, jurisdiction_id: uuid.UUID,
 ) -> dict | None:

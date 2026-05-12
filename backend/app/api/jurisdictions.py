@@ -344,12 +344,14 @@ async def admin_coverage_refresh(
 async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
     """Return the latest coverage snapshot per jurisdiction.
 
-    Reads only from `coverage_snapshots` — sub-second response regardless
-    of `parcels` / `zoning_overlays` table size. Run
-    `POST /api/admin/coverage/refresh` to update.
+    Reads only from `coverage_snapshots` + a single aggregate over
+    `zoning_sources` — sub-second response regardless of `parcels` /
+    `zoning_overlays` table size. Run `POST /api/admin/coverage/refresh`
+    to update snapshots.
     """
-    from app.services.coverage_audit import latest_snapshots
+    from app.services.coverage_audit import latest_snapshots, source_distribution_for_all
     snaps = await latest_snapshots(db)
+    source_dist = await source_distribution_for_all(db)
     return {
         "count": len(snaps),
         "jurisdictions": [
@@ -369,9 +371,40 @@ async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
                 "self_storage_classified_parcel_pct": s.self_storage_classified_parcel_pct,
                 "parcel_zoning_code_coverage_pct": s.parcel_zoning_code_coverage_pct,
                 "municipality_breakdown": s.municipality_breakdown,
+                **(source_dist.get(str(s.jurisdiction_id)) or {
+                    "source_count_total": 0,
+                    "source_count_verified": 0,
+                    "source_count_rejected": 0,
+                    "source_count_pending": 0,
+                    "source_confidence_distribution": {
+                        "0-30": 0, "30-50": 0, "50-70": 0,
+                        "70-90": 0, "90-100": 0,
+                    },
+                }),
             }
             for s in snaps
         ],
+    }
+
+
+@router.get("/admin/coverage/progression")
+async def admin_coverage_progression(
+    jurisdiction_id: uuid.UUID = Query(..., description="Jurisdiction to graph"),
+    days: int = Query(default=30, ge=1, le=365, description="Lookback window"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Coverage time-series for one jurisdiction over the last N days.
+
+    Returns each historical snapshot with parcel + district counts so
+    operators can see ingest progression at a glance. Single indexed
+    scan on coverage_snapshots — fast even at 30+ days × 75 jurisdictions.
+    """
+    from app.services.coverage_audit import progression_for_jurisdiction
+    series = await progression_for_jurisdiction(db, jurisdiction_id, days=days)
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "days": days,
+        "snapshots": series,
     }
 
 
