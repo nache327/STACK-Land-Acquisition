@@ -60,6 +60,31 @@ async def backfill_parcel_zoning_from_districts(
     SQLAlchemy's asyncpg dialect imposes a much shorter per-statement timeout
     that has killed this UPDATE on Philadelphia (547k parcels × 29k districts).
     """
+    # Skip the heavy UPDATE entirely when virtually every parcel already
+    # has zoning_code populated. NYC hit this: 13 unzoned parcels of 856,670
+    # caused a 49-min UPDATE that rewrote all 856k rows for ~0 useful work.
+    # The 1% threshold leaves plenty of headroom for jurisdictions that
+    # genuinely need a sweep (where 5-100% of parcels need zoning attached).
+    pre_counts = await db.execute(text(
+        "SELECT "
+        " (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid) AS total,"
+        " (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND (zoning_code IS NULL OR zoning_code = '')) AS unzoned"
+    ), {"jid": jurisdiction_id})
+    row = pre_counts.one()
+    total = int(row.total or 0)
+    unzoned = int(row.unzoned or 0)
+    if total > 0 and unzoned / total < 0.01:
+        # >99% already zoned — bail. Logged so the operator can tell the
+        # difference between "skipped because already done" and "failed".
+        import logging
+        logging.getLogger(__name__).info(
+            "backfill_parcel_zoning_from_districts skipping %s — "
+            "%d/%d parcels (%.2f%%) already have zoning_code",
+            jurisdiction_id, total - unzoned, total,
+            (total - unzoned) / total * 100,
+        )
+        return 0
+
     zone_code_set = (
         ", zoning_code = COALESCE(NULLIF(target.zoning_code, ''), sub.zone_code)"
         if fill_missing_zone_code
