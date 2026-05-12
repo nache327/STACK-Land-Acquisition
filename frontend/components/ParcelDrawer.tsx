@@ -84,7 +84,7 @@ export function ParcelDrawer({
   if (!parcel) return null;
 
   return (
-    <aside className="fixed inset-y-0 right-[500px] z-50 w-[440px] overflow-y-auto border-x border-slate-200 bg-white shadow-2xl">
+    <aside className="fixed inset-y-0 right-[640px] z-50 w-[440px] overflow-y-auto border-x border-slate-200 bg-white shadow-2xl">
       <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <h2 className="font-semibold text-slate-900">Parcel Detail</h2>
         <div className="flex items-center gap-2">

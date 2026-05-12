@@ -270,7 +270,7 @@ export function ParcelTable({
                 ].join(" ")}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-2 py-2">
+                  <td key={cell.id} className="px-2 py-2 whitespace-nowrap">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
