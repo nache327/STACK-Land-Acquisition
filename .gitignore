@@ -59,3 +59,6 @@ docker-compose.override.yml
 /tmp/
 .vercel
 .env*.local
+
+# Operator-uploaded listings exports (CoStar/LoopNet/Crexi) — never commit data
+backend/uploads/
