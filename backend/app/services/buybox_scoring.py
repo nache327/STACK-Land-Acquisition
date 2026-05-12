@@ -199,7 +199,7 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
     # listed AND meets the buy box can be under contract within days,
     # so it deserves to sort to the top of the digest.
     if filter_json:
-        boost = int(filter_json.get("listing_score_boost") or 0)
+        boost = int(filter_json.get("listingScoreBoost") or 0)
         if boost > 0 and p.listing_source:
             reason_parts = [f"Listed on {p.listing_source}"]
             if p.listing_dom is not None:

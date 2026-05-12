@@ -101,7 +101,7 @@ async def _top_parcels_for_filter(
     db: AsyncSession, f: BuyboxFilter
 ) -> list[DigestParcel]:
     filter_json = f.filter_json or {}
-    require_listed = bool(filter_json.get("require_listed"))
+    require_listed = bool(filter_json.get("requireListed"))
 
     # ``require_listed`` is a hard filter: drop parcels with no current
     # matched listing (confidence >= 0.85). The LATERAL join below
