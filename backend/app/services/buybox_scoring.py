@@ -67,6 +67,12 @@ class ParcelInputs:
     homes_over_1m: int | None = None
     homes_over_2m: int | None = None
     homes_over_5m: int | None = None
+    # Listing details — populated when the parcel has a current matched
+    # listing (from any source) with match_confidence >= 0.85. Source-
+    # agnostic by design: LoopNet vs CoStar doesn't change the boost.
+    listing_source: str | None = None
+    listing_sale_price: float | None = None
+    listing_dom: int | None = None
 
 
 @dataclass
@@ -186,6 +192,26 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
                     "reason": f"Only {actual:,} in ring (min {min_v:,})",
                 })
 
+    # Listing boost — fires when this parcel has any current matched
+    # listing (source-agnostic). Filter knob `listing_score_boost`
+    # (default 0; the digest worker / admin UI sets it to ~15 once the
+    # listings pipeline is producing matches). A parcel that's actively
+    # listed AND meets the buy box can be under contract within days,
+    # so it deserves to sort to the top of the digest.
+    if filter_json:
+        boost = int(filter_json.get("listing_score_boost") or 0)
+        if boost > 0 and p.listing_source:
+            reason_parts = [f"Listed on {p.listing_source}"]
+            if p.listing_dom is not None:
+                reason_parts.append(f"DOM {p.listing_dom}")
+            if p.listing_sale_price is not None:
+                reason_parts.append(f"${int(p.listing_sale_price):,}")
+            factors.append({
+                "label": "Listed",
+                "delta": boost,
+                "reason": " · ".join(reason_parts),
+            })
+
     raw = sum(f["delta"] for f in factors)
     score = max(0, min(100, round(raw)))
     return ScoredParcel(p.parcel_id, score, tier_for(score), factors)
@@ -208,7 +234,10 @@ SELECT
     p.has_structure,
     prm.homes_over_1m,
     prm.homes_over_2m,
-    prm.homes_over_5m
+    prm.homes_over_5m,
+    lst.source         AS listing_source,
+    lst.sale_price     AS listing_sale_price,
+    lst.days_on_market AS listing_dom
 FROM parcels p
 LEFT JOIN zone_use_matrix zum
     ON zum.jurisdiction_id = p.jurisdiction_id
@@ -216,6 +245,15 @@ LEFT JOIN zone_use_matrix zum
 LEFT JOIN parcel_ring_metrics prm
     ON prm.parcel_id = p.id
    AND prm.drive_time_minutes = $2::int
+LEFT JOIN LATERAL (
+    SELECT source, sale_price, days_on_market
+      FROM forsale_listings
+     WHERE matched_parcel_id = p.id
+       AND is_current = true
+       AND match_confidence >= 0.85
+     ORDER BY last_seen_at DESC
+     LIMIT 1
+) lst ON true
 WHERE p.jurisdiction_id = $1::uuid
 """
 
@@ -333,6 +371,12 @@ async def score_jurisdiction(
                 homes_over_1m=r["homes_over_1m"],
                 homes_over_2m=r["homes_over_2m"],
                 homes_over_5m=r["homes_over_5m"],
+                listing_source=r["listing_source"],
+                listing_sale_price=(
+                    float(r["listing_sale_price"])
+                    if r["listing_sale_price"] is not None else None
+                ),
+                listing_dom=r["listing_dom"],
             )
             s = score_for_parcel(inputs, filter_json)
             scored.append((
