@@ -112,6 +112,60 @@ async def query_feature_layer(
     return resp.json()
 
 
+async def _ensure_layer_index(
+    endpoint_url: str,
+    client: httpx.AsyncClient | None = None,
+) -> str:
+    """If `endpoint_url` already includes a numeric layer index (.../FeatureServer/0),
+    return it unchanged. If it's a service-root URL (.../FeatureServer), probe
+    the service metadata and pick the most parcel/zoning-shaped polygon layer.
+
+    Defensive helper used by `download_all_features` — live-discovered URLs
+    sometimes lack the layer index and would otherwise silently ingest zero
+    features (every Phase 5 jurisdiction onboarding ran into this).
+    """
+    url = endpoint_url.rstrip("/")
+    tail = url.rsplit("/", 1)[-1]
+    if tail.isdigit():
+        return url  # already has /N
+    if "FeatureServer" not in url and "MapServer" not in url:
+        return url  # not an ArcGIS service URL
+
+    close_client = False
+    if client is None:
+        client = httpx.AsyncClient(timeout=20.0, follow_redirects=True)
+        close_client = True
+    try:
+        resp = await _send_with_retry(client, "GET", url, params={"f": "json"}, timeout=15.0)
+        data = resp.json() or {}
+    except Exception as exc:
+        logger.warning("_ensure_layer_index: failed to probe %s: %s", url, exc)
+        if close_client:
+            await client.aclose()
+        return url
+    layers = data.get("layers") or []
+    if close_client:
+        await client.aclose()
+    if not layers:
+        return url
+    polygon_layers = [l for l in layers if l.get("geometryType") == "esriGeometryPolygon"]
+    pool = polygon_layers or layers
+    # Prefer a layer whose name looks parcel/zoning-ish.
+    parcel_keywords = ("parcel", "tax", "lot", "ownership", "property")
+    zoning_keywords = ("zoning", "zone", "land use", "landuse", "district")
+    for kws in (parcel_keywords, zoning_keywords):
+        for lyr in pool:
+            name_lc = (lyr.get("name") or "").lower()
+            if any(k in name_lc for k in kws):
+                resolved = f"{url}/{lyr.get('id')}"
+                logger.info("_ensure_layer_index: %s → %s (name=%r)", url, resolved, lyr.get("name"))
+                return resolved
+    # Fallback — first layer in pool.
+    resolved = f"{url}/{pool[0].get('id')}"
+    logger.info("_ensure_layer_index: %s → %s (fallback first layer)", url, resolved)
+    return resolved
+
+
 async def get_layer_count(
     endpoint_url: str,
     where: str = "1=1",
@@ -205,6 +259,11 @@ async def download_all_features(
     Returns a GeoDataFrame in EPSG:4326.
     """
     async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+        # Defensive: live-discovered URLs sometimes come in at the service
+        # root (.../FeatureServer or .../MapServer) without a layer index.
+        # `<service>/query` returns 0 features, so we'd silently ingest
+        # nothing. Walk the service's layers and pick a polygon layer.
+        endpoint_url = await _ensure_layer_index(endpoint_url, client=client)
         logger.info("Getting feature count from %s", endpoint_url)
         total = await get_layer_count(endpoint_url, where, client=client)
         logger.info("Total features to download: %d", total)
