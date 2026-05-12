@@ -193,15 +193,6 @@ export function ParcelTable({
       cell: (info) =>
         info.getValue() != null ? info.getValue()!.toFixed(2) : "—",
     }),
-    columnHelper.accessor("is_viable", {
-      header: "Viable",
-      cell: (info) =>
-        info.getValue() ? (
-          <span className="text-xs font-medium text-emerald-700">Yes</span>
-        ) : (
-          <span className="text-xs font-medium text-amber-700">Review</span>
-        ),
-    }),
   ];
 
   const table = useReactTable({
