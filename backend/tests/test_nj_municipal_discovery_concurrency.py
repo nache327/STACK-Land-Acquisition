@@ -64,7 +64,7 @@ async def test_concurrent_town_persist_is_serialized(monkeypatch):
     fake_candidate.field_matches = []
     fake_candidate.reasons = []
 
-    async def fake_probe_layer(client, item, bbox, name_tokens):
+    async def fake_probe_layer(client, item, bbox, name_tokens, **kwargs):
         return fake_candidate
 
     fake_jurisdiction = _FakeJurisdiction()

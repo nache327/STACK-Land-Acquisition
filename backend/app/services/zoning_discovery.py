@@ -28,11 +28,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.jurisdiction import Jurisdiction
@@ -72,6 +75,40 @@ _MAX_FEATURE_COUNT = 250_000
 _TOP_N = 5
 
 
+# US state names + abbreviations for Component B (wrong-state penalty).
+# Lowercased name → 2-letter abbrev.
+_US_STATES = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
+    "california": "CA", "colorado": "CO", "connecticut": "CT", "delaware": "DE",
+    "florida": "FL", "georgia": "GA", "hawaii": "HI", "idaho": "ID",
+    "illinois": "IL", "indiana": "IN", "iowa": "IA", "kansas": "KS",
+    "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV",
+    "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+    "north carolina": "NC", "north dakota": "ND", "ohio": "OH", "oklahoma": "OK",
+    "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI",
+    "south carolina": "SC", "south dakota": "SD", "tennessee": "TN", "texas": "TX",
+    "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY",
+}
+_US_STATE_ABBREVS = set(_US_STATES.values())
+
+# Generic-layer titles for Component C (penalty when no jurisdiction-name match).
+_GENERIC_TITLES = {
+    "zoning", "zoning districts", "zoning district", "zoning map",
+    "zoning layer", "land use", "landuse", "planning", "zone districts",
+}
+
+
+@dataclass
+class ScoreComponent:
+    """One signal contributing to a candidate's confidence score."""
+    name: str
+    delta: int
+    reason: str | None = None
+
+
 @dataclass
 class ZoningCandidate:
     url: str                            # full FeatureServer/Layer URL (.../FeatureServer/0)
@@ -84,6 +121,9 @@ class ZoningCandidate:
     title_score: int                    # +1 per positive keyword, -2 per negative
     confidence: int                     # 0..100 derived from the above
     reasons: list[str]                  # human-readable signals contributing to confidence
+    # Structured per-component score deltas, e.g. {"name_match": 25, ...}.
+    # Populated by scoring v2; kept None if scoring v1 was used.
+    confidence_breakdown: dict[str, int] | None = None
 
 
 @dataclass
@@ -117,6 +157,7 @@ async def discover_zoning_for_jurisdiction(
     # neighbouring county, e.g. Hunterdon NJ's bbox overlaps Warren NJ and the
     # Warren County Zoning Map was outranking real Hunterdon sources).
     name_tokens = _name_tokens(j.name, j.county)
+    denylist = await _fetch_rejected_endpoints(db)
 
     candidates: list[ZoningCandidate] = []
     candidates_total = 0
@@ -124,7 +165,10 @@ async def discover_zoning_for_jurisdiction(
         raw = await _hub_search(client, query, bbox_str)
         candidates_total = len(raw)
         # Probe each candidate's feature_count, geometry, fields (concurrent).
-        probes = [_probe_layer(client, item, bbox, name_tokens) for item in raw]
+        probes = [
+            _probe_layer(client, item, bbox, name_tokens, jurisdiction=j, denylist=denylist)
+            for item in raw
+        ]
         probed = await asyncio.gather(*probes, return_exceptions=True)
         for entry in probed:
             if isinstance(entry, Exception) or entry is None:
@@ -186,6 +230,9 @@ async def _probe_layer(
     hub_item: dict,
     jurisdiction_bbox: list[float] | None,
     name_tokens: dict | None = None,
+    *,
+    jurisdiction: Jurisdiction | None = None,
+    denylist: set[str] | None = None,
 ) -> ZoningCandidate | None:
     attrs = hub_item.get("attributes", {}) or {}
     title = (attrs.get("name") or attrs.get("title") or "").strip()
@@ -251,19 +298,23 @@ async def _probe_layer(
         and _bboxes_overlap(jurisdiction_bbox, layer_bbox)
     )
 
-    name_match, wrong_county = _name_match_signals(title_lc, name_tokens or {})
+    name_signals = _name_match_signals(title, name_tokens or {})
 
-    confidence, reasons = _score_candidate(
-        title_score=title_score,
+    confidence, components = _score_candidate(
+        title=title,
+        url=full_url,
         pos_hits=pos_hits,
         neg_hits=neg_hits,
         geometry_type=geometry_type,
         feature_count=feature_count,
         field_matches=field_matches,
         bbox_overlaps=bbox_overlaps,
-        name_match=name_match,
-        wrong_county=wrong_county,
+        name_signals=name_signals,
+        jurisdiction=jurisdiction,
+        denylist=denylist,
     )
+    reasons = [c.reason for c in components if c.reason]
+    confidence_breakdown = {c.name: c.delta for c in components}
 
     return ZoningCandidate(
         url=full_url,
@@ -276,58 +327,124 @@ async def _probe_layer(
         title_score=title_score,
         confidence=confidence,
         reasons=reasons,
+        confidence_breakdown=confidence_breakdown,
     )
 
 
 def _score_candidate(
     *,
-    title_score: int,
+    title: str,
+    url: str,
     pos_hits: list[str],
     neg_hits: list[str],
     geometry_type: str | None,
     feature_count: int | None,
     field_matches: list[str],
     bbox_overlaps: bool,
-    name_match: bool = False,
-    wrong_county: str | None = None,
-) -> tuple[int, list[str]]:
-    score = 0
-    reasons: list[str] = []
-    score += 15 * len(pos_hits)
+    name_signals: dict,
+    jurisdiction: Jurisdiction | None = None,
+    denylist: set[str] | None = None,
+) -> tuple[int, list[ScoreComponent]]:
+    """Scoring v2 — weighted components with explainable breakdown.
+
+    Returns (clamped int 0-100, list of every component that contributed).
+    """
+    components: list[ScoreComponent] = []
+
+    # Title positive keywords
     if pos_hits:
-        reasons.append(f"title matches zoning keywords: {pos_hits}")
-    score -= 20 * len(neg_hits)
+        components.append(ScoreComponent(
+            "title_positive", 15 * len(pos_hits),
+            f"title matches zoning keywords: {pos_hits}"))
+    # Title negative keywords
     if neg_hits:
-        reasons.append(f"title penalised by non-zoning keywords: {neg_hits}")
+        components.append(ScoreComponent(
+            "title_negative", -20 * len(neg_hits),
+            f"title penalised by non-zoning keywords: {neg_hits}"))
+    # Geometry
     if geometry_type == "esriGeometryPolygon":
-        score += 20
-        reasons.append("geometry is polygon")
+        components.append(ScoreComponent(
+            "geometry_polygon", 20, "geometry is polygon"))
     elif geometry_type:
-        score -= 30
-        reasons.append(f"geometry is {geometry_type!r}, not polygon")
+        components.append(ScoreComponent(
+            "geometry_not_polygon", -30,
+            f"geometry is {geometry_type!r}, not polygon"))
+    # Feature count
     if feature_count is not None:
         if _MIN_FEATURE_COUNT <= feature_count <= _MAX_FEATURE_COUNT:
-            score += 15
-            reasons.append(f"feature_count={feature_count} is in plausible range")
+            components.append(ScoreComponent(
+                "feature_count_ok", 15,
+                f"feature_count={feature_count} is in plausible range"))
         else:
-            score -= 10
-            reasons.append(f"feature_count={feature_count} is outside [30, 250k]")
+            components.append(ScoreComponent(
+                "feature_count_outlier", -10,
+                f"feature_count={feature_count} is outside [30, 250k]"))
+    # Field matches
     if field_matches:
-        score += min(20, 5 * len(field_matches))
-        reasons.append(f"fields look zoning-shaped: {field_matches[:5]}")
+        components.append(ScoreComponent(
+            "field_matches", min(20, 5 * len(field_matches)),
+            f"fields look zoning-shaped: {field_matches[:5]}"))
+    # Bbox overlap
     if bbox_overlaps:
-        score += 10
-        reasons.append("layer bbox overlaps jurisdiction bbox")
-    if name_match:
-        score += 25
-        reasons.append("title names this jurisdiction")
+        components.append(ScoreComponent(
+            "bbox_overlap", 10,
+            "layer bbox overlaps jurisdiction bbox"))
+
+    # Component A — name match (word-boundary, tiered)
+    multi = name_signals.get("multi_word_match", False)
+    rare = name_signals.get("rare_match", False)
+    common = name_signals.get("common_match", False)
+    if multi:
+        components.append(ScoreComponent(
+            "name_match_multi_word", 30,
+            "title contains all jurisdiction-name tokens (word-boundary)"))
+    elif rare:
+        components.append(ScoreComponent(
+            "name_match_rare_token", 25,
+            "title contains a rare (>=6 char) jurisdiction token (word-boundary)"))
+    elif common:
+        components.append(ScoreComponent(
+            "name_match_common_token", 8,
+            "title contains a common (3-5 char) jurisdiction token (word-boundary)"))
+
+    # Wrong-county penalty
+    wrong_county = name_signals.get("wrong_county")
     if wrong_county:
-        # Heavy penalty — Hub bbox-search often surfaces neighbouring counties
-        # whose layers happen to overlap. A title that says "Warren County"
-        # when we're looking for Hunterdon is almost certainly wrong.
-        score -= 50
-        reasons.append(f"title names a different county ({wrong_county!r})")
-    return max(0, min(100, score)), reasons
+        components.append(ScoreComponent(
+            "wrong_county", -50,
+            f"title names a different county ({wrong_county!r})"))
+
+    # Component B — wrong-state penalty
+    if jurisdiction is not None and jurisdiction.state:
+        wrong_state = _detect_wrong_state(title, jurisdiction.state)
+        if wrong_state:
+            components.append(ScoreComponent(
+                "wrong_state", -40,
+                f"title names a different state ({wrong_state!r})"))
+
+    # Component C — generic-layer penalty (no jurisdiction name in title)
+    normalized = _normalize_title(title)
+    if normalized in _GENERIC_TITLES and not (multi or rare or common):
+        components.append(ScoreComponent(
+            "generic_layer", -30,
+            f"title is generic ({normalized!r}) with no jurisdiction-name match"))
+
+    # Component D — cross-jurisdiction deny-list
+    if denylist and url in denylist:
+        components.append(ScoreComponent(
+            "denylist_rejected", -80,
+            "url previously rejected by operator (cross-jurisdiction)"))
+
+    # Component E — service-host bonus
+    if jurisdiction is not None:
+        bonus, reason = _service_host_bonus(
+            url, jurisdiction.state, jurisdiction.county, jurisdiction.name,
+        )
+        if bonus:
+            components.append(ScoreComponent("service_host", bonus, reason))
+
+    total = max(0, min(100, sum(c.delta for c in components)))
+    return total, components
 
 
 # Common US county names that appear in ArcGIS layer titles. Used only for the
@@ -340,34 +457,180 @@ _COMMON_COUNTY_WORDS = {
 
 
 def _name_tokens(name: str | None, county: str | None) -> dict:
-    """Build a token bag for name matching. Returns a dict with `expect`
-    (tokens we want to see in the title) and `bag` (lowercased words from
-    the jurisdiction's name + county)."""
-    raw = " ".join(filter(None, [name or "", county or ""])).lower()
-    raw = raw.replace(",", " ").replace(".", " ")
-    words = [w for w in raw.split() if len(w) >= 3 and w not in _COMMON_COUNTY_WORDS]
-    return {"expect": set(words)}
+    """Build a token bag for v2 name matching.
+
+    Returns:
+      expect: set[str] — all 3+ char tokens from name + county
+              (used for single-token bonuses + wrong-county detection)
+      multi_word: list[str] — ordered 3+ char tokens of the *name* only
+              (used for "all tokens present, in any order, word-boundary"
+              multi-word bonus — strongest name-match signal)
+    """
+    raw_all = " ".join(filter(None, [name or "", county or ""])).lower()
+    raw_all = raw_all.replace(",", " ").replace(".", " ")
+    expect = {w for w in raw_all.split() if len(w) >= 3 and w not in _COMMON_COUNTY_WORDS}
+
+    name_only = (name or "").lower().replace(",", " ").replace(".", " ")
+    multi_word = [
+        w for w in name_only.split()
+        if len(w) >= 3 and w not in _COMMON_COUNTY_WORDS
+    ]
+
+    return {"expect": expect, "multi_word": multi_word}
 
 
-def _name_match_signals(title_lc: str, name_tokens: dict) -> tuple[bool, str | None]:
-    """Return (own-name appears in title?, wrong-county word if any)."""
-    expect = name_tokens.get("expect") or set()
-    if not expect:
-        return False, None
-    own = any(w in title_lc for w in expect)
-    # Detect a *different* county-style name in the title: a word followed by
-    # "county" that's NOT one of our own tokens.
-    wrong = None
-    for chunk in title_lc.split():
-        # Look for "<word> county" sequences.
-        pass
-    # Simpler scan: pull all "<X> county" pairs from the title.
+def _name_match_signals(title: str, name_tokens: dict) -> dict:
+    """Whole-word name-match signals for scoring components A + wrong-county.
+
+    Returns dict with:
+      multi_word_match: bool   — every token in `multi_word` appears in title (word-bound)
+      rare_match: bool         — at least one >=6-char token matched (word-bound)
+      common_match: bool       — at least one 3-5 char token matched (word-bound)
+      wrong_county: str | None — "<X> county" in title where X ∉ expect
+    """
+    title_lc = title.lower()
+    expect: set[str] = name_tokens.get("expect") or set()
+    multi_word: list[str] = name_tokens.get("multi_word") or []
+
+    if not expect and not multi_word:
+        return {
+            "multi_word_match": False,
+            "rare_match": False,
+            "common_match": False,
+            "wrong_county": None,
+        }
+
+    # Multi-word match: every token of the jurisdiction's NAME must appear
+    # in the title as a whole word. Only meaningful if name has 2+ tokens.
+    multi_word_match = False
+    if len(multi_word) >= 2:
+        multi_word_match = all(
+            re.search(rf"\b{re.escape(t)}\b", title_lc) for t in multi_word
+        )
+
+    # Single-token matches: bucket by length. Rare tokens (paramus, edgewater,
+    # hackensack) are strong signal; common tokens (park, fort, lake) are weak.
+    rare_tokens = {t for t in expect if len(t) >= 6}
+    common_tokens = {t for t in expect if 3 <= len(t) <= 5}
+
+    rare_match = any(
+        re.search(rf"\b{re.escape(t)}\b", title_lc) for t in rare_tokens
+    )
+    common_match = any(
+        re.search(rf"\b{re.escape(t)}\b", title_lc) for t in common_tokens
+    )
+
+    # Wrong-county: "<X> county" in title where X is NOT one of our tokens.
     parts = title_lc.split()
+    wrong = None
     for i, w in enumerate(parts[:-1]):
-        if parts[i + 1].startswith("county") and w not in expect and len(w) >= 3:
+        # Strip trailing punctuation from county-word too (e.g. "county,")
+        next_w = parts[i + 1].strip(",.;:")
+        if next_w.startswith("county") and w not in expect and len(w) >= 3:
             wrong = w
             break
-    return own, wrong
+
+    return {
+        "multi_word_match": multi_word_match,
+        "rare_match": rare_match,
+        "common_match": common_match,
+        "wrong_county": wrong,
+    }
+
+
+def _detect_wrong_state(title: str, jurisdiction_state: str | None) -> str | None:
+    """Return the detected state name/abbrev if the title names a state that
+    isn't the jurisdiction's state. None otherwise.
+
+    Catches "Garfield County Utah" vs NJ, "North Charleston SC" vs NJ,
+    "Franklin County Iowa" vs NJ.
+    """
+    if not jurisdiction_state:
+        return None
+    target_abbrev = jurisdiction_state.strip().upper()
+    target_name = next(
+        (n for n, ab in _US_STATES.items() if ab == target_abbrev), None,
+    )
+    title_lc = title.lower()
+
+    # Full state name (word boundary): "garfield county utah"
+    for name, abbrev in _US_STATES.items():
+        if abbrev == target_abbrev:
+            continue
+        if name == target_name:
+            continue
+        if re.search(rf"\b{re.escape(name)}\b", title_lc):
+            return name
+
+    # State abbreviation as a delimited token: " SC", ", SC", "SC ", "(SC)"
+    # Case-sensitive on the abbrev to avoid matching every "co" / "or" / "in".
+    for abbrev in _US_STATE_ABBREVS:
+        if abbrev == target_abbrev:
+            continue
+        if re.search(rf"(?:^|[\s,(\[])({abbrev})(?:$|[\s,.;:)\]])", title):
+            return abbrev
+
+    return None
+
+
+def _normalize_title(title: str) -> str:
+    """Lowercase + strip non-word characters; collapse whitespace."""
+    cleaned = re.sub(r"[^\w\s]", " ", title.lower())
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def _service_host_bonus(
+    url: str,
+    state: str | None,
+    county: str | None,
+    name: str | None,
+) -> tuple[int, str | None]:
+    """If URL host contains jurisdiction state/county/name as a substring,
+    return (+15, reason). Otherwise (0, None).
+
+    Catches county portal services (e.g. gis.alleghenycounty.us) that don't
+    surface well via Hub keywords but are higher-trust than community-shared
+    services.arcgis.com tenants.
+    """
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except Exception:
+        return 0, None
+    if not host:
+        return 0, None
+
+    # State token in host (e.g. "arcgis.nj.gov") — short tokens need a delim
+    # to avoid matching "njhospital" for NJ.
+    state_lc = (state or "").lower()
+    if state_lc and len(state_lc) == 2:
+        if re.search(rf"(?:^|[.\-]){state_lc}(?:$|[.\-])", host):
+            return 15, f"service host {host!r} contains state token {state_lc!r}"
+
+    # County or name in host (>=4 chars to avoid noise)
+    for token in (county or "").lower(), (name or "").lower():
+        token = token.split(" ")[0]  # take first word of a multi-word name
+        if token and len(token) >= 4 and token in host:
+            return 15, f"service host {host!r} contains jurisdiction token {token!r}"
+
+    return 0, None
+
+
+async def _fetch_rejected_endpoints(db: AsyncSession) -> set[str]:
+    """One-shot fetch of all currently-rejected zoning_endpoints for the
+    cross-jurisdiction deny-list (Component D). Returns a set[str] for
+    O(1) per-candidate lookup; one DB hop per discovery run.
+    """
+    from app.models.zoning_source import ZoningSource
+    try:
+        rows = await db.execute(
+            select(ZoningSource.zoning_endpoint)
+            .where(ZoningSource.validation_status == "rejected")
+            .where(ZoningSource.zoning_endpoint.is_not(None))
+        )
+        return {r[0] for r in rows.all() if r[0]}
+    except Exception as exc:
+        logger.warning("denylist fetch failed (non-fatal): %r", exc)
+        return set()
 
 
 def _bboxes_overlap(a: list[float], b: list[float]) -> bool:
@@ -463,6 +726,7 @@ async def _persist_candidates(
             field_matches=c.field_matches,
             confidence_score=c.confidence,
             confidence_label="discovered",
+            confidence_breakdown=c.confidence_breakdown,
             discovered_by="arcgis_hub",
             reasons=c.reasons,
         )

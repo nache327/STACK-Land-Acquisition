@@ -48,11 +48,16 @@ class ZoningSource(Base):
 
     confidence_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     confidence_label: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Structured per-component score deltas, e.g.
+    # {"name_match": 25, "geometry_polygon": 20, "wrong_state": -40}.
+    # Complements `reasons` (human-readable text).
+    confidence_breakdown: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     validation_status: Mapped[str] = mapped_column(Text, nullable=False, server_default="pending")
     discovered_by: Mapped[str | None] = mapped_column(Text, nullable=True)
     reasons: Mapped[list | dict | None] = mapped_column(JSONB, nullable=True)
 
     last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rejected_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(

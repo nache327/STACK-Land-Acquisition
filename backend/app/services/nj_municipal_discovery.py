@@ -42,6 +42,7 @@ from app.models.jurisdiction import Jurisdiction
 from app.models.zoning_source import ZoningSource
 from app.services.zoning_discovery import (
     ZoningCandidate,
+    _fetch_rejected_endpoints,
     _hub_search,
     _name_tokens,
     _persist_candidates,
@@ -128,12 +129,16 @@ async def discover_municipal_zoning_for_county(
     # must serialize — otherwise commits race and persisted_count returns
     # 0 even when rows landed in the DB.
     db_lock = asyncio.Lock()
+    # Pre-fetch the cross-jurisdiction rejected-endpoint set once per sweep
+    # so Component D in zoning_discovery._score_candidate has O(1) lookup
+    # per candidate (avoids 2,100 DB hops on a 70-town × 30-candidate sweep).
+    denylist = await _fetch_rejected_endpoints(db)
     results: list[TownDiscoveryResult] = []
 
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
         async def _one(town: str) -> TownDiscoveryResult:
             async with sem:
-                return await _discover_one_town(client, db, j, town, db_lock)
+                return await _discover_one_town(client, db, j, town, db_lock, denylist)
         results = await asyncio.gather(*[_one(t) for t in towns])
 
     return {
@@ -159,6 +164,7 @@ async def _discover_one_town(
     county: Jurisdiction,
     town: str,
     db_lock: asyncio.Lock | None = None,
+    denylist: set[str] | None = None,
 ) -> TownDiscoveryResult:
     """Discover candidates for one town and persist them into zoning_sources."""
     # Query string scopes the Hub search to this specific town.
@@ -182,7 +188,13 @@ async def _discover_one_town(
         )
 
     candidates: list[ZoningCandidate] = []
-    probes = [_probe_layer(client, item, None, name_tokens) for item in raw]
+    probes = [
+        _probe_layer(
+            client, item, None, name_tokens,
+            jurisdiction=county, denylist=denylist,
+        )
+        for item in raw
+    ]
     probed = await asyncio.gather(*probes, return_exceptions=True)
     for entry in probed:
         if isinstance(entry, Exception) or entry is None:
