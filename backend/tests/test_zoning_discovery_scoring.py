@@ -343,10 +343,52 @@ def test_reproject_esri_102100_alias_same_as_3857():
 
 
 def test_reproject_unsupported_crs_returns_none():
-    """Unsupported CRS (e.g. state plane 2828) returns None — caller treats
-    as 'no signal' and Component F doesn't fire."""
-    out = reproject_bbox_to_wgs84([500000, 500000, 600000, 600000], 2828)
+    """Unknown EPSG code (9999 doesn't exist) returns None — caller
+    treats as 'no signal' and Component F doesn't fire."""
+    out = reproject_bbox_to_wgs84([500000, 500000, 600000, 600000], 9999)
     assert out is None
+
+
+def test_reproject_nj_state_plane_3424_via_pyproj():
+    """EPSG:3424 = NJ State Plane (feet). pyproj should reproject it to
+    WGS84 around NJ longitudes. This is the Paramus case — last session
+    the layer extent stayed 'unknown' because the closed-form helper
+    only knew WebMercator."""
+    # Paramus Zoning extent in EPSG:3424 from the prod spatial-check probe
+    bbox = [602253.34, 756172.03, 619511.88, 782410.35]
+    out = reproject_bbox_to_wgs84(bbox, 3424)
+    # pyproj is an optional dependency in test envs; skip the assertion
+    # if it isn't installed (closed-form fallback returns None for 3424).
+    try:
+        import pyproj  # noqa: F401
+    except ImportError:
+        assert out is None
+        return
+    assert out is not None
+    # Paramus is at lng ~-74.07°, lat ~40.95° — bbox should bracket those.
+    assert -74.2 < out[0] < -74.0, f"xmin {out[0]} not near Paramus longitude"
+    assert 40.9 < out[1] < 41.05, f"ymin {out[1]} not near Paramus latitude"
+
+
+def test_reproject_illinois_state_plane_3435_via_pyproj():
+    """EPSG:3435 = Illinois State Plane (East). The SSMMA Chicago Heights
+    layer used this; pyproj should reproject + Component F should then
+    correctly flag it as disjoint from Bergen NJ."""
+    bbox = [1095185.46, 1692781.86, 1205538.54, 1834829.62]
+    out = reproject_bbox_to_wgs84(bbox, 3435)
+    try:
+        import pyproj  # noqa: F401
+    except ImportError:
+        assert out is None
+        return
+    assert out is not None
+    # Chicago is at lng ~-87.6°. Should land in Illinois.
+    assert -88 < out[0] < -87, f"xmin {out[0]} not near Chicago longitude"
+    assert 41 < out[1] < 42, f"ymin {out[1]} not near Chicago latitude"
+    # And it should be disjoint from Bergen NJ (~-74, 40.9).
+    bergen = [-74.27, 40.76, -73.90, 41.13]
+    from app.services.zoning_discovery import _bbox_overlap_ratio
+    assert _bbox_overlap_ratio(bergen, out) == 0.0
 
 
 def test_reproject_unmarked_extent_treats_latlng_as_4326():

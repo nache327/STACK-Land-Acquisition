@@ -764,22 +764,36 @@ _WGS84_CODES = {4326}
 _WEB_MERCATOR_CODES = {3857, 102100, 900913}
 
 
+try:
+    from pyproj import Transformer as _PyprojTransformer  # type: ignore
+    _PYPROJ_AVAILABLE = True
+except ImportError:
+    _PYPROJ_AVAILABLE = False
+    _PyprojTransformer = None  # type: ignore
+
+# Cache transformers by source SRID — creating a Transformer is expensive
+# (~100ms first time per CRS as PROJ loads grid files) but the per-bbox
+# transform is fast. Keyed by integer SRID; None means we tried + failed.
+_TRANSFORMER_CACHE: dict[int, Any] = {}
+
+
 def reproject_bbox_to_wgs84(
     bbox: list[float] | None,
     srid: int | None,
 ) -> list[float] | None:
     """Reproject [xmin, ymin, xmax, ymax] to WGS84 lat/lng (EPSG:4326).
 
-    Supports the two CRSes that cover ~95% of ArcGIS services:
-      - EPSG:4326 (WGS84)              → no-op
-      - EPSG:3857 / Esri:102100 (WebMercator) → closed-form formula
+    Uses pyproj for general CRS support when available (covers all state-
+    plane SRIDs + national grids + everything in PROJ's EPSG database).
+    Falls back to a hand-rolled WebMercator formula for environments
+    without pyproj (closed-form for EPSG:3857 / Esri:102100 only).
 
-    For other CRSes (state plane, etc.) returns None — Component F then
-    fails closed (no signal) rather than scoring on misaligned coords.
+    `bbox` may already be in WGS84 if `srid` is None (the common case
+    where the layer published an unmarked extent). We assume that's
+    lat/lng if the values fall in [-180, 180] × [-90, 90].
 
-    `bbox` may already be in WGS84 if `srid` is None (the common case where
-    the layer published an unmarked extent). We assume that's lat/lng if
-    the values fall in [-180, 180] x [-90, 90].
+    Returns None for unsupported CRSes — Component F then fails closed
+    (no signal) rather than scoring on misaligned coords.
     """
     if not bbox or len(bbox) != 4:
         return None
@@ -787,8 +801,6 @@ def reproject_bbox_to_wgs84(
         return None
 
     if srid is None:
-        # Unmarked extent. If values look like lat/lng, treat as 4326;
-        # otherwise we can't reason about it.
         if (-180.0 <= bbox[0] <= 180.0 and -180.0 <= bbox[2] <= 180.0
                 and -90.0 <= bbox[1] <= 90.0 and -90.0 <= bbox[3] <= 90.0):
             return list(bbox)
@@ -797,6 +809,14 @@ def reproject_bbox_to_wgs84(
     if srid in _WGS84_CODES:
         return list(bbox)
 
+    # pyproj handles all EPSG codes including state planes. Try first.
+    if _PYPROJ_AVAILABLE:
+        py = _pyproj_reproject(bbox, srid)
+        if py is not None:
+            return py
+        # pyproj couldn't handle it (rare) — fall through to closed-form.
+
+    # Closed-form WebMercator fallback (used when pyproj is missing).
     if srid in _WEB_MERCATOR_CODES:
         return [
             _mercator_x_to_lng(bbox[0]),
@@ -805,9 +825,38 @@ def reproject_bbox_to_wgs84(
             _mercator_y_to_lat(bbox[3]),
         ]
 
-    # Unsupported CRS — could plug pyproj here, but state plane is rare
-    # enough that "no signal" is acceptable.
     return None
+
+
+def _pyproj_reproject(bbox: list[float], srid: int) -> list[float] | None:
+    """Use cached pyproj Transformer to reproject one bbox to WGS84. Returns
+    None on any failure (unknown SRID, transform error)."""
+    if srid in _TRANSFORMER_CACHE:
+        t = _TRANSFORMER_CACHE[srid]
+    else:
+        try:
+            t = _PyprojTransformer.from_crs(
+                f"EPSG:{srid}", "EPSG:4326", always_xy=True,
+            )
+        except Exception:
+            t = None
+        _TRANSFORMER_CACHE[srid] = t
+    if t is None:
+        return None
+    try:
+        x_min, y_min = t.transform(bbox[0], bbox[1])
+        x_max, y_max = t.transform(bbox[2], bbox[3])
+        # pyproj returns NaN/inf on out-of-bounds inputs
+        if any(_bad_coord(v) for v in (x_min, y_min, x_max, y_max)):
+            return None
+        return [x_min, y_min, x_max, y_max]
+    except Exception:
+        return None
+
+
+def _bad_coord(v: float) -> bool:
+    import math
+    return v is None or math.isnan(v) or math.isinf(v)
 
 
 def _mercator_x_to_lng(x: float) -> float:
