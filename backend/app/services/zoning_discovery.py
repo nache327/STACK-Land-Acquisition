@@ -178,6 +178,10 @@ async def _probe_layer(
     full_url = url
     if layer_id is not None and not _url_has_layer_index(url):
         full_url = f"{url}/{layer_id}"
+    elif not _url_has_layer_index(url):
+        # Hub returned a service-root URL (no `/0`, no layerId attribute).
+        # Probe the service metadata to pick a polygon layer to evaluate.
+        full_url = await _resolve_service_to_layer(client, url) or url
 
     source_type = (
         "arcgis_featureserver" if "FeatureServer" in full_url
@@ -195,29 +199,30 @@ async def _probe_layer(
     geometry_type: str | None = None
     field_matches: list[str] = []
     layer_bbox: list[float] | None = None
-    try:
-        meta = await client.get(full_url, params={"f": "json"}, timeout=15.0)
-        if meta.status_code == 200:
-            mdata = meta.json()
-            geometry_type = mdata.get("geometryType")
-            extent = mdata.get("extent") or {}
-            if all(k in extent for k in ("xmin", "ymin", "xmax", "ymax")):
-                layer_bbox = [extent["xmin"], extent["ymin"], extent["xmax"], extent["ymax"]]
-            for f in mdata.get("fields", []) or []:
-                fname = (f.get("name") or "").lower()
-                if any(frag in fname for frag in _ZONING_FIELDS):
-                    field_matches.append(f.get("name"))
-            # Count features — only if geom type looks right.
-            if geometry_type == "esriGeometryPolygon":
-                count_resp = await client.get(
-                    full_url + "/query",
-                    params={"where": "1=1", "returnCountOnly": "true", "f": "json"},
-                    timeout=15.0,
-                )
-                if count_resp.status_code == 200:
-                    feature_count = (count_resp.json() or {}).get("count")
-    except Exception as exc:
-        logger.debug("probe %s failed: %s", full_url, exc)
+    if _url_has_layer_index(full_url):
+        try:
+            meta = await client.get(full_url, params={"f": "json"}, timeout=15.0)
+            if meta.status_code == 200:
+                mdata = meta.json()
+                geometry_type = mdata.get("geometryType")
+                extent = mdata.get("extent") or {}
+                if all(k in extent for k in ("xmin", "ymin", "xmax", "ymax")):
+                    layer_bbox = [extent["xmin"], extent["ymin"], extent["xmax"], extent["ymax"]]
+                for f in mdata.get("fields", []) or []:
+                    fname = (f.get("name") or "").lower()
+                    if any(frag in fname for frag in _ZONING_FIELDS):
+                        field_matches.append(f.get("name"))
+                # Count features — only if geom type looks right.
+                if geometry_type == "esriGeometryPolygon":
+                    count_resp = await client.get(
+                        full_url + "/query",
+                        params={"where": "1=1", "returnCountOnly": "true", "f": "json"},
+                        timeout=15.0,
+                    )
+                    if count_resp.status_code == 200:
+                        feature_count = (count_resp.json() or {}).get("count")
+        except Exception as exc:
+            logger.debug("probe %s failed: %s", full_url, exc)
 
     bbox_overlaps = (
         jurisdiction_bbox is not None
@@ -302,3 +307,40 @@ def _bboxes_overlap(a: list[float], b: list[float]) -> bool:
 def _url_has_layer_index(url: str) -> bool:
     tail = url.rsplit("/", 1)[-1] if url else ""
     return tail.isdigit()
+
+
+async def _resolve_service_to_layer(
+    client: httpx.AsyncClient,
+    service_url: str,
+) -> str | None:
+    """Given a service-root URL (`.../FeatureServer` or `.../MapServer`),
+    fetch its metadata and pick the most zoning-shaped polygon layer.
+    Returns the full layer URL `service_url/{id}` or None.
+
+    Heuristics: prefer polygon layers whose name contains a zoning
+    keyword; fall back to the first polygon layer.
+    """
+    try:
+        resp = await client.get(service_url, params={"f": "json"}, timeout=10.0)
+        if resp.status_code != 200:
+            return None
+        data = resp.json() or {}
+    except Exception:
+        return None
+    layers = data.get("layers") or []
+    polygon_layers = [
+        l for l in layers if l.get("geometryType") == "esriGeometryPolygon"
+    ]
+    if not polygon_layers:
+        # Some services don't expose geometryType in the layer summary; fall
+        # back to all layers and let the per-layer probe filter them.
+        polygon_layers = layers
+    if not polygon_layers:
+        return None
+    # Prefer a layer whose name matches zoning keywords.
+    for lyr in polygon_layers:
+        name_lc = (lyr.get("name") or "").lower()
+        if any(kw in name_lc for kw in _ZONING_KEYWORDS_POSITIVE):
+            return f"{service_url.rstrip('/')}/{lyr.get('id')}"
+    # Otherwise just take the first one.
+    return f"{service_url.rstrip('/')}/{polygon_layers[0].get('id')}"
