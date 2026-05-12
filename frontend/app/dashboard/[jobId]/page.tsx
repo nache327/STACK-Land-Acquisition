@@ -914,6 +914,19 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           onClose={() => setDrawerOpen(false)}
           onShowRing={() => setFlyTrigger((n) => n + 1)}
           serverScore={parcelDetail ? serverScores?.get(parcelDetail.id) : undefined}
+          ringWealth={(() => {
+            if (!parcelDetail) return null;
+            const ring = precomputeData.get(String(parcelDetail.id))?.rings[
+              buyBoxFilter.driveTimeMinutes as 2 | 5 | 10 | 15
+            ];
+            if (!ring) return null;
+            return {
+              driveTimeMinutes: buyBoxFilter.driveTimeMinutes,
+              homesOver1M: ring.homesOver1M,
+              homesOver2M: ring.homesOver2M,
+              homesOver5M: ring.homesOver5M,
+            };
+          })()}
         />
       )}
 

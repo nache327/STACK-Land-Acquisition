@@ -23,6 +23,14 @@ interface ParcelDrawerProps {
   /** Server-side score for this parcel from `parcel_buybox_scores`.
    *  When present, overrides the placeholder client-side `computeScore`. */
   serverScore?: ServerParcelScore;
+  /** Ring wealth-density counts for the current drive-time selection.
+   *  Null fields mean precompute hasn't measured this parcel yet. */
+  ringWealth?: {
+    driveTimeMinutes: number;
+    homesOver1M: number | null;
+    homesOver2M: number | null;
+    homesOver5M: number | null;
+  } | null;
 }
 
 export function ParcelDrawer({
@@ -33,6 +41,7 @@ export function ParcelDrawer({
   onToggleShortlist,
   onShowRing,
   serverScore,
+  ringWealth,
 }: ParcelDrawerProps) {
   const { state, layer1Loading, layer3Loading, error, runLayer1, runLayer3, reset } =
     useVerification({
@@ -176,6 +185,9 @@ export function ParcelDrawer({
 
         {/* Market Saturation */}
         <SaturationPanel saturation={saturation ?? null} isLoading={satLoading} />
+
+        {/* Wealth Density (ring counts of homes ≥$1M/$2M/$5M) */}
+        {ringWealth && <WealthDensityPanel ringWealth={ringWealth} />}
 
         {/* Three-Layer Verification */}
         <VerificationPanel
@@ -325,6 +337,46 @@ function SaturationPanel({
             — {SAT_LABELS[saturation.color]}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function WealthDensityPanel({
+  ringWealth,
+}: {
+  ringWealth: NonNullable<ParcelDrawerProps["ringWealth"]>;
+}) {
+  const { driveTimeMinutes, homesOver1M, homesOver2M, homesOver5M } = ringWealth;
+  const notMeasured = homesOver1M == null && homesOver2M == null && homesOver5M == null;
+  const fmt = (n: number | null) =>
+    n == null ? "—" : n.toLocaleString();
+  return (
+    <div className="rounded-lg border border-slate-200 p-3 text-sm">
+      <h3 className="mb-2 font-semibold text-slate-700 text-xs uppercase tracking-wide">
+        Wealth Density · {driveTimeMinutes}-min drive
+      </h3>
+      {notMeasured ? (
+        <div className="text-xs text-slate-400">
+          Not yet measured — enable a “Homes ≥$1M/$2M/$5M” slider to populate.
+        </div>
+      ) : (
+        <table className="w-full text-xs">
+          <tbody>
+            <tr className="border-t border-slate-100 first:border-t-0">
+              <td className="py-1 text-slate-500">Homes ≥ $1M</td>
+              <td className="py-1 text-right font-mono tabular-nums text-slate-900">{fmt(homesOver1M)}</td>
+            </tr>
+            <tr className="border-t border-slate-100">
+              <td className="py-1 text-slate-500">Homes ≥ $2M</td>
+              <td className="py-1 text-right font-mono tabular-nums text-slate-900">{fmt(homesOver2M)}</td>
+            </tr>
+            <tr className="border-t border-slate-100">
+              <td className="py-1 text-slate-500">Homes ≥ $5M</td>
+              <td className="py-1 text-right font-mono tabular-nums text-slate-900">{fmt(homesOver5M)}</td>
+            </tr>
+          </tbody>
+        </table>
       )}
     </div>
   );
