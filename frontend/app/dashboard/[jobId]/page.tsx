@@ -555,9 +555,45 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   function handleRecompute() {
     if (!jurisdictionId) return;
-    // Pass existing data so only missing parcels are fetched — already-computed ones are skipped
+    // Pass existing data so only missing parcels are fetched — already-computed ones are skipped.
+    // (The skip logic in precomputeCityIsochrones honors fetchHomeDensity to NOT skip parcels
+    //  whose rings are missing homesOver{1,2,5}M, so re-running here while a wealth-density
+    //  slider is active will actually populate the missing fields.)
     startPrecompute(jurisdictionId, precomputeData.size > 0 ? precomputeData : undefined);
   }
+
+  // Auto-trigger wealth-density enrichment when the user enables one of the
+  // three Homes-≥ sliders for the first time on this city. Without this they
+  // would have to click Recompute manually. We only re-run when:
+  //   - wealth is now active
+  //   - the jurisdiction's source actually publishes assessed-value data
+  //   - precompute has already finished its first pass (otherwise the initial
+  //     run will pick up fetchHomeDensity on its own)
+  //   - at least one cached ring is missing the homesOver1M field (else
+  //     nothing to fetch and re-running would just thrash)
+  const wealthActiveRef = useRef(false);
+  useEffect(() => {
+    const wealthActive = isHomeDensityActive(buyBoxFilter);
+    const wasActive = wealthActiveRef.current;
+    wealthActiveRef.current = wealthActive;
+    if (!wealthActive || wasActive) return;
+    if (!jurisdictionId) return;
+    if (!wealthDensityAvailable) return;
+    if (!precomputeStatus?.complete) return;
+    if (precomputeData.size === 0) return;
+    const needsRefetch = Array.from(precomputeData.values()).some(
+      (d) => d.rings[buyBoxFilter.driveTimeMinutes].homesOver1M == null,
+    );
+    if (!needsRefetch) return;
+    console.log("[wealth] slider enabled — re-running precompute to fetch home-density");
+    startPrecompute(jurisdictionId, precomputeData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    buyBoxFilter.minHomesOver1M,
+    buyBoxFilter.minHomesOver2M,
+    buyBoxFilter.minHomesOver5M,
+    buyBoxFilter.driveTimeMinutes,
+  ]);
 
   // ─── Shortlist save ─────────────────────────────────────────────────────
 

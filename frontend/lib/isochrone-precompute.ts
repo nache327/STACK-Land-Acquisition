@@ -280,9 +280,20 @@ export async function precomputeCityIsochrones(
     fetchHomeDensity?: boolean;
   },
 ): Promise<Map<string, PrecomputedParcelData>> {
-  const skipIds = callbacks.existingData
-    ? new Set(callbacks.existingData.keys())
-    : new Set<string>();
+  // When fetchHomeDensity=true, an already-cached parcel still needs
+  // re-processing if its rings don't carry homesOver{1,2,5}M (which
+  // were null in the cache from before the user enabled the slider).
+  // Without this, Recompute is a no-op for the wealth-density path.
+  const needsHomeDensityRefetch = (data: PrecomputedParcelData): boolean =>
+    Object.values(data.rings).some((r) => r.homesOver1M == null);
+
+  const skipIds = new Set<string>();
+  if (callbacks.existingData) {
+    callbacks.existingData.forEach((data, pid) => {
+      if (callbacks.fetchHomeDensity && needsHomeDensityRefetch(data)) return;
+      skipIds.add(pid);
+    });
+  }
 
   const eligible = parcels
     .filter((p) => ["permitted", "conditional", "unclear"].includes(p.storage_permission ?? ""))
