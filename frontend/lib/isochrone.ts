@@ -153,12 +153,15 @@ async function fetchAcsForCounty(
   if (acsCountyCache.has(cacheKey)) return acsCountyCache.get(cacheKey)!;
 
   // B19001_017E = count of households with income $200,000 or more.
-  // Top bracket of the B19001 series; replaces the prior tract-median proxy
-  // for HNW counts.
+  // We used to fetch api.census.gov directly from the browser, but the
+  // Census endpoint started returning a 302 without a CORS header. Now
+  // we proxy through our own backend (app.api.census_proxy) which makes
+  // the call server-side and caches by (state, county).
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const url =
-    `https://api.census.gov/data/2022/acs/acs5` +
-    `?get=B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E` +
-    `&for=tract:*&in=state:${statefp}&in=county:${countyfp}`;
+    `${apiBase}/api/census/acs5/tract` +
+    `?state=${statefp}&county=${countyfp}` +
+    `&variables=B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
   if (!res.ok) {
