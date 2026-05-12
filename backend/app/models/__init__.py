@@ -16,3 +16,4 @@ from app.models.use_case import UseCase  # noqa: F401
 from app.models.parcel_ring_metric import ParcelRingMetric  # noqa: F401
 from app.models.buybox_filter import BuyboxFilter  # noqa: F401
 from app.models.parcel_buybox_score import ParcelBuyboxScore  # noqa: F401
+from app.models.coverage_snapshot import CoverageSnapshot  # noqa: F401

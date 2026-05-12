@@ -294,6 +294,60 @@ _NJ_CITY_TO_COUNTY = {
 }
 
 
+@router.post("/admin/coverage/refresh")
+async def admin_coverage_refresh(
+    jurisdiction_id: uuid.UUID | None = Query(default=None),
+    source: str = Query(default="manual"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Run the coverage audit and persist snapshots.
+
+    Optional `jurisdiction_id` scopes the refresh to one jurisdiction
+    (fast — ~3s). Without it, all ~75 jurisdictions get a fresh snapshot
+    (~2-3 min for a full sweep). `source` is a free-text tag stored on
+    each row (e.g. 'manual', 'scheduled', 'post-ingest').
+
+    Returns the count of rows written + the audit summary.
+    """
+    from app.services.coverage_audit import refresh_all_snapshots
+    result = await refresh_all_snapshots(db, jurisdiction_id=jurisdiction_id, source=source)
+    return result
+
+
+@router.get("/admin/coverage")
+async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
+    """Return the latest coverage snapshot per jurisdiction.
+
+    Reads only from `coverage_snapshots` — sub-second response regardless
+    of `parcels` / `zoning_overlays` table size. Run
+    `POST /api/admin/coverage/refresh` to update.
+    """
+    from app.services.coverage_audit import latest_snapshots
+    snaps = await latest_snapshots(db)
+    return {
+        "count": len(snaps),
+        "jurisdictions": [
+            {
+                "jurisdiction_id": str(s.jurisdiction_id),
+                "jurisdiction_name": s.jurisdiction_name,
+                "state": s.state,
+                "county": s.county,
+                "coverage_level": s.coverage_level,
+                "captured_at": s.captured_at.isoformat() if s.captured_at else None,
+                "parcel_count": s.parcel_count,
+                "parcel_with_zoning_code_count": s.parcel_with_zoning_code_count,
+                "zoning_district_count": s.zoning_district_count,
+                "matrix_zone_count": s.matrix_zone_count,
+                "operational_readiness": s.operational_readiness,
+                "blocking_gaps": s.blocking_gaps,
+                "self_storage_classified_parcel_pct": s.self_storage_classified_parcel_pct,
+                "parcel_zoning_code_coverage_pct": s.parcel_zoning_code_coverage_pct,
+            }
+            for s in snaps
+        ],
+    }
+
+
 @router.post("/jurisdictions/_cleanup-empty")
 async def cleanup_empty_jurisdictions(
     confirm: bool = Query(default=False),
