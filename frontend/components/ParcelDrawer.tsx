@@ -12,6 +12,8 @@ import {
   TIER_LABELS,
   type ScoreTier,
 } from "@/lib/compositeScore";
+import type { BuyBoxFilter, DriveTime } from "@/lib/buy-box-filter";
+import type { PrecomputedRingMetrics } from "@/lib/isochrone-precompute";
 
 interface ParcelDrawerProps {
   parcel: ParcelDetail | null;
@@ -23,13 +25,14 @@ interface ParcelDrawerProps {
   /** Server-side score for this parcel from `parcel_buybox_scores`.
    *  When present, overrides the placeholder client-side `computeScore`. */
   serverScore?: ServerParcelScore;
-  /** Ring wealth-density counts for the current drive-time selection.
-   *  Null fields mean precompute hasn't measured this parcel yet. */
-  ringWealth?: {
-    driveTimeMinutes: number;
-    homesOver1M: number | null;
-    homesOver2M: number | null;
-    homesOver5M: number | null;
+  /** Everything needed to render the unified Buy Box Match panel.
+   *  `ring` is null when precompute hasn't reached this parcel yet. */
+  buyBoxMatch?: {
+    driveTimeMinutes: DriveTime;
+    filter: BuyBoxFilter;
+    ring: PrecomputedRingMetrics | null;
+    parcelAadt: number | null;
+    wealthDensityAvailable: boolean;
   } | null;
 }
 
@@ -41,7 +44,7 @@ export function ParcelDrawer({
   onToggleShortlist,
   onShowRing,
   serverScore,
-  ringWealth,
+  buyBoxMatch,
 }: ParcelDrawerProps) {
   const { state, layer1Loading, layer3Loading, error, runLayer1, runLayer3, reset } =
     useVerification({
@@ -186,8 +189,8 @@ export function ParcelDrawer({
         {/* Market Saturation */}
         <SaturationPanel saturation={saturation ?? null} isLoading={satLoading} />
 
-        {/* Wealth Density (ring counts of homes ≥$1M/$2M/$5M) */}
-        {ringWealth && <WealthDensityPanel ringWealth={ringWealth} />}
+        {/* Buy Box Match — all active filter dimensions vs this parcel */}
+        {buyBoxMatch && <BuyBoxMatchPanel match={buyBoxMatch} />}
 
         {/* Three-Layer Verification */}
         <VerificationPanel
@@ -342,41 +345,207 @@ function SaturationPanel({
   );
 }
 
-function WealthDensityPanel({
-  ringWealth,
+type RowFormat = "int" | "currency";
+
+interface MatchRow {
+  key: string;
+  label: string;
+  actual: number | null;
+  threshold: number | null;
+  format: RowFormat;
+  /** Skip pass/fail evaluation (slider off and we're showing the row only
+   *  for context, e.g. measured wealth-density value with no threshold). */
+  inactive: boolean;
+}
+
+function fmtValue(n: number | null, format: RowFormat): string {
+  if (n == null) return "—";
+  if (format === "currency") {
+    if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
+    return `$${n.toLocaleString()}`;
+  }
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K`;
+  return n.toLocaleString();
+}
+
+function BuyBoxMatchPanel({
+  match,
 }: {
-  ringWealth: NonNullable<ParcelDrawerProps["ringWealth"]>;
+  match: NonNullable<ParcelDrawerProps["buyBoxMatch"]>;
 }) {
-  const { driveTimeMinutes, homesOver1M, homesOver2M, homesOver5M } = ringWealth;
-  const notMeasured = homesOver1M == null && homesOver2M == null && homesOver5M == null;
-  const fmt = (n: number | null) =>
-    n == null ? "—" : n.toLocaleString();
+  const { driveTimeMinutes, filter, ring, parcelAadt, wealthDensityAvailable } = match;
+
+  const rows: MatchRow[] = useMemo(() => {
+    const out: MatchRow[] = [];
+    if (ring) {
+      out.push({
+        key: "population",
+        label: "Population",
+        actual: ring.totalPopulation,
+        threshold: filter.minPopulation,
+        format: "int",
+        inactive: filter.minPopulation == null,
+      });
+      out.push({
+        key: "medianHHI",
+        label: "Median HHI",
+        actual: ring.weightedMedianHHI,
+        threshold: filter.minMedianHHI,
+        format: "currency",
+        inactive: filter.minMedianHHI == null,
+      });
+      out.push({
+        key: "homeValue",
+        label: "Home Value",
+        actual: ring.weightedMedianHomeValue,
+        threshold: filter.minMedianHomeValue,
+        format: "currency",
+        inactive: filter.minMedianHomeValue == null,
+      });
+      out.push({
+        key: "hnwHouseholds",
+        label: "HNW Households",
+        actual: ring.hnwHouseholds,
+        threshold: filter.minHnwHouseholds,
+        format: "int",
+        inactive: filter.minHnwHouseholds == null,
+      });
+    }
+    if (filter.minAADT != null) {
+      out.push({
+        key: "aadt",
+        label: "AADT",
+        actual: parcelAadt,
+        threshold: filter.minAADT,
+        format: "int",
+        inactive: false,
+      });
+    }
+    if (ring) {
+      const wealthRow = (
+        key: string,
+        label: string,
+        threshold: number | null,
+        actual: number | null,
+      ): void => {
+        if (threshold == null && actual == null) return;
+        out.push({
+          key,
+          label,
+          actual,
+          threshold,
+          format: "int",
+          inactive: threshold == null || !wealthDensityAvailable,
+        });
+      };
+      wealthRow("homesOver1M", "Homes ≥ $1M", filter.minHomesOver1M, ring.homesOver1M);
+      wealthRow("homesOver2M", "Homes ≥ $2M", filter.minHomesOver2M, ring.homesOver2M);
+      wealthRow("homesOver5M", "Homes ≥ $5M", filter.minHomesOver5M, ring.homesOver5M);
+    }
+    return out;
+  }, [filter, ring, parcelAadt, wealthDensityAvailable]);
+
+  // Per-row verdict
+  const rowStatus = (r: MatchRow): "pass" | "fail" | "borderline" | "none" => {
+    if (r.inactive || r.threshold == null) return "none";
+    if (r.actual == null) return "fail";
+    if (r.actual >= r.threshold) return "pass";
+    if (r.actual >= r.threshold * 0.9) return "borderline";
+    return "fail";
+  };
+
+  // Overall verdict — match the rules in evaluateParcel
+  const active = rows.filter((r) => !r.inactive && r.threshold != null);
+  let verdict: "computing" | "match" | "borderline" | "fail";
+  if (!ring) {
+    verdict = "computing";
+  } else if (active.length === 0) {
+    verdict = "match";
+  } else {
+    const statuses = active.map(rowStatus);
+    if (filter.matchLogic === "OR") {
+      verdict = statuses.some((s) => s === "pass") ? "match" : "fail";
+    } else {
+      const hardFails = statuses.filter((s) => s === "fail").length;
+      const borderline = statuses.filter((s) => s === "borderline").length;
+      if (hardFails > 0) verdict = "fail";
+      else if (borderline > 0) verdict = "borderline";
+      else verdict = "match";
+    }
+  }
+
+  const verdictStyle: Record<typeof verdict, { bg: string; fg: string; label: string }> = {
+    computing: { bg: "#94a3b820", fg: "#475569", label: "Computing…" },
+    match:     { bg: "#10b98120", fg: "#047857", label: filter.matchLogic === "OR" ? "Match (any)" : "Match (all)" },
+    borderline:{ bg: "#f59e0b20", fg: "#b45309", label: "Borderline" },
+    fail:      { bg: "#ef444420", fg: "#b91c1c", label: "Fail" },
+  };
+
   return (
     <div className="rounded-lg border border-slate-200 p-3 text-sm">
       <h3 className="mb-2 font-semibold text-slate-700 text-xs uppercase tracking-wide">
-        Wealth Density · {driveTimeMinutes}-min drive
+        Buy Box Match · {driveTimeMinutes}-min drive
       </h3>
-      {notMeasured ? (
+
+      {!ring ? (
         <div className="text-xs text-slate-400">
-          Not yet measured — enable a “Homes ≥$1M/$2M/$5M” slider to populate.
+          Computing drive-time metrics — open the dashboard with the buy box active to populate.
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="text-xs text-slate-400">
+          No active criteria. Set thresholds in the Buy Box panel to evaluate this parcel.
         </div>
       ) : (
-        <table className="w-full text-xs">
-          <tbody>
-            <tr className="border-t border-slate-100 first:border-t-0">
-              <td className="py-1 text-slate-500">Homes ≥ $1M</td>
-              <td className="py-1 text-right font-mono tabular-nums text-slate-900">{fmt(homesOver1M)}</td>
-            </tr>
-            <tr className="border-t border-slate-100">
-              <td className="py-1 text-slate-500">Homes ≥ $2M</td>
-              <td className="py-1 text-right font-mono tabular-nums text-slate-900">{fmt(homesOver2M)}</td>
-            </tr>
-            <tr className="border-t border-slate-100">
-              <td className="py-1 text-slate-500">Homes ≥ $5M</td>
-              <td className="py-1 text-right font-mono tabular-nums text-slate-900">{fmt(homesOver5M)}</td>
-            </tr>
-          </tbody>
-        </table>
+        <>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-slate-400 text-[10px]">
+                <th className="text-left pb-1 font-medium">Criterion</th>
+                <th className="text-right pb-1 font-medium">Parcel</th>
+                <th className="text-right pb-1 font-medium">Need</th>
+                <th className="text-right pb-1 font-medium w-6"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const s = rowStatus(r);
+                const marker =
+                  s === "pass" ? "✓" :
+                  s === "fail" ? "✗" :
+                  s === "borderline" ? "~" :
+                  "";
+                const markerClass =
+                  s === "pass" ? "text-emerald-600" :
+                  s === "fail" ? "text-red-600" :
+                  s === "borderline" ? "text-amber-600" :
+                  "text-slate-300";
+                return (
+                  <tr key={r.key} className="border-t border-slate-100 first:border-t-0">
+                    <td className="py-1 text-slate-500">{r.label}</td>
+                    <td className="py-1 text-right font-mono tabular-nums text-slate-900">
+                      {fmtValue(r.actual, r.format)}
+                    </td>
+                    <td className="py-1 text-right font-mono tabular-nums text-slate-400">
+                      {r.threshold == null ? "—" : fmtValue(r.threshold, r.format)}
+                    </td>
+                    <td className={`py-1 text-right font-semibold ${markerClass}`}>{marker}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div
+            className="mt-3 rounded px-3 py-2 text-center text-xs font-semibold"
+            style={{
+              backgroundColor: verdictStyle[verdict].bg,
+              color: verdictStyle[verdict].fg,
+              border: `1px solid ${verdictStyle[verdict].fg}40`,
+            }}
+          >
+            {verdictStyle[verdict].label}
+          </div>
+        </>
       )}
     </div>
   );
