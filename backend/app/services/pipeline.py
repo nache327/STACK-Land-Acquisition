@@ -885,8 +885,9 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # Counting parcels directly is more reliable than checking job_steps state,
     # which can be inconsistent across retries/cancellations.
     # > 1000 threshold rules out empty or barely-started jurisdictions.
-    # Use force-rerun (not retry) to blow away existing data and start fresh.
-    parcels_cached = (existing_count or 0) > 1000
+    # job.force bypasses the cache so a fresh download repopulates parcels.raw
+    # (and via the inline mapper, assessed_value + is_residential).
+    parcels_cached = (existing_count or 0) > 1000 and not getattr(job, "force", False)
 
     if parcels_cached:
         logger.info(
