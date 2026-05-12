@@ -362,7 +362,14 @@ async def bulk_ingest_zoning_for_jurisdiction(
             jurisdiction_id,
         )
 
-        # Step 2: insert ZoningOverlays for every parcel that has a zoning_code but no overlay yet
+        # Step 2: insert ZoningOverlays for every parcel that has a zoning_code.
+        # ON CONFLICT (parcel_id) DO NOTHING (paired with the
+        # uq_zoning_overlays_parcel_id constraint from migration 0019)
+        # makes this naturally idempotent across re-runs. The earlier
+        # `LEFT JOIN zoning_overlays o ON o.parcel_id = p.id WHERE
+        # o.id IS NULL` pattern was racy — two back-to-back runs both
+        # saw "no overlay yet" and both inserted, doubling Philadelphia's
+        # overlay count.
         overlay_status = await conn.execute(
             """
             INSERT INTO zoning_overlays (id, parcel_id, zoning_rule_id, source_type, raw_data)
@@ -376,11 +383,10 @@ async def bulk_ingest_zoning_for_jurisdiction(
             JOIN zoning_rules r
                 ON r.city = COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')
                AND r.zone_code = p.zoning_code
-            LEFT JOIN zoning_overlays o ON o.parcel_id = p.id
             WHERE p.jurisdiction_id = $1
               AND p.zoning_code IS NOT NULL
               AND p.zoning_code != ''
-              AND o.id IS NULL
+            ON CONFLICT (parcel_id) DO NOTHING
             """,
             jurisdiction_id,
         )
