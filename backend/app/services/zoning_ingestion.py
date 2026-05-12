@@ -45,12 +45,20 @@ _ZONE_CODE_FIELDS = [
     # Loudoun County, VA Zoning service (MapServer/3) — short district code
     # (e.g. "CCNC"); full text label lives in ZD_ZONE_NAME below.
     "ZO_ZONE",
+    # Montgomery County, PA — 180420_zoning_districts FeatureServer/1
+    # publishes the short code as `Districts` (e.g. "R-A", "C-1").
+    "Districts",
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
     "DESCRIPTION", "DESC", "NAME", "CODE_DEF",
     "ZONE_LE_DESC",   # Utah County / Lehi zoning service
     "ZD_ZONE_NAME",   # Loudoun County zoning long name
+    # Mont PA layer publishes the human label as `Name`
+    # (e.g. "RURAL RESIDENCE"). NAME is already in the list above as
+    # uppercase; this lowercase variant is for callers whose dict keys
+    # weren't case-normalised at the source.
+    "Name",
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
