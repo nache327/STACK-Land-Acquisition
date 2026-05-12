@@ -52,6 +52,11 @@ _ZONE_CODE_FIELDS = [
     # `CLASS` ("R-100", "CR", "C-1") or its duplicate `Label`. Trailing
     # entries so jurisdictions with proper ZONEDIST keep priority.
     "Label",
+    # New Milford NJ "New_Milford_zoning_shapefiles" — uses `ZoningDist`
+    # (camelCase). _first() normalizes to lowercase, so "zonedist" above
+    # does NOT match "zoningdist". Add as distinct candidate.
+    "ZoningDist",
+    "ZoningDistrict",
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
