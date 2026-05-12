@@ -207,6 +207,26 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const { data: jurisdictionBounds } = useJurisdictionBounds(jurisdictionId);
   const { data: serverScores } = useParcelScores(jurisdictionId);
 
+  // Per-jurisdiction feature flags. wealth_density_available is false when
+  // the source publishes no assessed_value (UT UGRC cities) — we use it
+  // to grey the three Wealth-density sliders and bypass them in
+  // evaluateParcel so a defaulted-to-zero slider can't accidentally hide
+  // every parcel.
+  const [wealthDensityAvailable, setWealthDensityAvailable] = useState<boolean>(true);
+  useEffect(() => {
+    if (!jurisdictionId) return;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    let cancelled = false;
+    fetch(`${apiBase}/api/jurisdictions/${jurisdictionId}/feature-flags`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        setWealthDensityAvailable(Boolean(d.wealth_density_available));
+      })
+      .catch(() => { /* best-effort; default true is fail-open */ });
+    return () => { cancelled = true; };
+  }, [jurisdictionId]);
+
   // Reset selection on filter change
   useEffect(() => {
     setSelectedIds(new Set());
@@ -446,15 +466,24 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     const ids = mapParcels.map((p) => String(p.parcel_id));
     const out = new Map<string, EvaluationStatus>();
 
-    // Demographic evaluation (requires precomputed isochrone data)
+    // Demographic evaluation (requires precomputed isochrone data).
+    // The wealth-density sliders are only included when the jurisdiction
+    // has assessed_value data — see evaluateParcel's wealthDensityAvailable
+    // gate. Including them here when unavailable would push every parcel
+    // to "computing" before the ring metrics arrive.
     const needsDemographics =
       buyBoxFilter.minPopulation != null ||
       buyBoxFilter.minMedianHHI != null ||
       buyBoxFilter.minMedianHomeValue != null ||
-      buyBoxFilter.minHnwHouseholds != null;
+      buyBoxFilter.minHnwHouseholds != null ||
+      (wealthDensityAvailable && (
+        buyBoxFilter.minHomesOver1M != null ||
+        buyBoxFilter.minHomesOver2M != null ||
+        buyBoxFilter.minHomesOver5M != null
+      ));
 
     if (needsDemographics && precomputeData.size > 0) {
-      const results = evaluateAll(ids, precomputeData, buyBoxFilter);
+      const results = evaluateAll(ids, precomputeData, buyBoxFilter, { wealthDensityAvailable });
       Array.from(results.entries()).forEach(([id, r]) => out.set(id, r.status));
     } else if (needsDemographics) {
       // Isochrones not yet loaded — mark all as computing
@@ -735,6 +764,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             cityDataRanges={cityDataRanges}
             bestActualValues={bestActualValues}
             onRecompute={handleRecompute}
+            wealthDensityAvailable={wealthDensityAvailable}
           />
           <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
 

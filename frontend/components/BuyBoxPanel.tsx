@@ -21,6 +21,10 @@ interface BuyBoxPanelProps {
   cityDataRanges: { maxPopulation: number; maxHnwHouseholds: number } | null;
   bestActualValues?: { population: number; medianHHI: number; homeValue: number; hnwHouseholds: number } | null;
   onRecompute?: () => void;
+  /** When false, the three Wealth-density sliders are greyed + non-interactive
+   *  and a tooltip explains the source doesn't publish assessed values.
+   *  Defaults to true (enabled) — pass false for UT/UGRC cities. */
+  wealthDensityAvailable?: boolean;
 }
 
 function fmt(value: number | null, prefix = ""): string {
@@ -40,6 +44,7 @@ export function BuyBoxPanel({
   cityDataRanges,
   bestActualValues,
   onRecompute,
+  wealthDensityAvailable = true,
 }: BuyBoxPanelProps) {
   const [presets, setPresets] = useState<SavedPreset[]>([]);
   const [presetsLoaded, setPresetsLoaded] = useState(false);
@@ -394,13 +399,32 @@ export function BuyBoxPanel({
 
       {/* Wealth density — count of residential parcels above each value
           threshold inside the drive-time ring. Source: per-state assessor
-          rolls (NJ MOD-IV / UT UGRC / FL DOR cadastral). Enabling any of
-          these sliders triggers a backend density fetch the first time
-          a ring is needed; counts are cached server-side. */}
-      <div className="mb-2 mt-3 text-[9px] uppercase tracking-wider text-slate-500">
-        Wealth density
+          rolls (NJ MOD-IV / FL DOR cadastral / PA OPA). Greyed when the
+          jurisdiction's source publishes no assessed_value (e.g. UT UGRC),
+          since dragging the slider above 0 would otherwise hide every
+          parcel in that city. */}
+      <div className="mb-2 mt-3 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-wider text-slate-500">
+          Wealth density
+        </span>
+        {!wealthDensityAvailable && (
+          <span
+            className="text-[9px] italic text-slate-500"
+            title="Assessor value data not available for this city's source. Currently supported: NJ MOD-IV, PA Philly OPA, FL DOR cadastral."
+          >
+            unavailable for this city
+          </span>
+        )}
       </div>
-      <div className="mb-3 space-y-2">
+      <div
+        className={
+          wealthDensityAvailable
+            ? "mb-3 space-y-2"
+            : "mb-3 space-y-2 pointer-events-none opacity-40"
+        }
+        aria-disabled={!wealthDensityAvailable}
+        title={!wealthDensityAvailable ? "Assessor value data not available for this city's source." : undefined}
+      >
         <SliderRow
           label="Homes ≥$1M"
           value={filter.minHomesOver1M}

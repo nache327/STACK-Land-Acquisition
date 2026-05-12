@@ -85,10 +85,21 @@ export function isHomeDensityActive(filter: BuyBoxFilter): boolean {
   );
 }
 
+export interface EvaluateOptions {
+  /** When false, the three wealth-density sliders are bypassed in
+   * evaluation regardless of their filter values. Set from the
+   * dashboard's per-jurisdiction feature-flags fetch so cities whose
+   * source publishes no assessed_value (UT UGRC) don't filter to "all
+   * hidden" the moment a user drags Homes ≥$1M off 0. Defaults to true
+   * (gate enabled) when omitted. */
+  wealthDensityAvailable?: boolean;
+}
+
 export function evaluateParcel(
   parcelId: string,
   precomputedData: Map<string, PrecomputedParcelData>,
   filter: BuyBoxFilter,
+  options?: EvaluateOptions,
 ): EvaluationResult {
   const data = precomputedData.get(parcelId);
   if (!data) return { status: "computing", failedConditions: [], borderlineConditions: [] };
@@ -106,15 +117,18 @@ export function evaluateParcel(
     active.push({ label: "homeValue", actual: metrics.weightedMedianHomeValue, threshold: filter.minMedianHomeValue });
   if (filter.minHnwHouseholds != null)
     active.push({ label: "hnwHouseholds", actual: metrics.hnwHouseholds, threshold: filter.minHnwHouseholds });
-  // Wealth-density: each contributes only when its slider is enabled. The
-  // metric is null until the user toggles the slider on (lazy backend
-  // fetch); treat null as 0 so an enabled slider can still fail-out a
-  // parcel whose ring hasn't been measured yet.
-  if (filter.minHomesOver1M != null)
+  // Wealth-density: each contributes only when its slider is enabled AND
+  // the jurisdiction's source actually publishes assessed-value data.
+  // Without the wealthDensityAvailable gate, a UT/UGRC city (assessed_value
+  // null on every parcel) would treat the actual as 0, and any slider
+  // above 0 would hide every parcel. The dashboard sets the flag from the
+  // backend's GET /api/jurisdictions/{id}/feature-flags.
+  const wealthGate = options?.wealthDensityAvailable !== false;
+  if (wealthGate && filter.minHomesOver1M != null)
     active.push({ label: "homesOver1M", actual: metrics.homesOver1M ?? 0, threshold: filter.minHomesOver1M });
-  if (filter.minHomesOver2M != null)
+  if (wealthGate && filter.minHomesOver2M != null)
     active.push({ label: "homesOver2M", actual: metrics.homesOver2M ?? 0, threshold: filter.minHomesOver2M });
-  if (filter.minHomesOver5M != null)
+  if (wealthGate && filter.minHomesOver5M != null)
     active.push({ label: "homesOver5M", actual: metrics.homesOver5M ?? 0, threshold: filter.minHomesOver5M });
 
   if (active.length === 0) return { status: "match", failedConditions: [], borderlineConditions: [] };
@@ -148,10 +162,11 @@ export function evaluateAll(
   parcelIds: string[],
   precomputedData: Map<string, PrecomputedParcelData>,
   filter: BuyBoxFilter,
+  options?: EvaluateOptions,
 ): Map<string, EvaluationResult> {
   const out = new Map<string, EvaluationResult>();
   for (const id of parcelIds) {
-    out.set(id, evaluateParcel(id, precomputedData, filter));
+    out.set(id, evaluateParcel(id, precomputedData, filter, options));
   }
   return out;
 }

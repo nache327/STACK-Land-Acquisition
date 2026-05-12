@@ -50,6 +50,41 @@ async def get_jurisdiction(
     return j
 
 
+@router.get("/jurisdictions/{jurisdiction_id}/feature-flags")
+async def get_feature_flags(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Per-jurisdiction feature availability flags consumed by the dashboard.
+
+    Currently exposes:
+
+    * ``wealth_density_available`` — true when at least one parcel in this
+      jurisdiction has ``assessed_value`` populated. When false, the
+      "Wealth density" sliders should be disabled in the UI (UT cities
+      via UGRC publish no assessor money fields, so the field is null
+      everywhere and dragging the slider above 0 would hide every parcel).
+    """
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    has_assessed = await db.scalar(
+        text(
+            "SELECT EXISTS ("
+            "  SELECT 1 FROM parcels "
+            "  WHERE jurisdiction_id = :jid AND assessed_value IS NOT NULL "
+            "  LIMIT 1"
+            ")"
+        ).bindparams(jid=jurisdiction_id)
+    )
+
+    return {
+        "jurisdiction_id": str(jurisdiction_id),
+        "wealth_density_available": bool(has_assessed),
+    }
+
+
 @router.get("/jurisdictions/{jurisdiction_id}/zones", response_model=ZoneMatrixResponse)
 async def get_zone_matrix(
     jurisdiction_id: uuid.UUID,
