@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     # Optional data sources
     regrid_api_key: str = ""
 
+    # US Census Data API. Required as of 2026 — unauthenticated requests
+    # are redirected to /data/missing_key.html which broke every dashboard
+    # demographic fetch. Sign up at
+    # https://api.census.gov/data/key_signup.html.
+    census_api_key: str = ""
+
     # Resend (transactional email). When unset the daily-digest worker
     # logs the rendered email instead of sending — useful for local dev
     # and as a safety net before RESEND_API_KEY is provisioned in prod.

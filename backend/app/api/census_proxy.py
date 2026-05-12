@@ -22,6 +22,8 @@ import logging
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["census-proxy"])
@@ -61,11 +63,13 @@ async def acs5_tract(
         return cached
 
     url = f"{_ACS_BASE}/{vintage}/acs/acs5"
-    params = {
+    params: dict = {
         "get": variables,
         "for": "tract:*",
         "in": [f"state:{state}", f"county:{county}"],
     }
+    if settings.census_api_key:
+        params["key"] = settings.census_api_key
 
     try:
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
