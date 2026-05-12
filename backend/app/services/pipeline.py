@@ -955,6 +955,32 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 )
         logger.info("Downloaded %d features", len(gdf))
         _stage_completed(job, "parcel_fetch", parcel_fetch_started, feature_count=len(gdf))
+
+        # The session's underlying TCP connection may have been silently
+        # killed during the multi-minute download (Supabase pgbouncer idle
+        # timeout, or an intermediate proxy reset). Without intervention, the
+        # next SQLAlchemy op blocks forever waiting on a dead socket — there
+        # are no upstream signals to surface this as an error.
+        # `session.close()` releases the dead conn back to NullPool which
+        # discards it; the next op opens a fresh socket. Wrapped in
+        # asyncio.timeout(5) so even the close call can't hang the worker
+        # if the socket really is wedged.
+        try:
+            async with asyncio.timeout(5):
+                await db.close()
+        except Exception as exc:
+            logger.warning("post-download session.close() failed (non-fatal): %r", exc)
+        # Re-attach the in-memory job/jurisdiction to the fresh session so
+        # downstream code can read job.id / jurisdiction.id without
+        # triggering a lazy-load that would deadlock again.
+        try:
+            async with asyncio.timeout(10):
+                job = await db.merge(job)
+                jurisdiction = await db.merge(jurisdiction)
+                parcel_fetch_step = await db.merge(parcel_fetch_step)
+        except Exception as exc:
+            logger.warning("post-download merge failed (will best-effort continue): %r", exc)
+
         await complete_job_step(db, parcel_fetch_step, {"feature_count": len(gdf)})
         await add_job_artifact(
             db,
