@@ -360,102 +360,101 @@ async def value_density(
 
 @router.post("/parcels/_backfill-assessed-value")
 async def backfill_assessed_value(
-    state: str | None = Query(default=None, description="Two-letter state code; omit for all"),
+    state: str = Query(..., description="Two-letter state code (required)"),
     dry_run: bool = Query(default=False),
     batch_size: int = Query(default=5000, ge=100, le=20_000),
+    start_id: int = Query(default=0, ge=0, description="Resume cursor; use last_id from previous call"),
+    max_batches: int = Query(default=1, ge=1, le=20, description="Batches per HTTP call (each ~3s)"),
 ) -> dict:
     """Populate parcels.assessed_value + is_residential from parcels.raw.
 
-    Idempotent — running it twice produces the same result. Heavy: scans
-    every parcel with a non-null raw and runs the per-state mapper. Use
-    ``?dry_run=true`` first to see what would change.
+    **Cursor-based**: each call runs at most ``max_batches`` batches of
+    ``batch_size`` rows starting after ``start_id``, then returns the
+    ``last_id`` so the caller can resume. Keeps each HTTP request inside
+    Railway's reverse-proxy window. Idempotent — only touches rows where
+    assessed_value OR is_residential is still NULL.
+
+    Loop the caller side: while ``done`` is false, re-call with
+    ``start_id = last_id``.
     """
     import asyncpg
     import json as _json
     from app.services.parcel_value_mapper import map_value_and_residential
     from app.config import settings as _settings
 
+    state_u = state.upper()
     session_url = _settings.database_url.replace(":6543/", ":5432/").replace(
         "postgresql+asyncpg://", "postgresql://"
     )
     conn = await asyncpg.connect(
-        session_url, statement_cache_size=0, command_timeout=7200,
+        session_url, statement_cache_size=0, command_timeout=120,
     )
-    out: dict[str, dict[str, int]] = {}
+    scanned = 0
+    with_value = 0
+    residential = 0
+    last_id = start_id
+    batches_done = 0
+    done = False
     try:
         await conn.execute("SET statement_timeout = 0")
-
-        if state:
-            states = [state.upper()]
-        else:
+        for _ in range(max_batches):
             rows = await conn.fetch(
-                "SELECT DISTINCT state FROM jurisdictions WHERE state IS NOT NULL"
+                """
+                SELECT p.id, p.raw
+                FROM parcels p
+                JOIN jurisdictions j ON j.id = p.jurisdiction_id
+                WHERE j.state = $1
+                  AND p.id > $2
+                  AND p.raw IS NOT NULL
+                  AND (p.assessed_value IS NULL OR p.is_residential IS NULL)
+                ORDER BY p.id
+                LIMIT $3
+                """,
+                state_u, last_id, batch_size,
             )
-            states = sorted({r["state"] for r in rows})
+            if not rows:
+                done = True
+                break
 
-        for s in states:
-            scanned = 0
-            with_value = 0
-            residential = 0
-            last_id = 0
+            updates: list[tuple[int, float | None, bool | None]] = []
+            for r in rows:
+                scanned += 1
+                raw = r["raw"]
+                if not isinstance(raw, dict):
+                    try:
+                        raw = _json.loads(raw) if raw else None
+                    except Exception:
+                        raw = None
+                val, is_res = map_value_and_residential(state_u, raw or {})
+                if val is not None:
+                    with_value += 1
+                if is_res is True:
+                    residential += 1
+                updates.append((r["id"], val, is_res))
 
-            while True:
-                rows = await conn.fetch(
+            last_id = rows[-1]["id"]
+            batches_done += 1
+            if not dry_run:
+                await conn.executemany(
                     """
-                    SELECT p.id, p.raw
-                    FROM parcels p
-                    JOIN jurisdictions j ON j.id = p.jurisdiction_id
-                    WHERE j.state = $1
-                      AND p.id > $2
-                      AND p.raw IS NOT NULL
-                      AND (p.assessed_value IS NULL OR p.is_residential IS NULL)
-                    ORDER BY p.id
-                    LIMIT $3
+                    UPDATE parcels
+                    SET assessed_value = $2,
+                        is_residential = $3
+                    WHERE id = $1
                     """,
-                    s, last_id, batch_size,
+                    updates,
                 )
-                if not rows:
-                    break
-
-                updates: list[tuple[int, float | None, bool | None]] = []
-                for r in rows:
-                    scanned += 1
-                    raw = r["raw"]
-                    if not isinstance(raw, dict):
-                        try:
-                            raw = _json.loads(raw) if raw else None
-                        except Exception:
-                            raw = None
-                    val, is_res = map_value_and_residential(s, raw or {})
-                    if val is not None:
-                        with_value += 1
-                    if is_res is True:
-                        residential += 1
-                    updates.append((r["id"], val, is_res))
-
-                last_id = rows[-1]["id"]
-                if not dry_run:
-                    await conn.executemany(
-                        """
-                        UPDATE parcels
-                        SET assessed_value = $2,
-                            is_residential = $3
-                        WHERE id = $1
-                        """,
-                        updates,
-                    )
-
-            out[s] = {
-                "scanned": scanned,
-                "with_value": with_value,
-                "residential": residential,
-            }
     finally:
         await conn.close()
 
-    totals = {
-        "scanned": sum(s["scanned"] for s in out.values()),
-        "with_value": sum(s["with_value"] for s in out.values()),
-        "residential": sum(s["residential"] for s in out.values()),
+    return {
+        "state": state_u,
+        "dry_run": dry_run,
+        "start_id": start_id,
+        "last_id": last_id,
+        "scanned": scanned,
+        "with_value": with_value,
+        "residential": residential,
+        "batches_done": batches_done,
+        "done": done,
     }
-    return {"dry_run": dry_run, "by_state": out, "totals": totals}
