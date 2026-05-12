@@ -276,7 +276,6 @@ class _ValueDensityResponse(BaseModel):
 @router.post("/parcels/value-density", response_model=_ValueDensityResponse)
 async def value_density(
     payload: _ValueDensityRequest,
-    db: AsyncSession = Depends(get_db),
 ) -> _ValueDensityResponse:
     """Count residential parcels above $1M / $2M / $5M inside a polygon.
 
@@ -287,9 +286,17 @@ async def value_density(
     query.
 
     Returns ``{homes_over_1m, homes_over_2m, homes_over_5m, cached}``.
+
+    Concurrency note: the semaphore wraps BOTH the session acquisition
+    and the body. The previous version took the session via FastAPI's
+    Depends(get_db) which fires before the function body — so the pool
+    was already exhausted by the time the semaphore could gate anything.
     """
+    from app.db import async_session_maker
+
     async with _value_density_sem:
-        return await _value_density_impl(payload, db)
+        async with async_session_maker() as db:
+            return await _value_density_impl(payload, db)
 
 
 async def _value_density_impl(
