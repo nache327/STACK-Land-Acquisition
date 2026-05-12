@@ -61,14 +61,17 @@ async def refresh_all_snapshots(
     """
     az = _import_audit_module()
 
-    # Use the SQLAlchemy session's connection — single-connection lifecycle.
-    schema = await az._load_schema_profile(db.connection())
+    # Resolve the underlying AsyncConnection once — `db.connection()` is async
+    # and returns the SQLAlchemy AsyncConnection (which is what the audit
+    # script's _load_schema_profile / _build_audit_sql call .execute() on).
+    conn = await db.connection()
+
+    schema = await az._load_schema_profile(conn)
     if not schema.has_parcels_table or not schema.has_zone_use_matrix_table:
         raise RuntimeError(
             "Database missing required tables: parcels and/or zone_use_matrix"
         )
 
-    raw_conn = await db.connection()
     if jurisdiction_id is not None:
         # The audit SQL accepts a `jurisdiction_name` filter — fetch the name
         # so we can pass it through verbatim.
@@ -80,7 +83,7 @@ async def refresh_all_snapshots(
     else:
         jurisdiction_name = None
 
-    result = await raw_conn.execute(
+    result = await conn.execute(
         az._build_audit_sql(schema),
         {"jurisdiction_name": jurisdiction_name},
     )
