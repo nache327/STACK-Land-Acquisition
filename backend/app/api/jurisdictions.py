@@ -306,7 +306,17 @@ async def cleanup_empty_jurisdictions(
         )
     )).mappings().all()
 
-    by_name_state = {(r["name"].strip().lower(), (r["state"] or "").upper()): r for r in rows}
+    # Key on (name, state). Build BOTH a dict (first match) and a list
+    # grouping. The list lets us catch same-name dups where one row is
+    # populated and the other is empty (e.g. two 'Lehi, UT' rows that
+    # differ only by county — the pipeline's .first() lookup is
+    # non-deterministic, so the empty row is a real footgun).
+    by_name_state: dict[tuple[str, str], dict] = {}
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for r in rows:
+        key = (r["name"].strip().lower(), (r["state"] or "").upper())
+        by_name_state.setdefault(key, r)
+        groups.setdefault(key, []).append(r)
 
     candidates: list[dict] = []
     for r in rows:
@@ -341,6 +351,23 @@ async def cleanup_empty_jurisdictions(
             if cr and cr["parcels"]:
                 canonical_id, canonical_name = cr["id"], cr["name"]
                 reason = "suffix-mismatch dup of populated row"
+
+        # 4. Same-name-different-county dup. Look at every row sharing the
+        # exact (name, state) pair; if at least one sibling has parcels,
+        # this empty row is a duplicate footgun for the pipeline's
+        # non-deterministic .first() lookup. Pick the populated sibling
+        # with the most parcels as canonical.
+        if reason is None:
+            siblings = groups.get((name_lc, state), [])
+            populated = [s for s in siblings if s["id"] != r["id"] and s["parcels"]]
+            if populated:
+                best = max(populated, key=lambda s: s["parcels"])
+                canonical_id, canonical_name = best["id"], best["name"]
+                reason = (
+                    "same-name-different-county dup of populated row "
+                    f"(empty row county={r['county']!r}, "
+                    f"populated row county={best['county']!r})"
+                )
 
         if reason is None:
             continue
