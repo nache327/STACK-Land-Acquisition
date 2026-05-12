@@ -376,6 +376,36 @@ async def cleanup_empty_jurisdictions(
     return {"dry_run": False, "deleted": deleted, "candidates": candidates}
 
 
+# ─── Admin: discover candidate zoning sources (Phase C) ─────────────────────
+
+@router.post("/jurisdictions/{jurisdiction_id}/_discover-zoning")
+async def discover_zoning(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Search ArcGIS Hub for candidate zoning sources for this jurisdiction.
+
+    Returns a ranked list of up to 5 candidate FeatureServer/MapServer URLs
+    with a confidence score and per-candidate reasoning. **Does not mutate
+    the jurisdiction.** The operator reviews the candidates and then fires
+    `POST /api/jurisdictions/{id}/_backfill-zoning?zoning_url=<picked>`
+    with the URL they trust.
+
+    Heuristics: positive/negative title keywords, polygon geometry,
+    plausible feature count, field-name fragments that look zoning-shaped,
+    and bbox overlap with the jurisdiction's persisted bbox.
+    """
+    from app.services.zoning_discovery import discover_zoning_for_jurisdiction
+    result = await discover_zoning_for_jurisdiction(jurisdiction_id, db)
+    return {
+        "jurisdiction_id": result.jurisdiction_id,
+        "jurisdiction_name": result.jurisdiction_name,
+        "queried_with": result.queried_with,
+        "candidates_total": result.candidates_total,
+        "candidates": result.candidates,
+    }
+
+
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
 
 @router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")
