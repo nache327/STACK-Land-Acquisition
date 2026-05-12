@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import async_session_maker, get_db
 from app.models.forsale_listing import ForsaleListing
 from app.models.jurisdiction import Jurisdiction
+from app.services.geocode_census import geocode_address
 from app.services.listing_matcher import match_pending_listings
 from app.services.listings_parsers import ListingRow, ParseResult, ParserError, parse_file
 
@@ -383,3 +384,56 @@ async def list_jurisdiction_listings(
             "last_seen_at": r.last_seen_at.isoformat() if r.last_seen_at else None,
         })
     return out
+
+
+# ── debug ────────────────────────────────────────────────────────────────────
+
+
+@router.get("/listings/_debug-geocode")
+async def debug_geocode(address: str, city: str = "", state: str = "") -> dict:
+    """One-shot Census geocode test. Confirms whether the Railway
+    container can actually reach geocoding.geo.census.gov."""
+    geo = await geocode_address(address, city or None, state or None)
+    if geo is None:
+        return {"address": address, "city": city, "state": state, "match": None}
+    return {
+        "address": address,
+        "matched": geo.matched_address,
+        "lat": geo.lat,
+        "lon": geo.lon,
+        "match_type": geo.match_type,
+    }
+
+
+@router.post("/listings/_debug-rematch/{jurisdiction_id}")
+async def debug_rematch(
+    jurisdiction_id: uuid.UUID,
+    source: str = "costar",
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Force a synchronous re-run of the matching cascade for one
+    (jurisdiction, source). Resets match_method on existing rows first
+    so the matcher picks them up, then runs the cascade and returns
+    tier counters. Useful when the background task silently failed or
+    when the geocoder was rate-limited mid-batch."""
+    # Reset match state on current rows so the matcher's WHERE clause
+    # (match_method IS NULL) re-includes them.
+    await db.execute(
+        update(ForsaleListing)
+        .where(
+            ForsaleListing.jurisdiction_id == jurisdiction_id,
+            ForsaleListing.source == source,
+            ForsaleListing.is_current.is_(True),
+        )
+        .values(
+            matched_parcel_id=None,
+            match_confidence=None,
+            match_method=None,
+            geocoded_lat=None,
+            geocoded_lon=None,
+        )
+    )
+    await db.commit()
+
+    counts = await match_pending_listings(jurisdiction_id, source, db)
+    return counts
