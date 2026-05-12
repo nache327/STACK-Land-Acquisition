@@ -61,7 +61,7 @@ async def backfill_parcel_zoning_from_districts(
     that has killed this UPDATE on Philadelphia (547k parcels × 29k districts).
     """
     zone_code_set = (
-        ", zoning_code = COALESCE(NULLIF(p.zoning_code, ''), m.zone_code)"
+        ", zoning_code = COALESCE(NULLIF(target.zoning_code, ''), sub.zone_code)"
         if fill_missing_zone_code
         else ""
     )
@@ -76,29 +76,36 @@ async def backfill_parcel_zoning_from_districts(
         # LATERAL + LIMIT 1 instead of CTE + ROW_NUMBER. The earlier
         # ROW_NUMBER OVER (PARTITION BY p.id ORDER BY zd.id) query
         # materialised every parcel/district overlap (≈ N_parcels × 6 on
-        # Fairfax) and then sorted that 2.2M-row, 988-byte-wide result for
-        # the window function — the sort spilled to disk on Supabase and
-        # hung Fairfax for the full 30-min dramatiq time_limit.
-        # LATERAL with LIMIT 1 lets postgres stop at the first district
-        # matched per parcel via the GIST index on zoning_districts.geom,
-        # bounding work to O(N_parcels × log N_districts) instead of
-        # O(N_parcels × overlap × log N_districts).
+        # Fairfax) and sorted that 2.2M-row, 988-byte-wide result for the
+        # window function — the sort spilled to disk and hung Fairfax for
+        # the full 30-min dramatiq time_limit.
+        # The LATERAL must live inside a subquery in the FROM clause —
+        # PostgreSQL refuses to let a top-level LATERAL reference the
+        # UPDATE target table directly ("invalid reference to FROM-clause
+        # entry for table p"). Pulling parcels into the inner FROM lets
+        # the lateral see p.geom while UPDATE joins target.id =
+        # sub.parcel_id at the outer level.
         status = await conn.execute(
             f"""
-            UPDATE parcels p
-            SET zone_class = m.zone_class
+            UPDATE parcels target
+            SET zone_class = sub.zone_class
                 {zone_code_set}
-            FROM LATERAL (
-                SELECT zd.zone_class, zd.zone_code
-                FROM zoning_districts zd
-                WHERE zd.jurisdiction_id = $1
-                  AND zd.geom IS NOT NULL
-                  AND ST_Within(ST_Centroid(p.geom), zd.geom)
-                ORDER BY zd.id
-                LIMIT 1
-            ) m
-            WHERE p.jurisdiction_id = $1
-              AND p.geom IS NOT NULL
+            FROM (
+                SELECT p.id AS parcel_id, m.zone_class, m.zone_code
+                FROM parcels p,
+                LATERAL (
+                    SELECT zd.zone_class, zd.zone_code
+                    FROM zoning_districts zd
+                    WHERE zd.jurisdiction_id = $1
+                      AND zd.geom IS NOT NULL
+                      AND ST_Within(ST_Centroid(p.geom), zd.geom)
+                    ORDER BY zd.id
+                    LIMIT 1
+                ) m
+                WHERE p.jurisdiction_id = $1
+                  AND p.geom IS NOT NULL
+            ) sub
+            WHERE target.id = sub.parcel_id
             """,
             jurisdiction_id,
         )

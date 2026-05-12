@@ -189,29 +189,29 @@ async def explain_backfill(
     if j is None:
         raise HTTPException(status_code=404, detail="Jurisdiction not found")
 
+    # Mirror the LATERAL query in spatial_backfill.backfill_parcel_zoning_from_districts.
     plan_rows = (await db.execute(text(
         """
         EXPLAIN
-        WITH ranked AS (
-            SELECT
-                p.id AS parcel_id,
-                zd.zone_class,
-                zd.zone_code,
-                ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY zd.id) AS rn
-            FROM parcels p
-            JOIN zoning_districts zd
-              ON zd.jurisdiction_id = p.jurisdiction_id
-             AND p.jurisdiction_id = CAST(:jid AS uuid)
-             AND p.geom IS NOT NULL
-             AND zd.geom IS NOT NULL
-             AND ST_Within(ST_Centroid(p.geom), zd.geom)
-        )
-        UPDATE parcels p
-        SET zone_class = ranked.zone_class,
-            zoning_code = COALESCE(NULLIF(p.zoning_code, ''), ranked.zone_code)
-        FROM ranked
-        WHERE p.id = ranked.parcel_id
-          AND ranked.rn = 1
+        UPDATE parcels target
+        SET zone_class = sub.zone_class,
+            zoning_code = COALESCE(NULLIF(target.zoning_code, ''), sub.zone_code)
+        FROM (
+            SELECT p.id AS parcel_id, m.zone_class, m.zone_code
+            FROM parcels p,
+            LATERAL (
+                SELECT zd.zone_class, zd.zone_code
+                FROM zoning_districts zd
+                WHERE zd.jurisdiction_id = CAST(:jid AS uuid)
+                  AND zd.geom IS NOT NULL
+                  AND ST_Within(ST_Centroid(p.geom), zd.geom)
+                ORDER BY zd.id
+                LIMIT 1
+            ) m
+            WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+              AND p.geom IS NOT NULL
+        ) sub
+        WHERE target.id = sub.parcel_id
         """
     ), {"jid": str(jurisdiction_id)})).all()
     return {
