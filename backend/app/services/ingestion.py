@@ -273,8 +273,14 @@ def _map_row(
 
     has_structure: bool | None = None if vacant is None else (not vacant)
 
-    # Build raw property snapshot (strip geometry, coerce to str)
-    if hasattr(row, "_asdict"):
+    # Build raw property snapshot (strip geometry, coerce to str).
+    # The bulk-ingest caller now passes a plain ``dict`` (from
+    # ``dict(zip(columns, gdf.itertuples()))``), so the namedtuple
+    # `_asdict` / pandas `to_dict` branches no longer fire and raw was
+    # being persisted as ``{}``. Handle dict directly first.
+    if isinstance(row, dict):
+        props = {k: v for k, v in row.items() if k != "geometry"}
+    elif hasattr(row, "_asdict"):
         props = {k: v for k, v in row._asdict().items() if k != "geometry"}
     elif hasattr(row, "to_dict"):
         props = {k: v for k, v in row.to_dict().items() if k != "geometry"}
@@ -391,6 +397,7 @@ _STAGE_COLUMNS = [
     "zoning_code", "zone_class", "land_use_code", "acres",
     "county_link", "in_flood_zone", "in_wetland", "avg_slope_pct",
     "has_structure", "improvement_value",
+    "assessed_value", "is_residential",
     "geom_wkb", "centroid_wkb", "raw_json",
 ]
 
@@ -410,6 +417,8 @@ CREATE TEMP TABLE IF NOT EXISTS _stage_parcels (
     avg_slope_pct double precision,
     has_structure boolean,
     improvement_value double precision,
+    assessed_value double precision,
+    is_residential boolean,
     geom_wkb bytea,
     centroid_wkb bytea,
     raw_json text
@@ -422,7 +431,9 @@ _MERGE_SQL = """
 INSERT INTO parcels (
     jurisdiction_id, apn, address, owner_name, zoning_code, zone_class,
     land_use_code, acres, county_link, in_flood_zone, in_wetland,
-    avg_slope_pct, has_structure, improvement_value, geom, centroid, raw
+    avg_slope_pct, has_structure, improvement_value,
+    assessed_value, is_residential,
+    geom, centroid, raw
 )
 SELECT
     s.jurisdiction_id, s.apn, s.address, s.owner_name,
@@ -430,6 +441,7 @@ SELECT
     s.land_use_code, s.acres, s.county_link,
     s.in_flood_zone, s.in_wetland, s.avg_slope_pct,
     s.has_structure, s.improvement_value,
+    s.assessed_value, s.is_residential,
     ST_GeomFromEWKB(s.geom_wkb),
     ST_GeomFromEWKB(s.centroid_wkb),
     s.raw_json::jsonb
@@ -447,6 +459,8 @@ ON CONFLICT ON CONSTRAINT uq_parcels_jurisdiction_apn DO UPDATE SET
     avg_slope_pct = EXCLUDED.avg_slope_pct,
     has_structure = EXCLUDED.has_structure,
     improvement_value = EXCLUDED.improvement_value,
+    assessed_value = COALESCE(EXCLUDED.assessed_value, parcels.assessed_value),
+    is_residential = COALESCE(EXCLUDED.is_residential, parcels.is_residential),
     geom = EXCLUDED.geom,
     centroid = EXCLUDED.centroid,
     raw = EXCLUDED.raw,
@@ -471,6 +485,8 @@ def _row_to_record(r: dict) -> tuple:
         r.get("avg_slope_pct"),
         r.get("has_structure"),
         r.get("improvement_value"),
+        r.get("assessed_value"),
+        r.get("is_residential"),
         wkb_dumps(r["geom"], hex=False, srid=4326),
         wkb_dumps(r["centroid"], hex=False, srid=4326),
         json.dumps(raw) if raw is not None else None,
