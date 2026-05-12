@@ -111,13 +111,20 @@ async def discover_zoning_for_jurisdiction(
     # Build a query — combine the jurisdiction name with "zoning" intent.
     query = f"zoning {j.name or j.county or ''}".strip()
 
+    # Token bag for jurisdiction-name matching — used to bonus candidates whose
+    # title names this jurisdiction, and penalise candidates whose title names
+    # a *different* county (common false-positive when the Hub bbox catches a
+    # neighbouring county, e.g. Hunterdon NJ's bbox overlaps Warren NJ and the
+    # Warren County Zoning Map was outranking real Hunterdon sources).
+    name_tokens = _name_tokens(j.name, j.county)
+
     candidates: list[ZoningCandidate] = []
     candidates_total = 0
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
         raw = await _hub_search(client, query, bbox_str)
         candidates_total = len(raw)
         # Probe each candidate's feature_count, geometry, fields (concurrent).
-        probes = [_probe_layer(client, item, bbox) for item in raw]
+        probes = [_probe_layer(client, item, bbox, name_tokens) for item in raw]
         probed = await asyncio.gather(*probes, return_exceptions=True)
         for entry in probed:
             if isinstance(entry, Exception) or entry is None:
@@ -165,6 +172,7 @@ async def _probe_layer(
     client: httpx.AsyncClient,
     hub_item: dict,
     jurisdiction_bbox: list[float] | None,
+    name_tokens: dict | None = None,
 ) -> ZoningCandidate | None:
     attrs = hub_item.get("attributes", {}) or {}
     title = (attrs.get("name") or attrs.get("title") or "").strip()
@@ -230,6 +238,8 @@ async def _probe_layer(
         and _bboxes_overlap(jurisdiction_bbox, layer_bbox)
     )
 
+    name_match, wrong_county = _name_match_signals(title_lc, name_tokens or {})
+
     confidence, reasons = _score_candidate(
         title_score=title_score,
         pos_hits=pos_hits,
@@ -238,6 +248,8 @@ async def _probe_layer(
         feature_count=feature_count,
         field_matches=field_matches,
         bbox_overlaps=bbox_overlaps,
+        name_match=name_match,
+        wrong_county=wrong_county,
     )
 
     return ZoningCandidate(
@@ -263,6 +275,8 @@ def _score_candidate(
     feature_count: int | None,
     field_matches: list[str],
     bbox_overlaps: bool,
+    name_match: bool = False,
+    wrong_county: str | None = None,
 ) -> tuple[int, list[str]]:
     score = 0
     reasons: list[str] = []
@@ -291,7 +305,56 @@ def _score_candidate(
     if bbox_overlaps:
         score += 10
         reasons.append("layer bbox overlaps jurisdiction bbox")
+    if name_match:
+        score += 25
+        reasons.append("title names this jurisdiction")
+    if wrong_county:
+        # Heavy penalty — Hub bbox-search often surfaces neighbouring counties
+        # whose layers happen to overlap. A title that says "Warren County"
+        # when we're looking for Hunterdon is almost certainly wrong.
+        score -= 50
+        reasons.append(f"title names a different county ({wrong_county!r})")
     return max(0, min(100, score)), reasons
+
+
+# Common US county names that appear in ArcGIS layer titles. Used only for the
+# "title names a different county" penalty — we compare the candidate's title
+# to this list, find any county tokens, and if NONE of them are in the
+# jurisdiction's own name_tokens, that's a wrong-county signal.
+_COMMON_COUNTY_WORDS = {
+    "county", "co.",
+}
+
+
+def _name_tokens(name: str | None, county: str | None) -> dict:
+    """Build a token bag for name matching. Returns a dict with `expect`
+    (tokens we want to see in the title) and `bag` (lowercased words from
+    the jurisdiction's name + county)."""
+    raw = " ".join(filter(None, [name or "", county or ""])).lower()
+    raw = raw.replace(",", " ").replace(".", " ")
+    words = [w for w in raw.split() if len(w) >= 3 and w not in _COMMON_COUNTY_WORDS]
+    return {"expect": set(words)}
+
+
+def _name_match_signals(title_lc: str, name_tokens: dict) -> tuple[bool, str | None]:
+    """Return (own-name appears in title?, wrong-county word if any)."""
+    expect = name_tokens.get("expect") or set()
+    if not expect:
+        return False, None
+    own = any(w in title_lc for w in expect)
+    # Detect a *different* county-style name in the title: a word followed by
+    # "county" that's NOT one of our own tokens.
+    wrong = None
+    for chunk in title_lc.split():
+        # Look for "<word> county" sequences.
+        pass
+    # Simpler scan: pull all "<X> county" pairs from the title.
+    parts = title_lc.split()
+    for i, w in enumerate(parts[:-1]):
+        if parts[i + 1].startswith("county") and w not in expect and len(w) >= 3:
+            wrong = w
+            break
+    return own, wrong
 
 
 def _bboxes_overlap(a: list[float], b: list[float]) -> bool:
