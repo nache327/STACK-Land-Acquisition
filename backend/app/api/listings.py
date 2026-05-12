@@ -179,7 +179,21 @@ async def _persist_and_match(
 ) -> dict:
 
     detected_source = result.detected_source
-    rows = result.rows
+    # Dedupe by (address, sale_status) — CoStar exports occasionally list
+    # the same property twice in one report (e.g. listed under two brokers).
+    # PostgreSQL's ON CONFLICT DO UPDATE won't accept duplicates within a
+    # single statement, so we keep the LAST occurrence here. The earlier
+    # ones still appear in raw_row of the surviving record if the operator
+    # wants to inspect them.
+    seen: dict[tuple, "ListingRow"] = {}
+    for r in result.rows:
+        seen[(r.address, r.sale_status)] = r
+    rows = list(seen.values())
+    if len(rows) < len(result.rows):
+        result.warnings.append(
+            f"Deduped {len(result.rows) - len(rows)} duplicate row(s) by (address, sale_status); "
+            f"kept the last occurrence of each."
+        )
     if not rows:
         return {
             "inserted": 0,
