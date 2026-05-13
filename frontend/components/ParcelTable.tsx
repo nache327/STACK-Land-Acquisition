@@ -36,6 +36,9 @@ interface ParcelTableProps {
    *  score is in this map we use it directly; otherwise we fall back
    *  to the client-side `computeScore` formula. */
   serverScores?: Map<number, ServerParcelScore>;
+  /** When true, prepend a listed-first key to whatever sort the user
+   *  has chosen. Bound to filter.sortListedFirst from BuyBoxPanel. */
+  sortListedFirst?: boolean;
 }
 
 export function ParcelTable({
@@ -45,6 +48,7 @@ export function ParcelTable({
   selectedIds = new Set(),
   onSelectionChange,
   serverScores,
+  sortListedFirst = false,
 }: ParcelTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "score", desc: true },
@@ -146,6 +150,30 @@ export function ParcelTable({
         );
       },
     }),
+    columnHelper.accessor((row) => row.listing_summary?.has_listing ?? false, {
+      id: "listed",
+      header: () => <span title="Listed for sale">🏷️</span>,
+      sortDescFirst: true,
+      cell: ({ row }) => {
+        const ls = row.original.listing_summary;
+        if (!ls || !ls.has_listing) return null;
+        const tooltipParts: string[] = [];
+        if (ls.sale_price != null) {
+          tooltipParts.push(`$${ls.sale_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
+        }
+        if (ls.days_on_market != null) tooltipParts.push(`DOM ${ls.days_on_market}`);
+        if (ls.broker_company) tooltipParts.push(ls.broker_company);
+        if (ls.source) tooltipParts.push(`via ${ls.source}`);
+        return (
+          <span
+            className="inline-block text-base leading-none"
+            title={tooltipParts.join(" · ") || "Listed for sale"}
+          >
+            🏷️
+          </span>
+        );
+      },
+    }),
     columnHelper.accessor("apn", {
       header: "APN",
       enableSorting: false,
@@ -195,11 +223,20 @@ export function ParcelTable({
     }),
   ];
 
+  // When `sortListedFirst` is on, prepend the listed-first key so it
+  // always wins over the user's clicked sort. Otherwise just pass the
+  // user's sort through unchanged.
+  const effectiveSorting = useMemo<SortingState>(() => {
+    if (!sortListedFirst) return sorting;
+    return [{ id: "listed", desc: true }, ...sorting.filter((s) => s.id !== "listed")];
+  }, [sorting, sortListedFirst]);
+
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting },
+    state: { sorting: effectiveSorting },
     onSortingChange: setSorting,
+    enableMultiSort: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });

@@ -459,12 +459,37 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jurisdictionId, mapParcels.length === 0]);
 
+  // hasListingByParcel — keyed by stringified parcel_id, mirroring
+  // the rest of the evaluation pipeline. Built from the candidate-search
+  // response's listing_summary so the Listed-only hard filter and the
+  // requireListed gate inside evaluateParcel can both consult it.
+  const hasListingByParcel = useMemo<Map<string, boolean>>(() => {
+    const m = new Map<string, boolean>();
+    mapParcels.forEach((p) => {
+      m.set(String(p.parcel_id), p.listing_summary?.has_listing === true);
+    });
+    return m;
+  }, [mapParcels]);
+
   const parcelEvaluations = useMemo<Map<string, EvaluationStatus>>(() => {
     if (!isFilterActive(buyBoxFilter)) {
       return new Map();
     }
     const ids = mapParcels.map((p) => String(p.parcel_id));
     const out = new Map<string, EvaluationStatus>();
+
+    // Hard listings filter — when requireListed is on, drop any parcel
+    // without a current matched listing BEFORE any demographic
+    // evaluation runs. This works even when no demographic sliders are
+    // set (the toggle alone activates the filter).
+    if (buyBoxFilter.requireListed) {
+      mapParcels.forEach((p) => {
+        const id = String(p.parcel_id);
+        if (!hasListingByParcel.get(id)) {
+          out.set(id, "fail");
+        }
+      });
+    }
 
     // Demographic evaluation (requires precomputed isochrone data).
     // The wealth-density sliders are only included when the jurisdiction
@@ -483,8 +508,16 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       ));
 
     if (needsDemographics && precomputeData.size > 0) {
-      const results = evaluateAll(ids, precomputeData, buyBoxFilter, { wealthDensityAvailable });
-      Array.from(results.entries()).forEach(([id, r]) => out.set(id, r.status));
+      const results = evaluateAll(ids, precomputeData, buyBoxFilter, {
+        wealthDensityAvailable,
+        hasListingByParcel,
+      });
+      Array.from(results.entries()).forEach(([id, r]) => {
+        // Don't overwrite a "fail" already set by the requireListed gate
+        // above with a softer status from the demographic pass.
+        if (out.get(id) === "fail") return;
+        out.set(id, r.status);
+      });
     } else if (needsDemographics) {
       // Isochrones not yet loaded — mark all as computing
       ids.forEach((id) => out.set(id, "computing"));
@@ -507,7 +540,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
 
     return out;
-  }, [buyBoxFilter, precomputeData, mapParcels]);
+  }, [buyBoxFilter, precomputeData, mapParcels, hasListingByParcel, wealthDensityAvailable]);
 
   const evaluationCounts = useMemo(() => {
     let match = 0, borderline = 0, fail = 0, computing = 0;
@@ -896,12 +929,17 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
         <aside className="w-[720px] border-l bg-white">
           <ParcelTable
-            parcels={parcels}
+            parcels={
+              buyBoxFilter.requireListed
+                ? parcels.filter((p) => p.listing_summary?.has_listing === true)
+                : parcels
+            }
             onRowClick={handleParcelClick}
             selectedId={selectedParcelId}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             serverScores={serverScores}
+            sortListedFirst={!!buyBoxFilter.sortListedFirst}
           />
         </aside>
       </div>

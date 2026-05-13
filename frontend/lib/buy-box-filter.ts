@@ -24,6 +24,10 @@ export interface BuyBoxFilter {
   // the listings dimension is inactive for this filter.
   requireListed?: boolean;
   listingScoreBoost?: number;
+  // UX-only: when true, the parcels-list and map sort listed parcels
+  // ahead of unlisted ones (within whatever score / sort the user has
+  // chosen). Doesn't filter — see requireListed for that.
+  sortListedFirst?: boolean;
 }
 
 export type EvaluationStatus = "match" | "borderline" | "fail" | "computing";
@@ -58,7 +62,11 @@ export const DEFAULT_FILTER: BuyBoxFilter = {
   minHomesOver5M: null,
   matchLogic: "AND",
   requireListed: false,
-  listingScoreBoost: 0,
+  // Default boost (15 points) so parcels with a current matched listing
+  // naturally rise to the top of the daily digest. Server-side scorer
+  // reads filter_json.listingScoreBoost; see backend/app/services/buybox_scoring.py.
+  listingScoreBoost: 15,
+  sortListedFirst: false,
 };
 
 // Legacy localStorage key — kept solely for the one-shot migration helper.
@@ -76,7 +84,8 @@ export function isFilterActive(filter: BuyBoxFilter): boolean {
     filter.minAADT != null ||
     filter.minHomesOver1M != null ||
     filter.minHomesOver2M != null ||
-    filter.minHomesOver5M != null
+    filter.minHomesOver5M != null ||
+    filter.requireListed === true
   );
 }
 
@@ -99,6 +108,13 @@ export interface EvaluateOptions {
    * hidden" the moment a user drags Homes ≥$1M off 0. Defaults to true
    * (gate enabled) when omitted. */
   wealthDensityAvailable?: boolean;
+  /** Map of parcel_id → whether the parcel has a current matched
+   * listing (any source, confidence >= 0.85). Built from the candidate-
+   * search response's listing_summary. When filter.requireListed is
+   * true and a parcel's entry here is false, evaluateParcel returns
+   * "fail" regardless of demographic match — that's what hides
+   * non-listed parcels from the dashboard. */
+  hasListingByParcel?: Map<string, boolean>;
 }
 
 export function evaluateParcel(
@@ -107,6 +123,21 @@ export function evaluateParcel(
   filter: BuyBoxFilter,
   options?: EvaluateOptions,
 ): EvaluationResult {
+  // Hard listings filter — when requireListed is on, drop any parcel
+  // without a current matched listing. Runs BEFORE the precomputed-data
+  // check so the parcel is correctly marked "fail" rather than
+  // "computing" while isochrone precompute is still running.
+  if (filter.requireListed) {
+    const hasListing = options?.hasListingByParcel?.get(parcelId) ?? false;
+    if (!hasListing) {
+      return {
+        status: "fail",
+        failedConditions: ["requireListed"],
+        borderlineConditions: [],
+      };
+    }
+  }
+
   const data = precomputedData.get(parcelId);
   if (!data) return { status: "computing", failedConditions: [], borderlineConditions: [] };
 
