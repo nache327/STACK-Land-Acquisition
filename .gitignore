@@ -65,3 +65,4 @@ docker-compose.override.yml
 backend/uploads/*
 !backend/uploads/README.md
 listings_lehi.json
+search_lehi.json
