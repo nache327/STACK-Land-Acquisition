@@ -336,11 +336,32 @@ const COMPETITORS: LayerDef = {
   legend: [{ color: "#ef4444", label: "Existing self-storage" }],
 };
 
+// For-sale listings — magenta outline drawn on parcels that have an
+// active matched listing. The MapLibre layer itself is added inside
+// Map.tsx (it shares the parcels source rather than owning its own),
+// so source/layers are no-ops here. This entry exists so the layer
+// appears in LayerControl and the visibility loop can toggle it.
+// `defaultVisible: true` preserves prior behavior; operators can hide
+// it when zoomed-in outlines turn noisy.
+const FOR_SALE_LISTINGS: LayerDef = {
+  id: "for_sale_listings",
+  title: "For-sale listings",
+  description: "Magenta outline on parcels with an active matched listing",
+  category: "data",
+  defaultVisible: true,
+  defaultOpacity: 0.9,
+  source: () => null,
+  layers: () => [],
+  mapLayerIds: ["parcels-listed-outline"],
+  legend: [{ color: "#ec4899", label: "Listed parcel" }],
+};
+
 // Order matters: entries that render below should come first (base first,
 // then zoning, then parcels, then overlays).
 export const LAYER_REGISTRY: LayerDef[] = [
   ZONING_DISTRICTS,
   PARCELS,
+  FOR_SALE_LISTINGS,
   OVERLAY_FLOOD,
   OVERLAY_WETLAND,
   COMPETITORS,

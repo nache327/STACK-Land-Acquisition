@@ -464,7 +464,13 @@ export default function Map({
 
     const addRegistryLayers = () => {
       for (const layer of LAYER_REGISTRY) {
+        // Parcels and for_sale_listings own their MapLibre layers
+        // inside this component's parcel-rendering block (they share
+        // the parcels vector source), so the generic registry loop has
+        // nothing to create for them. The visibility-toggle loop below
+        // still honors their LAYER_REGISTRY entries.
         if (layer.id === "parcels") continue;
+        if (layer.id === "for_sale_listings") continue;
 
         for (const mapLayerId of layer.mapLayerIds) {
           if (map.getLayer(mapLayerId)) {
