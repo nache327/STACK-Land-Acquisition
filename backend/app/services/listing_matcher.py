@@ -46,6 +46,10 @@ _TIER_3 = "geocode_census_1"
 _TIER_4 = "geocode_nominatim_1"
 _TIER_5 = "geocode_owner_cluster"
 _TIER_6 = "geocode_nearest"
+# Stamped when ``rematch_listing`` finds a single-parcel hit using the
+# listing's previously-cached geocoded_lat/lon (no re-geocode call). Lets
+# operators tell rematch hits apart from first-ingest hits in diagnostics.
+_TIER_GEOCODE_CACHED = "geocode_cached_1"
 
 # Spatial radius for geocode-based tiers. 100m is generous enough to
 # handle minor address drift (broker types "Main St" vs county's
@@ -159,7 +163,17 @@ async def _tier_geocode(
     geo = await _geocode_any(listing)
     if geo is None:
         return None
+    return await _match_against_geocoded_point(listing, geo, db)
 
+
+async def _match_against_geocoded_point(
+    listing: ForsaleListing, geo: GeocodedPoint, db: AsyncSession
+) -> MatchResult | None:
+    """Run the spatial-search half of the geocode cascade against an
+    already-computed point. Factored out of ``_tier_geocode`` so the
+    rematch path can reuse a listing's previously-stored coords without
+    calling the geocoder again.
+    """
     # Pull up to 10 parcels within radius, sorted by distance ascending,
     # along with owner_name + acres for cluster + primary selection.
     rows = (
@@ -209,7 +223,12 @@ async def _tier_geocode(
     if len(rows) == 1:
         # Single hit — clean match.
         r = rows[0]
-        method = _TIER_3 if geo.source == "census" else _TIER_4
+        if geo.source == "cached":
+            method = _TIER_GEOCODE_CACHED
+        elif geo.source == "census":
+            method = _TIER_3
+        else:
+            method = _TIER_4
         return MatchResult(
             matched_parcel_id=int(r.id),
             match_confidence=0.85,
@@ -356,4 +375,63 @@ async def match_pending_listings(
     return counters
 
 
-__all__ = ["MatchResult", "match_listing", "match_pending_listings"]
+async def rematch_listing(
+    listing: ForsaleListing, db: AsyncSession
+) -> MatchResult:
+    """Re-run the cascade against an EXISTING listing without re-geocoding.
+
+    Tiers 1-2 (exact + stripped address) rerun unconditionally because
+    they're cheap and may benefit from matcher logic improvements. Tiers
+    3-6 reuse ``listing.geocoded_lat`` / ``listing.geocoded_lon`` if
+    present, stamped with ``_TIER_GEOCODE_CACHED`` in the single-hit case
+    so operators can tell rematch hits apart from first-ingest hits.
+
+    Listings that were never geocoded (geocoded_lat IS NULL) get tiers
+    1-2 only — they stay unmatched if address-based logic still can't
+    place them. Geocoding is intentionally NOT re-run; that's the
+    upstream geocoder's job during ingest.
+
+    Caller must commit.
+    """
+    result = await _tier1_exact(listing, db)
+    if result is None:
+        result = await _tier2_stripped(listing, db)
+    if (
+        result is None
+        and listing.geocoded_lat is not None
+        and listing.geocoded_lon is not None
+    ):
+        point = GeocodedPoint(
+            lat=float(listing.geocoded_lat),
+            lon=float(listing.geocoded_lon),
+            source="cached",
+        )
+        result = await _match_against_geocoded_point(listing, point, db)
+    if result is None:
+        # Preserve existing coords on the no-match path — we didn't
+        # re-geocode, so blanking them would lose data.
+        result = MatchResult(
+            matched_parcel_id=None,
+            match_confidence=None,
+            match_method=None,
+            geocoded_lat=listing.geocoded_lat,
+            geocoded_lon=listing.geocoded_lon,
+            co_listed_parcels=None,
+        )
+
+    listing.matched_parcel_id = result.matched_parcel_id
+    listing.match_confidence = (
+        None if result.match_confidence is None else float(result.match_confidence)
+    )
+    listing.match_method = result.match_method
+    # Intentionally not touching geocoded_lat/lon — rematch is no-regeocode.
+    listing.co_listed_parcels = result.co_listed_parcels
+    return result
+
+
+__all__ = [
+    "MatchResult",
+    "match_listing",
+    "match_pending_listings",
+    "rematch_listing",
+]
