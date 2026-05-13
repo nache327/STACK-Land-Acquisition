@@ -21,6 +21,16 @@ export interface JurisdictionListing {
   lon: number | null;
   is_current: boolean;
   last_seen_at: string | null;
+  /** When the same owner is selling multiple adjacent parcels, the
+   *  matcher records every parcel in the cluster here. is_primary
+   *  flags the largest-acreage one (the row matched_parcel_id points
+   *  to). null for normal single-parcel matches. */
+  co_listed_parcels: Array<{
+    id: number;
+    apn: string;
+    acres: number | null;
+    is_primary: boolean;
+  }> | null;
 }
 
 const API_BASE =

@@ -1,19 +1,28 @@
 """Cascade matcher: ForsaleListing -> Parcel.
 
-Three tiers in order. The first that produces a match writes the
-result back to the listing row and returns. Confidence < 0.85 leaves
-``matched_parcel_id`` null on purpose — the spec is explicit that
-low-confidence matches should NOT auto-apply to scoring.
+Six tiers. The first that produces a match writes the result back to
+the listing and returns. Confidence < 0.85 stores match_method (so
+the operator sees what happened) and matched_parcel_id (so the UI
+can still surface the card), but with the lower confidence the
+scorer's listing_score_boost should NOT auto-apply — that decision
+lives in buybox_scoring.
 
-Tier 1 — Normalized address exact match against parcels in the same
-         jurisdiction. Confidence 1.0.
-Tier 2 — Strip unit + ZIP+4, retry Tier 1. Confidence 0.95.
-Tier 3 — Geocode via Census, spatial ST_DWithin(centroid, lon/lat, 50m).
-         1 hit → 0.85, multiple → 0.65 (flag), 0 → unmatched.
+  Tier 1 — Normalized address exact match. Confidence 1.0.
+  Tier 2 — Strip unit + ZIP+4, retry. Confidence 0.95.
+  Tier 3 — Census geocode + ST_DWithin(100m), 1 hit. Confidence 0.85.
+  Tier 4 — Nominatim (OSM) geocode + ST_DWithin(100m), 1 hit.
+           Free OSM fallback for grid-style addresses Census can't
+           resolve (Utah "1170 E 3200 N", etc). Confidence 0.85.
+  Tier 5 — Multiple parcels within radius, same owner_name as the
+           NEAREST. Treat as a same-owner cluster sale. Primary =
+           largest acreage. co_listed_parcels populated. Confidence
+           0.85 (owner corroboration = high).
+  Tier 6 — Multiple parcels within radius, no shared owner. Pick the
+           NEAREST. Confidence 0.75 (no corroboration).
 
 `match_pending_listings` is the batch entry point invoked from the
-upload background task. It only runs over rows where
-``matched_parcel_id IS NULL`` so re-running is idempotent.
+upload background task. Idempotent — only re-touches rows where
+match_method IS NULL.
 """
 from __future__ import annotations
 
@@ -26,14 +35,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.forsale_listing import ForsaleListing
 from app.services.address_normalizer import normalize, strip_unit
-from app.services.geocode_census import geocode_address
+from app.services.geocode_census import geocode_address as geocode_census
+from app.services.geocode_nominatim import geocode_address as geocode_nominatim
 
 logger = logging.getLogger(__name__)
 
 _TIER_1 = "exact_address"
 _TIER_2 = "stripped_address"
-_TIER_3_ONE = "geocode_spatial_1"
-_TIER_3_MANY = "geocode_spatial_multi"
+_TIER_3 = "geocode_census_1"
+_TIER_4 = "geocode_nominatim_1"
+_TIER_5 = "geocode_owner_cluster"
+_TIER_6 = "geocode_nearest"
+
+# Spatial radius for geocode-based tiers. 100m is generous enough to
+# handle minor address drift (broker types "Main St" vs county's
+# "Main Street") without sweeping in unrelated parcels in suburban
+# parcel grids.
+_SPATIAL_RADIUS_M = 100
+
+
+@dataclass
+class GeocodedPoint:
+    lat: float
+    lon: float
+    source: str  # 'census' | 'nominatim'
 
 
 @dataclass
@@ -43,12 +68,15 @@ class MatchResult:
     match_method: str | None
     geocoded_lat: float | None
     geocoded_lon: float | None
+    co_listed_parcels: list | None = None
+
+
+# ── Tier 1/2 — direct address comparison ─────────────────────────────────────
 
 
 async def _tier1_exact(
     listing: ForsaleListing, db: AsyncSession
 ) -> MatchResult | None:
-    """Normalized-address exact match. Confidence 1.0."""
     norm = normalize(listing.address)
     if not norm:
         return None
@@ -71,15 +99,12 @@ async def _tier1_exact(
             geocoded_lat=None,
             geocoded_lon=None,
         )
-    # Multiple exact matches (e.g. duplicate address rows in parcels)
-    # — push to Tier 3 with geocode, won't auto-apply
     return None
 
 
 async def _tier2_stripped(
     listing: ForsaleListing, db: AsyncSession
 ) -> MatchResult | None:
-    """Strip unit + ZIP+4 + retry. Confidence 0.95."""
     norm = strip_unit(listing.address)
     if not norm:
         return None
@@ -105,39 +130,74 @@ async def _tier2_stripped(
     return None
 
 
-async def _tier3_geocode(
+# ── Geocode chain: Census, then Nominatim ────────────────────────────────────
+
+
+async def _geocode_any(listing: ForsaleListing) -> GeocodedPoint | None:
+    """Try Census first (faster, U.S.-tuned). Fall back to Nominatim
+    when Census produces no match — recovers Utah grid addresses and
+    other formats Census doesn't index."""
+    c = await geocode_census(listing.address, listing.city, listing.state)
+    if c is not None:
+        return GeocodedPoint(lat=c.lat, lon=c.lon, source="census")
+    n = await geocode_nominatim(listing.address, listing.city, listing.state)
+    if n is not None:
+        return GeocodedPoint(lat=n.lat, lon=n.lon, source="nominatim")
+    return None
+
+
+# ── Tier 3-6 — geocode-driven matching ───────────────────────────────────────
+
+
+async def _tier_geocode(
     listing: ForsaleListing, db: AsyncSession
 ) -> MatchResult | None:
-    """Geocode via Census, then spatial query within 50m. 1 hit = 0.85,
-    multiple = 0.65 (flag), 0 = unmatched."""
-    geo = await geocode_address(listing.address, listing.city, listing.state)
+    """Single function covering the geocode-driven tiers 3-6. We do
+    one geocode call (chained Census→Nominatim) and one spatial query,
+    then branch on the count of matches and the owner_name distribution.
+    """
+    geo = await _geocode_any(listing)
     if geo is None:
         return None
 
+    # Pull up to 10 parcels within radius, sorted by distance ascending,
+    # along with owner_name + acres for cluster + primary selection.
     rows = (
         await db.execute(
             text(
                 """
-                SELECT id
-                  FROM parcels
-                 WHERE jurisdiction_id = :jid
-                   AND centroid IS NOT NULL
+                SELECT
+                    p.id,
+                    p.apn,
+                    p.owner_name,
+                    p.acres,
+                    ST_Distance(
+                        p.centroid::geography,
+                        ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography
+                    ) AS dist_m
+                  FROM parcels p
+                 WHERE p.jurisdiction_id = :jid
+                   AND p.centroid IS NOT NULL
                    AND ST_DWithin(
-                         centroid::geography,
+                         p.centroid::geography,
                          ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
-                         50
+                         :radius
                        )
-                 LIMIT 5
+                 ORDER BY dist_m ASC
+                 LIMIT 10
                 """
             ).bindparams(
                 jid=listing.jurisdiction_id,
                 lon=geo.lon,
                 lat=geo.lat,
+                radius=_SPATIAL_RADIUS_M,
             )
         )
-    ).fetchall()
+    ).all()
 
     if not rows:
+        # Geocoded but no parcels nearby — store lat/lon so operator
+        # can investigate, leave matched_parcel_id null.
         return MatchResult(
             matched_parcel_id=None,
             match_confidence=None,
@@ -145,22 +205,68 @@ async def _tier3_geocode(
             geocoded_lat=geo.lat,
             geocoded_lon=geo.lon,
         )
+
     if len(rows) == 1:
+        # Single hit — clean match.
+        r = rows[0]
+        method = _TIER_3 if geo.source == "census" else _TIER_4
         return MatchResult(
-            matched_parcel_id=int(rows[0][0]),
+            matched_parcel_id=int(r.id),
             match_confidence=0.85,
-            match_method=_TIER_3_ONE,
+            match_method=method,
             geocoded_lat=geo.lat,
             geocoded_lon=geo.lon,
         )
-    # Multiple — flag for review, don't auto-apply
+
+    # Multiple hits. First try same-owner clustering.
+    nearest = rows[0]
+    if nearest.owner_name:
+        owner_key = nearest.owner_name.strip().lower()
+        cluster = [
+            r for r in rows
+            if r.owner_name and r.owner_name.strip().lower() == owner_key
+        ]
+        if len(cluster) > 1:
+            # Same owner sells N adjacent lots — record all, set
+            # primary = largest acreage so the operator sees the
+            # marquee parcel first.
+            sorted_by_acres = sorted(
+                cluster,
+                key=lambda r: float(r.acres or 0),
+                reverse=True,
+            )
+            primary = sorted_by_acres[0]
+            co_listed = [
+                {
+                    "id": int(r.id),
+                    "apn": r.apn,
+                    "acres": float(r.acres) if r.acres is not None else None,
+                    "is_primary": int(r.id) == int(primary.id),
+                }
+                for r in sorted_by_acres
+            ]
+            return MatchResult(
+                matched_parcel_id=int(primary.id),
+                match_confidence=0.85,
+                match_method=_TIER_5,
+                geocoded_lat=geo.lat,
+                geocoded_lon=geo.lon,
+                co_listed_parcels=co_listed,
+            )
+
+    # No owner cluster — pick the nearest parcel with lower confidence.
+    # Operator will see match_method=geocode_nearest and confidence
+    # 0.75 in the drawer, signaling "verify this".
     return MatchResult(
-        matched_parcel_id=None,
-        match_confidence=0.65,
-        match_method=_TIER_3_MANY,
+        matched_parcel_id=int(nearest.id),
+        match_confidence=0.75,
+        match_method=_TIER_6,
         geocoded_lat=geo.lat,
         geocoded_lon=geo.lon,
     )
+
+
+# ── Public API ───────────────────────────────────────────────────────────────
 
 
 async def match_listing(
@@ -173,14 +279,10 @@ async def match_listing(
     if result is None:
         result = await _tier2_stripped(listing, db)
     if result is None:
-        result = await _tier3_geocode(listing, db)
+        result = await _tier_geocode(listing, db)
     if result is None:
-        # Nothing matched, no geocode
         result = MatchResult(None, None, None, None, None)
 
-    # Confidence < 0.85 → don't apply matched_parcel_id to scoring.
-    # Schema column matched_parcel_id is still stored when match_method
-    # is set; it's the score side's job to filter on match_confidence.
     listing.matched_parcel_id = result.matched_parcel_id
     listing.match_confidence = (
         None if result.match_confidence is None else float(result.match_confidence)
@@ -188,6 +290,7 @@ async def match_listing(
     listing.match_method = result.match_method
     listing.geocoded_lat = result.geocoded_lat
     listing.geocoded_lon = result.geocoded_lon
+    listing.co_listed_parcels = result.co_listed_parcels
     return result
 
 
@@ -197,10 +300,9 @@ async def match_pending_listings(
     db: AsyncSession,
 ) -> dict:
     """Match every unmatched listing for (jurisdiction, source).
-    Idempotent — already-matched rows are skipped.
+    Idempotent — only re-runs on rows where match_method IS NULL.
 
-    Returns ``{processed, tier_1, tier_2, tier_3_one, tier_3_multi, unmatched}``
-    for diagnostic logging.
+    Returns counters by tier for diagnostic logging.
     """
     stmt = (
         select(ForsaleListing)
@@ -214,12 +316,14 @@ async def match_pending_listings(
     )
     listings = list((await db.execute(stmt)).scalars().all())
 
-    counters = {
+    counters: dict[str, int] = {
         "processed": 0,
         "tier_1": 0,
         "tier_2": 0,
-        "tier_3_one": 0,
-        "tier_3_multi": 0,
+        "tier_3_census": 0,
+        "tier_4_nominatim": 0,
+        "tier_5_owner_cluster": 0,
+        "tier_6_nearest": 0,
         "unmatched": 0,
     }
     for listing in listings:
@@ -230,10 +334,14 @@ async def match_pending_listings(
             counters["tier_1"] += 1
         elif method == _TIER_2:
             counters["tier_2"] += 1
-        elif method == _TIER_3_ONE:
-            counters["tier_3_one"] += 1
-        elif method == _TIER_3_MANY:
-            counters["tier_3_multi"] += 1
+        elif method == _TIER_3:
+            counters["tier_3_census"] += 1
+        elif method == _TIER_4:
+            counters["tier_4_nominatim"] += 1
+        elif method == _TIER_5:
+            counters["tier_5_owner_cluster"] += 1
+        elif method == _TIER_6:
+            counters["tier_6_nearest"] += 1
         else:
             counters["unmatched"] += 1
     await db.commit()
