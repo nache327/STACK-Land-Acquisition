@@ -119,15 +119,19 @@ async def search_candidate_parcels(
     if filters.exclude_wetland:
         conditions.append(Parcel.in_wetland.is_(False))
     if filters.listed_only:
-        # EXISTS scopes results to parcels with a current matched
-        # listing (confidence >= 0.85). Cheap because
-        # forsale_listings(matched_parcel_id) is indexed.
+        # EXISTS scopes results to parcels with ANY current matched
+        # listing — no confidence threshold here. The drawer's
+        # ListingCard surfaces all matched listings regardless of
+        # confidence (operator can verify or reassign via the
+        # "Wrong parcel?" button), so the dashboard's listed-only
+        # filter must match that inclusive set. The daily email
+        # worker + scoring path keep their own >= 0.85 threshold so
+        # low-confidence matches don't trigger outreach.
         listing_exists = (
             select(ForsaleListing.id)
             .where(
                 ForsaleListing.matched_parcel_id == Parcel.id,
                 ForsaleListing.is_current.is_(True),
-                ForsaleListing.match_confidence >= 0.85,
             )
             .exists()
         )
@@ -210,7 +214,11 @@ async def search_candidate_parcels(
                 .where(
                     ForsaleListing.matched_parcel_id.in_(parcel_ids),
                     ForsaleListing.is_current.is_(True),
-                    ForsaleListing.match_confidence >= 0.85,
+                    # No confidence threshold here — match the inclusive
+                    # listed_only filter above. The drawer + 🏷️ column
+                    # show low-confidence matches so the operator can
+                    # verify or reassign. Email/scoring paths apply
+                    # their own >= 0.85 cutoff downstream.
                 )
                 .order_by(
                     ForsaleListing.matched_parcel_id,
