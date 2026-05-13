@@ -188,6 +188,7 @@ export const CandidateParcelSearchFiltersSchema = z.object({
   vacant_only: z.boolean().default(false),
   exclude_flood: z.boolean().default(false),
   exclude_wetland: z.boolean().default(false),
+  listed_only: z.boolean().default(false),
 });
 export type CandidateParcelSearchFilters = z.infer<typeof CandidateParcelSearchFiltersSchema>;
 

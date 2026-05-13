@@ -86,6 +86,12 @@ class CandidateParcelSearchFilters(BaseModel):
     vacant_only: bool = False
     exclude_flood: bool = False
     exclude_wetland: bool = False
+    # When true, restrict results to parcels with a current matched
+    # for-sale listing (any source, confidence >= 0.85). Bound to
+    # BuyBoxFilter.requireListed on the dashboard. SQL-level filter
+    # so both the map and the parcels-list see the same focused set,
+    # regardless of acres/score sort.
+    listed_only: bool = False
 
 
 class CandidateParcelSearchRequest(BaseModel):

@@ -282,6 +282,11 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         vacant_only: filters.vacantOnly,
         exclude_flood: filters.excludeFlood,
         exclude_wetland: filters.excludeWetland,
+        // Scope BOTH map + table to listed parcels when the buy-box
+        // toggle is on. SQL-level filter so the result set is the
+        // focused ~31 listed parcels in Lehi instead of the top
+        // acres/score page that may not include them at all.
+        listed_only: buyBoxFilter.requireListed === true,
       },
       bbox: activeBbox,
       search: filters.search.trim() || null,
@@ -289,7 +294,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       page_size: TABLE_PAGE_SIZE,
       sort: "acres_desc",
     };
-  }, [activeBbox, filters, jurisdictionId]);
+  }, [activeBbox, filters, jurisdictionId, buyBoxFilter.requireListed]);
 
   const tablePayload = useMemo(() => {
     if (!basePayload) return null;

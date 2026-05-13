@@ -118,6 +118,20 @@ async def search_candidate_parcels(
         conditions.append(Parcel.in_flood_zone.is_(False))
     if filters.exclude_wetland:
         conditions.append(Parcel.in_wetland.is_(False))
+    if filters.listed_only:
+        # EXISTS scopes results to parcels with a current matched
+        # listing (confidence >= 0.85). Cheap because
+        # forsale_listings(matched_parcel_id) is indexed.
+        listing_exists = (
+            select(ForsaleListing.id)
+            .where(
+                ForsaleListing.matched_parcel_id == Parcel.id,
+                ForsaleListing.is_current.is_(True),
+                ForsaleListing.match_confidence >= 0.85,
+            )
+            .exists()
+        )
+        conditions.append(listing_exists)
 
     if payload.search:
         query = payload.search.strip()
