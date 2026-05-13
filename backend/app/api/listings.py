@@ -409,16 +409,16 @@ async def debug_geocode(address: str, city: str = "", state: str = "") -> dict:
 async def debug_rematch(
     jurisdiction_id: uuid.UUID,
     source: str = "costar",
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Force a synchronous re-run of the matching cascade for one
-    (jurisdiction, source). Resets match_method on existing rows first
-    so the matcher picks them up, then runs the cascade and returns
-    tier counters. Useful when the background task silently failed or
-    when the geocoder was rate-limited mid-batch."""
-    # Reset match state on current rows so the matcher's WHERE clause
-    # (match_method IS NULL) re-includes them.
-    await db.execute(
+    """Reset match state for one (jurisdiction, source) and kick off
+    a fresh matching cascade in the background. Returns immediately
+    with the number of rows queued. Poll
+    GET /api/jurisdictions/{id}/listings to see lat/lon and
+    match_method populate. Useful when the original upload's
+    background task silently failed."""
+    result = await db.execute(
         update(ForsaleListing)
         .where(
             ForsaleListing.jurisdiction_id == jurisdiction_id,
@@ -434,6 +434,23 @@ async def debug_rematch(
         )
     )
     await db.commit()
+    queued = result.rowcount or 0
 
-    counts = await match_pending_listings(jurisdiction_id, source, db)
-    return counts
+    async def _bg() -> None:
+        async with async_session_maker() as bg_db:
+            try:
+                counts = await match_pending_listings(
+                    jurisdiction_id, source, bg_db
+                )
+                logger.info(
+                    "debug-rematch juris=%s source=%s: %s",
+                    jurisdiction_id, source, counts,
+                )
+            except Exception as exc:
+                logger.exception(
+                    "debug-rematch failed juris=%s source=%s: %s",
+                    jurisdiction_id, source, exc,
+                )
+
+    background_tasks.add_task(_bg)
+    return {"queued": queued, "jurisdiction_id": str(jurisdiction_id), "source": source}
