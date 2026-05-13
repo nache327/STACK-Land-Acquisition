@@ -104,6 +104,22 @@ class CandidateParcelSearchRequest(BaseModel):
     sort: ParcelSearchSort = ParcelSearchSort.acres_desc
 
 
+class ListingSummary(BaseModel):
+    """Per-parcel listing rollup surfaced on the dashboard.
+
+    Pulled from the most-recently-seen current listing matched to
+    this parcel (any source, confidence >= 0.85). Populated by the
+    LATERAL join in candidate_search; null when no listing exists.
+    """
+    has_listing: bool = False
+    sale_price: float | None = None
+    days_on_market: int | None = None
+    sale_status: str | None = None
+    source: str | None = None
+    broker_company: str | None = None
+    match_method: str | None = None
+
+
 class CandidateParcelRow(BaseModel):
     parcel_id: int
     apn: str
@@ -122,6 +138,7 @@ class CandidateParcelRow(BaseModel):
     is_viable: bool
     violation_reasons: list[str]
     geom: dict[str, Any] | None = None
+    listing_summary: ListingSummary | None = None
 
 
 class CandidateParcelSearchResponse(BaseModel):

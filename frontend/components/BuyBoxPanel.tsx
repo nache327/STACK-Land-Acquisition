@@ -478,8 +478,22 @@ export function BuyBoxPanel({
             className="h-3 w-3 rounded border-slate-500"
           />
           Listed for sale only
-          <span className="text-[9px] text-slate-500" title="Hard filter — drops parcels with no current matched listing">
+          <span className="text-[9px] text-slate-500" title="Hard filter — hides parcels with no current matched listing">
             (hard filter)
+          </span>
+        </label>
+        <label className="mt-1 flex items-center gap-2 text-[11px] text-slate-300">
+          <input
+            type="checkbox"
+            checked={!!filter.sortListedFirst}
+            onChange={(e) =>
+              onChange({ ...filter, sortListedFirst: e.target.checked })
+            }
+            className="h-3 w-3 rounded border-slate-500"
+          />
+          Sort listed-first
+          <span className="text-[9px] text-slate-500" title="Soft sort — pulls listed parcels to the top of the list without hiding others">
+            (sort only)
           </span>
         </label>
       </div>

@@ -203,6 +203,17 @@ export const CandidateParcelSearchRequestSchema = z.object({
 });
 export type CandidateParcelSearchRequest = z.infer<typeof CandidateParcelSearchRequestSchema>;
 
+export const ListingSummarySchema = z.object({
+  has_listing: z.boolean().default(false),
+  sale_price: z.number().nullable().optional(),
+  days_on_market: z.number().int().nullable().optional(),
+  sale_status: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  broker_company: z.string().nullable().optional(),
+  match_method: z.string().nullable().optional(),
+});
+export type ListingSummary = z.infer<typeof ListingSummarySchema>;
+
 export const CandidateParcelRowSchema = z.object({
   parcel_id: z.number().int(),
   apn: z.string(),
@@ -221,6 +232,7 @@ export const CandidateParcelRowSchema = z.object({
   is_viable: z.boolean(),
   violation_reasons: z.array(z.string()),
   geom: z.record(z.unknown()).nullable().optional(),
+  listing_summary: ListingSummarySchema.nullable().optional(),
 });
 export type CandidateParcelRow = z.infer<typeof CandidateParcelRowSchema>;
 

@@ -80,6 +80,7 @@ const PARCEL_SOURCE = "parcels";
 const PARCEL_FILL = "parcels-fill";
 const PARCEL_LINE = "parcels-line";
 const PARCEL_SELECTED = "parcels-selected";
+const PARCEL_LISTED_OUTLINE = "parcels-listed-outline";
 const UNCLASSIFIED_PARCEL_COLOR = "#94a3b8";
 const TILESERV_URL = process.env.NEXT_PUBLIC_TILESERV_URL ?? null;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -351,6 +352,10 @@ export default function Map({
               is_viable: parcel.is_viable,
               saturation_color: satColor,
               sqft_per_person: sat?.sqft_per_person ?? null,
+              // Listings indicator — true when this parcel has a current
+              // matched listing (any source, confidence >= 0.85). Drives
+              // the magenta polygon outline below.
+              has_listing: parcel.listing_summary?.has_listing === true,
             },
             geometry: parcel.geom as unknown as GeoJSON.Geometry,
           };
@@ -603,6 +608,24 @@ export default function Map({
             "line-opacity": 1,
           },
           filter: ["==", ["get", "parcel_id"], -1],
+        });
+      }
+
+      // Magenta outline on parcels with a current matched listing.
+      // Distinct from the borderline-yellow fill on the match-status
+      // layer so the operator can see at a glance which parcels are
+      // both in-buy-box AND for sale.
+      if (!map.getLayer(PARCEL_LISTED_OUTLINE)) {
+        map.addLayer({
+          id: PARCEL_LISTED_OUTLINE,
+          type: "line",
+          source: PARCEL_SOURCE,
+          paint: {
+            "line-color": "#ec4899",
+            "line-width": 3,
+            "line-opacity": 0.9,
+          },
+          filter: ["==", ["get", "has_listing"], true],
         });
       }
 

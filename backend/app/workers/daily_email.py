@@ -74,6 +74,10 @@ _RESEND_INTERVAL = timedelta(hours=23)
 # the bottom of the score distribution. Maps roughly to the user spec's
 # `classification IN ('match', 'borderline')`.
 _MIN_SCORE = 40
+# Stricter floor when the filter sets `requireListed=true`. The
+# operator's goal in listed-only mode is "perfect site, currently for
+# sale, broker contact attached" — only Strong-tier+ scores qualify.
+_MIN_SCORE_LISTED = 70
 
 
 async def _eligible_filters(
@@ -152,7 +156,7 @@ async def _top_parcels_for_filter(
         sql,
         {
             "fid": f.id,
-            "min_score": _MIN_SCORE,
+            "min_score": _MIN_SCORE_LISTED if require_listed else _MIN_SCORE,
             "lim": f.daily_email_top_n,
             "require_listed": require_listed,
         },

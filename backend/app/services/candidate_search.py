@@ -3,15 +3,17 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sqlalchemy import and_, asc, case, desc, func, or_, select
+from sqlalchemy import and_, asc, case, desc, func, literal_column, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.forsale_listing import ForsaleListing
 from app.models.parcel import Parcel
 from app.models.zone_use_matrix import UsePermission, ZoneUseMatrix
 from app.schemas.parcel import (
     CandidateParcelRow,
     CandidateParcelSearchRequest,
     CandidateParcelSearchResponse,
+    ListingSummary,
     ParcelSearchSort,
     TargetUse,
 )
@@ -170,8 +172,51 @@ async def search_candidate_parcels(
     )
 
     result = await db.execute(row_stmt)
+    rows = list(result)
+
+    # Second-pass listing summary lookup. Cheap because forsale_listings
+    # (matched_parcel_id) is indexed. DISTINCT ON picks the most-recent
+    # current listing per parcel when multiple exist (same property listed
+    # on CoStar + LoopNet etc).
+    parcel_ids = [r.parcel_id for r in rows]
+    listing_by_parcel: dict[int, ListingSummary] = {}
+    if parcel_ids:
+        listing_rows = (
+            await db.execute(
+                select(
+                    ForsaleListing.matched_parcel_id,
+                    ForsaleListing.sale_price,
+                    ForsaleListing.days_on_market,
+                    ForsaleListing.sale_status,
+                    ForsaleListing.source,
+                    ForsaleListing.listing_broker_company,
+                    ForsaleListing.match_method,
+                )
+                .distinct(ForsaleListing.matched_parcel_id)
+                .where(
+                    ForsaleListing.matched_parcel_id.in_(parcel_ids),
+                    ForsaleListing.is_current.is_(True),
+                    ForsaleListing.match_confidence >= 0.85,
+                )
+                .order_by(
+                    ForsaleListing.matched_parcel_id,
+                    desc(ForsaleListing.last_seen_at),
+                )
+            )
+        ).all()
+        for lr in listing_rows:
+            listing_by_parcel[int(lr.matched_parcel_id)] = ListingSummary(
+                has_listing=True,
+                sale_price=float(lr.sale_price) if lr.sale_price is not None else None,
+                days_on_market=lr.days_on_market,
+                sale_status=lr.sale_status,
+                source=lr.source,
+                broker_company=lr.listing_broker_company,
+                match_method=lr.match_method,
+            )
+
     items: list[CandidateParcelRow] = []
-    for row in result:
+    for row in rows:
         permission = row.target_permission
         if hasattr(permission, "value"):
             permission = permission.value
@@ -204,6 +249,7 @@ async def search_candidate_parcels(
                 is_viable=len(violation_reasons) == 0,
                 violation_reasons=violation_reasons,
                 geom=geom,
+                listing_summary=listing_by_parcel.get(int(row.parcel_id)),
             )
         )
 
