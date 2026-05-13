@@ -8,6 +8,8 @@ any column-name mismatch and tell you what needs to move.
 """
 from __future__ import annotations
 
+import datetime as _dt
+
 from app.services.listings_parsers._common import (
     ListingRow,
     ParseResult,
@@ -95,8 +97,18 @@ class Parser:
         rows: list[ListingRow] = []
         for _, row in df.iterrows():
             raw = {c: row[c] for c in cols if c in row.index}
-            # Strip pandas NaN out of raw_row so JSONB stays clean
-            raw = {k: (None if (isinstance(v, float) and v != v) else v) for k, v in raw.items()}
+            # Strip pandas NaN out of raw_row so JSONB stays clean, and
+            # convert openpyxl datetime/date cells to ISO strings —
+            # raw_row is stored as JSONB and json.dumps can't serialize
+            # native datetime types. CoStar exports ship Last Sale Date,
+            # FEMA Map Date, Year Built, etc. as datetimes.
+            def _clean(v):
+                if isinstance(v, float) and v != v:
+                    return None
+                if isinstance(v, (_dt.datetime, _dt.date)):
+                    return v.isoformat()
+                return v
+            raw = {k: _clean(v) for k, v in raw.items()}
 
             address = to_str(row.get(col_address))
             if not address:
