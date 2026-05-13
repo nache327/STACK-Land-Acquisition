@@ -53,7 +53,18 @@ async def _resolve_jurisdiction(
     explicit_id: uuid.UUID | None,
 ) -> uuid.UUID:
     """Find the jurisdiction either from the supplied UUID or from the
-    first row's city + state. Raises HTTPException(404) when unresolvable.
+    rows' geography. Raises HTTPException when unresolvable.
+
+    Resolution order per row:
+      1. City + state match (city LIKE %name%, state =)
+         — works when the township IS the jurisdiction (e.g. Lehi, UT).
+      2. County + state match (name LIKE %county%, state =)
+         — handles county-as-jurisdiction systems like NJ, where the
+         township is a parcel attribute and the parcel set lives under
+         "Monmouth County" or similar.
+
+    Falling through both gates for every row means the upload truly has
+    no recognized geography and we 422.
     """
     if explicit_id is not None:
         j = await db.get(Jurisdiction, explicit_id)
@@ -61,6 +72,8 @@ async def _resolve_jurisdiction(
             raise HTTPException(404, f"Jurisdiction {explicit_id} not found")
         return j.id
 
+    # First pass: city-based match (preserves prior behavior for
+    # township-as-jurisdiction systems).
     for r in rows:
         if not r.city or not r.state:
             continue
@@ -74,10 +87,26 @@ async def _resolve_jurisdiction(
         if j is not None:
             return j.id
 
+    # Second pass: county-based fallback. Required for NJ/PA/etc. where
+    # CoStar's city is a township but jurisdictions are counties.
+    for r in rows:
+        if not r.county or not r.state:
+            continue
+        result = await db.execute(
+            select(Jurisdiction).where(
+                func.lower(Jurisdiction.name).like(f"%{r.county.lower()}%"),
+                func.upper(Jurisdiction.state) == r.state.upper(),
+            )
+        )
+        j = result.scalars().first()
+        if j is not None:
+            return j.id
+
     raise HTTPException(
         422,
         "Could not resolve jurisdiction from upload — pass jurisdiction_id "
-        "in the form, or ensure the first row has a recognized City + State.",
+        "in the form, or ensure rows have a recognized City + State or "
+        "County + State.",
     )
 
 
