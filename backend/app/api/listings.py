@@ -20,6 +20,7 @@ from typing import Any
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Body,
     Depends,
     File,
     Form,
@@ -33,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import async_session_maker, get_db
 from app.models.forsale_listing import ForsaleListing
 from app.models.jurisdiction import Jurisdiction
+from app.models.parcel import Parcel
 from app.services.geocode_census import geocode_address
 from app.services.listing_matcher import match_pending_listings
 from app.services.listings_parsers import ListingRow, ParseResult, ParserError, parse_file
@@ -385,6 +387,64 @@ async def list_jurisdiction_listings(
             "co_listed_parcels": r.co_listed_parcels,
         })
     return out
+
+
+# ── manual reassign ──────────────────────────────────────────────────────────
+
+
+@router.patch("/listings/{listing_id}/match")
+async def reassign_listing(
+    listing_id: uuid.UUID,
+    matched_parcel_id: int | None = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Manually link a listing to a parcel (or unlink with null).
+
+    Operator uses this from the ListingCard's "Reassign" button when
+    the automated matcher landed on the wrong parcel. The case that
+    motivated this: same-owner cluster matching can pick the wrong
+    cluster when a developer owns multiple disjoint groups of parcels.
+
+    Side effects: match_method='manual', match_confidence=1.0,
+    co_listed_parcels cleared (operator is overriding with a single
+    parcel; if they want to re-cluster they re-run matching).
+    """
+    listing = await db.get(ForsaleListing, listing_id)
+    if listing is None:
+        raise HTTPException(404, "Listing not found")
+
+    if matched_parcel_id is None:
+        # Unlink
+        listing.matched_parcel_id = None
+        listing.match_confidence = None
+        listing.match_method = "manual_unlinked"
+        listing.co_listed_parcels = None
+    else:
+        parcel = await db.get(Parcel, matched_parcel_id)
+        if parcel is None:
+            raise HTTPException(404, f"Parcel {matched_parcel_id} not found")
+        if parcel.jurisdiction_id != listing.jurisdiction_id:
+            raise HTTPException(
+                400,
+                f"Parcel jurisdiction {parcel.jurisdiction_id} does not match "
+                f"listing jurisdiction {listing.jurisdiction_id}",
+            )
+        listing.matched_parcel_id = parcel.id
+        listing.match_confidence = 1.0
+        listing.match_method = "manual"
+        listing.co_listed_parcels = None
+
+    await db.commit()
+    await db.refresh(listing)
+
+    return {
+        "id": str(listing.id),
+        "matched_parcel_id": listing.matched_parcel_id,
+        "match_confidence": (
+            float(listing.match_confidence) if listing.match_confidence is not None else None
+        ),
+        "match_method": listing.match_method,
+    }
 
 
 # ── debug ────────────────────────────────────────────────────────────────────
