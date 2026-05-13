@@ -222,6 +222,82 @@ async def run_auto_score_now(
     }
 
 
+@router.post("/buybox-filters/{filter_id}/_score-all")
+async def score_filter_across_all_jurisdictions(
+    filter_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Bootstrap a non-default filter by scoring every parcel in every
+    jurisdiction against it.
+
+    The pipeline's per-ingest auto-scorer only runs the *default* filter
+    for (org × use_case), so a newly-created filter like "Hot deals" has
+    zero rows in parcel_buybox_scores until either a fresh jurisdiction
+    is ingested or this endpoint is called.
+
+    Idempotent: ``score_jurisdiction`` upserts via
+    ``ON CONFLICT ... DO UPDATE`` on the (parcel_id, buybox_filter_id)
+    PK, so re-running is safe and simply refreshes scores against the
+    current filter_json + matcher logic.
+
+    Per-jurisdiction failures are caught and reported in ``errors[]``;
+    the loop continues so a single bad jurisdiction can't strand a
+    bootstrap run.
+    """
+    from app.services.buybox_scoring import score_jurisdiction
+    import json as _json
+    import logging as _logging
+
+    _log = _logging.getLogger(__name__)
+
+    f = await db.scalar(
+        select(BuyboxFilter).where(
+            and_(
+                BuyboxFilter.id == filter_id,
+                BuyboxFilter.organization_id == DEFAULT_ORG_ID,
+            )
+        )
+    )
+    if f is None:
+        raise HTTPException(404, "filter not found")
+
+    filter_json = f.filter_json
+    if isinstance(filter_json, str):
+        filter_json = _json.loads(filter_json)
+    filter_json = filter_json or {}
+
+    # Only score jurisdictions that actually have parcels — empty
+    # jurisdictions waste a round-trip and inflate the counts.
+    jids_result = await db.execute(
+        text("SELECT DISTINCT jurisdiction_id FROM parcels "
+             "WHERE jurisdiction_id IS NOT NULL")
+    )
+    jurisdiction_ids = [row[0] for row in jids_result.all()]
+
+    parcels_scored = 0
+    errors: list[dict] = []
+    processed = 0
+
+    for jid in jurisdiction_ids:
+        try:
+            n = await score_jurisdiction(jid, filter_id, filter_json)
+            parcels_scored += n
+            processed += 1
+        except Exception as e:  # noqa: BLE001 — surface to caller, keep loop alive
+            _log.exception("score_jurisdiction failed for %s under filter %s",
+                           jid, filter_id)
+            errors.append({"jurisdiction_id": str(jid), "error": str(e)})
+
+    return {
+        "filter_id": str(filter_id),
+        "filter_name": f.name,
+        "jurisdictions_total": len(jurisdiction_ids),
+        "jurisdictions_processed": processed,
+        "parcels_scored": parcels_scored,
+        "errors": errors,
+    }
+
+
 @router.delete("/buybox-filters/{filter_id}", status_code=204)
 async def delete_filter(
     filter_id: uuid.UUID,
