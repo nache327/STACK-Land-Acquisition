@@ -382,6 +382,7 @@ async def list_jurisdiction_listings(
             "lon": float(r.geocoded_lon) if r.geocoded_lon is not None else None,
             "is_current": r.is_current,
             "last_seen_at": r.last_seen_at.isoformat() if r.last_seen_at else None,
+            "co_listed_parcels": r.co_listed_parcels,
         })
     return out
 

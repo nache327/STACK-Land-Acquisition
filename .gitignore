@@ -64,3 +64,4 @@ docker-compose.override.yml
 # but keep the README so the folder's purpose is documented in-repo.
 backend/uploads/*
 !backend/uploads/README.md
+listings_lehi.json

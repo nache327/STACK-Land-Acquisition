@@ -97,6 +97,11 @@ class ForsaleListing(Base):
     match_method: Mapped[str | None] = mapped_column(Text, nullable=True)
     geocoded_lat: Mapped[Decimal | None] = mapped_column(Numeric(10, 7), nullable=True)
     geocoded_lon: Mapped[Decimal | None] = mapped_column(Numeric(10, 7), nullable=True)
+    # Populated when the nearest-parcel tier finds multiple adjacent
+    # parcels sharing the primary parcel's owner_name (i.e. an owner
+    # selling two+ lots together). Each entry: {id, apn, acres, is_primary}.
+    # Primary = the largest-acreage parcel (matched_parcel_id points to it).
+    co_listed_parcels: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     is_current: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true"), default=True

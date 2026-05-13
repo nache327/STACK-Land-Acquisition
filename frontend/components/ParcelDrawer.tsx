@@ -625,6 +625,22 @@ function ListingCard({ listing }: { listing: JurisdictionListing }) {
           Contact: <span className="font-mono">{contactLine}</span>
         </div>
       )}
+      {listing.co_listed_parcels && listing.co_listed_parcels.length > 1 && (
+        <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
+          <div className="font-semibold">
+            Same owner selling {listing.co_listed_parcels.length} adjacent parcels
+          </div>
+          <ul className="mt-1 list-disc pl-4">
+            {listing.co_listed_parcels.map((p) => (
+              <li key={p.id}>
+                APN {p.apn}
+                {p.acres != null ? ` · ${p.acres.toFixed(2)} ac` : ""}
+                {p.is_primary ? " (primary)" : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {listing.match_confidence != null && listing.match_confidence < 1.0 && (
         <div className="mt-2 text-[10px] text-slate-500">
           Match confidence {(listing.match_confidence * 100).toFixed(0)}% · {listing.match_method}
