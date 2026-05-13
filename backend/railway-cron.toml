@@ -1,0 +1,41 @@
+# Railway service config — daily-digest cron
+#
+# This file is consumed by a separate Railway service (NOT the web
+# or worker service). Set the service's Config Path to
+# `backend/railway-cron.toml` in the Railway dashboard.
+#
+# The cron schedule fires once daily at 12:00 UTC, which is:
+#   - 7:00 AM ET when standard time (EST)
+#   - 8:00 AM ET when daylight saving (EDT)
+# Run-time itself is brief (typically <10 seconds — one INSERT per
+# eligible filter into parcel_buybox_scores.notified_at, plus a
+# single Resend POST per filter). Railway shuts the container down
+# after the command exits.
+#
+# Idempotency: `run_once(force=False)` respects the 23h
+# `last_email_sent_at` cooldown on each BuyboxFilter, so a duplicate
+# fire (Railway retry, schedule glitch) is a no-op. The per-parcel
+# `notified_at` gate inside `_top_parcels_for_filter` independently
+# prevents re-emailing the same parcel.
+#
+# To verify after first deploy:
+#   1. Click "Run Now" in the Railway service UI — confirms the
+#      container builds + the command exits 0 + the email lands.
+#   2. Wait for the next scheduled fire. Cross-check by querying
+#      `SELECT name, last_email_sent_at FROM buybox_filters
+#         WHERE daily_email_enabled = true`
+#      and confirming the timestamps moved without you doing
+#      anything manual.
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pip install --no-cache-dir -e ."
+
+[deploy]
+startCommand = "python -m app.workers.daily_email"
+# Cron syntax: minute hour day-of-month month day-of-week
+# `0 12 * * *` = every day at 12:00 UTC
+cronSchedule = "0 12 * * *"
+# Never auto-restart — the script is a one-shot. Restart-on-fail
+# would create infinite loops on Resend outages.
+restartPolicyType = "NEVER"

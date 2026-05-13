@@ -423,7 +423,9 @@ def _cli() -> None:
     )
     result = asyncio.run(run_once())
     print(f"digest done: {result}")
-    sys.exit(0)
+    # Non-zero exit when any filter errored so Railway's cron logs
+    # surface the failure instead of silently marking the run green.
+    sys.exit(1 if result.get("errors") else 0)
 
 
 if __name__ == "__main__":
