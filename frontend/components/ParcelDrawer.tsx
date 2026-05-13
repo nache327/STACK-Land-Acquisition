@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ParcelDetail } from "@/lib/schemas";
 import type { ServerParcelScore } from "@/lib/api";
 import { useVerification } from "@/hooks/useVerification";
@@ -173,7 +174,9 @@ export function ParcelDrawer({
 
         {/* Listing card — surfaces when this parcel matches a current
             for-sale listing (any source, confidence >= 0.85). */}
-        {matchedListing && <ListingCard listing={matchedListing} />}
+        {matchedListing && (
+          <ListingCard listing={matchedListing} jurisdictionId={jurisdictionId} />
+        )}
 
         {/* Parcel attributes */}
         <dl className="space-y-3 text-sm">
@@ -569,7 +572,77 @@ function BuyBoxMatchPanel({
   );
 }
 
-function ListingCard({ listing }: { listing: JurisdictionListing }) {
+function ListingCard({
+  listing,
+  jurisdictionId,
+}: {
+  listing: JurisdictionListing;
+  jurisdictionId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [showReassign, setShowReassign] = useState(false);
+  const [apnInput, setApnInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+
+  async function handleReassign() {
+    const apn = apnInput.trim();
+    if (!apn || busy) return;
+    setBusy(true);
+    setReassignError(null);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+      // 1. Resolve APN -> parcel_id via the candidate search endpoint.
+      const searchRes = await fetch(`${apiBase}/api/parcels/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jurisdiction_id: jurisdictionId,
+          target_use: "self_storage",
+          search: apn,
+          page: 1,
+          page_size: 5,
+          sort: "acres_desc",
+          filters: {
+            vacant_only: false,
+            exclude_flood: false,
+            exclude_wetland: false,
+            listed_only: false,
+          },
+        }),
+      });
+      if (!searchRes.ok) throw new Error(`Parcel search failed: HTTP ${searchRes.status}`);
+      const sr = await searchRes.json();
+      const items: Array<{ parcel_id: number; apn: string }> = sr.items ?? [];
+      const exact = items.find((p) => p.apn === apn) ?? items[0];
+      if (!exact) throw new Error(`No parcel found for APN "${apn}" in this jurisdiction.`);
+
+      // 2. PATCH the listing to point at the new parcel.
+      const patchRes = await fetch(
+        `${apiBase}/api/listings/${listing.id}/match`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ matched_parcel_id: exact.parcel_id }),
+        },
+      );
+      if (!patchRes.ok) {
+        const j = await patchRes.json().catch(() => ({}));
+        throw new Error(j.detail ?? `HTTP ${patchRes.status}`);
+      }
+
+      // 3. Invalidate so the drawer reflects the new link immediately.
+      await queryClient.invalidateQueries({
+        queryKey: ["jurisdiction-listings", jurisdictionId],
+      });
+      setShowReassign(false);
+      setApnInput("");
+    } catch (err) {
+      setReassignError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
   const price =
     listing.sale_price != null
       ? `$${listing.sale_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -646,6 +719,57 @@ function ListingCard({ listing }: { listing: JurisdictionListing }) {
           Match confidence {(listing.match_confidence * 100).toFixed(0)}% · {listing.match_method}
         </div>
       )}
+      <div className="mt-2 border-t border-amber-200 pt-2 text-[11px]">
+        {!showReassign ? (
+          <button
+            onClick={() => setShowReassign(true)}
+            className="text-amber-800 underline-offset-2 hover:underline"
+          >
+            Wrong parcel? Reassign →
+          </button>
+        ) : (
+          <div className="space-y-1">
+            <div className="text-amber-900">
+              Paste the correct parcel's APN:
+            </div>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={apnInput}
+                onChange={(e) => setApnInput(e.target.value)}
+                placeholder="e.g. 110150012"
+                className="flex-1 rounded border border-amber-300 bg-white px-2 py-1 font-mono text-xs"
+                disabled={busy}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleReassign();
+                  if (e.key === "Escape") { setShowReassign(false); setApnInput(""); setReassignError(null); }
+                }}
+                autoFocus
+              />
+              <button
+                onClick={() => void handleReassign()}
+                disabled={busy || !apnInput.trim()}
+                className="rounded bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {busy ? "…" : "Move"}
+              </button>
+              <button
+                onClick={() => { setShowReassign(false); setApnInput(""); setReassignError(null); }}
+                disabled={busy}
+                className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+            {reassignError && (
+              <div className="text-[10px] text-red-700">{reassignError}</div>
+            )}
+            <div className="text-[10px] text-amber-800">
+              Tip: click the correct parcel on the map to see its APN in the popup, then paste here.
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
