@@ -20,6 +20,10 @@ from app.services.listings_parsers._common import (
 
 # CoStar fingerprint columns — these almost always appear in their
 # sale exports. ANY two of them present is enough to declare CoStar.
+# Includes both the sale-template names (Sale Status, Listing Broker
+# Company) and the for-sale-template variants (For Sale Status, For
+# Sale Price, Sale Company Name) — CoStar's Default (List View)
+# layout varies between accounts/regions.
 _FINGERPRINT_COLUMNS = (
     "Days On Market",
     "Sale Status",
@@ -27,6 +31,9 @@ _FINGERPRINT_COLUMNS = (
     "Listing Broker Company",
     "Submarket Name",
     "CoStar Property ID",
+    "For Sale Status",
+    "For Sale Price",
+    "Sale Company Name",
 )
 
 
@@ -49,13 +56,13 @@ class Parser:
         col_city     = pick_column(cols, "City")
         col_state    = pick_column(cols, "State")
         col_zip      = pick_column(cols, "Zip", "Zip Code", "Postal Code")
-        col_status   = pick_column(cols, "Sale Status", "Status")
+        col_status   = pick_column(cols, "Sale Status", "For Sale Status", "Status")
         col_category = pick_column(cols, "Sale Category")
         col_ptype    = pick_column(cols, "Property Type")
         col_stype    = pick_column(cols, "Secondary Type")
         col_rating   = pick_column(cols, "Rating", "Star Rating")
         col_size     = pick_column(cols, "Size (SF)", "Building SF", "Size SF", "RBA")
-        col_price    = pick_column(cols, "Sale Price", "Sale Price ($)")
+        col_price    = pick_column(cols, "Sale Price", "For Sale Price", "Sale Price ($)")
         col_psf      = pick_column(cols, "Price Per SF", "Sale Price/SF")
         col_cap      = pick_column(cols, "Cap Rate", "Sale Cap Rate")
         col_dom      = pick_column(cols, "Days On Market", "DOM")
@@ -68,7 +75,7 @@ class Parser:
         col_pplsf    = pick_column(cols, "Price Per Land (SF)", "Price Per Land SF")
         col_units    = pick_column(cols, "Number Of Units", "Number of Units", "Units")
         col_ppu      = pick_column(cols, "Price Per Unit")
-        col_broker_c = pick_column(cols, "Listing Broker Company", "Sale Listing Broker Company")
+        col_broker_c = pick_column(cols, "Listing Broker Company", "Sale Listing Broker Company", "Sale Company Name")
         # CoStar "Sale Company Contact" is the broker's name in their schema
         col_broker_n = pick_column(cols, "Sale Company Contact", "Listing Broker Contact", "Sale Listing Broker", "Listing Broker")
         col_broker_p = pick_column(cols, "Listing Broker Phone", "Sale Listing Broker Phone")
