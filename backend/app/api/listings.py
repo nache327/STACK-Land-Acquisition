@@ -36,7 +36,7 @@ from app.models.forsale_listing import ForsaleListing
 from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
 from app.services.geocode_census import geocode_address
-from app.services.listing_matcher import match_pending_listings
+from app.services.listing_matcher import match_pending_listings, rematch_listing
 from app.services.listings_parsers import ListingRow, ParseResult, ParserError, parse_file
 
 logger = logging.getLogger(__name__)
@@ -515,3 +515,152 @@ async def debug_rematch(
 
     background_tasks.add_task(_bg)
     return {"queued": queued, "jurisdiction_id": str(jurisdiction_id), "source": source}
+
+
+# ── rematch-all (admin) ──────────────────────────────────────────────────────
+#
+# In-memory job registry. Single-instance Railway deploy makes this safe;
+# if the dyno restarts mid-job, the rematch is idempotent so the operator
+# can simply re-fire. Surviving job records across restarts would mean
+# persisting state to Postgres or Redis — not worth the complexity until
+# we have evidence anyone needs the history.
+#
+# Capped at 20 most-recent jobs to bound memory; older entries are evicted
+# in FIFO order when a new job is registered.
+_REMATCH_JOBS: dict[str, dict[str, Any]] = {}
+_REMATCH_JOBS_MAX = 20
+# Cap on how many "flipped to matched" diagnostics we keep in a job
+# record. The full list is in the logs; the response is just a sample.
+_FLIPPED_SAMPLE_CAP = 100
+
+
+def _register_job(job_id: str, state: dict[str, Any]) -> None:
+    _REMATCH_JOBS[job_id] = state
+    while len(_REMATCH_JOBS) > _REMATCH_JOBS_MAX:
+        # Evict oldest by insertion order — dicts preserve it in 3.7+.
+        oldest = next(iter(_REMATCH_JOBS))
+        del _REMATCH_JOBS[oldest]
+
+
+@router.post("/listings/_rematch-all", status_code=202)
+async def rematch_all_listings(
+    background_tasks: BackgroundTasks,
+    jurisdiction_id: uuid.UUID | None = None,
+) -> dict[str, Any]:
+    """Re-run the matcher cascade against every ``is_current`` listing,
+    optionally scoped to one jurisdiction. Returns 202 immediately with a
+    ``job_id``; poll ``GET /api/listings/_rematch-status/{job_id}`` for
+    progress.
+
+    Does NOT re-geocode. Reuses ``geocoded_lat``/``geocoded_lon`` from
+    the original ingest. Listings that were never geocoded only get the
+    address-based tiers 1-2. This keeps the run cheap and bounded —
+    useful after matcher-logic improvements ship, less useful after
+    geocoder improvements (those need a full re-ingest or a separate
+    re-geocode endpoint).
+
+    Auth: none, mirroring _run-digest and _score-all. The operation is
+    idempotent and only mutates listing rows; no external side effects.
+    """
+    job_id = str(uuid.uuid4())
+    state: dict[str, Any] = {
+        "job_id": job_id,
+        "status": "running",
+        "jurisdiction_id": str(jurisdiction_id) if jurisdiction_id else None,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "finished_at": None,
+        "total": 0,
+        "processed": 0,
+        "matched": 0,
+        "newly_matched": 0,
+        "still_unmatched": 0,
+        "method_counts": {},
+        "flipped_to_matched": [],
+        "flipped_sample_truncated": False,
+        "errors": [],
+    }
+    _register_job(job_id, state)
+
+    async def _bg() -> None:
+        try:
+            async with async_session_maker() as bg_db:
+                stmt = select(ForsaleListing).where(
+                    ForsaleListing.is_current.is_(True)
+                )
+                if jurisdiction_id is not None:
+                    stmt = stmt.where(
+                        ForsaleListing.jurisdiction_id == jurisdiction_id
+                    )
+                listings = list((await bg_db.execute(stmt)).scalars().all())
+                state["total"] = len(listings)
+
+                for listing in listings:
+                    prior_matched_parcel = listing.matched_parcel_id
+                    try:
+                        result = await rematch_listing(listing, bg_db)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.exception(
+                            "rematch_listing failed for listing=%s", listing.id
+                        )
+                        state["errors"].append({
+                            "listing_id": str(listing.id),
+                            "error": str(exc),
+                        })
+                        state["processed"] += 1
+                        continue
+
+                    state["processed"] += 1
+                    method = result.match_method or "unmatched"
+                    state["method_counts"][method] = (
+                        state["method_counts"].get(method, 0) + 1
+                    )
+                    if result.matched_parcel_id is not None:
+                        state["matched"] += 1
+                        if prior_matched_parcel is None:
+                            state["newly_matched"] += 1
+                            if (
+                                len(state["flipped_to_matched"])
+                                < _FLIPPED_SAMPLE_CAP
+                            ):
+                                state["flipped_to_matched"].append({
+                                    "listing_id": str(listing.id),
+                                    "address": listing.address,
+                                    "method": result.match_method,
+                                    "confidence": result.match_confidence,
+                                })
+                            else:
+                                state["flipped_sample_truncated"] = True
+                    else:
+                        state["still_unmatched"] += 1
+
+                await bg_db.commit()
+
+            state["status"] = "completed"
+            logger.info(
+                "rematch-all job=%s complete: total=%d matched=%d "
+                "newly_matched=%d still_unmatched=%d methods=%s errors=%d",
+                job_id, state["total"], state["matched"],
+                state["newly_matched"], state["still_unmatched"],
+                state["method_counts"], len(state["errors"]),
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("rematch-all job=%s failed: %s", job_id, exc)
+            state["status"] = "failed"
+            state["errors"].append({"listing_id": None, "error": str(exc)})
+        finally:
+            state["finished_at"] = datetime.now(timezone.utc).isoformat()
+
+    background_tasks.add_task(_bg)
+    return {"job_id": job_id, "status": "started"}
+
+
+@router.get("/listings/_rematch-status/{job_id}")
+async def rematch_status(job_id: str) -> dict[str, Any]:
+    """Return the current state of an in-flight or completed rematch
+    job. 404 if the job_id is unknown (either never existed or evicted
+    from the in-memory registry — see _REMATCH_JOBS_MAX).
+    """
+    state = _REMATCH_JOBS.get(job_id)
+    if state is None:
+        raise HTTPException(404, "rematch job not found (may have been evicted)")
+    return state
