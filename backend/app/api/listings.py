@@ -540,6 +540,15 @@ async def debug_rematch(
     queued = result.rowcount or 0
 
     async def _bg() -> None:
+        # Entry-point log so we can confirm in Railway logs whether the
+        # bg task actually fires after the POST returns. Multiple
+        # _debug-rematch runs this session sat at matched=0/N for 20+
+        # min, even though the synchronous reset (above) cleared
+        # match_method on every row. That meant the bg task wasn't
+        # firing — diagnostic still TBD; this log is the next signal.
+        logger.info(
+            "debug-rematch BG TASK FIRED juris=%s source=%s", jurisdiction_id, source,
+        )
         async with async_session_maker() as bg_db:
             try:
                 counts = await match_pending_listings(
