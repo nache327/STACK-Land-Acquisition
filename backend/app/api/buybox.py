@@ -324,24 +324,21 @@ async def score_filter_across_all_jurisdictions(
     if isinstance(filter_json, str):
         filter_json = _json.loads(filter_json)
     filter_json = filter_json or {}
-
-    # Only score jurisdictions that actually have parcels — empty
-    # jurisdictions waste a round-trip and inflate the counts.
-    jids_result = await db.execute(
-        text("SELECT DISTINCT jurisdiction_id FROM parcels "
-             "WHERE jurisdiction_id IS NOT NULL")
-    )
-    jurisdiction_ids = [row[0] for row in jids_result.all()]
+    filter_name = f.name  # snapshot before session closes
 
     job_id = str(uuid.uuid4())
     state: dict[str, Any] = {
         "job_id": job_id,
-        "status": "running",
+        # Two-phase status so the operator can tell why "processed" is
+        # 0 right after the POST returns: "enumerating" means we're
+        # still figuring out which jurisdictions to score; "running"
+        # means the per-jurisdiction loop is live.
+        "status": "enumerating",
         "filter_id": str(filter_id),
-        "filter_name": f.name,
+        "filter_name": filter_name,
         "started_at": _dt.now(_tz.utc).isoformat(),
         "finished_at": None,
-        "jurisdictions_total": len(jurisdiction_ids),
+        "jurisdictions_total": None,  # populated by bg task once enumerated
         "jurisdictions_processed": 0,
         "parcels_scored": 0,
         "errors": [],
@@ -351,9 +348,24 @@ async def score_filter_across_all_jurisdictions(
     async def _bg() -> None:
         import logging as _logging
         _log = _logging.getLogger(__name__)
+        from app.db import async_session_maker
         from app.services.buybox_scoring import score_jurisdiction
 
         try:
+            # SELECT DISTINCT jurisdiction_id FROM parcels was the 50s
+            # offender on the sync path. Move it inside the bg task so
+            # the HTTP POST returns in <1s. The cost is that "running"
+            # state isn't true until the enumeration finishes — the
+            # status field reports "enumerating" during that window.
+            async with async_session_maker() as bg_db:
+                jids_result = await bg_db.execute(
+                    text("SELECT DISTINCT jurisdiction_id FROM parcels "
+                         "WHERE jurisdiction_id IS NOT NULL")
+                )
+                jurisdiction_ids = [row[0] for row in jids_result.all()]
+            state["jurisdictions_total"] = len(jurisdiction_ids)
+            state["status"] = "running"
+
             for jid in jurisdiction_ids:
                 try:
                     n = await score_jurisdiction(jid, filter_id, filter_json)
@@ -372,7 +384,7 @@ async def score_filter_across_all_jurisdictions(
             _log.info(
                 "score-all job=%s complete: filter=%s jurisdictions=%d/%d "
                 "parcels_scored=%d errors=%d",
-                job_id, f.name,
+                job_id, filter_name,
                 state["jurisdictions_processed"], len(jurisdiction_ids),
                 state["parcels_scored"], len(state["errors"]),
             )
@@ -384,7 +396,7 @@ async def score_filter_across_all_jurisdictions(
             state["finished_at"] = _dt.now(_tz.utc).isoformat()
 
     background_tasks.add_task(_bg)
-    return {"job_id": job_id, "status": "started"}
+    return {"job_id": job_id, "status": "enumerating"}
 
 
 @router.get("/buybox-filters/_score-all-status/{job_id}")
