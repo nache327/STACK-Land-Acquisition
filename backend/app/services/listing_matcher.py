@@ -379,6 +379,14 @@ async def match_pending_listings(
             counters["tier_6_nearest"] += 1
         else:
             counters["unmatched"] += 1
+        # Commit every 25 listings so the DB reflects progress mid-run.
+        # Prior versions only committed at the very end, which left
+        # operator-facing queries showing match_method=NULL on every row
+        # for the entire 6-15 minute run — and the rematch monitor's
+        # "no change between polls" heuristic incorrectly declared FINAL
+        # at 0 matched, even though the work was healthy.
+        if i % 25 == 0:
+            await db.commit()
     await db.commit()
     logger.info(
         "matched %s/%s listings for juris=%s source=%s: %s",
