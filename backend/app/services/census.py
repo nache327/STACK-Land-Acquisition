@@ -50,11 +50,16 @@ async def ensure_census_tracts(
     xmin, ymin, xmax, ymax = bbox
     cutoff = datetime.now(timezone.utc) - timedelta(days=_CACHE_TTL_DAYS)
 
-    # Check if we have fresh coverage for this bbox
+    # Check if we have fresh coverage for this bbox with population data.
+    # Filter on population IS NOT NULL — older fetches may have inserted
+    # geometries without successfully merging ACS population (e.g. ACS API
+    # timed out partway through a batch). Treat those rows as not-cached so
+    # a refetch heals them via the ON CONFLICT DO UPDATE upsert below.
     result = await db.execute(
         text("""
             SELECT COUNT(*) FROM census_tracts
             WHERE fetched_at > :cutoff
+              AND population IS NOT NULL
               AND ST_Intersects(
                 geom,
                 ST_MakeEnvelope(:xmin, :ymin, :xmax, :ymax, 4326)
