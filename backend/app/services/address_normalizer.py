@@ -168,7 +168,36 @@ def _canonicalize_routes(s: str) -> str:
         if new_s == s:
             break
         s = new_s
+    # Dual-route hyphenation: "Route 202-206" is a single road designated
+    # with two numbers, not a range. Parcel data almost always uses just
+    # the primary (lower) number, so drop the secondary.
+    s = re.sub(r"\b(route\s+\d+)-\d+\b", r"\1", s)
     return s
+
+
+# ── Address range / slash collapse ──────────────────────────────────────────
+#
+# CoStar listings frequently quote an address range for a multi-parcel
+# property: "227-229 Adamsville Rd", "401-404 Towne Centre Dr",
+# "2041-2045 State Route 27". The underlying tax-assessor data lists
+# each parcel by its own house number — usually the lower. Collapsing
+# the range to the first number lets the matcher hit on tier 1.
+#
+# Similarly, slash-separated route lists ("325 Route 202 / 206",
+# "900 US Highway 202/206") are a single physical address that two
+# overlapping routes pass through. The parcel record almost always
+# carries just one of the route designations. Drop everything after
+# the slash so the surviving address matches whichever the parcel
+# data picked.
+
+# Leading address number range: "227-229 Adamsville Rd" → "227 Adamsville Rd"
+_HOUSE_RANGE_RE = re.compile(r"^(\d+)-\d+(\s)")
+
+# Slash splits ANYWHERE in the address. Take the part before the first
+# slash. Run after lowercasing/whitespace-collapse but before route
+# canonicalization, so e.g. "325 Route 202 / 206" → "325 route 202"
+# rather than getting two route hits and a stray "206".
+_SLASH_SPLIT_RE = re.compile(r"\s*/\s*")
 
 
 def normalize(addr: str | None) -> str:
@@ -181,10 +210,16 @@ def normalize(addr: str | None) -> str:
     if not addr:
         return ""
     s = addr.lower()
+    # Slash-collapse runs before punctuation strip so we can detect
+    # the slash as a real separator. After this, punctuation strip
+    # (which doesn't include '-') runs as usual.
+    s = _SLASH_SPLIT_RE.split(s, maxsplit=1)[0]
     s = _PUNCT_RE.sub(" ", s)
     s = _WS_RE.sub(" ", s).strip()
     if not s:
         return ""
+    # Collapse a leading house-number range to its lower bound.
+    s = _HOUSE_RANGE_RE.sub(r"\1\2", s)
     # Canonicalize route phrases before tokenization so multi-word
     # forms ("us highway 22", "state route 22") fold together.
     s = _canonicalize_routes(s)
