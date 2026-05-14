@@ -323,6 +323,9 @@ async def match_pending_listings(
 
     Returns counters by tier for diagnostic logging.
     """
+    logger.info(
+        "match_pending_listings: ENTER juris=%s source=%s", jurisdiction_id, source,
+    )
     stmt = (
         select(ForsaleListing)
         .where(
@@ -334,6 +337,10 @@ async def match_pending_listings(
         )
     )
     listings = list((await db.execute(stmt)).scalars().all())
+    logger.info(
+        "match_pending_listings: SELECTED %d listings for juris=%s",
+        len(listings), jurisdiction_id,
+    )
 
     counters: dict[str, int] = {
         "processed": 0,
@@ -345,7 +352,16 @@ async def match_pending_listings(
         "tier_6_nearest": 0,
         "unmatched": 0,
     }
-    for listing in listings:
+    for i, listing in enumerate(listings, start=1):
+        # Per-listing breadcrumb every 10 rows. Lets ops see in Railway
+        # logs whether the matcher is moving or wedged on a specific
+        # listing. The address tail makes it obvious which row is being
+        # processed when a slow geocode call hangs.
+        if i % 10 == 1:
+            logger.info(
+                "match_pending_listings: processing %d/%d (juris=%s) — first=%r",
+                i, len(listings), jurisdiction_id, listing.address,
+            )
         result = await match_listing(listing, db)
         counters["processed"] += 1
         method = result.match_method or "unmatched"
