@@ -284,10 +284,13 @@ async def auto_score_jurisdiction(jurisdiction_id: uuid.UUID) -> int:
     + overlays are populated, so the dashboard's Score column lights up
     immediately without a manual bootstrap run.
 
-    Safely returns 0 when the default filter doesn't exist (e.g. before
-    migration 0015 lands or in a test DB without the seeds). Caller
-    should already wrap in try/except so a scoring failure can't fail
-    the larger pipeline.
+    Raises ``RuntimeError`` when no default BuyboxFilter exists for the
+    (default org × self_storage use case). Prior versions silently
+    returned 0 and a warning, which let real config gaps (e.g. nobody
+    marked a filter is_default=true) ride for weeks unnoticed across
+    every new jurisdiction ingest. Caller is expected to wrap in
+    try/except so a scoring failure can't fail the larger pipeline,
+    but the exception is now visible in job state via ``_stage_failed``.
     """
     conn = await asyncpg.connect(_raw_dsn())
     try:
@@ -307,11 +310,14 @@ async def auto_score_jurisdiction(jurisdiction_id: uuid.UUID) -> int:
         await conn.close()
 
     if row is None:
-        logger.warning(
+        msg = (
             "auto_score_jurisdiction: no default BuyboxFilter for "
-            "(default org × self_storage). Skipping."
+            f"(default org {DEFAULT_ORG_ID} × self_storage use case "
+            f"{SELF_STORAGE_USE_CASE_ID}). Mark a filter is_default=true "
+            "via PATCH /api/buybox-filters/{id} or seed one via migration."
         )
-        return 0
+        logger.error(msg)
+        raise RuntimeError(msg)
 
     filter_json_raw = row["filter_json"]
     if isinstance(filter_json_raw, str):
