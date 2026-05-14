@@ -63,6 +63,14 @@ class DigestParcel:
     listing_broker_contact: str | None = None
     listing_broker_phone: str | None = None
     listing_broker_email: str | None = None
+    # Most-recent ready job_id for the jurisdiction. The dashboard
+    # route is /dashboard/[jobId] and passes the segment straight to
+    # GET /api/jobs/:id. Previous versions used jurisdiction_id here,
+    # which 404'd and the page stuck on "Loading…" forever. Now
+    # populated from a LATERAL join so deep links actually navigate.
+    # None when no ready job exists yet (rare; fallback link uses
+    # jurisdiction_id and the UX is the same broken state as before).
+    dashboard_job_id: str | None = None
 
 
 # ─── Selection ────────────────────────────────────────────────────────────
@@ -129,7 +137,8 @@ async def _top_parcels_for_filter(
             lst.listing_broker_company  AS listing_broker_company,
             lst.listing_broker_contact  AS listing_broker_contact,
             lst.listing_broker_phone    AS listing_broker_phone,
-            lst.listing_broker_email    AS listing_broker_email
+            lst.listing_broker_email    AS listing_broker_email,
+            latest_job.id               AS dashboard_job_id
         FROM parcel_buybox_scores pbs
         JOIN parcels p       ON p.id = pbs.parcel_id
         JOIN jurisdictions j ON j.id = p.jurisdiction_id
@@ -144,6 +153,19 @@ async def _top_parcels_for_filter(
              ORDER BY last_seen_at DESC
              LIMIT 1
         ) lst ON true
+        LEFT JOIN LATERAL (
+            -- The dashboard route is /dashboard/[jobId]; the URL
+            -- segment is the jobs.id, not the jurisdiction_id. Resolve
+            -- the most-recently-finished ready job per jurisdiction so
+            -- the email link lands somewhere that loads instead of
+            -- spinning forever on a 404.
+            SELECT id
+              FROM jobs
+             WHERE jurisdiction_id = j.id
+               AND status = 'ready'
+             ORDER BY finished_at DESC NULLS LAST, created_at DESC
+             LIMIT 1
+        ) latest_job ON true
         WHERE pbs.buybox_filter_id = :fid
           AND pbs.notified_at IS NULL
           AND pbs.score >= :min_score
@@ -183,6 +205,9 @@ async def _top_parcels_for_filter(
                 listing_broker_contact=m["listing_broker_contact"],
                 listing_broker_phone=m["listing_broker_phone"],
                 listing_broker_email=m["listing_broker_email"],
+                dashboard_job_id=(
+                    str(m["dashboard_job_id"]) if m["dashboard_job_id"] else None
+                ),
             )
         )
     return out
@@ -192,7 +217,13 @@ async def _top_parcels_for_filter(
 
 def _parcel_link(p: DigestParcel) -> str:
     base = settings.digest_dashboard_base_url.rstrip("/")
-    return f"{base}/dashboard/{p.jurisdiction_id}?parcel={p.apn}"
+    # Use the resolved job_id when available; fall back to the
+    # jurisdiction_id (legacy broken behavior) only when no ready job
+    # exists. The fallback at least preserves a consistent URL shape
+    # for diagnostics — the dashboard will show "Loading…" but that
+    # signals "no ready job," which is itself useful information.
+    segment = p.dashboard_job_id or p.jurisdiction_id
+    return f"{base}/dashboard/{segment}?parcel={p.apn}"
 
 
 def _top_factors(p: DigestParcel, n: int = 5) -> list[dict]:

@@ -65,6 +65,9 @@ class AlertRow:
     listing_broker_contact: str | None
     listing_broker_phone: str | None
     listing_broker_email: str | None
+    # Most-recent ready job_id for the jurisdiction. See DigestParcel
+    # in daily_email.py for the full rationale — same bug, same fix.
+    dashboard_job_id: str | None = None
 
 
 async def _eligible_filters_for_jurisdiction(
@@ -107,7 +110,8 @@ async def _alert_rows_for_filter(
             l.listing_broker_company AS listing_broker_company,
             l.listing_broker_contact AS listing_broker_contact,
             l.listing_broker_phone   AS listing_broker_phone,
-            l.listing_broker_email   AS listing_broker_email
+            l.listing_broker_email   AS listing_broker_email,
+            latest_job.id            AS dashboard_job_id
         FROM forsale_listings l
         JOIN parcels p       ON p.id = l.matched_parcel_id
         JOIN jurisdictions j ON j.id = p.jurisdiction_id
@@ -117,6 +121,18 @@ async def _alert_rows_for_filter(
         LEFT JOIN notified_listings nl
               ON nl.filter_id = :fid
              AND nl.listing_id = l.id
+        LEFT JOIN LATERAL (
+            -- Resolve the most-recent ready job for this jurisdiction
+            -- so the alert email's "Open in dashboard" link uses a
+            -- valid job_id rather than a jurisdiction_id (the latter
+            -- 404s and freezes the page on "Loading…").
+            SELECT id
+              FROM jobs
+             WHERE jurisdiction_id = j.id
+               AND status = 'ready'
+             ORDER BY finished_at DESC NULLS LAST, created_at DESC
+             LIMIT 1
+        ) latest_job ON true
         WHERE l.jurisdiction_id = :jid
           AND l.is_current = true
           AND l.matched_parcel_id IS NOT NULL
@@ -155,13 +171,20 @@ async def _alert_rows_for_filter(
             listing_broker_contact=m["listing_broker_contact"],
             listing_broker_phone=m["listing_broker_phone"],
             listing_broker_email=m["listing_broker_email"],
+            dashboard_job_id=(
+                str(m["dashboard_job_id"]) if m["dashboard_job_id"] else None
+            ),
         ))
     return out
 
 
 def _parcel_link(row: AlertRow) -> str:
     base = settings.digest_dashboard_base_url.rstrip("/")
-    return f"{base}/dashboard/{row.jurisdiction_id}?parcel={row.apn}"
+    # Use the resolved ready-job_id when available; fall back to
+    # jurisdiction_id otherwise. See daily_email._parcel_link for full
+    # rationale.
+    segment = row.dashboard_job_id or row.jurisdiction_id
+    return f"{base}/dashboard/{segment}?parcel={row.apn}"
 
 
 def _render_alert_subject(filter_name: str, rows: list[AlertRow]) -> str:
