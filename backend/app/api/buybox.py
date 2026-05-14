@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import and_, delete, func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -259,13 +261,31 @@ async def run_auto_score_now(
     }
 
 
-@router.post("/buybox-filters/{filter_id}/_score-all")
+# In-memory _score-all job registry. Mirrors the _rematch-all pattern in
+# api/listings.py: single-instance Railway makes a process-local dict
+# safe, and the underlying score_jurisdiction is idempotent so a dyno
+# restart mid-job is recoverable by re-firing. Capped to bound memory.
+_SCORE_ALL_JOBS: dict[str, dict[str, Any]] = {}
+_SCORE_ALL_JOBS_MAX = 20
+
+
+def _register_score_all_job(job_id: str, state: dict[str, Any]) -> None:
+    _SCORE_ALL_JOBS[job_id] = state
+    while len(_SCORE_ALL_JOBS) > _SCORE_ALL_JOBS_MAX:
+        oldest = next(iter(_SCORE_ALL_JOBS))
+        del _SCORE_ALL_JOBS[oldest]
+
+
+@router.post("/buybox-filters/{filter_id}/_score-all", status_code=202)
 async def score_filter_across_all_jurisdictions(
     filter_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Bootstrap a non-default filter by scoring every parcel in every
-    jurisdiction against it.
+    jurisdiction against it. Runs as a background task; returns 202
+    immediately with a ``job_id``. Poll
+    ``GET /api/buybox-filters/_score-all-status/{job_id}`` for progress.
 
     The pipeline's per-ingest auto-scorer only runs the *default* filter
     for (org × use_case), so a newly-created filter like "Hot deals" has
@@ -277,15 +297,17 @@ async def score_filter_across_all_jurisdictions(
     PK, so re-running is safe and simply refreshes scores against the
     current filter_json + matcher logic.
 
-    Per-jurisdiction failures are caught and reported in ``errors[]``;
-    the loop continues so a single bad jurisdiction can't strand a
-    bootstrap run.
-    """
-    from app.services.buybox_scoring import score_jurisdiction
-    import json as _json
-    import logging as _logging
+    Per-jurisdiction failures are caught and reported in
+    ``state.errors[]``; the loop continues so a single bad jurisdiction
+    can't strand a bootstrap run.
 
-    _log = _logging.getLogger(__name__)
+    Why async: a single county can take 30-60s; a full sweep across 65+
+    jurisdictions exceeds Railway's proxy timeout. Prior sync version
+    returned HTTP 000 on curl while the work continued server-side —
+    confusing for operators and impossible to verify completion.
+    """
+    import json as _json
+    from datetime import datetime as _dt, timezone as _tz
 
     f = await db.scalar(
         select(BuyboxFilter).where(
@@ -311,28 +333,69 @@ async def score_filter_across_all_jurisdictions(
     )
     jurisdiction_ids = [row[0] for row in jids_result.all()]
 
-    parcels_scored = 0
-    errors: list[dict] = []
-    processed = 0
-
-    for jid in jurisdiction_ids:
-        try:
-            n = await score_jurisdiction(jid, filter_id, filter_json)
-            parcels_scored += n
-            processed += 1
-        except Exception as e:  # noqa: BLE001 — surface to caller, keep loop alive
-            _log.exception("score_jurisdiction failed for %s under filter %s",
-                           jid, filter_id)
-            errors.append({"jurisdiction_id": str(jid), "error": str(e)})
-
-    return {
+    job_id = str(uuid.uuid4())
+    state: dict[str, Any] = {
+        "job_id": job_id,
+        "status": "running",
         "filter_id": str(filter_id),
         "filter_name": f.name,
+        "started_at": _dt.now(_tz.utc).isoformat(),
+        "finished_at": None,
         "jurisdictions_total": len(jurisdiction_ids),
-        "jurisdictions_processed": processed,
-        "parcels_scored": parcels_scored,
-        "errors": errors,
+        "jurisdictions_processed": 0,
+        "parcels_scored": 0,
+        "errors": [],
     }
+    _register_score_all_job(job_id, state)
+
+    async def _bg() -> None:
+        import logging as _logging
+        _log = _logging.getLogger(__name__)
+        from app.services.buybox_scoring import score_jurisdiction
+
+        try:
+            for jid in jurisdiction_ids:
+                try:
+                    n = await score_jurisdiction(jid, filter_id, filter_json)
+                    state["parcels_scored"] += n
+                    state["jurisdictions_processed"] += 1
+                except Exception as e:  # noqa: BLE001 — surface, keep loop alive
+                    _log.exception(
+                        "score_jurisdiction failed for %s under filter %s",
+                        jid, filter_id,
+                    )
+                    state["errors"].append({
+                        "jurisdiction_id": str(jid),
+                        "error": str(e),
+                    })
+            state["status"] = "completed"
+            _log.info(
+                "score-all job=%s complete: filter=%s jurisdictions=%d/%d "
+                "parcels_scored=%d errors=%d",
+                job_id, f.name,
+                state["jurisdictions_processed"], len(jurisdiction_ids),
+                state["parcels_scored"], len(state["errors"]),
+            )
+        except Exception as exc:  # noqa: BLE001
+            _log.exception("score-all job=%s failed: %s", job_id, exc)
+            state["status"] = "failed"
+            state["errors"].append({"jurisdiction_id": None, "error": str(exc)})
+        finally:
+            state["finished_at"] = _dt.now(_tz.utc).isoformat()
+
+    background_tasks.add_task(_bg)
+    return {"job_id": job_id, "status": "started"}
+
+
+@router.get("/buybox-filters/_score-all-status/{job_id}")
+async def score_all_status(job_id: str) -> dict[str, Any]:
+    """Return the current state of an in-flight or completed _score-all
+    job. 404 when the job_id is unknown (either never existed or evicted
+    from the in-memory registry — see _SCORE_ALL_JOBS_MAX)."""
+    state = _SCORE_ALL_JOBS.get(job_id)
+    if state is None:
+        raise HTTPException(404, "score-all job not found (may have been evicted)")
+    return state
 
 
 @router.delete("/buybox-filters/{filter_id}", status_code=204)
