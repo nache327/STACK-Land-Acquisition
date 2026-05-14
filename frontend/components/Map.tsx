@@ -61,6 +61,10 @@ interface MapProps {
   colorMode?: ColorMode;
   saturationData?: Map<number, SaturationBatchResult>;
   flyTrigger?: number;
+  // Bumped counter — when this changes, the map fits back to the
+  // jurisdiction's county bounds. Drives the click-again-to-zoom-out
+  // behavior on the parcel results list.
+  zoomOutTrigger?: number;
   // Drive-time isochrone props
   driveTimeMode?: DriveTimeMode;
   isochronePolygons?: IsochronePolygons | null;
@@ -296,6 +300,7 @@ export default function Map({
   colorMode = "permission",
   saturationData,
   flyTrigger,
+  zoomOutTrigger,
   driveTimeMode = "off",
   isochronePolygons,
   isochroneWealth,
@@ -457,6 +462,23 @@ export default function Map({
     if (map.isStyleLoaded()) drawRingOnMap(map, centroid);
     else map.once("load", () => drawRingOnMap(map, centroid));
   }, [flyTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Zoom back out to county bounds when the operator clicks the same
+  // parcel row a second time (page.tsx bumps zoomOutTrigger). Uses the
+  // same fitBounds parameters as the initial jurisdiction-load fit so
+  // the "out" view matches what you saw when you first opened the
+  // dashboard.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !bounds || !zoomOutTrigger) return;
+    map.fitBounds(
+      [
+        [bounds[0], bounds[1]],
+        [bounds[2], bounds[3]],
+      ],
+      { padding: 40, maxZoom: 14, duration: 800 }
+    );
+  }, [zoomOutTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current;

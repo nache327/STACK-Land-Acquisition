@@ -147,6 +147,13 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
   const [flyTrigger, setFlyTrigger] = useState(0);
+  // Toggle state for parcel-row click-to-zoom: when a parcel row is
+  // clicked, fly to it; clicking the same row again zooms back out to
+  // the county bounds. ``zoomedParcelId`` mirrors which parcel is
+  // currently in the zoomed-in view (null = not zoomed); ``zoomOutTrigger``
+  // is a bumped counter the Map watches to perform the fit-bounds call.
+  const [zoomedParcelId, setZoomedParcelId] = useState<number | null>(null);
+  const [zoomOutTrigger, setZoomOutTrigger] = useState(0);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [verifierOpen, setVerifierOpen] = useState(false);
@@ -906,8 +913,19 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             selectedParcelId={selectedParcelId}
             selectedParcelCentroid={selectedParcelCentroid}
             onParcelClick={(id) => {
-              setSelectedParcelId(id);
-              setDrawerOpen(true);
+              // Toggle: clicking the currently-zoomed parcel returns the
+              // map to county bounds; any other click zooms in to that
+              // parcel. The drawer always opens with the latest selection
+              // so the parcel detail stays in sync regardless of zoom.
+              if (zoomedParcelId === id) {
+                setZoomedParcelId(null);
+                setZoomOutTrigger((n) => n + 1);
+              } else {
+                setSelectedParcelId(id);
+                setDrawerOpen(true);
+                setZoomedParcelId(id);
+                setFlyTrigger((n) => n + 1);
+              }
             }}
             onBoundsChange={setBBox}
             visibility={layerVisibility}
@@ -915,6 +933,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             colorMode={colorMode}
             saturationData={effectiveSaturationData}
             flyTrigger={flyTrigger}
+            zoomOutTrigger={zoomOutTrigger}
             driveTimeMode={driveTimeMode}
             isochronePolygons={isochroneData?.polygons ?? null}
             isochroneWealth={isochroneWealth}
