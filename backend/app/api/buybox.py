@@ -261,19 +261,11 @@ async def run_auto_score_now(
     }
 
 
-# In-memory _score-all job registry. Mirrors the _rematch-all pattern in
-# api/listings.py: single-instance Railway makes a process-local dict
-# safe, and the underlying score_jurisdiction is idempotent so a dyno
-# restart mid-job is recoverable by re-firing. Capped to bound memory.
-_SCORE_ALL_JOBS: dict[str, dict[str, Any]] = {}
-_SCORE_ALL_JOBS_MAX = 20
-
-
-def _register_score_all_job(job_id: str, state: dict[str, Any]) -> None:
-    _SCORE_ALL_JOBS[job_id] = state
-    while len(_SCORE_ALL_JOBS) > _SCORE_ALL_JOBS_MAX:
-        oldest = next(iter(_SCORE_ALL_JOBS))
-        del _SCORE_ALL_JOBS[oldest]
+# Job state for _score-all lives in Redis (see services/job_state_store.py).
+# Earlier versions used a module-level dict — a Railway deploy mid-run
+# wiped state and the status endpoint returned 404 even though the work
+# had succeeded server-side. Redis survives deploys and is shared if we
+# ever scale to multiple instances.
 
 
 @router.post("/buybox-filters/{filter_id}/_score-all", status_code=202)
@@ -343,13 +335,15 @@ async def score_filter_across_all_jurisdictions(
         "parcels_scored": 0,
         "errors": [],
     }
-    _register_score_all_job(job_id, state)
+    from app.services.job_state_store import set_job_state
+    await set_job_state(job_id, state)
 
     async def _bg() -> None:
         import logging as _logging
         _log = _logging.getLogger(__name__)
         from app.db import async_session_maker
         from app.services.buybox_scoring import score_jurisdiction
+        from app.services.job_state_store import set_job_state as _save
 
         try:
             # SELECT DISTINCT jurisdiction_id FROM parcels was the 50s
@@ -365,6 +359,7 @@ async def score_filter_across_all_jurisdictions(
                 jurisdiction_ids = [row[0] for row in jids_result.all()]
             state["jurisdictions_total"] = len(jurisdiction_ids)
             state["status"] = "running"
+            await _save(job_id, state)
 
             for jid in jurisdiction_ids:
                 try:
@@ -380,6 +375,10 @@ async def score_filter_across_all_jurisdictions(
                         "jurisdiction_id": str(jid),
                         "error": str(e),
                     })
+                # Persist progress after each jurisdiction so the status
+                # endpoint reflects work as it lands. Sliding 24h TTL
+                # means a multi-hour run won't get evicted.
+                await _save(job_id, state)
             state["status"] = "completed"
             _log.info(
                 "score-all job=%s complete: filter=%s jurisdictions=%d/%d "
@@ -394,6 +393,7 @@ async def score_filter_across_all_jurisdictions(
             state["errors"].append({"jurisdiction_id": None, "error": str(exc)})
         finally:
             state["finished_at"] = _dt.now(_tz.utc).isoformat()
+            await _save(job_id, state)
 
     background_tasks.add_task(_bg)
     return {"job_id": job_id, "status": "enumerating"}
@@ -402,11 +402,12 @@ async def score_filter_across_all_jurisdictions(
 @router.get("/buybox-filters/_score-all-status/{job_id}")
 async def score_all_status(job_id: str) -> dict[str, Any]:
     """Return the current state of an in-flight or completed _score-all
-    job. 404 when the job_id is unknown (either never existed or evicted
-    from the in-memory registry — see _SCORE_ALL_JOBS_MAX)."""
-    state = _SCORE_ALL_JOBS.get(job_id)
+    job. 404 when the job_id is unknown (key missing or 24h TTL
+    expired). Backed by Redis so it survives Railway restarts."""
+    from app.services.job_state_store import get_job_state
+    state = await get_job_state(job_id)
     if state is None:
-        raise HTTPException(404, "score-all job not found (may have been evicted)")
+        raise HTTPException(404, "score-all job not found (may have expired)")
     return state
 
 
