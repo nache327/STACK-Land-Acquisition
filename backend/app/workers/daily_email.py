@@ -326,7 +326,9 @@ def _render_html(filter_name: str, parcels: list[DigestParcel]) -> str:
 
 # ─── Send + bookkeeping ───────────────────────────────────────────────────
 
-async def _send_digest_for_filter(db: AsyncSession, f: BuyboxFilter) -> int:
+async def _send_digest_for_filter(
+    db: AsyncSession, f: BuyboxFilter, force: bool = False,
+) -> int:
     parcels = await _top_parcels_for_filter(db, f)
     if not parcels:
         logger.info("digest filter=%s: no eligible parcels — skipping", f.name)
@@ -356,17 +358,26 @@ async def _send_digest_for_filter(db: AsyncSession, f: BuyboxFilter) -> int:
     )
 
     parcel_ids = [p.parcel_id for p in parcels]
+    # Always stamp per-parcel notified_at so the same parcel doesn't
+    # appear in two consecutive digests even when manually force-fired
+    # — that's per-parcel de-duplication, not a cooldown gate.
     await db.execute(
         update(ParcelBuyboxScore)
         .where(ParcelBuyboxScore.buybox_filter_id == f.id)
         .where(ParcelBuyboxScore.parcel_id.in_(parcel_ids))
         .values(notified_at=datetime.now(timezone.utc))
     )
-    await db.execute(
-        update(BuyboxFilter)
-        .where(BuyboxFilter.id == f.id)
-        .values(last_email_sent_at=datetime.now(timezone.utc))
-    )
+    # Only stamp the filter-level last_email_sent_at on REAL scheduled
+    # runs (force=False). A manual force=true smoke test stamping this
+    # timestamp poisoned the next 12:00 UTC cron — the scheduler hit
+    # the 23h cooldown and silently skipped. Manual runs are diagnostic
+    # by design and must not affect scheduled behavior.
+    if not force:
+        await db.execute(
+            update(BuyboxFilter)
+            .where(BuyboxFilter.id == f.id)
+            .values(last_email_sent_at=datetime.now(timezone.utc))
+        )
     await db.commit()
     return len(parcels)
 
@@ -392,7 +403,7 @@ async def run_once(force: bool = False) -> dict:
                 f.id, f.name, f.daily_email_enabled, f.last_email_sent_at,
             )
             try:
-                sent = await _send_digest_for_filter(db, f)
+                sent = await _send_digest_for_filter(db, f, force=force)
                 filters_processed += 1
                 parcels_emailed += sent
             except Exception as exc:
