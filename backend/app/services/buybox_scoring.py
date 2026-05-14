@@ -239,9 +239,20 @@ SELECT
     lst.sale_price     AS listing_sale_price,
     lst.days_on_market AS listing_dom
 FROM parcels p
-LEFT JOIN zone_use_matrix zum
-    ON zum.jurisdiction_id = p.jurisdiction_id
-   AND zum.zone_code      = p.zoning_code
+LEFT JOIN LATERAL (
+    -- Pick the most specific zone_use_matrix row for this parcel:
+    -- a row whose municipality matches parcels.city wins over a
+    -- NULL-municipality county-default row. Implemented as a LATERAL
+    -- LIMIT 1 ordered by (municipality IS NULL ASC) so non-null rows
+    -- sort first; LIMIT 1 collapses the result to whichever wins.
+    SELECT self_storage
+      FROM zone_use_matrix
+     WHERE jurisdiction_id = p.jurisdiction_id
+       AND zone_code      = p.zoning_code
+       AND (municipality IS NULL OR municipality = p.city)
+     ORDER BY (municipality IS NULL) ASC
+     LIMIT 1
+) zum ON true
 LEFT JOIN parcel_ring_metrics prm
     ON prm.parcel_id = p.id
    AND prm.drive_time_minutes = $2::int

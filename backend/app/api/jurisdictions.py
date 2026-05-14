@@ -138,12 +138,18 @@ async def create_zone(
     j = await db.get(Jurisdiction, jurisdiction_id)
     if j is None:
         raise HTTPException(status_code=404, detail="Jurisdiction not found")
-    existing = await db.execute(
-        select(ZoneUseMatrix).where(
-            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
-            ZoneUseMatrix.zone_code == payload.zone_code,
-        )
-    )
+    # Conflict check must include municipality — (jur, zone_code, NULL)
+    # county-default and (jur, zone_code, "Somerville borough") township
+    # row coexist legally; only an exact triple-match is a duplicate.
+    conflict_where = [
+        ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+        ZoneUseMatrix.zone_code == payload.zone_code,
+    ]
+    if payload.municipality is None:
+        conflict_where.append(ZoneUseMatrix.municipality.is_(None))
+    else:
+        conflict_where.append(ZoneUseMatrix.municipality == payload.municipality)
+    existing = await db.execute(select(ZoneUseMatrix).where(*conflict_where))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=409, detail="Zone already exists")
     zone = ZoneUseMatrix(
@@ -156,6 +162,27 @@ async def create_zone(
     return zone
 
 
+def _zone_select_where(
+    jurisdiction_id: uuid.UUID, zone_code: str, municipality: str | None,
+) -> list:
+    """Build the WHERE clauses for selecting one zone_use_matrix row.
+
+    municipality=None matches the NULL-municipality (county-default)
+    row, not "any row." Callers that want a township-specific row must
+    pass that township's name explicitly. This mirrors the uniqueness
+    semantics: (jur, code, NULL) and (jur, code, "X") are distinct.
+    """
+    clauses = [
+        ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+        ZoneUseMatrix.zone_code == zone_code,
+    ]
+    if municipality is None:
+        clauses.append(ZoneUseMatrix.municipality.is_(None))
+    else:
+        clauses.append(ZoneUseMatrix.municipality == municipality)
+    return clauses
+
+
 @router.get(
     "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
     response_model=ZoneUseMatrixRead,
@@ -163,12 +190,12 @@ async def create_zone(
 async def get_zone(
     jurisdiction_id: uuid.UUID,
     zone_code: str,
+    municipality: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> ZoneUseMatrix:
     result = await db.execute(
         select(ZoneUseMatrix).where(
-            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
-            ZoneUseMatrix.zone_code == zone_code,
+            *_zone_select_where(jurisdiction_id, zone_code, municipality)
         )
     )
     zone = result.scalar_one_or_none()
@@ -185,12 +212,12 @@ async def update_zone(
     jurisdiction_id: uuid.UUID,
     zone_code: str,
     payload: ZoneUseMatrixUpdate,
+    municipality: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> ZoneUseMatrix:
     result = await db.execute(
         select(ZoneUseMatrix).where(
-            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
-            ZoneUseMatrix.zone_code == zone_code,
+            *_zone_select_where(jurisdiction_id, zone_code, municipality)
         )
     )
     zone = result.scalar_one_or_none()
