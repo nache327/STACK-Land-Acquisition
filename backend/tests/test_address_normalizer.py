@@ -19,7 +19,10 @@ class TestNormalize:
             # Punctuation
             ("100 N. Main St., Suite", "100 north main street suite"),
             # Common suffix variants
-            ("5 Hwy 24",               "5 highway 24"),
+            # "Hwy 24" canonicalizes to "route 24" (highway/route are
+            # interchangeable for matching purposes); see route
+            # canonicalization tests for full coverage.
+            ("5 Hwy 24",               "5 route 24"),
             ("10 Pky Way",             "10 parkway way"),
             ("12 Pkwy",                "12 parkway"),
             ("20 Blvd Drive",          "20 boulevard drive"),
@@ -41,6 +44,41 @@ class TestNormalize:
         once = normalize("100 N. Main St., Suite 200")
         twice = normalize(once)
         assert once == twice
+
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            # Bare route phrases
+            ("1150 Route 22 E",            "1150 route 22"),
+            ("3070 Rt 22 W",               "3070 route 22"),
+            ("672 Highway 202",            "672 route 202"),
+            ("1004 Route 206 Hwy",         "1004 route 206"),
+            # State / US prefixed
+            ("674 US Highway 202",         "674 route 202"),
+            ("351 US Hwy 22",              "351 route 22"),
+            ("1165 State Route 27",        "1165 route 27"),
+            ("906 Us Highway 22",          "906 route 22"),
+            # Hyphenated state-route shortcuts
+            ("682 US-202",                 "682 route 202"),
+            ("1246 US-206",                "1246 route 206"),
+            ("351 Nj-28",                  "351 route 28"),
+            ("2701 NJ-27",                 "2701 route 27"),
+            # Stacked prefixes / mixed forms (real CoStar mess)
+            ("212 US HIGHWAY ROUTE 206",   "212 route 206"),
+            ("79 N Route 206",             "79 route 206"),
+            ("373-377 E Route 22",         "373-377 route 22"),
+            # Routes in mid-address — shouldn't break the rest
+            ("100 Route 22 Plaza",         "100 route 22 plaza"),
+        ],
+    )
+    def test_route_canonicalization(self, raw: str, expected: str) -> None:
+        assert normalize(raw) == expected
+
+    def test_route_canonicalization_idempotent(self) -> None:
+        once = normalize("1150 US Highway 22 E")
+        twice = normalize(once)
+        assert once == twice
+        assert once == "1150 route 22"
 
 
 class TestStripUnit:
