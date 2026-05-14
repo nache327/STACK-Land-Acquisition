@@ -167,6 +167,43 @@ async def run_digest_now(
     }
 
 
+@router.post("/buybox-filters/{filter_id}/_clear-cooldown")
+async def clear_digest_cooldown(
+    filter_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Null the filter's ``last_email_sent_at`` so the next scheduled
+    cron run isn't blocked by the 23h cooldown.
+
+    Use this when a manual ``force=true`` digest poisoned the cooldown
+    (legacy issue, since fixed) or any time the operator wants the next
+    cron to fire regardless of when the last email actually went out.
+
+    Per-parcel ``notified_at`` is NOT touched — listings that have been
+    notified stay notified so the cron doesn't re-email the same
+    parcels. Only the filter-level cooldown gate is cleared.
+    """
+    f = await db.scalar(
+        select(BuyboxFilter).where(
+            and_(
+                BuyboxFilter.id == filter_id,
+                BuyboxFilter.organization_id == DEFAULT_ORG_ID,
+            )
+        )
+    )
+    if f is None:
+        raise HTTPException(404, "filter not found")
+    previous = f.last_email_sent_at
+    f.last_email_sent_at = None
+    await db.commit()
+    return {
+        "filter_id": str(filter_id),
+        "filter_name": f.name,
+        "previous_last_email_sent_at": previous.isoformat() if previous else None,
+        "cleared": True,
+    }
+
+
 @router.post("/buybox-filters/_score-jurisdiction/{jurisdiction_id}")
 async def run_auto_score_now(
     jurisdiction_id: uuid.UUID,
