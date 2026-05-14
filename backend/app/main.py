@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.version import get_pipeline_version
 from app.api import (
+    admin_backfill,
     buybox,
     census_proxy,
     competition,
@@ -95,6 +96,7 @@ app.include_router(zoning_districts.router, prefix="/api")
 app.include_router(buybox.router, prefix="/api")
 app.include_router(census_proxy.router, prefix="/api")
 app.include_router(listings.router, prefix="/api")
+app.include_router(admin_backfill.router, prefix="/api")
 
 
 @app.get("/health", tags=["meta"])
