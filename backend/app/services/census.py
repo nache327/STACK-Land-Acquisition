@@ -288,14 +288,18 @@ async def _fetch_acs_population(state_fips: str, county_fips: str) -> dict[str, 
     Fetch ACS 5-year total population (B01003_001E) for all tracts in a county.
     Returns {geoid: population} mapping.
     """
-    params = {
+    from app.config import settings
+
+    params: dict = {
         "get": "B01003_001E,GEO_ID",
         "for": "tract:*",
         "in": f"state:{state_fips} county:{county_fips}",
     }
+    if settings.census_api_key:
+        params["key"] = settings.census_api_key
 
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             resp = await client.get(_ACS_URL, params=params)
             resp.raise_for_status()
             rows = resp.json()
