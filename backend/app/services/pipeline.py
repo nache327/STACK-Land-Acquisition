@@ -1432,17 +1432,34 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # ── Auto-rescore parcel_buybox_scores ────────────────────────────────
     # Refresh server-side scores for this jurisdiction so the dashboard's
     # Score column lights up immediately. Non-fatal: a scoring failure
-    # logs a warning but does NOT fail the job — parcels + zoning are
-    # already persisted regardless.
+    # logs an error and marks the stage failed but does NOT fail the job
+    # — parcels + zoning are already persisted regardless.
+    #
+    # History: prior to fix/auto-score-loud-on-missing-default,
+    # auto_score_jurisdiction silently returned 0 when no default filter
+    # existed. That state went unnoticed across every new jurisdiction
+    # ingest until the dashboard's "Computing N/M parcels" gauge
+    # surfaced it. Now auto_score_jurisdiction raises, the stage is
+    # marked failed in job state, and the operator can fix the config.
     score_started = _stage_started(job, "auto_score", jurisdiction_id=str(jurisdiction.id))
     try:
         async with asyncio.timeout(900):  # 15 min cap; typical run is <1 min
             scored = await auto_score_jurisdiction(jurisdiction.id)
         _stage_completed(job, "auto_score", score_started, parcels_scored=scored)
-        logger.info("Auto-scored %d parcels for %s", scored, jurisdiction.name)
+        if scored == 0 and count > 0:
+            # Parcels exist but none scored — likely a data issue (no
+            # eligible parcels matched the scorer's SELECT, e.g. no
+            # zone_use_matrix rows yet). Worth flagging loudly.
+            logger.error(
+                "Auto-score returned 0 parcels for %s despite %d parcels ingested. "
+                "Check zone_use_matrix coverage for this jurisdiction.",
+                jurisdiction.name, count,
+            )
+        else:
+            logger.info("Auto-scored %d parcels for %s", scored, jurisdiction.name)
     except Exception as exc:
         _stage_failed(job, "auto_score", score_started, exc)
-        logger.warning("Auto-scoring failed (non-fatal): %s", exc)
+        logger.error("Auto-scoring failed (non-fatal) for %s: %s", jurisdiction.name, exc)
 
     await _set_status(
         db, job, JobStatus.ready,
