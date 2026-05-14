@@ -567,21 +567,12 @@ async def debug_rematch(
 # persisting state to Postgres or Redis — not worth the complexity until
 # we have evidence anyone needs the history.
 #
-# Capped at 20 most-recent jobs to bound memory; older entries are evicted
-# in FIFO order when a new job is registered.
-_REMATCH_JOBS: dict[str, dict[str, Any]] = {}
-_REMATCH_JOBS_MAX = 20
+# Job state lives in Redis via app/services/job_state_store.py. Earlier
+# versions used a module-level dict that lost state on every Railway
+# deploy; we hit that in production this session.
 # Cap on how many "flipped to matched" diagnostics we keep in a job
 # record. The full list is in the logs; the response is just a sample.
 _FLIPPED_SAMPLE_CAP = 100
-
-
-def _register_job(job_id: str, state: dict[str, Any]) -> None:
-    _REMATCH_JOBS[job_id] = state
-    while len(_REMATCH_JOBS) > _REMATCH_JOBS_MAX:
-        # Evict oldest by insertion order — dicts preserve it in 3.7+.
-        oldest = next(iter(_REMATCH_JOBS))
-        del _REMATCH_JOBS[oldest]
 
 
 @router.post("/listings/_rematch-all", status_code=202)
@@ -621,9 +612,17 @@ async def rematch_all_listings(
         "flipped_sample_truncated": False,
         "errors": [],
     }
-    _register_job(job_id, state)
+    from app.services.job_state_store import set_job_state
+    await set_job_state(job_id, state)
+
+    # Persist progress at most once per N listings to avoid hammering
+    # Redis on a 1000-listing rematch. 25 keeps the status responsive
+    # (status endpoint sees movement every ~5s at the current matcher
+    # pace) without writing on every iteration.
+    _SAVE_EVERY = 25
 
     async def _bg() -> None:
+        from app.services.job_state_store import set_job_state as _save
         try:
             async with async_session_maker() as bg_db:
                 stmt = select(ForsaleListing).where(
@@ -635,8 +634,9 @@ async def rematch_all_listings(
                     )
                 listings = list((await bg_db.execute(stmt)).scalars().all())
                 state["total"] = len(listings)
+                await _save(job_id, state)
 
-                for listing in listings:
+                for i, listing in enumerate(listings):
                     prior_matched_parcel = listing.matched_parcel_id
                     try:
                         result = await rematch_listing(listing, bg_db)
@@ -675,6 +675,9 @@ async def rematch_all_listings(
                     else:
                         state["still_unmatched"] += 1
 
+                    if (i + 1) % _SAVE_EVERY == 0:
+                        await _save(job_id, state)
+
                 await bg_db.commit()
 
             state["status"] = "completed"
@@ -691,6 +694,7 @@ async def rematch_all_listings(
             state["errors"].append({"listing_id": None, "error": str(exc)})
         finally:
             state["finished_at"] = datetime.now(timezone.utc).isoformat()
+            await _save(job_id, state)
 
     background_tasks.add_task(_bg)
     return {"job_id": job_id, "status": "started"}
@@ -699,10 +703,11 @@ async def rematch_all_listings(
 @router.get("/listings/_rematch-status/{job_id}")
 async def rematch_status(job_id: str) -> dict[str, Any]:
     """Return the current state of an in-flight or completed rematch
-    job. 404 if the job_id is unknown (either never existed or evicted
-    from the in-memory registry — see _REMATCH_JOBS_MAX).
+    job. 404 if the job_id is unknown (key missing or 24h TTL expired).
+    Backed by Redis so it survives Railway restarts.
     """
-    state = _REMATCH_JOBS.get(job_id)
+    from app.services.job_state_store import get_job_state
+    state = await get_job_state(job_id)
     if state is None:
-        raise HTTPException(404, "rematch job not found (may have been evicted)")
+        raise HTTPException(404, "rematch job not found (may have expired)")
     return state
