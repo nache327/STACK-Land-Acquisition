@@ -65,6 +65,12 @@ interface MapProps {
   // jurisdiction's county bounds. Drives the click-again-to-zoom-out
   // behavior on the parcel results list.
   zoomOutTrigger?: number;
+  // Explicit fly-to target. When the nonce changes, the map flies to
+  // ``centroid``. Used by the parcel-row click handler because the
+  // table row's geom is authoritative even when the parcel isn't in
+  // the Map's current viewport / parcelCollection. Falls through to
+  // the flyTrigger path when null.
+  flyToOverride?: { centroid: [number, number]; nonce: number } | null;
   // Drive-time isochrone props
   driveTimeMode?: DriveTimeMode;
   isochronePolygons?: IsochronePolygons | null;
@@ -301,6 +307,7 @@ export default function Map({
   saturationData,
   flyTrigger,
   zoomOutTrigger,
+  flyToOverride,
   driveTimeMode = "off",
   isochronePolygons,
   isochroneWealth,
@@ -479,6 +486,21 @@ export default function Map({
       { padding: 40, maxZoom: 14, duration: 800 }
     );
   }, [zoomOutTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Explicit fly-to for the parcel-row click. Triggers on nonce change
+  // (so the same centroid can re-fire). Uses the centroid directly —
+  // no mapParcels lookup, which is why the previous flyTrigger path
+  // silently failed for rows whose parcel wasn't in the map's current
+  // parcelCollection.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !flyToOverride) return;
+    map.flyTo({
+      center: flyToOverride.centroid,
+      zoom: Math.max(map.getZoom(), 15),
+      duration: 800,
+    });
+  }, [flyToOverride?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current;

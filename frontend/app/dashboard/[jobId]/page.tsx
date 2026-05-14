@@ -154,6 +154,13 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   // is a bumped counter the Map watches to perform the fit-bounds call.
   const [zoomedParcelId, setZoomedParcelId] = useState<number | null>(null);
   const [zoomOutTrigger, setZoomOutTrigger] = useState(0);
+  // Carries an explicit [lng, lat] for the Map to fly to. Set by
+  // handleParcelClick directly from the table row's geom so the fly
+  // works even when the parcel isn't in the Map's mapParcels (which
+  // is filtered by current viewport / fetch page).
+  const [flyToOverride, setFlyToOverride] = useState<
+    { centroid: [number, number]; nonce: number } | null
+  >(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [verifierOpen, setVerifierOpen] = useState(false);
@@ -665,8 +672,53 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   });
 
   function handleParcelClick(parcel: CandidateParcelRow) {
+    // Toggle: clicking the currently-zoomed row returns the map to
+    // county bounds. Any other click flies to the parcel.
+    if (zoomedParcelId === parcel.parcel_id) {
+      setZoomedParcelId(null);
+      setZoomOutTrigger((n) => n + 1);
+      return;
+    }
     setSelectedParcelId(parcel.parcel_id);
     setDrawerOpen(true);
+    setZoomedParcelId(parcel.parcel_id);
+    // Compute centroid directly from the row's geom rather than
+    // relying on the Map's mapParcels.find — the table row data is
+    // authoritative and exists regardless of whether the parcel is
+    // currently in the map's viewport / parcelCollection.
+    const centroid = computeCentroidFromGeom(parcel.geom);
+    if (centroid) {
+      setFlyToOverride({ centroid, nonce: Date.now() });
+    } else {
+      // Fall back to the existing trigger path; if mapParcels has it,
+      // the Map's effect will look up the centroid and fly anyway.
+      setFlyTrigger((n) => n + 1);
+    }
+  }
+
+  // Centroid computation lifted out of the useMemo so handleParcelClick
+  // can call it inline against the table row's geom. Same shape as the
+  // useMemo at selectedParcelCentroid.
+  function computeCentroidFromGeom(
+    geom: unknown
+  ): [number, number] | null {
+    if (!geom) return null;
+    const flat: number[][] = [];
+    const collect = (c: unknown): void => {
+      if (!Array.isArray(c)) return;
+      if (typeof c[0] === "number") { flat.push(c as number[]); return; }
+      (c as unknown[]).forEach(collect);
+    };
+    if (typeof geom === "object" && geom !== null && "coordinates" in geom) {
+      collect((geom as { coordinates: unknown }).coordinates);
+    }
+    if (!flat.length) return null;
+    const lngs = flat.map((c) => c[0]);
+    const lats = flat.map((c) => c[1]);
+    return [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
   }
 
   // Fetch isochrone whenever a parcel is clicked and drive-time mode is active
@@ -934,6 +986,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             saturationData={effectiveSaturationData}
             flyTrigger={flyTrigger}
             zoomOutTrigger={zoomOutTrigger}
+            flyToOverride={flyToOverride}
             driveTimeMode={driveTimeMode}
             isochronePolygons={isochroneData?.polygons ?? null}
             isochroneWealth={isochroneWealth}
