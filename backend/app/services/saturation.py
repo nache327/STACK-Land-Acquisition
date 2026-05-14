@@ -60,13 +60,45 @@ async def compute_ring_saturation(
     """
     # Get parcel centroid
     result = await db.execute(
-        text("SELECT ST_AsText(centroid) FROM parcels WHERE id = :id"),
+        text("SELECT ST_AsText(centroid), "
+             "ST_X(centroid) AS lng, ST_Y(centroid) AS lat "
+             "FROM parcels WHERE id = :id"),
         {"id": parcel_id},
     )
     row = result.fetchone()
     if not row or not row[0]:
         return None
     centroid_wkt = row[0]
+    parcel_lng = row[1]
+    parcel_lat = row[2]
+
+    # Lazy-fetch census tracts around this parcel if not already cached.
+    # The single-parcel path used to rely on the bulk-saturation flow
+    # having pre-warmed tracts for the area — that fell down for NJ
+    # parcels in jurisdictions where the bulk flow hadn't run yet (e.g.
+    # opening a parcel detail drawer was the first thing that touched
+    # that geography). Symptom: Market Saturation showed competitor
+    # counts but Pop=0 across all rings because the spatial join had
+    # nothing to intersect.
+    #
+    # Use a 0.20° pad (~14 mi) — matches the bulk-path radius so the
+    # 10-mile ring's edges still have tracts to intersect.
+    try:
+        from app.services.census import ensure_census_tracts
+        if parcel_lng is not None and parcel_lat is not None:
+            buf = 0.20
+            tract_count = await ensure_census_tracts(
+                (parcel_lng - buf, parcel_lat - buf,
+                 parcel_lng + buf, parcel_lat + buf),
+                db,
+            )
+            if tract_count:
+                await db.commit()
+    except Exception as exc:
+        logger.warning(
+            "Auto-fetch census tracts for parcel %s failed (non-fatal): %s",
+            parcel_id, exc,
+        )
 
     radii = [ring_miles] if ring_miles else RING_RADII_MILES
     rings: list[RingResult] = []
