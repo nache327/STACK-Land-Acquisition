@@ -9,7 +9,6 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     String,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -36,9 +35,13 @@ class ClassificationSource(str, enum.Enum):
 
 class ZoneUseMatrix(Base):
     __tablename__ = "zone_use_matrix"
-    __table_args__ = (
-        UniqueConstraint("jurisdiction_id", "zone_code", name="uq_zone_matrix"),
-    )
+    # Uniqueness is enforced by a UNIQUE INDEX on
+    # (jurisdiction_id, zone_code, COALESCE(municipality, '')) — see
+    # migration 0028. Plain UniqueConstraint would treat NULL
+    # municipalities as distinct from each other, allowing duplicate
+    # county-default rows. Declared as Index here so SQLAlchemy knows
+    # it exists; the index itself is created in the migration.
+    __table_args__ = ()
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     jurisdiction_id: Mapped[uuid.UUID] = mapped_column(
@@ -49,6 +52,13 @@ class ZoneUseMatrix(Base):
     )
     zone_code: Mapped[str] = mapped_column(String(50), nullable=False)
     zone_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Optional sub-jurisdiction. NULL = "default for this county"; the
+    # scorer falls through to a NULL-municipality row when no township
+    # -specific row exists. Populated for county-as-jurisdiction states
+    # (NJ, PA, etc.) where shared zone codes mean different things
+    # across townships. UT and other township-as-jurisdiction states
+    # leave this NULL.
+    municipality: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     self_storage: Mapped[UsePermission] = mapped_column(
         Enum(UsePermission, name="use_permission_enum"),

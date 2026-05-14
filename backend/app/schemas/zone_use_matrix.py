@@ -19,6 +19,7 @@ class ZoneUseMatrixRead(BaseModel):
     jurisdiction_id: uuid.UUID
     zone_code: str
     zone_name: str | None
+    municipality: str | None
     self_storage: UsePermission
     mini_warehouse: UsePermission
     light_industrial: UsePermission
@@ -33,7 +34,13 @@ class ZoneUseMatrixRead(BaseModel):
 
 
 class ZoneUseMatrixUpdate(BaseModel):
-    """Human override — analyst can correct a cell and add a comment."""
+    """Human override — analyst can correct a cell and add a comment.
+
+    ``municipality`` is intentionally NOT updatable via PATCH because
+    it's part of the row's identity (uniqueness key). To change a
+    row's scope from county-default to a specific township, create a
+    new row via ZoneUseMatrixCreate.
+    """
     self_storage: UsePermission | None = None
     mini_warehouse: UsePermission | None = None
     light_industrial: UsePermission | None = None
@@ -45,6 +52,11 @@ class ZoneUseMatrixCreate(BaseModel):
     """Create a new zone row (e.g. from Apply Correction ADD action)."""
     zone_code: str
     zone_name: str | None = None
+    # NULL = "default for this county"; a value = township-specific
+    # override. The municipality string must match parcels.city
+    # (which is itself populated from TIGER MCD names — see
+    # admin_backfill.backfill_nj_parcel_city).
+    municipality: str | None = None
     self_storage: UsePermission = UsePermission.unclear
     mini_warehouse: UsePermission = UsePermission.unclear
     light_industrial: UsePermission = UsePermission.unclear
