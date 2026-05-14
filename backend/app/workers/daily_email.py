@@ -195,9 +195,28 @@ def _parcel_link(p: DigestParcel) -> str:
     return f"{base}/dashboard/{p.jurisdiction_id}?parcel={p.apn}"
 
 
-def _top_factors(p: DigestParcel, n: int = 3) -> list[dict]:
-    """Top-N |delta| contributions; delta is signed."""
-    return sorted(p.factors, key=lambda f: abs(float(f.get("delta", 0))), reverse=True)[:n]
+def _top_factors(p: DigestParcel, n: int = 5) -> list[dict]:
+    """Top-N contributions with non-zero delta, by |delta| descending.
+
+    Filters out zero-delta factors (e.g. "Ring not yet measured"
+    placeholders) since they don't move the score and just dilute the
+    breakdown. Cap raised from 3 to 5: previously a parcel scoring 100
+    with four contributing factors (Base + Storage + Acres + Listed)
+    showed three, and the displayed sum mismatched the score by exactly
+    the dropped factor.
+    """
+    non_zero = [f for f in p.factors if float(f.get("delta", 0)) != 0]
+    return sorted(
+        non_zero,
+        key=lambda f: abs(float(f.get("delta", 0))),
+        reverse=True,
+    )[:n]
+
+
+def _hidden_factor_count(p: DigestParcel, n: int = 5) -> int:
+    """How many non-zero factors got truncated from the displayed top-N."""
+    non_zero = [f for f in p.factors if float(f.get("delta", 0)) != 0]
+    return max(0, len(non_zero) - n)
 
 
 def _render_subject(filter_name: str, parcels: list[DigestParcel]) -> str:
@@ -274,6 +293,9 @@ def _render_text(filter_name: str, parcels: list[DigestParcel]) -> str:
             lines.append(
                 f"    {f.get('label', '?')}: {sign}{f.get('delta')} — {f.get('reason', '')}"
             )
+        hidden = _hidden_factor_count(p)
+        if hidden > 0:
+            lines.append(f"    (+ {hidden} more factor{'s' if hidden != 1 else ''})")
         lines.append(f"  {_parcel_link(p)}")
         lines.append("")
     return "\n".join(lines).strip() + "\n"
@@ -292,6 +314,13 @@ def _render_html(filter_name: str, parcels: list[DigestParcel]) -> str:
             f"— {html_lib.escape(str(f.get('reason', '')))}</li>"
             for f in _top_factors(p)
         )
+        hidden = _hidden_factor_count(p)
+        if hidden > 0:
+            factor_items += (
+                f"<li style='color:#94a3b8;list-style:none;padding-left:0'>"
+                f"+ {hidden} more factor{'s' if hidden != 1 else ''}"
+                f"</li>"
+            )
         owner_html = f"<div style='color:#64748b;font-size:13px'>Owner: {owner}</div>" if owner else ""
         listing_html = _listing_banner_html(p)
         rows.append(
