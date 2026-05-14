@@ -156,10 +156,10 @@ def _listing_row_to_dict(r: ListingRow, jurisdiction_id: uuid.UUID, source: str,
 
 @router.post("/listings/upload")
 async def upload_listings(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     source: str | None = Form(default=None),
     jurisdiction_id: uuid.UUID | None = Form(default=None),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Ingest a listings export.
@@ -334,6 +334,14 @@ async def _persist_and_match(
 
     # Step 4: background-task the matching cascade + alert worker
     async def _bg_match_and_alert() -> None:
+        # Smoking-gun log so we can confirm the bg task actually fires post-deploy.
+        # Prior issue: tasks queued to a default-valued BackgroundTasks parameter
+        # were silently never executed; the fix is to declare the parameter
+        # without a default so FastAPI injects the per-request instance.
+        logger.info(
+            "BG TASK FIRED: _bg_match_and_alert juris=%s source=%s",
+            jid, detected_source,
+        )
         from app.workers.listing_alerts import fire_alerts_for_upload
         async with async_session_maker() as bg_db:
             try:
@@ -343,7 +351,10 @@ async def _persist_and_match(
                     jid, detected_source, counts,
                 )
             except Exception as exc:
-                logger.error("Listing match failed for juris=%s source=%s: %s", jid, detected_source, exc)
+                logger.exception(
+                    "Listing match failed for juris=%s source=%s: %s",
+                    jid, detected_source, exc,
+                )
                 return
             try:
                 alert_counts = await fire_alerts_for_upload(jid, bg_db)
@@ -352,7 +363,9 @@ async def _persist_and_match(
                     jid, alert_counts,
                 )
             except Exception as exc:
-                logger.error("Listing alerts failed for juris=%s: %s", jid, exc)
+                logger.exception(
+                    "Listing alerts failed for juris=%s: %s", jid, exc,
+                )
 
     background_tasks.add_task(_bg_match_and_alert)
 
@@ -498,8 +511,8 @@ async def debug_geocode(address: str, city: str = "", state: str = "") -> dict:
 @router.post("/listings/_debug-rematch/{jurisdiction_id}")
 async def debug_rematch(
     jurisdiction_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     source: str = "costar",
-    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Reset match state for one (jurisdiction, source) and kick off
