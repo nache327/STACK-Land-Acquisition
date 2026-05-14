@@ -66,7 +66,10 @@ class TestNormalize:
             # Stacked prefixes / mixed forms (real CoStar mess)
             ("212 US HIGHWAY ROUTE 206",   "212 route 206"),
             ("79 N Route 206",             "79 route 206"),
-            ("373-377 E Route 22",         "373-377 route 22"),
+            # Range collapse runs before route canonicalization, so
+            # "373-377 E Route 22" becomes "373 route 22" (lower bound)
+            # — covered more explicitly in test_range_and_slash_collapse.
+            ("373-377 E Route 22",         "373 route 22"),
             # Routes in mid-address — shouldn't break the rest
             ("100 Route 22 Plaza",         "100 route 22 plaza"),
         ],
@@ -79,6 +82,31 @@ class TestNormalize:
         twice = normalize(once)
         assert once == twice
         assert once == "1150 route 22"
+
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            # Address ranges — collapse to the lower house number.
+            ("227-229 Adamsville Rd",       "227 adamsville road"),
+            ("501-507 Omni Dr",             "501 omni drive"),
+            ("10-18 Race St",               "10 race street"),
+            ("176-182 Tamarack Cir",        "176 tamarack circle"),
+            ("401-404 Towne Centre Dr",     "401 towne centre drive"),
+            # Range combined with route phrase
+            ("2041-2045 State Route 27",    "2041 route 27"),
+            ("373-377 E Route 22",          "373 route 22"),
+            # Dual hyphenated routes — keep the lower
+            ("821-831 Route 202-206",       "821 route 202"),
+            ("100 Route 202-206",           "100 route 202"),
+            # Slash-separated routes — take the first.
+            ("325 Route 202 / 206",         "325 route 202"),
+            ("900 US Highway 202/206",      "900 route 202"),
+            # Single-house addresses unchanged
+            ("100 Main St",                 "100 main street"),
+        ],
+    )
+    def test_range_and_slash_collapse(self, raw: str, expected: str) -> None:
+        assert normalize(raw) == expected
 
 
 class TestStripUnit:
