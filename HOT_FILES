@@ -1,0 +1,42 @@
+# Hot files / frozen paths.
+#
+# Files listed below have a high merge-conflict rate and should be edited by
+# only ONE in-flight branch at a time. Before starting work on any of these:
+#
+#   git branch -a | grep -v -E 'main|HEAD'
+#   git log --oneline main..<other-branch> -- <hot-file>
+#
+# If another active branch has unmerged changes on the same path, queue your
+# work or coordinate before editing.
+#
+# Migrations are always serial — claim a number in MIGRATION_RESERVATIONS.md
+# before authoring the file.
+#
+# Format: one path or path-prefix per line, # for comments. Used by
+# scripts/lane-check.sh as a plain `grep -F -f` pattern file.
+
+# --- Backend hot zone (Slot 1) ---
+backend/app/api/jurisdictions.py
+backend/app/api/parcels.py
+backend/app/api/debug.py
+backend/app/services/pipeline.py
+backend/app/services/ingestion.py
+backend/app/services/zoning_discovery.py
+backend/app/services/zoning_system.py
+backend/app/services/spatial_backfill.py
+backend/app/services/overlays.py
+backend/app/services/buybox_scoring.py
+
+# --- Migrations (always serial; see MIGRATION_RESERVATIONS.md) ---
+backend/alembic/versions/
+
+# --- Deploy / supervision surface (integration-owner only) ---
+backend/Dockerfile
+backend/Procfile
+backend/railway-cron.toml
+.github/workflows/
+fly.toml
+vercel.json
+
+# --- Frontend primary user surface ---
+frontend/app/dashboard/
