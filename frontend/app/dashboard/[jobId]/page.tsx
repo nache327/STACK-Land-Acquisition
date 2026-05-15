@@ -38,6 +38,7 @@ import {
   loadCityCacheAsync,
   clearCityCache,
   getCacheMetadata,
+  purgeOrphanMeta,
   type PrecomputedParcelData,
   type PrecomputeStatus,
 } from "@/lib/isochrone-precompute";
@@ -427,21 +428,21 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       // wealth-density slider is enabled. Keeps the default flow free
       // of any extra backend calls.
       fetchHomeDensity: isHomeDensityActive(buyBoxFilter),
-    }).then((results) => {
+    }).then(({ results, expected }) => {
       if (ctrl.signal.aborted) return;
       // Never persist an empty cache — that's almost always a race
       // (parcels not yet loaded), and persisting it would poison
       // subsequent loads.
       if (results.size > 0) {
-        saveCityCache(cityId, results, results.size);
+        saveCityCache(cityId, results, expected);
       } else {
         console.warn("[precompute] skipping save — empty results (parcels likely not loaded yet)");
       }
       const meta = getCacheMetadata(cityId);
       setPrecomputeStatus({
         progress: results.size,
-        total: results.size,
-        complete: true,
+        total: expected || results.size,
+        complete: results.size >= expected,
         lastComputed: meta?.lastComputed,
       });
     }).catch((err) => {
@@ -461,16 +462,48 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     // poisoned empty cache that no refresh could clear.)
     if (mapParcels.length === 0) return;
 
-    loadCityCacheAsync(jurisdictionId).then((cached) => {
-      if (cached && cached.size > 0) {
+    // Purge any orphan meta entries from prior versions BEFORE we
+    // read meta for this jurisdiction — otherwise an orphan v6 meta
+    // pointing at non-existent data still gets read as "cached" by
+    // any code that trusts meta in isolation.
+    purgeOrphanMeta().then(() => loadCityCacheAsync(jurisdictionId)).then((cached) => {
+      const meta = getCacheMetadata(jurisdictionId);
+      const saved = cached?.size ?? 0;
+      const expected = meta?.expected ?? 0;
+      // Orphan meta defense: meta exists but no data was loadable
+      // (purge would already have cleaned a cross-version orphan; this
+      // catches the same-version edge case where the data write failed
+      // after meta was somehow persisted). Drop the meta and run fresh.
+      if (saved === 0 && meta !== null) {
+        try { localStorage.removeItem(`parcellogic_precompute_meta_v7_${jurisdictionId}`); } catch { /* ignore */ }
+        startPrecompute(jurisdictionId);
+        return;
+      }
+      // Partial cache: a prior run finished but some parcels failed
+      // (rate-limit / network) and never made it to results. Without
+      // this check the dashboard treated `saved` items as complete and
+      // any unmapped parcel showed "Computing…" forever.
+      const isPartial = saved > 0 && expected > 0 && saved < expected;
+      const isComplete = saved > 0 && (expected === 0 || saved >= expected);
+
+      if (isComplete && cached) {
         setPrecomputeData(cached);
-        const meta = getCacheMetadata(jurisdictionId);
         setPrecomputeStatus({
-          progress: cached.size,
-          total: cached.size,
+          progress: saved,
+          total: saved,
           complete: true,
           lastComputed: meta?.lastComputed,
         });
+      } else if (isPartial && cached) {
+        // Resume — keep what we have, recompute the rest.
+        setPrecomputeData(cached);
+        setPrecomputeStatus({
+          progress: saved,
+          total: expected,
+          complete: false,
+          lastComputed: meta?.lastComputed,
+        });
+        startPrecompute(jurisdictionId, cached);
       } else {
         startPrecompute(jurisdictionId);
       }

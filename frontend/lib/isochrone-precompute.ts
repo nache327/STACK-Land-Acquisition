@@ -38,8 +38,25 @@ export interface PrecomputeStatus {
   lastComputed?: string;
 }
 
+export interface CacheMeta {
+  lastComputed: string;
+  /** Number of parcel entries persisted in the data blob. */
+  saved: number;
+  /** Number of eligible parcels at the time of the run. A reload that
+   *  finds saved < expected treats the cache as partial and resumes. */
+  expected: number;
+}
+
 // ── Storage keys ───────────────────────────────────────────────────────────────
 
+// v7: CacheMeta gained `saved` and `expected` so the load path can detect a
+// partial cache (where mid-run failures left some eligible parcels missing)
+// and resume instead of poisoning the UI into a permanent "complete" state.
+// v6 meta only carried {lastComputed, total} where total === saved, so there
+// was no way to tell "20 of 2253 succeeded" apart from "20 of 20 succeeded";
+// any Somerset-shaped jurisdiction whose first precompute pass was rate-
+// limited or partially-failed locked every missed parcel into "Computing…"
+// in the drawer. Bump to invalidate v6 entries so the new contract takes.
 // v6: PrecomputedRingMetrics gained three homesOver{1,2,5}M fields. The
 // fields are nullable (only populated when the wealth-density sliders are
 // enabled) — but the shape change means v5 blobs deserialize without
@@ -56,11 +73,16 @@ export interface PrecomputeStatus {
 // hadn't populated yet (race condition fixed in dashboard/[jobId]/page.tsx).
 // v2: weighted-mean denominator bug fix (HHI / home value were divided by
 // totalPopulation instead of sum-of-household-counts, deflating values ~2.7×).
-const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v6_${cityId}`;
-const DATA_KEY = (cityId: string) => `parcellogic_precompute_v6_${cityId}`;
+const META_KEY = (cityId: string) => `parcellogic_precompute_meta_v7_${cityId}`;
+const DATA_KEY = (cityId: string) => `parcellogic_precompute_v7_${cityId}`;
 const IDB_DB = "parcellogic_precompute";
 const IDB_STORE = "cities";
 const SMALL_CITY_THRESHOLD = 500;
+
+function isQuotaError(e: unknown): boolean {
+  const err = e as { name?: string; code?: number } | null;
+  return !!err && (err.name === "QuotaExceededError" || err.code === 22);
+}
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
 
@@ -172,10 +194,10 @@ export async function fetchHomeDensityForRing(
 
 // ── Cache ──────────────────────────────────────────────────────────────────────
 
-export function getCacheMetadata(cityId: string): { lastComputed: string; total: number } | null {
+export function getCacheMetadata(cityId: string): CacheMeta | null {
   try {
     const raw = typeof window !== "undefined" ? localStorage.getItem(META_KEY(cityId)) : null;
-    return raw ? JSON.parse(raw) : null;
+    return raw ? (JSON.parse(raw) as CacheMeta) : null;
   } catch {
     return null;
   }
@@ -192,31 +214,137 @@ function openIDB(): Promise<IDBDatabase> {
   });
 }
 
+async function writeToIDB(key: string, value: string): Promise<void> {
+  const db = await openIDB();
+  const tx = db.transaction(IDB_STORE, "readwrite");
+  tx.objectStore(IDB_STORE).put(value, key);
+  await new Promise<void>((res, rej) => {
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
 export async function saveCityCache(
   cityId: string,
   data: Map<string, PrecomputedParcelData>,
-  total: number,
+  expected: number,
 ): Promise<void> {
-  const meta = { lastComputed: new Date().toISOString(), total };
-  try { localStorage.setItem(META_KEY(cityId), JSON.stringify(meta)); } catch { /* quota */ }
-
   const serialized = JSON.stringify(Object.fromEntries(data));
 
-  if (total <= SMALL_CITY_THRESHOLD) {
-    try { localStorage.setItem(DATA_KEY(cityId), serialized); } catch { /* quota */ }
-  } else {
+  // Write data first; only write meta once we know the data persisted.
+  // The prior order (meta first, data second) could orphan meta pointing
+  // to a blob that never landed, and the load path then trusted meta as
+  // proof the run had completed.
+  let persisted = false;
+
+  // localStorage path for tiny cities. On QuotaExceededError, fall through
+  // to IDB rather than dropping silently. (Somerset-sized cities already
+  // take the IDB branch directly via SMALL_CITY_THRESHOLD.)
+  if (expected <= SMALL_CITY_THRESHOLD) {
     try {
-      const db = await openIDB();
-      const tx = db.transaction(IDB_STORE, "readwrite");
-      tx.objectStore(IDB_STORE).put(serialized, DATA_KEY(cityId));
-      await new Promise<void>((res, rej) => {
-        tx.oncomplete = () => res();
-        tx.onerror = () => rej(tx.error);
-      });
+      localStorage.setItem(DATA_KEY(cityId), serialized);
+      persisted = true;
+    } catch (e) {
+      if (!isQuotaError(e)) {
+        console.warn("[precompute] localStorage save failed (non-quota):", e);
+      }
+    }
+  }
+
+  if (!persisted) {
+    try {
+      await writeToIDB(DATA_KEY(cityId), serialized);
+      persisted = true;
     } catch (e) {
       console.warn("[precompute] IDB save failed:", e);
     }
   }
+
+  if (persisted) {
+    const meta: CacheMeta = {
+      lastComputed: new Date().toISOString(),
+      saved: data.size,
+      expected,
+    };
+    try { localStorage.setItem(META_KEY(cityId), JSON.stringify(meta)); } catch { /* meta is tiny */ }
+  } else {
+    // Don't leave stale meta pointing at data we couldn't persist — that
+    // re-creates the v6 "complete but empty" poisoning the load path used
+    // to fall into.
+    try { localStorage.removeItem(META_KEY(cityId)); } catch { /* ignore */ }
+  }
+}
+
+/**
+ * Scan localStorage for `parcellogic_precompute_meta_v*_*` keys where
+ * the corresponding data blob is missing from BOTH localStorage and
+ * IndexedDB, and delete those orphan meta entries.
+ *
+ * Background: pre-v7 saves wrote meta first and the data blob second,
+ * so any IDB write that failed silently (quota, race) left an orphan
+ * meta pointing to nothing. The load path then read that meta, saw
+ * "total > 0," and treated the jurisdiction as cached + complete —
+ * every drawer click thereafter showed "Computing…" forever. Observed
+ * in production on Somerset County, NJ: v6 meta said `total: 141`,
+ * no data anywhere.
+ *
+ * Cheap to run (one localStorage scan + one IDB read per orphan), so
+ * we just call it once per dashboard mount.
+ */
+export async function purgeOrphanMeta(): Promise<number> {
+  if (typeof window === "undefined") return 0;
+
+  const candidates: { metaKey: string; dataKey: string }[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    const m = /^parcellogic_precompute_meta_(v\d+)_(.+)$/.exec(k);
+    if (!m) continue;
+    const [, version, cityPart] = m;
+    candidates.push({
+      metaKey: k,
+      dataKey: `parcellogic_precompute_${version}_${cityPart}`,
+    });
+  }
+  if (candidates.length === 0) return 0;
+
+  let db: IDBDatabase | null = null;
+  try {
+    db = await openIDB();
+  } catch {
+    db = null;
+  }
+
+  const orphans: string[] = [];
+  for (const { metaKey, dataKey } of candidates) {
+    if (localStorage.getItem(dataKey) !== null) continue;
+    let idbHas = false;
+    if (db) {
+      try {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const req = tx.objectStore(IDB_STORE).get(dataKey);
+        idbHas = await new Promise<boolean>((resolve) => {
+          req.onsuccess = () => resolve(req.result != null);
+          req.onerror = () => resolve(false);
+        });
+      } catch {
+        // If IDB read errored, be conservative — don't delete meta
+        // when we can't confirm the data is missing.
+        idbHas = true;
+      }
+    }
+    if (!idbHas) orphans.push(metaKey);
+  }
+
+  for (const k of orphans) {
+    try { localStorage.removeItem(k); } catch { /* ignore */ }
+  }
+  if (orphans.length > 0) {
+    console.log(
+      `[precompute] purged ${orphans.length} orphan meta entr${orphans.length === 1 ? "y" : "ies"}`,
+    );
+  }
+  return orphans.length;
 }
 
 export async function clearCityCache(cityId: string): Promise<void> {
@@ -265,6 +393,15 @@ export async function loadCityCacheAsync(
 
 // ── Main batch processor ───────────────────────────────────────────────────────
 
+export interface PrecomputeRunResult {
+  results: Map<string, PrecomputedParcelData>;
+  /** Total eligible parcels for the jurisdiction at run time — the
+   *  yardstick the load path uses to detect a partial save. Counts the
+   *  full eligible population, NOT just the parcels this run had to
+   *  process (which excludes anything already in existingData). */
+  expected: number;
+}
+
 export async function precomputeCityIsochrones(
   parcels: CandidateParcelRow[],
   _cityId: string,
@@ -279,7 +416,7 @@ export async function precomputeCityIsochrones(
      *  this when the user has a wealth-density slider enabled. */
     fetchHomeDensity?: boolean;
   },
-): Promise<Map<string, PrecomputedParcelData>> {
+): Promise<PrecomputeRunResult> {
   // When fetchHomeDensity=true, an already-cached parcel still needs
   // re-processing if its rings don't carry homesOver{1,2,5}M (which
   // were null in the cache from before the user enabled the slider).
@@ -295,9 +432,11 @@ export async function precomputeCityIsochrones(
     });
   }
 
-  const eligible = parcels
-    .filter((p) => ["permitted", "conditional", "unclear"].includes(p.storage_permission ?? ""))
-    .filter((p) => !skipIds.has(String(p.parcel_id)));
+  const allEligible = parcels.filter((p) =>
+    ["permitted", "conditional", "unclear"].includes(p.storage_permission ?? ""),
+  );
+  const expected = allEligible.length;
+  const eligible = allEligible.filter((p) => !skipIds.has(String(p.parcel_id)));
 
   const total = eligible.length;
   // Pre-populate results with already-computed data so saveCityCache includes everything
@@ -306,7 +445,7 @@ export async function precomputeCityIsochrones(
 
   if (total === 0) {
     console.log("[precompute] All parcels already computed — nothing to do");
-    return results;
+    return { results, expected };
   }
 
   console.log(`[precompute] Starting — ${total} parcels to compute (${skipIds.size} already cached)`);
@@ -419,5 +558,5 @@ export async function precomputeCityIsochrones(
     console.log(`[precompute] Complete — ${results.size} parcels computed`);
   }
 
-  return results;
+  return { results, expected };
 }
