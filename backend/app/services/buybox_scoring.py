@@ -250,6 +250,7 @@ LEFT JOIN LATERAL (
      WHERE jurisdiction_id = p.jurisdiction_id
        AND zone_code      = p.zoning_code
        AND (municipality IS NULL OR municipality = p.city)
+       AND deleted_at IS NULL
      ORDER BY (municipality IS NULL) ASC
      LIMIT 1
 ) zum ON true

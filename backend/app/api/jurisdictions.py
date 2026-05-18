@@ -118,7 +118,10 @@ async def get_zone_matrix(
 ) -> dict:
     result = await db.execute(
         select(ZoneUseMatrix)
-        .where(ZoneUseMatrix.jurisdiction_id == jurisdiction_id)
+        .where(
+            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+            ZoneUseMatrix.deleted_at.is_(None),
+        )
         .order_by(ZoneUseMatrix.zone_code)
     )
     zones = result.scalars().all()
@@ -141,9 +144,13 @@ async def create_zone(
     # Conflict check must include municipality — (jur, zone_code, NULL)
     # county-default and (jur, zone_code, "Somerville borough") township
     # row coexist legally; only an exact triple-match is a duplicate.
+    # Tombstoned rows DON'T count — operator may POST to revive a slot
+    # they previously soft-deleted; the partial unique index makes that
+    # safe by allowing coexistence of tombstoned + active rows.
     conflict_where = [
         ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
         ZoneUseMatrix.zone_code == payload.zone_code,
+        ZoneUseMatrix.deleted_at.is_(None),
     ]
     if payload.municipality is None:
         conflict_where.append(ZoneUseMatrix.municipality.is_(None))
@@ -171,10 +178,15 @@ def _zone_select_where(
     row, not "any row." Callers that want a township-specific row must
     pass that township's name explicitly. This mirrors the uniqueness
     semantics: (jur, code, NULL) and (jur, code, "X") are distinct.
+
+    Also filters out tombstoned (soft-deleted) rows — GET/PATCH must
+    not see them. matrix_bootstrap.bootstrap_zone_use_matrix() has its
+    own existence check that DOES include tombstones.
     """
     clauses = [
         ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
         ZoneUseMatrix.zone_code == zone_code,
+        ZoneUseMatrix.deleted_at.is_(None),
     ]
     if municipality is None:
         clauses.append(ZoneUseMatrix.municipality.is_(None))
@@ -231,6 +243,43 @@ async def update_zone(
     await db.flush()
     await db.refresh(zone)
     return zone
+
+
+@router.delete(
+    "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
+    status_code=204,
+)
+async def soft_delete_zone(
+    jurisdiction_id: uuid.UUID,
+    zone_code: str,
+    municipality: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Soft-delete a zone_use_matrix row by setting deleted_at = now().
+
+    Why not hard DELETE: matrix_bootstrap.bootstrap_zone_use_matrix()
+    re-inserts NULL-municipality rows for any zone_code missing from
+    the matrix. Hard-deleted rows get resurrected within ~30 min.
+    Soft-deleted rows stay gone because the bootstrap's existence
+    check INCLUDES tombstones.
+
+    Returns 404 if no matching active row exists. The matching uses
+    the same triplet semantics as PATCH (municipality=None matches
+    the NULL-municipality row only). Already-tombstoned rows return
+    404 — they were already deleted.
+    """
+    from datetime import datetime as _dt, timezone as _tz
+    result = await db.execute(
+        select(ZoneUseMatrix).where(
+            *_zone_select_where(jurisdiction_id, zone_code, municipality)
+        )
+    )
+    zone = result.scalar_one_or_none()
+    if zone is None:
+        raise HTTPException(status_code=404, detail="Zone not found")
+    zone.deleted_at = _dt.now(_tz.utc)
+    await db.flush()
+    return None
 
 
 @router.get("/jurisdictions/{jurisdiction_id}/parcels/map")
@@ -299,6 +348,7 @@ async def get_parcels_map_layer(
         LEFT JOIN zone_use_matrix zum
             ON  zum.jurisdiction_id = p.jurisdiction_id
             AND zum.zone_code       = p.zoning_code
+            AND zum.deleted_at IS NULL
         WHERE p.jurisdiction_id = :jid
     """)
 
@@ -476,7 +526,9 @@ async def cleanup_empty_jurisdictions(
             ) zd ON zd.jurisdiction_id = j.id
             LEFT JOIN (
                 SELECT jurisdiction_id, COUNT(*) AS cnt
-                FROM zone_use_matrix GROUP BY jurisdiction_id
+                FROM zone_use_matrix
+                WHERE deleted_at IS NULL
+                GROUP BY jurisdiction_id
             ) zm ON zm.jurisdiction_id = j.id
             """
         )

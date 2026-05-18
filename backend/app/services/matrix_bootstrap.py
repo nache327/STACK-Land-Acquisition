@@ -48,6 +48,13 @@ async def bootstrap_zone_use_matrix(
 
     existing_codes: set[str] = set()
     if missing_only and not replace:
+        # IMPORTANT: this existence check INCLUDES tombstoned rows
+        # (deleted_at IS NOT NULL). That's the whole point of the
+        # soft-delete tombstone: an operator's intentional delete
+        # blocks the heuristic seeder from re-inserting the same
+        # zone_code as a fresh src=unclear row. Without this
+        # guard, the bootstrap would resurrect every surgical
+        # delete within ~30 minutes — observed on 2026-05-18.
         rows = await db.execute(
             text(
                 """
