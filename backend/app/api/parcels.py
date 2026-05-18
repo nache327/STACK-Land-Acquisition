@@ -65,6 +65,35 @@ _storage_perm_expr = case(
         "unclear",
     ),
     (ZoneUseMatrix.zone_code.isnot(None), "prohibited"),
+    # NJ MOD-IV land-use-class fallback. Fires ONLY when the parcel has
+    # no zoning_code (so it never overrides actual zoning data). Used to
+    # surface candidates in counties whose parcel ingest lost the zoning
+    # field — Bergen NJ is the current case (273k of 281k parcels have
+    # zoning_code IS NULL but a populated MOD-IV class from the NJOGIS
+    # composite backfill). Maps published classes to a conservative
+    # storage_permission so the candidate filter has something to work
+    # with. Real per-municipality zoning supersedes this once available.
+    (
+        and_(
+            Parcel.zoning_code.is_(None),
+            Parcel.land_use_code == "4B",
+        ),
+        "permitted",
+    ),
+    (
+        and_(
+            Parcel.zoning_code.is_(None),
+            Parcel.land_use_code.in_(["4A", "1"]),
+        ),
+        "conditional",
+    ),
+    (
+        and_(
+            Parcel.zoning_code.is_(None),
+            Parcel.land_use_code.in_(["3A", "3B"]),
+        ),
+        "unclear",
+    ),
     else_="unclassified",
 ).label("storage_permission")
 
