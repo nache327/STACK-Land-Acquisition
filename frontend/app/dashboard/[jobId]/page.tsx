@@ -334,6 +334,41 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const parcels = parcelList?.items ?? [];
   const mapParcels = mapResults?.items ?? [];
 
+  // Deep-link from email digest: ?parcel_id=<id> selects the parcel,
+  // opens the drawer, and flies to its centroid. Read once on mount.
+  // The fly happens in a follow-up effect once parcelDetail.geom is in.
+  const deepLinkParcelIdRef = useRef<number | null>(null);
+  const deepLinkFlownRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const raw = sp.get("parcel_id");
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isFinite(id)) return;
+    deepLinkParcelIdRef.current = id;
+    setSelectedParcelId(id);
+    setDrawerOpen(true);
+    setZoomedParcelId(id);
+  }, []);
+
+  // Once parcelDetail loads for the deep-linked parcel, fly to it.
+  // The parcel may not be in mapParcels (viewport / page-size), so
+  // derive the centroid straight from the detail geom instead of
+  // relying on the mapParcels.find path that handleParcelClick uses.
+  useEffect(() => {
+    if (deepLinkFlownRef.current) return;
+    const wantId = deepLinkParcelIdRef.current;
+    if (wantId == null) return;
+    if (!parcelDetail || parcelDetail.id !== wantId) return;
+    const centroid = computeCentroidFromGeom(parcelDetail.geom);
+    if (centroid) {
+      setFlyToOverride({ centroid, nonce: Date.now() });
+      deepLinkFlownRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parcelDetail]);
+
   // When colorMode switches to saturation, fetch batch saturation data for all map parcels
   useEffect(() => {
     if (colorMode !== "saturation") return;

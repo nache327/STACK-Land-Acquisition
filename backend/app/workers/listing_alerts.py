@@ -184,7 +184,9 @@ def _parcel_link(row: AlertRow) -> str:
     # jurisdiction_id otherwise. See daily_email._parcel_link for full
     # rationale.
     segment = row.dashboard_job_id or row.jurisdiction_id
-    return f"{base}/dashboard/{segment}?parcel={row.apn}"
+    # See daily_email._parcel_link — parcel_id is the dashboard's
+    # deep-link param; APN cannot be resolved client-side.
+    return f"{base}/dashboard/{segment}?parcel_id={row.parcel_id}"
 
 
 def _render_alert_subject(filter_name: str, rows: list[AlertRow]) -> str:
