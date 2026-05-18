@@ -108,6 +108,11 @@ async def search_candidate_parcels(
     permission_join = and_(
         ZoneUseMatrix.jurisdiction_id == Parcel.jurisdiction_id,
         ZoneUseMatrix.zone_code == Parcel.zoning_code,
+        # Skip tombstoned rows so soft-deletes actually remove a parcel
+        # from the matrix path. The CASE falls through to the MOD-IV
+        # fallback / "unclassified" branch the same way it does when
+        # no matrix row exists at all.
+        ZoneUseMatrix.deleted_at.is_(None),
     )
 
     conditions: list[Any] = [

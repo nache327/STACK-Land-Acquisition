@@ -103,6 +103,14 @@ class ZoneUseMatrix(Base):
         onupdate=func.now(),
         nullable=False,
     )
+    # Tombstone column (migration 0029). NULL = active row. Set to
+    # now() by the soft-delete endpoint. All read sites filter on
+    # `deleted_at IS NULL`. matrix_bootstrap's existence check
+    # INCLUDES tombstoned rows so the heuristic seeder can't
+    # resurrect a row an operator deleted on purpose.
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     jurisdiction: Mapped["Jurisdiction"] = relationship(  # type: ignore[name-defined]  # noqa: F821
         back_populates="zone_matrix"

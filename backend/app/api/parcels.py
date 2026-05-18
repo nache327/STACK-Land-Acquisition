@@ -100,6 +100,10 @@ _storage_perm_expr = case(
 _zum_join = and_(
     ZoneUseMatrix.jurisdiction_id == Parcel.jurisdiction_id,
     ZoneUseMatrix.zone_code == Parcel.zoning_code,
+    # Skip tombstoned rows so they don't classify parcels. The CASE
+    # falls through to the MOD-IV fallback / "unclassified" branch
+    # the same way it does when no matrix row exists at all.
+    ZoneUseMatrix.deleted_at.is_(None),
 )
 
 
