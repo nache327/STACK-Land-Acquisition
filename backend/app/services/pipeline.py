@@ -277,6 +277,8 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     midsx     = _nj("Middlesex", "Middlesex County, NJ")
     passaic   = _nj("Passaic",   "Passaic County, NJ")
     monmouth  = _nj("Monmouth",  "Monmouth County, NJ")
+    morris    = _nj("Morris",    "Morris County, NJ")
+    hunterdon = _nj("Hunterdon", "Hunterdon County, NJ")
     return {
         "hudson county":          hudson,
         "hudson county, nj":      hudson,
@@ -304,6 +306,12 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
         "monmouth county, nj":    monmouth,
         "marlboro":               monmouth,
         "marlboro, nj":           monmouth,
+        "morris county":          morris,
+        "morris county, nj":      morris,
+        "hunterdon county":       hunterdon,
+        "hunterdon county, nj":   hunterdon,
+        "flemington":             hunterdon,
+        "flemington, nj":         hunterdon,
     }
 
 
@@ -614,6 +622,73 @@ def _match_jurisdiction(input_str: str) -> JurisdictionConfig | None:
     return None
 
 
+async def _match_jurisdiction_db(
+    db: AsyncSession, input_str: str
+) -> JurisdictionConfig | None:
+    """Look up an existing jurisdiction row by name (case-insensitive)
+    before falling through to live-discovery.
+
+    Prevents the duplicate-creation pattern where a casing variant of an
+    already-loaded county ("Morris COunty, NJ") triggers ArcGIS Hub
+    discovery, which then geocodes the wrong Morris (state='NE') and
+    inserts a phantom 0-parcel row.
+
+    Strategy: exact ILIKE first, then prefix/contains, filtered by a
+    state hint parsed from the input if one is present. Returns a
+    JurisdictionConfig synthesized from the DB row so the rest of the
+    pipeline (line ~822 SELECT WHERE name = cfg.name) resolves to the
+    same row.
+    """
+    raw = (input_str or "").strip()
+    if not raw:
+        return None
+    state_hint = _parse_state(raw)
+    # Strip trailing ", XX" or ", State Name" so the name match doesn't
+    # require the user to include the state suffix.
+    name_query = re.sub(r",\s*[A-Za-z. ]+$", "", raw).strip() or raw
+
+    stmt = text(
+        """
+        SELECT name, state, county, parcel_source, parcel_endpoint, zoning_endpoint
+        FROM jurisdictions
+        WHERE (name ILIKE :exact OR name ILIKE :contains)
+          AND (:state_hint = '' OR state ILIKE :state_hint)
+        ORDER BY
+          CASE WHEN name ILIKE :exact THEN 0 ELSE 1 END,
+          CASE WHEN state ILIKE :state_hint THEN 0 ELSE 1 END,
+          last_indexed_at DESC NULLS LAST
+        LIMIT 1
+        """
+    )
+    result = await db.execute(
+        stmt,
+        {
+            "exact": raw,
+            "contains": f"%{name_query}%",
+            "state_hint": state_hint or "",
+        },
+    )
+    row = result.first()
+    if row is None:
+        return None
+    try:
+        source = ParcelSource(row.parcel_source) if row.parcel_source else ParcelSource.county_gis
+    except ValueError:
+        source = ParcelSource.county_gis
+    logger.info(
+        "Jurisdiction DB-lookup matched %r → %s (state=%s)",
+        input_str, row.name, row.state,
+    )
+    return JurisdictionConfig(
+        name=row.name,
+        state=row.state or "",
+        county=row.county or "",
+        parcel_source=source,
+        parcel_endpoint=row.parcel_endpoint or "",
+        zoning_endpoint=row.zoning_endpoint,
+    )
+
+
 # ─── Status helpers ──────────────────────────────────────────────────────────
 
 async def _set_status(
@@ -782,6 +857,12 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await check_cancelled(db, job)
 
     cfg = _match_jurisdiction(job.jurisdiction_input or "")
+    if cfg is None:
+        # DB lookup before live-discovery: an already-loaded jurisdiction
+        # should resolve to its existing row even if not in the hard-coded
+        # registry, so a casing variant doesn't trigger ArcGIS Hub
+        # discovery and create a phantom duplicate.
+        cfg = await _match_jurisdiction_db(db, job.jurisdiction_input or "")
     if cfg is None:
         # Phase 5: live discovery for unknown jurisdictions
         cfg = await _discover_jurisdiction_config(job.jurisdiction_input or "")
