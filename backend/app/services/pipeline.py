@@ -1078,6 +1078,37 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await db.commit()
     _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
 
+    # Pre-warm census tracts so the first parcel-drawer click in this new
+    # jurisdiction doesn't pay the 10-30s TIGER+ACS lazy-fetch latency.
+    # Non-fatal: ingest must succeed even if the Census API is unreachable.
+    if jurisdiction.bbox and len(jurisdiction.bbox) == 4:
+        census_started = _stage_started(
+            job, "census_tracts_precompute", jurisdiction_id=str(jurisdiction.id)
+        )
+        try:
+            from app.services.census import ensure_census_tracts
+            bbox_tuple = (
+                float(jurisdiction.bbox[0]),
+                float(jurisdiction.bbox[1]),
+                float(jurisdiction.bbox[2]),
+                float(jurisdiction.bbox[3]),
+            )
+            async with asyncio.timeout(180):
+                tract_count = await ensure_census_tracts(bbox_tuple, db)
+            await db.commit()
+            _stage_completed(
+                job, "census_tracts_precompute", census_started, tract_count=tract_count
+            )
+        except Exception as exc:
+            logger.warning(
+                "census_tracts_precompute failed (non-fatal) for %s: %s",
+                jurisdiction.id, exc,
+            )
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
     # zoning_overlays/zoning_rules/enrichment_cache are not read by any API endpoint —
     # they were scaffolded for a future authoritative zoning service. Skip the step
     # entirely; it was the sole source of every pipeline hang.
