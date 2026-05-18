@@ -28,6 +28,34 @@ _PERMISSION_LABEL = case(
     (ZoneUseMatrix.self_storage == UsePermission.conditional, "conditional"),
     (ZoneUseMatrix.self_storage == UsePermission.prohibited, "prohibited"),
     (ZoneUseMatrix.self_storage == UsePermission.unclear, "unclear"),
+    # NJ MOD-IV land-use-class fallback. Fires ONLY when the parcel has
+    # no zoning_code (Parcel.zoning_code IS NULL), so it never overrides
+    # actual zoning. Surfaces candidates in counties whose parcel ingest
+    # lost the zoning field — Bergen NJ is the current case (273k of
+    # 281k parcels have NULL zoning_code but a populated MOD-IV class
+    # from the NJOGIS composite backfill). Real per-municipality zoning
+    # data supersedes this once available.
+    (
+        and_(
+            Parcel.zoning_code.is_(None),
+            Parcel.land_use_code == "4B",
+        ),
+        "permitted",
+    ),
+    (
+        and_(
+            Parcel.zoning_code.is_(None),
+            Parcel.land_use_code.in_(["4A", "1"]),
+        ),
+        "conditional",
+    ),
+    (
+        and_(
+            Parcel.zoning_code.is_(None),
+            Parcel.land_use_code.in_(["3A", "3B"]),
+        ),
+        "unclear",
+    ),
     else_="unclassified",
 )
 
