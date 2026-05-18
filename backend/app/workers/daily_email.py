@@ -223,7 +223,12 @@ def _parcel_link(p: DigestParcel) -> str:
     # for diagnostics — the dashboard will show "Loading…" but that
     # signals "no ready job," which is itself useful information.
     segment = p.dashboard_job_id or p.jurisdiction_id
-    return f"{base}/dashboard/{segment}?parcel={p.apn}"
+    # Pass the parcel's DB id (not APN). The dashboard reads
+    # ?parcel_id=… on mount, opens the drawer, and flies to the
+    # parcel's centroid. APN-based deep links don't resolve without
+    # a backend lookup; parcel_id matches the /api/parcels/:id route
+    # the drawer already uses.
+    return f"{base}/dashboard/{segment}?parcel_id={p.parcel_id}"
 
 
 def _top_factors(p: DigestParcel, n: int = 5) -> list[dict]:
