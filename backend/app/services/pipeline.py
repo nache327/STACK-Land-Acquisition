@@ -262,6 +262,86 @@ def _nj(county_name: str, full_name: str, zoning_endpoint: str | None = None) ->
     )
 
 
+# ── NY county-level parcel services published via NYS ITS Geospatial Services
+#    + Nassau County's separately-hosted feed (Nassau hasn't authorized inclusion
+#    in the public NYS_Tax_Parcels_Public layer). Each layer is a single-county
+#    polygon set, so no COUNTY filter is needed.
+_NY_WESTCHESTER_PARCELS = (
+    "https://services6.arcgis.com/EbVsqZ18sv1kVJ3k/arcgis/rest"
+    "/services/Westchester_County_Parcels/FeatureServer/0"
+)
+_NY_NASSAU_PARCELS = (
+    "https://services6.arcgis.com/a523XM128lX5Nsff/arcgis/rest"
+    "/services/Nassau_parcels/FeatureServer/6"
+)
+
+
+def _ny_county(
+    county_name: str,
+    full_name: str,
+    parcel_endpoint: str,
+    where_clause: str | None = None,
+    zoning_endpoint: str | None = None,
+) -> JurisdictionConfig:
+    """Build a NY-county-backed JurisdictionConfig from a county-specific
+    FeatureServer (NYS ITS public service for Westchester, Nassau's own
+    service for Nassau). NY parcels carry no zoning attribute — zoning is
+    municipal, joined separately via zoning_polygon_endpoint when known."""
+    return JurisdictionConfig(
+        name=full_name,
+        state="NY",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=parcel_endpoint,
+        where_clause=where_clause,
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
+# ── CT statewide CAMA + Parcel Layer (CT OPM, hosted by CT GIS Office on
+#    services3.arcgis.com/3FL1kr7L4LvwA2Kb). One layer covers all 169 CT towns;
+#    Fairfield County is the historical 23-town list filtered via Town_Name IN.
+#    CT abolished county-level government in 1960, so no COUNTY field exists.
+_CT_STATEWIDE = (
+    "https://services3.arcgis.com/3FL1kr7L4LvwA2Kb/arcgis/rest"
+    "/services/Connecticut_CAMA_and_Parcel_Layer_2024/FeatureServer/0"
+)
+
+# Fairfield County, CT — 23 towns. Source: CT Secretary of State + US Census
+# historical county boundaries (county governance abolished 1960; planning
+# regions replaced county functions in 2022).
+_CT_FAIRFIELD_TOWNS: tuple[str, ...] = (
+    "Bethel", "Bridgeport", "Brookfield", "Danbury", "Darien", "Easton",
+    "Fairfield", "Greenwich", "Monroe", "New Canaan", "New Fairfield",
+    "Newtown", "Norwalk", "Redding", "Ridgefield", "Shelton", "Sherman",
+    "Stamford", "Stratford", "Trumbull", "Weston", "Westport", "Wilton",
+)
+
+
+def _ct(
+    county_name: str,
+    full_name: str,
+    towns: tuple[str, ...],
+    zoning_endpoint: str | None = None,
+) -> JurisdictionConfig:
+    """Build a CT-county JurisdictionConfig backed by the statewide CAMA layer.
+
+    `towns` is the historical-county town list — CT zoning + assessor data is
+    municipal, so the WHERE clause filters by Town_Name IN (...) instead of
+    a (non-existent) county column.
+    """
+    quoted = ",".join(f"'{t}'" for t in towns)
+    return JurisdictionConfig(
+        name=full_name,
+        state="CT",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=_CT_STATEWIDE,
+        where_clause=f"Town_Name IN ({quoted})",
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
 def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     """Build all NJ county entries (avoids repeating the same config dict twice).
 
@@ -593,6 +673,28 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
             "/PlanningZoning/Zoning%20Ordinance.pdf"
         ),
     ),
+
+    # ── NY-adjacent counties (Phase 2) ────────────────────────────────────────
+    # Westchester: NYS ITS public service (2024 assessment roll, ~258K parcels).
+    # Nassau: county-hosted (services6.arcgis.com/a523XM128lX5Nsff, June 2021
+    #   publication of 2020 assessment roll, ~420K parcels) — Nassau has not
+    #   authorized inclusion in NYS_Tax_Parcels_Public, so this is the only
+    #   public FeatureServer covering it.
+    # Both layers share the NYS GPO schema (PRINT_KEY/PARCEL_ADDR/PRIMARY_OWNER),
+    # but Nassau's column names are FileGDB-truncated to 10 chars (PARCEL_ADD,
+    # PRIMARY_OW). The ingestion field-candidate lists handle both spellings.
+    "westchester county": _ny_county("Westchester", "Westchester County, NY", _NY_WESTCHESTER_PARCELS),
+    "westchester county, ny": _ny_county("Westchester", "Westchester County, NY", _NY_WESTCHESTER_PARCELS),
+    "nassau county": _ny_county("Nassau", "Nassau County, NY", _NY_NASSAU_PARCELS),
+    "nassau county, ny": _ny_county("Nassau", "Nassau County, NY", _NY_NASSAU_PARCELS),
+
+    # ── Connecticut (Phase 2) ─────────────────────────────────────────────────
+    # Fairfield County, CT — backed by CT statewide CAMA + Parcel Layer 2024.
+    # Filtered by Town_Name IN (23-town list) since CT has no county column.
+    # Zoning is per-municipality and not a single statewide layer; left None
+    # for now, to be filled in case-by-case via spatial-join layers later.
+    "fairfield county": _ct("Fairfield", "Fairfield County, CT", _CT_FAIRFIELD_TOWNS),
+    "fairfield county, ct": _ct("Fairfield", "Fairfield County, CT", _CT_FAIRFIELD_TOWNS),
 
     # ── New Jersey counties ───────────────────────────────────────────────────
     # Source: NJOGIS Parcels_Composite_NJ_WM — MOD-IV statewide composite.

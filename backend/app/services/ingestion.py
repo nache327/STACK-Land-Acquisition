@@ -41,18 +41,35 @@ _APN_FIELDS = [
     "PAMS_PIN", "GIS_PIN", "PIN_NODUP", "pams_pin",
     # NYC MapPLUTO
     "BBL", "bbl",
+    # NYS ITS county tax-parcel layers (Westchester full schema + Nassau 10-char
+    # truncated schema). PRINT_KEY is the municipal assessor-roll parcel ID and
+    # collides across municipalities within a county (e.g. PRINT_KEY '6.10-1-1'
+    # exists in both Ardsley and Somers in Westchester); only the SWIS-prefixed
+    # composite (SWIS_PRINT_KEY_ID full / SWIS_PRINT truncated) is unique
+    # county-wide. Order the composites first so they win the _first() match.
+    "SWIS_PRINT_KEY_ID", "SWIS_PRINT",
+    "MUNI_PARCEL_ID", "MUNI_PARCE",
+    "PRINT_KEY",
+    "SBL",
+    # CT 2024 CAMA + Parcel statewide. `link_1` (CAMA join key) is populated
+    # for ~93% of Fairfield rows; `Parcel_ID` is sparse (~66%); both predate
+    # the more general `PARCEL_ID` candidate above which would otherwise miss
+    # `link_1`. Keep them ordered link → parcel for best coverage.
+    "link_1",
     # Philadelphia OPA / PWD_PARCELS BRT identifier
     "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID", "brt_id", "BRT_ID",
     # Allentown PA City_Landuse service
     "WARDACCTNO",
 ]
 _ADDRESS_FIELDS = [
-    "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS", "PARCEL_ADD",
+    "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS",
+    # NYS ITS county schema (PARCEL_ADDR full / PARCEL_ADD truncated on Nassau)
+    "PARCEL_ADDR", "PARCEL_ADD",
     "PROPERTY_ADDRESS_1", "property_address_1",
     # NYC MapPLUTO
     "Address", "ADDRESS1",
-    # Philadelphia OPA / NJ Passaic county service
-    "location", "LOCATION", "street_address",
+    # Philadelphia OPA / NJ Passaic county / CT 2024 CAMA (Location_1)
+    "location", "LOCATION", "Location_1", "street_address",
     # Allentown PA City_Landuse service
     "PROPERTYADDR",
 ]
@@ -73,10 +90,21 @@ _LANDUSE_FIELDS = [
     "LandUse", "LAND_USE_DESC",
     # Philadelphia OPA
     "category_code_description", "building_code_description",
+    # NYS ITS Property Class Code (3-digit ORPTS code, e.g. 210=1-family,
+    # 311=vacant residential land, 962=county park). USED_AS_DESC carries
+    # the human-readable label when populated.
+    "PROP_CLASS", "USED_AS_DESC",
+    # CT 2024 CAMA: State_Use carries the 3-letter code (e.g. RA3, COM, IND);
+    # State_Use_Description has the human label.
+    "State_Use", "State_Use_Description",
 ]
-_PROPTYPE_FIELDS = ["PROP_TYPE", "PROPERTY_TYPE", "PROP_CLASS", "PROPTYPE"]
+_PROPTYPE_FIELDS = ["PROP_TYPE", "PROPERTY_TYPE", "PROPTYPE"]
 _ACRES_FIELDS = [
     "CALC_ACRE", "PARCEL_ACR", "ACRES", "GIS_ACRES", "ACREAGE",
+    # NYS ITS schema CALC_ACRES (full) — calculated from geometry by NYS GPO.
+    "CALC_ACRES",
+    # CT 2024 CAMA
+    "Land_Acres",
     # NJ Passaic county service uses lot_size
     "lot_size",
     # NYC/Philly don't publish acres directly — see _AREA_SQM_FIELDS fallback.
@@ -86,6 +114,8 @@ _IMPROVEMENT_FIELDS = [
     "IMPRVT_VAL",
     # NJ Passaic county service
     "impr_value",
+    # CT 2024 CAMA — appraised building value (separate from land + outbuilding)
+    "Appraised_Building", "Assessed_Building",
     # Generic fallbacks
     "IMPRVT_VALUE", "IMP_VALUE", "IMPRV_VALUE", "FMV_IMPRV",
 ]
@@ -97,6 +127,10 @@ _OWNER_FIELDS = [
     "OWNER_NAME", "OWNERNAME", "OWNER",
     # NYC MapPLUTO
     "OwnerName",
+    # NYS ITS county schema (Westchester PRIMARY_OWNER full / Nassau PRIMARY_OW truncated)
+    "PRIMARY_OWNER", "PRIMARY_OW",
+    # CT 2024 CAMA
+    "Co_Owner",
     # Philadelphia OPA
     "owner_1", "owner_2",
     # County assessor / tax roll variants (common across US counties)
