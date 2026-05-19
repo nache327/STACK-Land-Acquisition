@@ -978,7 +978,28 @@ async def ingest_municipal_zoning(
     overlay generation from bulk_ingest_zoning so re-runs are safe.
     """
     from app.services.nj_municipal_discovery import ingest_verified_municipal_zoning
-    return await ingest_verified_municipal_zoning(county_id, body.source_ids, db)
+    result = await ingest_verified_municipal_zoning(county_id, body.source_ids, db)
+
+    # Post-mutation: refresh bbox + coverage snapshot for the county
+    # whose districts just changed. Errors are logged but never break
+    # the operator's ingest response.
+    try:
+        county = await db.get(Jurisdiction, county_id)
+        if county is not None:
+            from app.services.spatial_backfill import refresh_jurisdiction_bbox
+            from app.services.coverage_audit import refresh_all_snapshots
+            await refresh_jurisdiction_bbox(county, db)
+            await db.commit()
+            await refresh_all_snapshots(
+                db, jurisdiction_id=county_id, source="post-ingest-municipal",
+            )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "post-ingest-municipal refresh failed for %s: %r", county_id, exc,
+        )
+
+    return result
 
 
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
@@ -1081,6 +1102,25 @@ async def backfill_zoning(
             spatial_updated = int(result.split()[-1])
         except Exception:
             spatial_updated = 0
+
+    # Post-mutation: refresh this jurisdiction's bbox + coverage snapshot
+    # so /admin/coverage reflects the change immediately. Scoped to the
+    # one jurisdiction; `refresh_all_snapshots` filters when kwarg is set.
+    # Errors are swallowed (logged) so a downstream refresh failure
+    # doesn't blank the operator's ingest response.
+    try:
+        from app.services.spatial_backfill import refresh_jurisdiction_bbox
+        from app.services.coverage_audit import refresh_all_snapshots
+        await refresh_jurisdiction_bbox(j, db)
+        await db.commit()
+        await refresh_all_snapshots(
+            db, jurisdiction_id=jurisdiction_id, source="post-backfill",
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "post-backfill refresh failed for %s: %r", jurisdiction_id, exc,
+        )
 
     return {
         "jurisdiction": j.name,
