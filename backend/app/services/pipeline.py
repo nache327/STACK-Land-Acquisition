@@ -1395,27 +1395,26 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await check_cancelled(db, job)
 
     # Update last_indexed_at + compute bbox from ingested parcels.
-    # Same close+merge as the Marlboro fix at refresh_jurisdiction_coverage_level —
-    # raw asyncpg work in download_parcels / bulk_ingest can leave the
-    # SQLAlchemy AsyncSession's TCP socket idle past pgbouncer's drop window.
-    # Wake County NC (435k parcels) failed here in production 2026-05-19.
-    try:
-        async with asyncio.timeout(5):
-            await db.close()
-    except Exception as exc:
-        logger.warning("pre-bbox-refresh session.close() failed (non-fatal): %r", exc)
-    try:
-        async with asyncio.timeout(10):
-            job = await db.merge(job)
-            jurisdiction = await db.merge(jurisdiction)
-    except Exception as exc:
-        logger.warning("pre-bbox-refresh merge failed (will best-effort continue): %r", exc)
-
+    # The close+merge pattern (PR #72) wasn't enough — Wake NC still failed
+    # at refresh_jurisdiction_bbox because the long parcel-merge phase had
+    # left the SQLAlchemy session in an unrecoverable state. Use a fresh
+    # session for the bbox refresh; re-load jurisdiction into the main
+    # session afterward.
     bbox_started = _stage_started(job, "parcel_bbox_refresh", jurisdiction_id=str(jurisdiction.id))
-    jurisdiction.last_indexed_at = datetime.now(timezone.utc)
-    async with asyncio.timeout(30):
-        await refresh_jurisdiction_bbox(jurisdiction, db)
-    await db.commit()
+    try:
+        async with asyncio.timeout(120):
+            async with async_session_maker() as bbox_db:
+                fresh_jur = await bbox_db.get(Jurisdiction, jurisdiction.id)
+                if fresh_jur is not None:
+                    fresh_jur.last_indexed_at = datetime.now(timezone.utc)
+                    await refresh_jurisdiction_bbox(fresh_jur, bbox_db)
+                    await bbox_db.commit()
+                    # Pull the freshly-computed bbox + timestamp back into the
+                    # ORM object the rest of the pipeline holds.
+                    jurisdiction.last_indexed_at = fresh_jur.last_indexed_at
+                    jurisdiction.bbox = fresh_jur.bbox
+    except Exception as exc:
+        logger.warning("bbox refresh failed (non-fatal); continuing: %r", exc)
     _stage_completed(job, "parcel_bbox_refresh", bbox_started, bbox=jurisdiction.bbox)
 
     # Pre-warm census tracts so the first parcel-drawer click in this new
