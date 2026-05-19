@@ -380,7 +380,20 @@ def _build_audit(row: Any, schema: SchemaProfile) -> JurisdictionAudit:
     if not schema.has_zoning_districts_table:
         blocking_gaps.append("missing_zoning_districts_table")
     elif row.zoning_district_count == 0:
-        blocking_gaps.append("no_zoning_polygons")
+        # `no_zoning_polygons` is only a real blocker when parcels lack
+        # zoning_code coverage. Many jurisdictions (Lake IL, Mont MD, Howard MD,
+        # Loudoun VA, Allentown PA, most UT cities) carry zoning_code on the
+        # parcel record itself — no separate polygon layer is needed for
+        # parcel-level verdicts. If zoning_code coverage is high AND matrix
+        # is bound at >=90%, parcel-source zoning is sufficient.
+        parcel_source_zoned = (
+            row.parcels_with_zoning_code > 1000
+            and parcel_zoning_code_coverage_pct >= 80.0
+            and row.matrix_zone_count > 0
+            and matrix_zone_match_pct >= 90.0
+        )
+        if not parcel_source_zoned:
+            blocking_gaps.append("no_zoning_polygons")
     if not schema.has_jurisdiction_bbox_column:
         blocking_gaps.append("missing_jurisdiction_bbox_column")
     elif not row.has_bbox:
