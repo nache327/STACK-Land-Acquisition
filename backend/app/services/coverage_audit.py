@@ -83,11 +83,27 @@ async def refresh_all_snapshots(
     else:
         jurisdiction_name = None
 
-    result = await conn.execute(
-        az._build_audit_sql(schema),
-        {"jurisdiction_name": jurisdiction_name},
-    )
-    audits = [az._build_audit(row, schema) for row in result]
+    # The audit SQL is heavy + jurisdiction-specific data shapes can break it
+    # (observed: Mont MD and Mont PA hit 500s post-Phase-3 ingest, NYC 500'd
+    # on muni breakdown before the try/except in line 100 was added).
+    # Wrap the execute+build in try/except so per-jurisdiction refresh returns
+    # cleanly with snapshots_written=0 instead of HTTP 500.
+    try:
+        result = await conn.execute(
+            az._build_audit_sql(schema),
+            {"jurisdiction_name": jurisdiction_name},
+        )
+        audits = [az._build_audit(row, schema) for row in result]
+    except Exception as exc:
+        logger.warning(
+            "audit SQL/build failed for jurisdiction_name=%s (%s); returning empty snapshot",
+            jurisdiction_name, exc,
+        )
+        return {
+            "snapshots_written": 0,
+            "snapshots_failed": 1,
+            "summary": {"error": f"audit failed: {type(exc).__name__}: {str(exc)[:200]}"},
+        }
 
     written = 0
     failed = 0
