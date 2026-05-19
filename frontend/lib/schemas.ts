@@ -350,3 +350,239 @@ export const SaturationBatchResultSchema = z.object({
   color: z.enum(["green", "yellow", "red", "gray"]),
 });
 export type SaturationBatchResult = z.infer<typeof SaturationBatchResultSchema>;
+
+// ---- admin / source review -----------------------------------------------
+
+export const ValidationStatusSchema = z.enum([
+  "pending",
+  "discovered",
+  "discovered_low",
+  "needs_review",
+  "verified",
+  "rejected",
+]);
+export type ValidationStatus = z.infer<typeof ValidationStatusSchema>;
+
+export const ZoningSourceSchema = z.object({
+  id: z.string().uuid().or(z.string()),
+  jurisdiction_id: z.string().uuid().or(z.string()).optional(),
+  url: z.string().nullable().optional(),
+  zoning_endpoint: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  municipality_name: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+  county: z.string().nullable().optional(),
+  source_type: z.string().nullable().optional(),
+  validation_status: ValidationStatusSchema.nullable().optional(),
+  confidence_label: z.string().nullable().optional(),
+  confidence_score: z.number().nullable().optional(),
+  confidence_breakdown: z.record(z.unknown()).nullable().optional(),
+  reasons: z.array(z.string()).nullable().optional(),
+  bbox_overlaps: z.boolean().nullable().optional(),
+  bbox_overlap_ratio: z.number().nullable().optional(),
+  feature_count: z.number().int().nullable().optional(),
+  geometry_type: z.string().nullable().optional(),
+  discovered_by: z.string().nullable().optional(),
+  last_verified_at: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+});
+export type ZoningSource = z.infer<typeof ZoningSourceSchema>;
+
+export const SourceReviewActionSchema = z.enum([
+  "verify",
+  "reject",
+  "needs_review",
+  "unverify",
+  "unreject",
+]);
+export type SourceReviewAction = z.infer<typeof SourceReviewActionSchema>;
+
+export const SourceReviewRequestSchema = z.object({
+  action: SourceReviewActionSchema,
+  note: z.string().nullable().optional(),
+});
+export type SourceReviewRequest = z.infer<typeof SourceReviewRequestSchema>;
+
+export const BulkReviewActionSchema = SourceReviewActionSchema;
+export type BulkReviewAction = z.infer<typeof BulkReviewActionSchema>;
+
+export const BulkReviewRequestSchema = z.object({
+  action: BulkReviewActionSchema,
+  source_ids: z.array(z.string()),
+  note: z.string().nullable().optional(),
+});
+export type BulkReviewRequest = z.infer<typeof BulkReviewRequestSchema>;
+
+export const BulkReviewResponseSchema = z.object({
+  updated: z.number().int(),
+  skipped: z.number().int().optional(),
+  errors: z.array(z.string()).optional(),
+});
+export type BulkReviewResponse = z.infer<typeof BulkReviewResponseSchema>;
+
+// ---- admin / spatial check -----------------------------------------------
+
+export const SpatialCheckVerdictSchema = z.enum([
+  "overlaps",
+  "adjacent",
+  "disjoint",
+  "wrong_state",
+  "wrong_county",
+  "no_geometry",
+  "error",
+  "unknown",
+]);
+export type SpatialCheckVerdict = z.infer<typeof SpatialCheckVerdictSchema>;
+
+export const SpatialCheckResponseSchema = z.object({
+  source_id: z.string().optional(),
+  verdict: SpatialCheckVerdictSchema,
+  bbox_overlap_ratio: z.number().nullable().optional(),
+  feature_count: z.number().int().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+export type SpatialCheckResponse = z.infer<typeof SpatialCheckResponseSchema>;
+
+// ---- admin / coverage ----------------------------------------------------
+
+export const CoverageJurisdictionSchema = z.object({
+  jurisdiction_id: z.string().uuid().or(z.string()),
+  jurisdiction_name: z.string(),
+  state: z.string().nullable().optional(),
+  county: z.string().nullable().optional(),
+  coverage_level: z.string().nullable().optional(),
+  captured_at: z.string().nullable().optional(),
+  parcel_count: z.number().int().nullable().optional(),
+  parcel_with_zoning_code_count: z.number().int().nullable().optional(),
+  zoning_district_count: z.number().int().nullable().optional(),
+  matrix_zone_count: z.number().int().nullable().optional(),
+  operational_readiness: z.string().nullable().optional(),
+  blocking_gaps: z.array(z.string()).nullable().optional(),
+  self_storage_classified_parcel_pct: z.number().nullable().optional(),
+  parcel_zoning_code_coverage_pct: z.number().nullable().optional(),
+  municipality_breakdown: z.unknown().nullable().optional(),
+  source_count_total: z.number().int().nullable().optional(),
+  source_count_verified: z.number().int().nullable().optional(),
+  source_count_rejected: z.number().int().nullable().optional(),
+  source_count_pending: z.number().int().nullable().optional(),
+  source_confidence_distribution: z.record(z.number()).nullable().optional(),
+});
+export type CoverageJurisdiction = z.infer<typeof CoverageJurisdictionSchema>;
+
+export const ProgressionSnapshotSchema = z.object({
+  jurisdiction_id: z.string().uuid().or(z.string()),
+  captured_at: z.string(),
+  coverage_level: z.string().nullable().optional(),
+  operational_readiness: z.string().nullable().optional(),
+  parcel_count: z.number().int().nullable().optional(),
+  parcel_with_zoning_code_count: z.number().int().nullable().optional(),
+  zoning_district_count: z.number().int().nullable().optional(),
+  matrix_zone_count: z.number().int().nullable().optional(),
+});
+export type ProgressionSnapshot = z.infer<typeof ProgressionSnapshotSchema>;
+
+// ---- admin / queue -------------------------------------------------------
+
+export const QueueSourceSchema = ZoningSourceSchema.extend({
+  parcel_count: z.number().int().nullable().optional(),
+  district_count: z.number().int().nullable().optional(),
+  jurisdiction_name: z.string().nullable().optional(),
+  blocking_reason: z.string().nullable().optional(),
+});
+export type QueueSource = z.infer<typeof QueueSourceSchema>;
+
+// ---- admin / rescore (UI consumes these; backend endpoint not yet wired) -
+
+export const RescoreChangeSchema = z.object({
+  source_id: z.string(),
+  before_score: z.number().nullable(),
+  after_score: z.number().nullable(),
+  before_label: z.string().nullable().optional(),
+  after_label: z.string().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  applied: z.boolean().optional(),
+  validation_status: z.string().nullable().optional(),
+  live_verdict: z.string().nullable().optional(),
+  crosses_threshold_70: z.union([z.boolean(), z.string()]).nullable().optional(),
+  municipality_name: z.string().nullable().optional(),
+  before: z.record(z.unknown()).nullable().optional(),
+  after: z.record(z.unknown()).nullable().optional(),
+});
+export type RescoreChange = z.infer<typeof RescoreChangeSchema>;
+
+export const RescoreSnapshotSchema = z.object({
+  jurisdiction_id: z.string(),
+  captured_at: z.string(),
+  scoring_version: z.number().int().or(z.string()).nullable().optional(),
+  before: z.array(ZoningSourceSchema).optional(),
+});
+export type RescoreSnapshot = z.infer<typeof RescoreSnapshotSchema>;
+
+export const RescoreSummarySchema = z.object({
+  eligible_total: z.number().int().nullable().optional(),
+  reasons: z.record(z.number().int()).nullable().optional(),
+  newly_below_threshold_70: z.number().int().nullable().optional(),
+  live_verdict_disjoint: z.number().int().nullable().optional(),
+});
+export type RescoreSummary = z.infer<typeof RescoreSummarySchema>;
+
+export const RescoreRequestSchema = z.object({
+  apply: z.boolean().optional(),
+  dry_run: z.boolean().optional(),
+  stale_only: z.boolean().optional(),
+  max_rows: z.number().int().nullable().optional(),
+});
+export type RescoreRequest = z.infer<typeof RescoreRequestSchema>;
+
+export const RescoreResponseSchema = z.object({
+  jurisdiction_id: z.string().nullable().optional(),
+  jurisdiction_name: z.string().nullable().optional(),
+  summary: RescoreSummarySchema,
+  changes: z.array(RescoreChangeSchema),
+  snapshot: RescoreSnapshotSchema.nullable().optional(),
+});
+export type RescoreResponse = z.infer<typeof RescoreResponseSchema>;
+
+export const RollbackResponseSchema = z.object({
+  reverted: z.number().int(),
+  skipped: z.number().int().optional(),
+});
+export type RollbackResponse = z.infer<typeof RollbackResponseSchema>;
+
+// ---- admin / remediation (UI consumes; backend endpoint not yet wired) ---
+
+export const RemediationStepSchema = z.object({
+  id: z.string(),
+  severity: z.enum(["must", "should", "consider"]).or(z.string()),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  estimated_minutes: z.number().int().nullable().optional(),
+  endpoint: z.string().nullable().optional(),
+  method: z.string().nullable().optional(),
+  payload: z.record(z.unknown()).nullable().optional(),
+});
+export type RemediationStep = z.infer<typeof RemediationStepSchema>;
+
+export const RemediationMunicipalitySchema = z.object({
+  jurisdiction_id: z.string(),
+  municipality: z.string().nullable().optional(),
+  trustworthiness: z.string().nullable().optional(),
+  gaps: z.array(z.string()).nullable().optional(),
+  steps: z.array(RemediationStepSchema).optional(),
+  parcel_count: z.number().int().nullable().optional(),
+  district_count: z.number().int().nullable().optional(),
+});
+export type RemediationMunicipality = z.infer<typeof RemediationMunicipalitySchema>;
+
+export const RemediationCommandSchema = z.object({
+  kind: z.string(),
+  jurisdiction_id: z.string().optional(),
+  municipality: z.string().nullable().optional(),
+  source_id: z.string().nullable().optional(),
+  endpoint: z.string().nullable().optional(),
+  path: z.string().nullable().optional(),
+  method: z.string().nullable().optional(),
+  payload: z.record(z.unknown()).nullable().optional(),
+});
+export type RemediationCommand = z.infer<typeof RemediationCommandSchema>;
