@@ -1,0 +1,562 @@
+[
+  {
+    "muni_code": "0201",
+    "muni_name": "Allendale Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.allendalenj.gov/sites/g/files/vyhlif6901/f/uploads/zoning_map.jpg",
+    "ordinance_url": "https://ecode360.com/8919723",
+    "website_url": "https://www.allendalenj.gov/construction-zoning-office"
+  },
+  {
+    "muni_code": "0202",
+    "muni_name": "Alpine Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://www.alpinenj07620.org/sitebuildercontent/sitebuilderfiles/zoningmap28x42.pdf",
+    "ordinance_url": "https://ecode360.com/8923818",
+    "website_url": "http://www.alpinenj07620.org/id8.html"
+  },
+  {
+    "muni_code": "0203",
+    "muni_name": "Bergenfield Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://bergenfieldborough.com/downloads/category/27-zoning-board?download=31",
+    "ordinance_url": "https://ecode360.com/8943317",
+    "website_url": "https://bergenfield.com/bergenfield-building-department"
+  },
+  {
+    "muni_code": "0204",
+    "muni_name": "Bogota Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/BO4055/BO4055-021Af%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/34720607",
+    "website_url": "https://www.bogotaonline.org/building-department"
+  },
+  {
+    "muni_code": "0205",
+    "muni_name": "Carlstadt Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://meri.njmeadowlands.gov/downloads/gis/maps/Carlstadt_Zoning_20150710.pdf",
+    "ordinance_url": "https://ecode360.com/11769584",
+    "website_url": "https://www.carlstadtnj.us/building-department/"
+  },
+  {
+    "muni_code": "0206",
+    "muni_name": "Cliffside Park Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://webgen1files.revize.com/boroughcspnj/departments/building%20department/Cliffside_Zoning_Map.pdf",
+    "ordinance_url": "https://ecode360.com/35163667",
+    "website_url": "https://www.cliffsideparknj.gov/departments/zoning_office.php"
+  },
+  {
+    "muni_code": "0207",
+    "muni_name": "Closter Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.closterboro.com/closter/Documents%20%26%20Forms/Tax%20Maps%20and%20Related%20Documents/Zoning%20Map%20of%20Borough%20of%20Closter.pdf",
+    "ordinance_url": "https://ecode360.com/7051388",
+    "website_url": "https://www.closterboro.com/closter/Directory/"
+  },
+  {
+    "muni_code": "0208",
+    "muni_name": "Cresskill Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.cresskillboro.com/government/forms/construction/553-zoning-map-1/file",
+    "ordinance_url": "https://ecode360.com/6271638",
+    "website_url": "https://www.cresskillboro.com/departments/construction"
+  },
+  {
+    "muni_code": "0209",
+    "muni_name": "Demarest Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://demarestnj.gov/vertical/Sites/%7B7F9FF05A-4154-4A9B-B6E4-A8EA6E64541F%7D/uploads/Demarest_Zoning_Map_-2020.pdf",
+    "ordinance_url": "https://ecode360.com/31312236",
+    "website_url": "https://demarestnj.gov/building"
+  },
+  {
+    "muni_code": "0210",
+    "muni_name": "Dumont Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://dumontnj.gov/documents/zoningmap.pdf",
+    "ordinance_url": "https://ecode360.com/9557518",
+    "website_url": "https://dumontnj.gov/building-department"
+  },
+  {
+    "muni_code": "0211",
+    "muni_name": "Elmwood Park Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/EL0259/EL0259-034b%20Zoning%20District%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/35181869",
+    "website_url": "https://www.elmwoodparknj.us/departments/building-department"
+  },
+  {
+    "muni_code": "0212",
+    "muni_name": "East Rutherford Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://www.eastrutherfordnj.net/building-department/files/zoning-map",
+    "ordinance_url": "https://ecode360.com/9414945",
+    "website_url": "https://www.eastrutherfordnj.net/building-department"
+  },
+  {
+    "muni_code": "0213",
+    "muni_name": "Edgewater Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.edgewaternj.org/DocumentCenter/View/5173/Edgewater-Zoning-Mappdf",
+    "ordinance_url": "https://ecode360.com/14373928",
+    "website_url": "https://www.edgewaternj.org/149/Building-Department"
+  },
+  {
+    "muni_code": "0214",
+    "muni_name": "Emerson Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.emersonnj.org/vertical/sites/%7B3CE7C79E-1CDE-42D4-BE99-DEDBCE95F9A4%7D/uploads/Adopted_Zoning_Map_May_3_2022_Rev_2.pdf",
+    "ordinance_url": "https://ecode360.com/11488800",
+    "website_url": "https://www.emersonnj.org/index.asp?SEC=96258FA7-A49D-4F0C-A8A6-D2F5EDFD513C&DE=D822F446-004F-448C-8DD8-16729C844478"
+  },
+  {
+    "muni_code": "0215",
+    "muni_name": "Englewood City",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/EN2705/EN2705-250a%20COLOR%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/13856902",
+    "website_url": "https://www.cityofenglewood.org/1166/Code-Enforcement"
+  },
+  {
+    "muni_code": "0216",
+    "muni_name": "Englewood Cliffs Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://www.englewoodcliffsnj.org/filestorage/311/328/ZoningMap_1999.pdf",
+    "ordinance_url": "https://ecode360.com/35703137",
+    "website_url": "http://www.englewoodcliffsnj.org/content/309/default.aspx"
+  },
+  {
+    "muni_code": "0217",
+    "muni_name": "Fair Lawn Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.fairlawn.org/sites/default/files/field/files-docs/official_zoningmap_3-1-2017_0.pdf",
+    "ordinance_url": "https://ecode360.com/10052217",
+    "website_url": "https://www.fairlawn.org/building"
+  },
+  {
+    "muni_code": "0218",
+    "muni_name": "Fairview Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/FA4029/FA4029-025c%20Appendix%20C%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/35211388",
+    "website_url": "https://fairviewborough.com/index.php/departments/building"
+  },
+  {
+    "muni_code": "0219",
+    "muni_name": "Fort Lee Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.fortleenj.org/DocumentCenter/View/417/Zoning-Map-PDF",
+    "ordinance_url": "https://ecode360.com/10071645",
+    "website_url": "https://www.fortleenj.org/162/Building-Department"
+  },
+  {
+    "muni_code": "0220",
+    "muni_name": "Franklin Lakes Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.franklinlakes.org/vertical/Sites/%7B02E9C1B5-59B4-4B82-8487-CE42C675CF8A%7D/uploads/2016-08-08_Zoning_Map_(2016).pdf",
+    "ordinance_url": "https://ecode360.com/7172563",
+    "website_url": "https://www.franklinlakes.org/pbd"
+  },
+  {
+    "muni_code": "0221",
+    "muni_name": "Garfield City",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.garfieldnj.org/_Content/pdf/zoning.pdf",
+    "ordinance_url": "https://ecode360.com/10086640",
+    "website_url": "https://www.garfieldnj.org/Departments/building-department"
+  },
+  {
+    "muni_code": "0222",
+    "muni_name": "Glen Rock Borough",
+    "in_njsea_zoning": false,
+    "map_url": "Not published online",
+    "ordinance_url": "https://ecode360.com/10101374",
+    "website_url": "https://glenrocknj.net/departments/zoning-department"
+  },
+  {
+    "muni_code": "0223",
+    "muni_name": "Hackensack City",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/HA0454/HA0454-175g%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/13166949",
+    "website_url": "https://www.hackensack.org/building-housing-and-land-use/"
+  },
+  {
+    "muni_code": "0224",
+    "muni_name": "Harrington Park Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://www.harringtonparknj.gov/images/PDFS/zoning/zoningmap.pdf",
+    "ordinance_url": "https://ecode360.com/13393999",
+    "website_url": "http://www.harringtonparknj.gov/index.php/staff-officials"
+  },
+  {
+    "muni_code": "0225",
+    "muni_name": "Hasbrouck Heights Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://cdn.shopify.com/s/files/1/0692/7309/2378/files/Borough_of_Hasbrouck_Heights_-_Zoning_Map.pdf?v=1681861334",
+    "ordinance_url": "https://ecode360.com/10376067",
+    "website_url": "https://cdn.shopify.com/s/files/1/0692/7309/2378/files/Borough_of_Hasbrouck_Heights_-_Zoning_Map.pdf?v=1681861334"
+  },
+  {
+    "muni_code": "0226",
+    "muni_name": "Haworth Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.haworthnj.org/vertical/Sites/%7B3226EF68-541C-456F-8644-AC724E9AC52C%7D/uploads/Haworth_Zoning_Map_August_2010.pdf",
+    "ordinance_url": "https://ecode360.com/35573893",
+    "website_url": "https://www.haworthnj.org/officials"
+  },
+  {
+    "muni_code": "0227",
+    "muni_name": "Hillsdale Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://www.hillsdalenj.org/vertical/Sites/%7BFE916F8D-CA48-4788-B4B7-6A2BF8501398%7D/uploads/HILLSDALE-ZONING-MAP_cover.pdf",
+    "ordinance_url": "https://ecode360.com/10263516",
+    "website_url": "https://www.hillsdalenj.org/buildingconstructionzoning"
+  },
+  {
+    "muni_code": "0228",
+    "muni_name": "Ho-Ho-Kus Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.hhkborough.com/zoning-official/files/hhk-zoning-map-1986",
+    "ordinance_url": "https://ecode360.com/13543075",
+    "website_url": "https://www.hhkborough.com/zoning-official"
+  },
+  {
+    "muni_code": "0229",
+    "muni_name": "Leonia Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.leonianj.gov/home/showpublisheddocument/4446/638150839261770000",
+    "ordinance_url": "https://ecode360.com/9254523",
+    "website_url": "https://www.leonianj.gov/borough-government/borough-departments/building-department"
+  },
+  {
+    "muni_code": "0230",
+    "muni_name": "Little Ferry Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://meri.njmeadowlands.gov/downloads/gis/maps/Little_Ferry_Zoning_WebMap_District_11x17_Portrait.pdf",
+    "ordinance_url": "https://ecode360.com/34745607",
+    "website_url": "http://www.littleferrynj.org/content/121/default.aspx"
+  },
+  {
+    "muni_code": "0231",
+    "muni_name": "Lodi Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/LO0288/LO0288-585a%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/13642182",
+    "website_url": "http://www.lodi-nj.org/zoning"
+  },
+  {
+    "muni_code": "0232",
+    "muni_name": "Lyndhurst Township",
+    "in_njsea_zoning": true,
+    "map_url": "https://meri.njmeadowlands.gov/downloads/gis/maps/Lyndhurst_Zoning_WebMap_District_11x17_Portrait.pdf",
+    "ordinance_url": "https://ecode360.com/34772439",
+    "website_url": "https://www.lyndhurstnj.org/Page/planning-board-and-zoning-board-of-adjustment"
+  },
+  {
+    "muni_code": "0233",
+    "muni_name": "Mahwah Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.mahwahtwp.org/DocumentCenter/View/127/Zoning-Map-PDF",
+    "ordinance_url": "https://ecode360.com/34814044",
+    "website_url": "https://www.mahwahtwp.org/195/Planning-Zoning-Property-Maintenance"
+  },
+  {
+    "muni_code": "0234",
+    "muni_name": "Maywood Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.maywoodnj.com/vertical/sites/%7B3F816141-7A2D-4412-8A8D-6C5C2C1C1341%7D/uploads/Zoning_Map_Dated_10-14-2014.pdf",
+    "ordinance_url": "https://ecode360.com/10329566",
+    "website_url": "https://www.maywoodnj.com/?SEC=679BB4F4-2FE5-4900-A5C4-A43D41506925"
+  },
+  {
+    "muni_code": "0235",
+    "muni_name": "Midland Park Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.midlandparknj.org/zoning-board-adjustment/files/midland-park-zoning-map-color-coded",
+    "ordinance_url": "https://ecode360.com/34953997",
+    "website_url": "https://www.midlandparknj.org/building-department"
+  },
+  {
+    "muni_code": "0236",
+    "muni_name": "Montvale Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.montvale.org/meetings/department-documents/planning-board/planning-board-documents/1114-zoning-map-with-block-lot/file",
+    "ordinance_url": "https://ecode360.com/36134954",
+    "website_url": "https://www.montvale.org/departments/construction"
+  },
+  {
+    "muni_code": "0237",
+    "muni_name": "Moonachie Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://meri.njmeadowlands.gov/downloads/gis/maps/Moonachie_Zoning_WebMap_District_11x17_Portrait.pdf",
+    "ordinance_url": "https://ecode360.com/36307195",
+    "website_url": "https://www.moonachie.us/building-department"
+  },
+  {
+    "muni_code": "0238",
+    "muni_name": "New Milford Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://newmilfordborough.org/document/zoning-map/",
+    "ordinance_url": "https://ecode360.com/35555740",
+    "website_url": "https://www.newmilfordboro.com/page/building-department"
+  },
+  {
+    "muni_code": "0239",
+    "muni_name": "North Arlington Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://www.northarlington.org/_Content/pdf/Zoning-Map-May-2022.PDF",
+    "ordinance_url": "https://ecode360.com/11265968",
+    "website_url": "https://www.northarlington.org/Departments/construction-department"
+  },
+  {
+    "muni_code": "0240",
+    "muni_name": "Northvale Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://66.226.135.107/building/PDF/Northvale-Zoning-Map-FINAL-11-11-09.pdf",
+    "ordinance_url": "https://ecode360.com/12517173",
+    "website_url": "https://www.northvalenj.org/building-department"
+  },
+  {
+    "muni_code": "0241",
+    "muni_name": "Norwood Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.norwoodboro.org/departments/construction_code_enforcement/zoning_map.php",
+    "ordinance_url": "https://ecode360.com/6933893",
+    "website_url": "https://www.norwoodboro.org/departments/construction_code_enforcement/index.php"
+  },
+  {
+    "muni_code": "0242",
+    "muni_name": "Oakland Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.oakland-nj.org/about-borough/files/zoning-map-2015",
+    "ordinance_url": "https://ecode360.com/35166120",
+    "website_url": "https://www.oakland-nj.org/construction-and-code-enforcement/pages/zoning-enforcement"
+  },
+  {
+    "muni_code": "0243",
+    "muni_name": "Old Tappan Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://oldtappan.net/government/forms/construction/90-zoning-map-bulk-schedule/file",
+    "ordinance_url": "https://ecode360.com/11280857",
+    "website_url": "https://www.oldtappan.net/departments/construction"
+  },
+  {
+    "muni_code": "0244",
+    "muni_name": "Oradell Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.oradell.org/building-department/files/zoning-map-2018",
+    "ordinance_url": "https://ecode360.com/9258589",
+    "website_url": "https://www.oradell.org/building-department"
+  },
+  {
+    "muni_code": "0245",
+    "muni_name": "Palisades Park Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://palisadesparknj.us/wp-content/uploads/2014/04/Palisades-Park-Zoning-Map.pdf",
+    "ordinance_url": "https://ecode360.com/9264492",
+    "website_url": "https://mypalisadespark.com/building-department/"
+  },
+  {
+    "muni_code": "0246",
+    "muni_name": "Paramus Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.paramusborough.org/DocumentCenter/View/104/Borough-of-Paramus-2016-Signed-Zoning-Map-PDF",
+    "ordinance_url": "https://ecode360.com/34613444",
+    "website_url": "https://www.paramusborough.org/Directory.aspx"
+  },
+  {
+    "muni_code": "0247",
+    "muni_name": "Park Ridge Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/PA0433/PA0433-101i%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/11289394",
+    "website_url": "https://www.parkridgeboro.com/departments/zoning"
+  },
+  {
+    "muni_code": "0248",
+    "muni_name": "Ramsey Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.ramseynj.com/DocumentCenter/View/2006/Ramsey-Zoning-Map",
+    "ordinance_url": "https://ecode360.com/34123295",
+    "website_url": "https://www.ramseynj.com/207/Zoning-Department"
+  },
+  {
+    "muni_code": "0249",
+    "muni_name": "Ridgefield Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://meri.njmeadowlands.gov/downloads/gis/maps/Ridgefield_Zoning_WebMap_District_11x17_Portrait.pdf",
+    "ordinance_url": "https://ecode360.com/9125890",
+    "website_url": "https://www.ridgefieldnj.gov/index.asp?SEC=F257D928-5B82-4109-87AC-1E2D4FF7FA39&Type=B_BASIC"
+  },
+  {
+    "muni_code": "0250",
+    "muni_name": "Ridgefield Park Village",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/RI0926/RI0926-096e%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/13321806",
+    "website_url": "https://www.ridgefieldpark.org/building-department"
+  },
+  {
+    "muni_code": "0251",
+    "muni_name": "Ridgewood Village",
+    "in_njsea_zoning": false,
+    "map_url": "https://mods.ridgewoodnj.net/pdf/zoningboard/Zone_Map_2022_27X27.pdf",
+    "ordinance_url": "https://ecode360.com/6692452",
+    "website_url": "https://www.ridgewoodnj.net/departments/building"
+  },
+  {
+    "muni_code": "0252",
+    "muni_name": "River Edge Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/attachment/RI1557/RI1557-416d%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/11323401",
+    "website_url": "https://www.riveredgenj.org/departments/BuildingDepartment"
+  },
+  {
+    "muni_code": "0253",
+    "muni_name": "River Vale Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.rivervalenj.org/DocumentCenter/View/84/Zoning-Map-of-the-TownshipPDF",
+    "ordinance_url": "https://ecode360.com/11327440",
+    "website_url": "https://www.rivervalenj.org/151/Building-Department"
+  },
+  {
+    "muni_code": "0254",
+    "muni_name": "Rochelle Park Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://rochelleparknj.gov/wp-content/uploads/2019/08/Zoning-2.9.16.pdf",
+    "ordinance_url": "https://ecode360.com/9435477",
+    "website_url": "https://rochelleparknj.gov/building-department-2/"
+  },
+  {
+    "muni_code": "0255",
+    "muni_name": "Rockleigh Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://rockleighnj.org/Index_PDF/2018/2018_Rockleigh_Zoning_Map.pdf",
+    "ordinance_url": "https://ecode360.com/34756487",
+    "website_url": "https://rockleighnj.org/building/"
+  },
+  {
+    "muni_code": "0256",
+    "muni_name": "Rutherford Borough",
+    "in_njsea_zoning": true,
+    "map_url": "http://static.rutherford-nj.com/building/RutherfordZoningMap.pdf",
+    "ordinance_url": "https://ecode360.com/11349008",
+    "website_url": "https://www.rutherfordboronj.com/departments/building/"
+  },
+  {
+    "muni_code": "0257",
+    "muni_name": "Saddle Brook Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://ecode360.com/documents/SA0582/SA0582-206c%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/6389728",
+    "website_url": "https://saddlebrooknj.us/building-department/"
+  },
+  {
+    "muni_code": "0258",
+    "muni_name": "Saddle River Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.saddleriver.org/vertical/sites/%7B2E7E07BD-0A79-4A05-9B79-960D47AACDC0%7D/uploads/ZONING_MAP_Rev_2014.pdf",
+    "ordinance_url": "https://ecode360.com/10639166",
+    "website_url": "https://www.saddleriver.org/building_const"
+  },
+  {
+    "muni_code": "0259",
+    "muni_name": "South Hackensack Township",
+    "in_njsea_zoning": true,
+    "map_url": "https://southhackensacknj.org/zoning/documents/ZoningMap.pdf",
+    "ordinance_url": "https://ecode360.com/6495099",
+    "website_url": "https://southhackensacknj.org/zoning/"
+  },
+  {
+    "muni_code": "0260",
+    "muni_name": "Teaneck Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://evogov.s3.amazonaws.com/media/33/media/15350.pdf",
+    "ordinance_url": "https://ecode360.com/13628370",
+    "website_url": "https://www.teanecknj.gov/zoning"
+  },
+  {
+    "muni_code": "0261",
+    "muni_name": "Tenafly Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://www.tenaflynj.org/DocumentCenter/View/90/Zoning-Map-PDF",
+    "ordinance_url": "https://ecode360.com/36198751",
+    "website_url": "https://www.tenaflynj.org/directory.aspx?did=7"
+  },
+  {
+    "muni_code": "0262",
+    "muni_name": "Teterboro Borough",
+    "in_njsea_zoning": true,
+    "map_url": "https://meri.njmeadowlands.gov/downloads/gis/maps/Teterboro_Zoning_WebMap_District_11x17_Portrait.pdf",
+    "ordinance_url": "https://ecode360.com/12524374",
+    "website_url": "https://www.teterboronj.org/departments/construction?highlight=WyJ6b25pbmciXQ=="
+  },
+  {
+    "muni_code": "0263",
+    "muni_name": "Upper Saddle River Borough",
+    "in_njsea_zoning": false,
+    "map_url": "Not published online",
+    "ordinance_url": "https://ecode360.com/8647177",
+    "website_url": "https://www.usrtoday.org/zoning-and-maintenance/"
+  },
+  {
+    "muni_code": "0264",
+    "muni_name": "Waldwick Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.waldwicknj.org/vertical/Sites/%7B567094C1-458F-4866-B290-7E609A8C3478%7D/uploads/Zoning_Map(1).pdf",
+    "ordinance_url": "https://ecode360.com/34786497",
+    "website_url": "https://www.waldwicknj.org/building"
+  },
+  {
+    "muni_code": "0265",
+    "muni_name": "Wallington Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.wallingtonnj.org/zoning-board-adjustment/files/zoning-map-borough-wallington",
+    "ordinance_url": "https://ecode360.com/15124336",
+    "website_url": "https://www.wallingtonnj.org/zoning-board-adjustment"
+  },
+  {
+    "muni_code": "0266",
+    "muni_name": "Washington Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.twpofwashington.us/file/5d7ea8d0-a8cc-11ed-a980-338cf131eee3",
+    "ordinance_url": "https://ecode360.com/31164079",
+    "website_url": "https://www.twpofwashington.us/page/zoning-department"
+  },
+  {
+    "muni_code": "0267",
+    "muni_name": "Westwood Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://westwoodnj.gov/DocumentCenter/View/297/Zoning-Map-PDF",
+    "ordinance_url": "https://ecode360.com/13848225",
+    "website_url": "https://westwoodnj.gov/250/Zoning-Office"
+  },
+  {
+    "muni_code": "0268",
+    "muni_name": "Woodcliff Lake Borough",
+    "in_njsea_zoning": false,
+    "map_url": "http://woodclifflakenj.govoffice2.com/vertical/sites/%7B4EC636D6-862F-4BF0-9C8C-DF8FBF2D3CB7%7D/uploads/%7BB33D62F5-BB53-4C46-8098-404CE5330624%7D.PDF",
+    "ordinance_url": "https://ecode360.com/11420899",
+    "website_url": "https://www.wclnj.com/boards/zone"
+  },
+  {
+    "muni_code": "0269",
+    "muni_name": "Wood-Ridge Borough",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.njwoodridge.org/_Content/pdf/W-R-Zoning-Map.pdf",
+    "ordinance_url": "https://ecode360.com/28840411",
+    "website_url": "https://www.njwoodridge.org/Departments/construction-department"
+  },
+  {
+    "muni_code": "0270",
+    "muni_name": "Wyckoff Township",
+    "in_njsea_zoning": false,
+    "map_url": "https://www.wyckoff-nj.com/sites/g/files/vyhlif5246/f/pages/zoning_map_of_wyckoff.pdf",
+    "ordinance_url": "https://ecode360.com/11431465",
+    "website_url": "https://www.wyckoff-nj.com/building-zoning-property-maintenance"
+  }
+]
