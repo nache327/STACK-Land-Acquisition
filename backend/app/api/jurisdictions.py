@@ -417,6 +417,48 @@ async def admin_coverage_refresh(
     return result
 
 
+# Snapshot age past which the captured_at counts as "stale" in the
+# failures lens. Slightly higher than the post-mutation freshness
+# guarantee (~now) so a few days between operator-side sweeps don't
+# spuriously flag every jurisdiction.
+_SNAPSHOT_STALE_THRESHOLD_DAYS = 7
+
+
+def _coverage_failure_reasons(s) -> list[str]:
+    """Classify a CoverageSnapshot row into zero-or-more failure reason
+    codes. Pure function over the snapshot's stored columns — no DB
+    access. Each reason maps 1:1 to a concrete production correctness
+    failure the operator should see in `/admin/coverage`.
+    """
+    from datetime import datetime, timezone, timedelta
+    reasons: list[str] = []
+    parcel_count = s.parcel_count or 0
+    bind_pct = s.parcel_zoning_code_coverage_pct
+    district_count = s.zoning_district_count or 0
+    parcel_with_zoning = s.parcel_with_zoning_code_count or 0
+
+    if district_count == 0 and parcel_count > 1000:
+        reasons.append("no_zoning_districts")
+    if district_count > 0 and bind_pct is not None and bind_pct < 0.30:
+        reasons.append("spatial_join_incomplete")
+    if (s.operational_readiness == "operational"
+            and bind_pct is not None and bind_pct < 0.80):
+        reasons.append("false_operational")
+    if (s.operational_readiness == "partial"
+            and "coverage_level_overstates_readiness" in (s.blocking_gaps or [])):
+        reasons.append("coverage_level_overstates")
+    if (parcel_with_zoning > 0 and district_count == 0
+            and bind_pct is not None and bind_pct >= 0.80):
+        reasons.append("parcel_source_only_bind")
+    if s.captured_at is not None:
+        cutoff = datetime.now(timezone.utc) - timedelta(
+            days=_SNAPSHOT_STALE_THRESHOLD_DAYS,
+        )
+        if s.captured_at < cutoff:
+            reasons.append("snapshot_stale")
+    return reasons
+
+
 @router.get("/admin/coverage")
 async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
     """Return the latest coverage snapshot per jurisdiction.
@@ -425,12 +467,38 @@ async def admin_coverage_get(db: AsyncSession = Depends(get_db)) -> dict:
     `zoning_sources` — sub-second response regardless of `parcels` /
     `zoning_overlays` table size. Run `POST /api/admin/coverage/refresh`
     to update snapshots.
+
+    The `failures` array surfaces jurisdictions whose snapshot data
+    indicates a correctness problem (no districts, spatial join
+    incomplete, false-operational band, parcel-source-only bind,
+    overstates readiness, snapshot stale). Sorted by parcel_count desc
+    so big-impact failures sit on top.
     """
     from app.services.coverage_audit import latest_snapshots, source_distribution_for_all
     snaps = await latest_snapshots(db)
     source_dist = await source_distribution_for_all(db)
+
+    failures = sorted(
+        (
+            {
+                "jurisdiction_id": str(s.jurisdiction_id),
+                "jurisdiction_name": s.jurisdiction_name,
+                "reason": reason,
+                "parcel_count": s.parcel_count or 0,
+                "bind_pct": s.parcel_zoning_code_coverage_pct,
+                "district_count": s.zoning_district_count or 0,
+                "captured_at": s.captured_at.isoformat() if s.captured_at else None,
+            }
+            for s in snaps
+            for reason in _coverage_failure_reasons(s)
+        ),
+        key=lambda r: (r["parcel_count"] or 0),
+        reverse=True,
+    )
+
     return {
         "count": len(snaps),
+        "failures": failures,
         "jurisdictions": [
             {
                 "jurisdiction_id": str(s.jurisdiction_id),
