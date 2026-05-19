@@ -90,18 +90,24 @@ async def refresh_all_snapshots(
     audits = [az._build_audit(row, schema) for row in result]
 
     written = 0
+    failed = 0
     for audit in audits:
-        data = asdict(audit)
-        jid = uuid.UUID(data["id"])
-        # Per-municipality rollup — degrades gracefully to a single 'unknown'
-        # bucket if `parcels.city` is null across the board for this
-        # jurisdiction. Skipped silently on any error so a rollup hiccup
-        # doesn't break the broader audit refresh.
         try:
-            muni_breakdown = await _per_municipality_breakdown(conn, jid)
+            data = asdict(audit)
+            jid = uuid.UUID(data["id"])
+            # Per-municipality rollup — degrades gracefully to a single 'unknown'
+            # bucket if `parcels.city` is null across the board for this
+            # jurisdiction. Skipped silently on any error so a rollup hiccup
+            # doesn't break the broader audit refresh.
+            try:
+                muni_breakdown = await _per_municipality_breakdown(conn, jid)
+            except Exception as exc:
+                logger.warning("muni breakdown failed for jurisdiction %s (%s); skipping", jid, exc)
+                muni_breakdown = None
         except Exception as exc:
-            logger.warning("muni breakdown failed for jurisdiction %s (%s); skipping", jid, exc)
-            muni_breakdown = None
+            logger.warning("audit prep failed for jurisdiction (%s); skipping", exc)
+            failed += 1
+            continue
         # `JurisdictionAudit.id` is a string; cast to UUID for the FK column.
         snap = CoverageSnapshot(
             jurisdiction_id=jid,
@@ -148,12 +154,30 @@ async def refresh_all_snapshots(
             municipality_breakdown=muni_breakdown,
             source=source,
         )
-        db.add(snap)
-        written += 1
-    await db.commit()
+        try:
+            db.add(snap)
+            await db.flush()
+            written += 1
+        except Exception as exc:
+            logger.warning("snapshot insert failed for jurisdiction %s (%s); rolling back this row", jid, exc)
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            failed += 1
+            continue
+    try:
+        await db.commit()
+    except Exception as exc:
+        logger.warning("final commit failed (%s); attempting rollback", exc)
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
     return {
         "snapshots_written": written,
+        "snapshots_failed": failed,
         "summary": az._summary(audits),
     }
 
