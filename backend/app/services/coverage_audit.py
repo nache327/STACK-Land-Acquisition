@@ -97,7 +97,11 @@ async def refresh_all_snapshots(
         # bucket if `parcels.city` is null across the board for this
         # jurisdiction. Skipped silently on any error so a rollup hiccup
         # doesn't break the broader audit refresh.
-        muni_breakdown = await _per_municipality_breakdown(conn, jid)
+        try:
+            muni_breakdown = await _per_municipality_breakdown(conn, jid)
+        except Exception as exc:
+            logger.warning("muni breakdown failed for jurisdiction %s (%s); skipping", jid, exc)
+            muni_breakdown = None
         # `JurisdictionAudit.id` is a string; cast to UUID for the FK column.
         snap = CoverageSnapshot(
             jurisdiction_id=jid,
