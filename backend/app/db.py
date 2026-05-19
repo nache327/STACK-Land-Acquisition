@@ -21,7 +21,7 @@ class Base(DeclarativeBase):
 logger.info("Connected to Postgres at %s (env=%s)", settings.database_url_sanitized, settings.environment)
 
 
-def make_engine(database_url: str | None = None):
+def make_engine(database_url: str | None = None, command_timeout: int = 90):
     """Build an AsyncEngine compatible with both the API process and Dramatiq workers.
 
     No `async_creator` — that path requires a greenlet context Dramatiq's
@@ -33,6 +33,11 @@ def make_engine(database_url: str | None = None):
     transactions) is wired up through SQLAlchemy's sync `connect` event
     listener registered just below — which runs in the correct context
     SQLAlchemy already manages for asyncpg's adapted DBAPI connection.
+
+    `command_timeout` is the asyncpg client-side per-command timeout in
+    seconds. Default 90s for the main engine. Audit-style operations that
+    legitimately run for minutes (e.g. refresh_all_snapshots over big
+    counties) should use the alternate engine built with a higher value.
     """
     url = database_url or settings.database_url
     new_engine = create_async_engine(
@@ -52,7 +57,7 @@ def make_engine(database_url: str | None = None):
             "statement_cache_size": 0,
             # Per-command client-side timeout so a half-open TCP connection
             # to the pooler can't hang a worker forever.
-            "command_timeout": 90,
+            "command_timeout": command_timeout,
             # asyncpg startup option — ignored by some pooler configurations,
             # so the `connect` listener below issues the SET explicitly.
             "server_settings": {"default_transaction_read_only": "off"},
@@ -83,6 +88,19 @@ engine = make_engine()
 
 async_session_maker = async_sessionmaker(
     engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+
+# Long-running engine for operator-triggered batch operations like the
+# coverage_audit refresh sweep — the audit SQL legitimately takes minutes
+# on big counties (Middlesex MA 423k, Mont MD 281k, Mont PA 301k parcels).
+# A separate engine with command_timeout=600 lets those complete; the
+# default 90s engine is unchanged.
+long_running_engine = make_engine(command_timeout=600)
+long_running_session_maker = async_sessionmaker(
+    long_running_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
