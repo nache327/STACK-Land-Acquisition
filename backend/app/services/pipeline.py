@@ -342,6 +342,130 @@ def _ct(
     )
 
 
+# ── Virginia: Fairfax + Loudoun (Phase 3) ─────────────────────────────────
+# VGIN's statewide composite is gated by a per-locality data-sharing agreement
+# and many counties (incl. Fairfax) are absent. Each VA county we ingest uses
+# its own AGOL/Server endpoint instead.
+# Fairfax — boundary-only `Parcels/FeatureServer/0` (369K rows, 7 fields).
+# The wider `Parcels_with_Address_points/FeatureServer/0` (391K, 50+ fields)
+# returns 504 Gateway Timeout under bursty paginated load on its AGOL node;
+# the boundary layer's leaner payload sits well under the timeout budget and
+# still publishes PIN as the unique APN. Address backfill (if/when needed)
+# can come from a separate spatial join against the address points layer.
+_VA_FAIRFAX_PARCELS = (
+    "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest"
+    "/services/Parcels/FeatureServer/0"
+)
+_VA_FAIRFAX_ZONING = (
+    "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest"
+    "/services/Zoning/FeatureServer/0"
+)
+# Loudoun's authoritative parcel polygons live on the county-hosted ArcGIS
+# Server (logis.loudoun.gov). The AGOL mirror lags by a few rows; the COL
+# LandRecords MapServer/5 layer is what icare/inet pulls from internally.
+_VA_LOUDOUN_PARCELS = (
+    "https://logis.loudoun.gov/gis/rest/services/COL/LandRecords/MapServer/5"
+)
+_VA_LOUDOUN_ZONING = (
+    "https://logis.loudoun.gov/gis/rest/services/COL/Zoning/MapServer/3"
+)
+
+
+def _va(
+    county_name: str,
+    full_name: str,
+    parcel_endpoint: str,
+    zoning_endpoint: str | None = None,
+    where_clause: str | None = None,
+) -> JurisdictionConfig:
+    """Build a VA county-backed JurisdictionConfig.
+
+    Each VA county publishes its own ArcGIS layer — no statewide composite
+    covers Fairfax or Loudoun. Zoning is published as a separate spatial
+    layer; the parcel layer carries no zoning code (Fairfax's Parcels_with_
+    Address_points has only PIN + address; Loudoun's LandRecords/5 has only
+    PA_MCPI + acres).
+    """
+    return JurisdictionConfig(
+        name=full_name,
+        state="VA",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=parcel_endpoint,
+        where_clause=where_clause,
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
+# ── Maryland: MD iMAP statewide MD_ParcelBoundaries (Phase 3) ─────────────
+# A single MapServer layer covers all 24 counties + Baltimore City. JURSCODE
+# is the four-letter MDProperty View jurisdiction code (MONT, HOWA, BALT,
+# BACO, AAC0…). ZONING + LU + DESCLU + ACRES + NFMIMPVL are inline; owner
+# *name* is redacted statewide (~2017 policy) but mailing address remains.
+_MD_STATEWIDE = (
+    "https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre"
+    "/MD_ParcelBoundaries/MapServer/0"
+)
+
+
+def _md(
+    county_name: str,
+    full_name: str,
+    jurscode: str,
+    zoning_endpoint: str | None = None,
+) -> JurisdictionConfig:
+    """Build an MD county-backed JurisdictionConfig from the statewide layer.
+
+    `jurscode` is the four-letter MDProperty View county code (MONT, HOWA, …)
+    used in the WHERE clause. Zoning is inline on the parcel layer, so
+    `zoning_endpoint` defaults to None — pass an explicit per-county zoning
+    polygon endpoint only when one exists separately and is more authoritative.
+    """
+    return JurisdictionConfig(
+        name=full_name,
+        state="MD",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=_MD_STATEWIDE,
+        where_clause=f"JURSCODE='{jurscode}'",
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
+# ── Pennsylvania counties outside Philadelphia (Phase 3) ──────────────────
+# PA has no statewide composite — each county hosts its own assessor service.
+# Montgomery County PA's Parcels FeatureServer/10 publishes only TAXPIN +
+# CALCACREAGE; address/owner/zoning/value are not on any public REST endpoint
+# (the assessor exposes them only through propertyrecords.montcopa.org).
+_PA_MONTGOMERY_PARCELS = (
+    "https://gis.montcopa.org/arcgis/rest/services/Parcels"
+    "/Montgomery_County_Parcels/FeatureServer/10"
+)
+
+
+def _pa_county(
+    county_name: str,
+    full_name: str,
+    parcel_endpoint: str,
+    zoning_endpoint: str | None = None,
+    where_clause: str | None = None,
+) -> JurisdictionConfig:
+    """Build a PA county-backed JurisdictionConfig (single-county FeatureServer).
+
+    Distinct from the Philadelphia OPA / Allentown City_Landuse city services
+    since these are county-wide assessor layers covering many municipalities.
+    """
+    return JurisdictionConfig(
+        name=full_name,
+        state="PA",
+        county=county_name,
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=parcel_endpoint,
+        where_clause=where_clause,
+        zoning_polygon_endpoint=zoning_endpoint,
+    )
+
+
 def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     """Build all NJ county entries (avoids repeating the same config dict twice).
 
@@ -712,6 +836,23 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "fairfax county, va":  _va("Fairfax", "Fairfax County, VA", _VA_FAIRFAX_PARCELS, _VA_FAIRFAX_ZONING),
     "loudoun county":      _va("Loudoun", "Loudoun County, VA", _VA_LOUDOUN_PARCELS, _VA_LOUDOUN_ZONING),
     "loudoun county, va":  _va("Loudoun", "Loudoun County, VA", _VA_LOUDOUN_PARCELS, _VA_LOUDOUN_ZONING),
+
+    # ── Maryland (Phase 3) ────────────────────────────────────────────────────
+    # MD iMAP MD_ParcelBoundaries — single MapServer layer, JURSCODE-filtered.
+    # Zoning is inline (ZONING field) so no separate zoning_polygon_endpoint
+    # is needed for parcel-level ingestion. NFMIMPVL provides improvement
+    # value; ACRES is the assessor-published lot acreage.
+    # Owner name is redacted statewide (MDProperty View public-feed policy);
+    # OWNADD1/OWNCITY/OWNSTATE remain as mailing address.
+    "montgomery county, md": _md("Montgomery", "Montgomery County, MD", "MONT"),
+    "howard county":         _md("Howard",     "Howard County, MD",     "HOWA"),
+    "howard county, md":     _md("Howard",     "Howard County, MD",     "HOWA"),
+
+    # ── Pennsylvania (Phase 3) ────────────────────────────────────────────────
+    # Montgomery County PA — county-hosted Parcels FeatureServer/10. Note
+    # there is *no* PA statewide composite; PASDA only mirrors per-county
+    # uploads. Owner/address/zoning/value are not on this REST endpoint.
+    "montgomery county, pa": _pa_county("Montgomery", "Montgomery County, PA", _PA_MONTGOMERY_PARCELS),
 }
 
 
