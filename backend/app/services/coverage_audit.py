@@ -83,6 +83,15 @@ async def refresh_all_snapshots(
     else:
         jurisdiction_name = None
 
+    # The audit SQL has multiple JOINs over parcels (millions of rows).
+    # Default asyncpg/pgbouncer statement_timeout (~30s) is too short for
+    # big counties (Mont MD 281k, Mont PA 301k, Middlesex MA 423k all
+    # observed timing out). Disable the timeout for this audit query only.
+    try:
+        await conn.execute(text("SET LOCAL statement_timeout = 0"))
+    except Exception as exc:
+        logger.warning("could not disable statement_timeout for audit (%s); proceeding with default", exc)
+
     # The audit SQL is heavy + jurisdiction-specific data shapes can break it
     # (observed: Mont MD and Mont PA hit 500s post-Phase-3 ingest, NYC 500'd
     # on muni breakdown before the try/except in line 100 was added).
