@@ -36,6 +36,31 @@ class _BulkReviewBody(BaseModel):
     action: Literal["verify", "reject", "needs_review"]
     source_ids: list[uuid.UUID] = Field(..., max_length=50)
     rejected_reason: str | None = None
+
+
+class _RescoreStaleSourcesBody(BaseModel):
+    """Body for POST /_rescore-stale-sources.
+
+    Defaults are intentionally safe: dry_run=true, only pending rows, and
+    stale_only=true (skip rows whose stored breakdown already has a
+    bbox_overlap_* component — they were scored post-fix and don't need
+    re-evaluation).
+    """
+    dry_run: bool = True
+    source_ids: list[uuid.UUID] | None = None
+    max_rows: int = Field(default=200, ge=1, le=1000)
+    only_status: list[Literal["pending", "needs_review", "verified", "rejected"]] | None = (
+        ["pending"]
+    )
+    stale_only: bool = True
+    concurrency: int = Field(default=8, ge=1, le=32)
+
+
+class _RescoreRollbackBody(BaseModel):
+    """Body for POST /_rescore-rollback — restore prior (score, label,
+    breakdown, reasons) for a batch of zoning_sources rows from a
+    snapshot returned by a prior rescore call."""
+    snapshots: list[dict] = Field(..., min_length=1, max_length=1000)
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -873,6 +898,123 @@ async def spatial_check_source(
             src.zoning_endpoint, juris.bbox if juris else None,
         )),
     }
+
+
+@router.get("/jurisdictions/{jurisdiction_id}/_spatial-audit")
+async def spatial_audit(
+    jurisdiction_id: uuid.UUID,
+    include_district_stats: bool = Query(default=True),
+    concurrency: int = Query(default=8, ge=1, le=32),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Bulk spatial-correctness audit across every zoning_source for this
+    jurisdiction. Read-only — no DB mutations.
+
+    Returns four operationally useful lenses:
+      - `by_status_x_verdict`: 2D bucket — verified/pending/rejected ×
+        good/partial/tiny/disjoint/unknown. Shows queue contamination.
+      - `stale_breakdown_*`: rows whose persisted confidence_breakdown
+        predates the pyproj + bbox-overlap scoring fixes.
+      - `blocking_verified`: rows the operator marked verified but the
+        current spatial pre-flight gate would refuse.
+      - `crs_failures`: layer publishes an extent but reprojection
+        returned None (corrupt extent, unsupported SRID, or missing SR
+        metadata).
+
+    When `include_district_stats=true` (default) also returns
+    ZoningDistrict counts + ST_IsValid breakdown + parcel-overlap ratio.
+    """
+    from app.services.spatial_audit import audit_jurisdiction as _audit
+    return await _audit(
+        jurisdiction_id,
+        db,
+        concurrency=concurrency,
+        include_district_stats=include_district_stats,
+    )
+
+
+@router.get("/jurisdictions/{jurisdiction_id}/_municipalities-health")
+async def municipalities_health(
+    jurisdiction_id: uuid.UUID,
+    municipality: str | None = Query(
+        default=None,
+        description="When set, return just this municipality's row (drill-down).",
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Per-municipality operational-trustworthiness report.
+
+    For NJ-style counties (Bergen) returns one row per `parcels.city`
+    value. For city-jurisdictions (Draper UT) returns a single rollup
+    row where `municipality = null`.
+
+    Each row carries parcel + district counts and ratios, parcel /
+    district envelope overlap, overlap-sample count, orphan zone-code
+    count, a `trustworthiness` band (operational | partial | degraded |
+    broken | empty), and a `gaps` list explaining the band.
+
+    Read-only. One indexed scan per muni; no upstream HTTP.
+    """
+    from app.services.municipality_health import jurisdiction_municipalities_health
+    return await jurisdiction_municipalities_health(
+        jurisdiction_id, db, municipality=municipality,
+    )
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_rescore-stale-sources")
+async def rescore_stale_sources(
+    jurisdiction_id: uuid.UUID,
+    body: _RescoreStaleSourcesBody,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Recompute confidence_score + breakdown for stale zoning_sources rows.
+
+    'Stale' = persisted confidence_breakdown lacks any bbox_overlap_*
+    component, i.e. the row was scored before the 2026-05-12 pyproj +
+    bbox-overlap fixes. Re-runs scoring v2 against the row's stored
+    static fields plus a fresh live probe of the layer's extent.
+
+    Safety:
+      - dry_run defaults to true. Live mode requires explicit
+        dry_run=false in the body.
+      - Only rows whose validation_status is in `only_status`
+        (default `["pending"]`) are candidates. Verified + rejected rows
+        are NEVER mutated regardless of inclusion in the scan.
+      - max_rows caps the batch at 1000.
+      - Response includes the complete `before` snapshot for every
+        changed row. Save it for rollback via `_rescore-rollback`.
+    """
+    from app.services.stale_score_remediation import (
+        RescoreOptions, rescore_stale_sources as _rescore,
+    )
+    opts = RescoreOptions(
+        dry_run=body.dry_run,
+        source_ids=body.source_ids,
+        max_rows=body.max_rows,
+        only_status=tuple(body.only_status) if body.only_status else None,
+        stale_only=body.stale_only,
+        concurrency=body.concurrency,
+    )
+    return await _rescore(jurisdiction_id, db, opts)
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_rescore-rollback")
+async def rescore_rollback(
+    jurisdiction_id: uuid.UUID,
+    body: _RescoreRollbackBody,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Restore (confidence_score, confidence_label, confidence_breakdown,
+    reasons) for a batch of rows from a snapshot returned by a prior
+    `_rescore-stale-sources` call.
+
+    Each snapshot dict carries `source_id` plus the four fields to
+    restore. Rows whose current status is `verified` or `rejected` are
+    skipped — they were re-reviewed since the rescore and shouldn't be
+    quietly reverted to a stale state.
+    """
+    from app.services.stale_score_remediation import rollback_rescores
+    return await rollback_rescores(jurisdiction_id, db, body.snapshots)
 
 
 @router.post("/jurisdictions/{jurisdiction_id}/_sources/_bulk-review")

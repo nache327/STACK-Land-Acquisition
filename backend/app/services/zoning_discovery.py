@@ -46,6 +46,24 @@ logger = logging.getLogger(__name__)
 
 _HUB_DATASETS_URL = "https://hub.arcgis.com/api/v3/datasets"
 
+# Scoring schema version — bump when `_score_candidate` adds or reshapes
+# components. Rows persisted under an older version are candidates for
+# rescore. The eligibility check in `stale_score_remediation` reads this;
+# the operator-facing audit endpoint reports it.
+#
+# History:
+#   v1 — initial scoring v2 (title/geometry/feature/field components).
+#   v2 — added Component F (bbox_overlap_*) on 2026-05-12.
+SCORING_VERSION = 2
+
+# Per-version: the set of breakdown-component names that, when present
+# in a stored confidence_breakdown, prove the row was scored under at
+# least this version. Stale detection uses these markers to infer the
+# version of a row without a per-row column.
+SCORING_VERSION_MARKERS: dict[int, frozenset[str]] = {
+    2: frozenset({"bbox_overlap_strong", "bbox_overlap_tiny", "bbox_overlap_disjoint"}),
+}
+
 # Title keywords that score positively (zoning intent).
 _ZONING_KEYWORDS_POSITIVE = [
     "zoning", "zone district", "zoning district", "zone base", "zoning base",
