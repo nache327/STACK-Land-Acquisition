@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "version": 1,
+    "description": "Vendor-tenant catalog for ArcGIS Online hosts that publish municipal zoning. Auto-grown by jurisdictions._review on verify; seeded by operators or by tenant-directory discovery sweeps. Format documented in backend/app/services/tenant_catalog.py.",
+    "last_updated": "2026-05-15",
+    "source_audits": ["BERGEN_OP1_RESULTS.md", "BERGEN_POST_V2_AUDIT.md"]
+  },
+  "tenants": {
+    "services6.arcgis.com/UcuMPLF9IlsigGHI": {
+      "vendor": "Unknown NJ municipal engineering consultant",
+      "discovered_via": "verified_source",
+      "verified_munis": [
+        {"muni": "Paramus", "state": "NJ", "service_name": "Paramus_Zoning"}
+      ],
+      "candidate_munis": [
+        {"muni": "Paramus", "state": "NJ", "service_name": "Paramus_Zoning_Rev2020"},
+        {"muni": "Paramus", "state": "NJ", "service_name": "Paramus_Zoning_Rev2023"},
+        {"muni": "Westwood", "state": "NJ", "service_name": "Westwood_Zoning_2019"}
+      ],
+      "non_zoning_munis": ["Closter", "Emerson", "Oakland", "Franklin Lakes", "Ho-Ho-Kus", "Hawthorne", "East Hanover", "East Orange"],
+      "notes": "Tenant directory probed 2026-05-15 — 65 total services across NJ municipalities for assets/MS4/FEMA work; 4 zoning-named services. Vendor name TBD.",
+      "last_enumerated_at": "2026-05-15"
+    },
+    "services1.arcgis.com/ze0XBzU1FXj94DJq": {
+      "vendor": "NJ statewide data aggregator (TBD — possibly NJ Future, Fair Share Housing Center, or NJ DCA)",
+      "discovered_via": "hub_search_per_town",
+      "verified_munis": [],
+      "candidate_munis": [
+        {"muni": "Teaneck", "state": "NJ", "service_name": "12636272cd45455bb8da8df6f1081832_public_view_16050319", "notes": "Hub title 'Teaneck Zoning Public View' — URL is a hosted feature view; resolve via Hub item lookup, not direct service path."}
+      ],
+      "statewide_layers": [
+        {"name": "Municipal_Zoning", "url": "https://services1.arcgis.com/ze0XBzU1FXj94DJq/arcgis/rest/services/Municipal_Zoning/FeatureServer/0", "rows": 564, "purpose": "NJ-wide muni-boundary polygons enriched with (Map URL, Ordinance URL, Website URL) per town. All 70 Bergen towns present.", "extracted_to": "backend/data/bergen_zoning_directory.json"},
+        {"name": "20200609_Zoning", "url": "https://services1.arcgis.com/ze0XBzU1FXj94DJq/arcgis/rest/services/20200609_Zoning/FeatureServer/0", "rows": 283, "purpose": "NJSEA (NJ Sports & Exposition Authority) zoning for Meadowlands District — 163 polygons covering 10 Bergen Meadowlands towns (Carlstadt, East Rutherford, Little Ferry, Lyndhurst, Moonachie, North Arlington, Ridgefield, Rutherford, South Hackensack, Teterboro)"},
+        {"name": "NJLANDUSE", "url": "https://services1.arcgis.com/ze0XBzU1FXj94DJq/arcgis/rest/services/NJLANDUSE/FeatureServer/0", "rows": 590537, "purpose": "NJDEP statewide LULC polygons (land use, NOT regulatory zoning). Use only as parcel_use_category fallback per NJ_STATEWIDE_SOURCES.md."}
+      ],
+      "notes": "MAJOR FIND — 3,167 total services on this tenant. Statewide-aggregator-style content. Probed 2026-05-15.",
+      "last_enumerated_at": "2026-05-15"
+    }
+  },
+  "denylist": {
+    "_doc": "Tenants confirmed by operator as generic-FP publishers (cross-jurisdiction over-surfacing). Scoring penalizes any URL matching these prefixes.",
+    "prefixes": [
+      "services3.arcgis.com/m3XdyJh55Jrxxk0l",
+      "services6.arcgis.com/8xmMYBLanDLIUCUt",
+      "services1.arcgis.com/BrJrVYDObuVeZdbH",
+      "services1.arcgis.com/rC2NOGn7lIsp3hfc",
+      "services2.arcgis.com/3xVssd0FD416APnB",
+      "services1.arcgis.com/jwbgoAzqzCbiJmg4",
+      "services5.arcgis.com/bmiwyveTUuaT56jB",
+      "services8.arcgis.com/NbNnneJPmhZCPS8U",
+      "services9.arcgis.com/ivAMP6vRMPA12GAA",
+      "services1.arcgis.com/wmY050uFnMPcgSCc",
+      "services1.arcgis.com/TBWWZRJoZeMDaqgb",
+      "services7.arcgis.com/z04laB9joMn9C8en",
+      "services6.arcgis.com/0mAkOvkJY1dHWy28",
+      "services8.arcgis.com/6hOf02oJVANYf9op",
+      "services2.arcgis.com/G6TP4SnXQoFs2r0T"
+    ]
+  }
+}
