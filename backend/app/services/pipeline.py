@@ -1405,6 +1405,26 @@ async def _run(db: AsyncSession, job: Job) -> None:
         await db.commit()
     _stage_completed(job, "zone_matrix_bootstrap", matrix_started, rows_seeded=seeded_matrix)
 
+    # `bulk_ingest_zoning_for_jurisdiction` (cached path above) and
+    # `bootstrap_zone_use_matrix` both run raw asyncpg work that can keep
+    # this AsyncSession's underlying TCP connection idle for minutes on
+    # large county jurisdictions (Monmouth 251k parcels, Bergen 281k, etc.).
+    # Supabase pgbouncer drops idle sockets silently; the next SQLAlchemy
+    # op (refresh_jurisdiction_coverage_level's SELECT 4 COUNT(*)) then
+    # raises MissingGreenlet / ConnectionDoesNotExistError. Same pattern
+    # as c7a687c (post-download); apply at this boundary too.
+    try:
+        async with asyncio.timeout(5):
+            await db.close()
+    except Exception as exc:
+        logger.warning("pre-coverage-refresh session.close() failed (non-fatal): %r", exc)
+    try:
+        async with asyncio.timeout(10):
+            job = await db.merge(job)
+            jurisdiction = await db.merge(jurisdiction)
+    except Exception as exc:
+        logger.warning("pre-coverage-refresh merge failed (will best-effort continue): %r", exc)
+
     coverage_started = _stage_started(job, "coverage_refresh", jurisdiction_id=str(jurisdiction.id))
     async with asyncio.timeout(30):
         await refresh_jurisdiction_coverage_level(jurisdiction, db)
