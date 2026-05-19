@@ -57,14 +57,38 @@ async def refresh_all_snapshots(
     Inserts are batched into a single transaction via the SQLAlchemy
     session for atomicity with the rest of the app.
 
+    Uses the long_running_session_maker (command_timeout=600) for the
+    audit reads — the SQL legitimately takes minutes on big counties.
+    The injected `db` (from the request) is used only for the snapshot
+    INSERTs at the end.
+
     Returns: {"snapshots_written": N, "summary": <audit summary>}.
     """
+    from app.db import long_running_session_maker
     az = _import_audit_module()
 
-    # Resolve the underlying AsyncConnection once — `db.connection()` is async
-    # and returns the SQLAlchemy AsyncConnection (which is what the audit
-    # script's _load_schema_profile / _build_audit_sql call .execute() on).
-    conn = await db.connection()
+    # Open a long-running session for the audit query (which can take 1-3
+    # minutes on Middlesex MA / Mont MD / Mont PA). The injected `db`
+    # has command_timeout=90 which is too short for big counties.
+    async with long_running_session_maker() as long_running_db:
+        return await _refresh_all_snapshots_inner(
+            db=db,
+            long_running_db=long_running_db,
+            az=az,
+            jurisdiction_id=jurisdiction_id,
+            source=source,
+        )
+
+
+async def _refresh_all_snapshots_inner(
+    *,
+    db: AsyncSession,
+    long_running_db: AsyncSession,
+    az,
+    jurisdiction_id: uuid.UUID | None,
+    source: str,
+) -> dict:
+    conn = await long_running_db.connection()
 
     schema = await az._load_schema_profile(conn)
     if not schema.has_parcels_table or not schema.has_zone_use_matrix_table:
