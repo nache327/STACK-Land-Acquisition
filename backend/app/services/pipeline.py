@@ -1394,7 +1394,23 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await db.commit()
     await check_cancelled(db, job)
 
-    # Update last_indexed_at + compute bbox from ingested parcels
+    # Update last_indexed_at + compute bbox from ingested parcels.
+    # Same close+merge as the Marlboro fix at refresh_jurisdiction_coverage_level —
+    # raw asyncpg work in download_parcels / bulk_ingest can leave the
+    # SQLAlchemy AsyncSession's TCP socket idle past pgbouncer's drop window.
+    # Wake County NC (435k parcels) failed here in production 2026-05-19.
+    try:
+        async with asyncio.timeout(5):
+            await db.close()
+    except Exception as exc:
+        logger.warning("pre-bbox-refresh session.close() failed (non-fatal): %r", exc)
+    try:
+        async with asyncio.timeout(10):
+            job = await db.merge(job)
+            jurisdiction = await db.merge(jurisdiction)
+    except Exception as exc:
+        logger.warning("pre-bbox-refresh merge failed (will best-effort continue): %r", exc)
+
     bbox_started = _stage_started(job, "parcel_bbox_refresh", jurisdiction_id=str(jurisdiction.id))
     jurisdiction.last_indexed_at = datetime.now(timezone.utc)
     async with asyncio.timeout(30):
