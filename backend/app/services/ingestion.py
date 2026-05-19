@@ -32,6 +32,12 @@ logger = logging.getLogger(__name__)
 # ─── Candidate field-name lists (first match wins) ─────────────────────────
 
 _APN_FIELDS = [
+    # MD MDProperty View ACCTID is a county-prefixed SDAT account number that
+    # is unique statewide. The MD parcel layer ALSO publishes a `PARCEL` field
+    # carrying a 4-digit subdivision-lot label (sparse, ~1.2% distinct), which
+    # the generic `PARCEL` candidate below would otherwise win. Keep ACCTID
+    # first so MD layers map every row to its true unique key.
+    "ACCTID",
     "PARCEL", "APN", "PARCELNO", "PARCEL_NO",
     # PIN before PARCEL_ID: Philadelphia PWD_PARCELS uses `pin` as the OPA account number
     # while `parcel_id` on that service is just a row-ID (1, 2, 3…).
@@ -60,6 +66,11 @@ _APN_FIELDS = [
     "parcel_number", "PARCEL_NUMBER", "opa_account_num", "PARCELID", "brt_id", "BRT_ID",
     # Allentown PA City_Landuse service
     "WARDACCTNO",
+    # Loudoun County, VA — LandRecords MapServer/5 publishes the master
+    # cadastral PIN as PA_MCPI (12-char numeric). No other unique key on layer.
+    "PA_MCPI",
+    # Montgomery County, PA — TAXPIN is the 12-digit county-unique tax PIN.
+    "TAXPIN",
 ]
 _ADDRESS_FIELDS = [
     "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS",
@@ -68,6 +79,8 @@ _ADDRESS_FIELDS = [
     "PROPERTY_ADDRESS_1", "property_address_1",
     # NYC MapPLUTO
     "Address", "ADDRESS1",
+    # Fairfax County, VA — Parcels_with_Address_points uses ADDRESS_1
+    "ADDRESS_1",
     # Philadelphia OPA / NJ Passaic county / CT 2024 CAMA (Location_1)
     "location", "LOCATION", "Location_1", "street_address",
     # Allentown PA City_Landuse service
@@ -81,6 +94,10 @@ _ZONE_FIELDS = [
     "zoning",
     # Allentown PA CityZoning service
     "ZONINGCODE",
+    # Fairfax County, VA Zoning service (FeatureServer/0)
+    "ZONECODE",
+    # Loudoun County, VA Zoning service (MapServer/3)
+    "ZO_ZONE",
 ]
 _LANDUSE_FIELDS = [
     "LANDUSE", "LAND_USE", "LAND_USE_CODE", "USE_CODE", "CLASS",
@@ -97,6 +114,9 @@ _LANDUSE_FIELDS = [
     # CT 2024 CAMA: State_Use carries the 3-letter code (e.g. RA3, COM, IND);
     # State_Use_Description has the human label.
     "State_Use", "State_Use_Description",
+    # Maryland MDProperty View — LU is single-letter code (R/C/I/A/E/F),
+    # DESCLU is human label ("Residential", "Commercial Office", …).
+    "LU", "DESCLU",
 ]
 _PROPTYPE_FIELDS = ["PROP_TYPE", "PROPERTY_TYPE", "PROPTYPE"]
 _ACRES_FIELDS = [
@@ -107,6 +127,10 @@ _ACRES_FIELDS = [
     "Land_Acres",
     # NJ Passaic county service uses lot_size
     "lot_size",
+    # Loudoun County, VA — PA_LEGAL_ACRE is the assessor-published lot acreage.
+    "PA_LEGAL_ACRE",
+    # Montgomery County, PA — both fields published; CALCACREAGE is canonical.
+    "CALCACREAGE", "TrueCalculatedAcres",
     # NYC/Philly don't publish acres directly — see _AREA_SQM_FIELDS fallback.
 ]
 _IMPROVEMENT_FIELDS = [
@@ -116,6 +140,9 @@ _IMPROVEMENT_FIELDS = [
     "impr_value",
     # CT 2024 CAMA — appraised building value (separate from land + outbuilding)
     "Appraised_Building", "Assessed_Building",
+    # Maryland MDProperty View — NFMIMPVL is the structure portion of the
+    # Next Full Market Value assessment (separate from NFMLNDVL land value).
+    "NFMIMPVL",
     # Generic fallbacks
     "IMPRVT_VALUE", "IMP_VALUE", "IMPRV_VALUE", "FMV_IMPRV",
 ]
@@ -228,21 +255,50 @@ def _resolve_acres(row: Any, geom: Any) -> float | None:
       3. Geodetic area from the WGS84 geometry — always correct regardless of
          source CRS, replacing the old Shape__Area fallback whose units were
          ambiguous (sq ft vs sq m depending on the native layer CRS).
+
+    Output is clamped to the parcels.acres column's numeric(10,3) capacity
+    (~9,999,999.999). Source data occasionally has bad rows — Mont PA's
+    Parcels FeatureServer/10 includes one or two CALCACREAGE values past 10^7
+    (acreage rolled over from a prior schema), which would otherwise overflow
+    the merge with `numeric field overflow … precision 10, scale 3`.
     """
     v = _safe_float(_first(row, _ACRES_FIELDS))
     if v is not None and v > 0:
-        return round(v, 4)
+        return _clamp_acres(round(v, 4))
     sqft = _safe_float(_first(row, _AREA_SQFT_FIELDS))
     if sqft is not None and sqft > 0:
-        return round(sqft / _SQFT_PER_ACRE, 4)
+        return _clamp_acres(round(sqft / _SQFT_PER_ACRE, 4))
     if geom is not None:
-        return _geom_acres(geom)
+        v = _geom_acres(geom)
+        return _clamp_acres(v) if v is not None else None
     return None
 
 
-def _is_in_flood_zone(raw_value: Any) -> bool:
+# parcels.acres is numeric(10,3); max safe magnitude is just under 10^7. The
+# largest real US parcel (King Ranch, TX) is ~825K acres, so clamping at this
+# level only ever bites bad source rows.
+_ACRES_MAX = 9_999_999.0
+
+
+def _clamp_acres(v: float) -> float:
+    if v is None:
+        return v
+    if v > _ACRES_MAX:
+        return _ACRES_MAX
+    if v < 0:
+        return 0.0
+    return v
+
+
+def _is_in_flood_zone(raw_value: Any) -> bool | None:
+    """Return True if the source row carries an SFHA flood code, False if it
+    carries a non-SFHA code, or **None** if the source publishes no flood field
+    at all. The None case is what gates apply_flood_overlay (its WHERE clause
+    is `in_flood_zone IS NULL`); writing False unconditionally here was the
+    Phase 1/2 bug that suppressed the FEMA NFHL spatial overlay for every
+    NJ/NY/CT/VA/MD/PA jurisdiction whose source omits flood data."""
     if raw_value is None:
-        return False
+        return None
     code = str(raw_value).strip().upper()
     base = code.split("-")[0].split(" ")[0]
     return base in SFHA_ZONES
@@ -514,7 +570,9 @@ def _row_to_record(r: dict) -> tuple:
         r.get("land_use_code"),
         r.get("acres"),
         r.get("county_link"),
-        bool(r.get("in_flood_zone")),
+        # Preserve tri-state: True / False / None. None means the source has no
+        # flood field, signalling apply_flood_overlay to compute it spatially.
+        r.get("in_flood_zone"),
         bool(r.get("in_wetland")),
         r.get("avg_slope_pct"),
         r.get("has_structure"),
@@ -528,7 +586,19 @@ def _row_to_record(r: dict) -> tuple:
 
 
 def _raw_dsn() -> str:
-    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    """Return a plain asyncpg DSN.
+
+    For long-lived ingest connections (COPY + MERGE wrapped in a single
+    transaction), route to Supabase's *session*-pool port (5432) instead of
+    the default *transaction*-pool port (6543). pgbouncer's transaction-mode
+    pool releases the underlying server backend at every statement boundary,
+    which both kills session-local TEMP tables across implicit-tx boundaries
+    and silently drops the underlying conn during the multi-minute COPY +
+    MERGE phase for 290K-row Mont MD / 310K-row Mont PA. Session-mode pins
+    one server backend to one client connection for its full lifetime.
+    """
+    dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    return dsn.replace(":6543/", ":5432/")
 
 
 async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any) -> int:
