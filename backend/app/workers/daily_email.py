@@ -52,6 +52,9 @@ class DigestParcel:
     factors: list[dict]
     jurisdiction_id: str
     jurisdiction_name: str
+    # Acres surfaced in the email header so the operator can size-check
+    # without opening the dashboard. None when not ingested.
+    acres: float | None = None
     # Listing info — populated when the parcel has a current matched
     # listing (any source, confidence >= 0.85). When present, the
     # renderer prints a 🏷️ banner block above the score with broker
@@ -71,6 +74,16 @@ class DigestParcel:
     # None when no ready job exists yet (rare; fallback link uses
     # jurisdiction_id and the UX is the same broken state as before).
     dashboard_job_id: str | None = None
+    # Hot Deals v2 soft flags — surfaced in the email as warnings, not
+    # selection filters. Each is a (emoji, short_label) pair so the
+    # renderer can iterate without re-mapping. Empty list means the
+    # deal is fully Actionable (Tier 1). Any non-empty list demotes
+    # the deal to "Worth a Look" (Tier 2). See `_soft_flags_for`.
+    soft_flags: list[tuple[str, str]] = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.soft_flags is None:
+            self.soft_flags = []
 
 
 # ─── Selection ────────────────────────────────────────────────────────────
@@ -114,11 +127,21 @@ async def _top_parcels_for_filter(
 ) -> list[DigestParcel]:
     filter_json = f.filter_json or {}
     require_listed = bool(filter_json.get("requireListed"))
+    # Hot Deals v2: optional hard filters. NULL = no filter, pass through.
+    min_acres = filter_json.get("minAcres")
+    max_acres = filter_json.get("maxAcres")
+    max_price_per_acre = filter_json.get("maxPricePerAcre")
 
     # ``require_listed`` is a hard filter: drop parcels with no current
     # matched listing (confidence >= 0.85). The LATERAL join below
     # picks the most-recently-seen listing per parcel; the WHERE branch
     # turns the requirement on/off without two SQL paths.
+    #
+    # The `zum` LATERAL is new — used for the conditional-zoning and
+    # low-confidence soft flags. It picks the most-specific matrix row
+    # (municipality-scoped wins over NULL-default) mirroring
+    # `buybox_scoring.py`'s lateral pattern so the flags reflect the
+    # same row the scorer used.
     sql = text(
         """
         SELECT
@@ -126,6 +149,7 @@ async def _top_parcels_for_filter(
             p.apn           AS apn,
             p.address       AS address,
             p.owner_name    AS owner_name,
+            p.acres         AS acres,
             pbs.score       AS score,
             pbs.tier        AS tier,
             pbs.factors     AS factors,
@@ -138,7 +162,17 @@ async def _top_parcels_for_filter(
             lst.listing_broker_contact  AS listing_broker_contact,
             lst.listing_broker_phone    AS listing_broker_phone,
             lst.listing_broker_email    AS listing_broker_email,
-            latest_job.id               AS dashboard_job_id
+            latest_job.id               AS dashboard_job_id,
+            -- Soft flags (computed in SQL so the WHERE-level filter and
+            -- the email render see the same booleans).
+            (p.has_structure = TRUE OR COALESCE(p.improvement_value, 0) > 50000)
+                AS soft_has_building,
+            (lst.sale_price IS NULL)                       AS soft_no_price,
+            (zum.self_storage::text = 'conditional')       AS soft_conditional,
+            (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
+                AS soft_low_confidence,
+            (p.in_flood_zone = TRUE)                       AS soft_flood,
+            (p.in_wetland    = TRUE)                       AS soft_wetland
         FROM parcel_buybox_scores pbs
         JOIN parcels p       ON p.id = pbs.parcel_id
         JOIN jurisdictions j ON j.id = p.jurisdiction_id
@@ -153,6 +187,16 @@ async def _top_parcels_for_filter(
              ORDER BY last_seen_at DESC
              LIMIT 1
         ) lst ON true
+        LEFT JOIN LATERAL (
+            SELECT self_storage, confidence
+              FROM zone_use_matrix
+             WHERE jurisdiction_id = p.jurisdiction_id
+               AND zone_code      = p.zoning_code
+               AND (municipality IS NULL OR municipality = p.city)
+               AND deleted_at IS NULL
+             ORDER BY (municipality IS NULL) ASC
+             LIMIT 1
+        ) zum ON true
         LEFT JOIN LATERAL (
             -- The dashboard route is /dashboard/[jobId]; the URL
             -- segment is the jobs.id, not the jurisdiction_id. Resolve
@@ -170,6 +214,23 @@ async def _top_parcels_for_filter(
           AND pbs.notified_at IS NULL
           AND pbs.score >= :min_score
           AND (NOT :require_listed OR lst.source IS NOT NULL)
+          -- Hot Deals v2: hard-filter knobs. NULL bindings pass through
+          -- so non-Hot-Deals filters (e.g. Default Box) are unaffected.
+          AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL
+               OR p.acres IS NULL
+               OR p.acres >= CAST(:min_acres AS DOUBLE PRECISION))
+          AND (CAST(:max_acres AS DOUBLE PRECISION) IS NULL
+               OR p.acres IS NULL
+               OR p.acres <= CAST(:max_acres AS DOUBLE PRECISION))
+          -- Price-per-acre cap fires only when both price and acres
+          -- are populated. Unpriced listings pass through and surface
+          -- as the "no asking price" soft flag instead.
+          AND (CAST(:max_price_per_acre AS DOUBLE PRECISION) IS NULL
+               OR lst.sale_price IS NULL
+               OR p.acres IS NULL
+               OR p.acres = 0
+               OR (lst.sale_price / p.acres)
+                   <= CAST(:max_price_per_acre AS DOUBLE PRECISION))
         ORDER BY pbs.score DESC, pbs.parcel_id
         LIMIT :lim
         """
@@ -181,18 +242,23 @@ async def _top_parcels_for_filter(
             "min_score": _MIN_SCORE_LISTED if require_listed else _MIN_SCORE,
             "lim": f.daily_email_top_n,
             "require_listed": require_listed,
+            "min_acres": min_acres,
+            "max_acres": max_acres,
+            "max_price_per_acre": max_price_per_acre,
         },
     )
     out: list[DigestParcel] = []
     for r in rows:
         m = r._mapping
         sp = m["listing_sale_price"]
+        acres = m["acres"]
         out.append(
             DigestParcel(
                 parcel_id=m["parcel_id"],
                 apn=m["apn"],
                 address=m["address"],
                 owner_name=m["owner_name"],
+                acres=float(acres) if acres is not None else None,
                 score=m["score"],
                 tier=m["tier"],
                 factors=list(m["factors"] or []),
@@ -208,9 +274,36 @@ async def _top_parcels_for_filter(
                 dashboard_job_id=(
                     str(m["dashboard_job_id"]) if m["dashboard_job_id"] else None
                 ),
+                soft_flags=_soft_flags_from_row(m),
             )
         )
     return out
+
+
+# ─── Soft-flag derivation ────────────────────────────────────────────────
+
+# Each entry: (sql_column_name, emoji, short_label_for_email).
+# Order here drives display order in the email body.
+_SOFT_FLAG_RULES: list[tuple[str, str, str]] = [
+    ("soft_has_building",   "🏢",  "likely has existing building"),
+    ("soft_no_price",       "💸",  "no asking price listed"),
+    ("soft_conditional",    "⚖️",   "conditional zoning (entitlement risk)"),
+    ("soft_low_confidence", "❓",  "low-confidence zoning verdict (<0.70)"),
+    ("soft_flood",          "🌊",  "in flood zone"),
+    ("soft_wetland",        "🐸",  "in wetland"),
+]
+
+
+def _soft_flags_from_row(m) -> list[tuple[str, str]]:
+    """Pull the boolean soft-flag columns from a row mapping into the
+    (emoji, label) pairs the email renderer iterates over.
+    Skips flags whose column evaluated to False (or NULL — treated as
+    'unknown, do not flag') so the email only surfaces real warnings."""
+    return [
+        (emoji, label)
+        for col, emoji, label in _SOFT_FLAG_RULES
+        if bool(m.get(col))
+    ]
 
 
 # ─── Rendering ────────────────────────────────────────────────────────────
@@ -316,72 +409,158 @@ def _listing_banner_text(p: DigestParcel) -> list[str]:
     return lines
 
 
+def _split_by_tier(
+    parcels: list[DigestParcel],
+) -> tuple[list[DigestParcel], list[DigestParcel]]:
+    """Tier 1 = Actionable (no soft flags). Tier 2 = Worth a Look (any soft flag).
+
+    Order within each tier preserves the input order (which the SQL
+    already sorted by score DESC). No re-sorting here — that would
+    surprise an operator who expects highest-score-first.
+    """
+    actionable = [p for p in parcels if not p.soft_flags]
+    worth_a_look = [p for p in parcels if p.soft_flags]
+    return actionable, worth_a_look
+
+
+def _acres_blurb(p: DigestParcel) -> str:
+    if p.acres is None:
+        return ""
+    return f" · {p.acres:.2f}ac"
+
+
+def _render_parcel_text(p: DigestParcel) -> list[str]:
+    lines: list[str] = []
+    lines.append(f"• {p.address or p.apn}{_acres_blurb(p)} ({p.jurisdiction_name})")
+    lines.extend(_listing_banner_text(p))
+    if p.soft_flags:
+        flag_str = ", ".join(f"{emoji} {label}" for emoji, label in p.soft_flags)
+        lines.append(f"  ⚠️ Soft flags: {flag_str}")
+    if p.owner_name:
+        lines.append(f"  Owner: {p.owner_name}")
+    lines.append(f"  Score: {p.score} ({p.tier})")
+    for f in _top_factors(p):
+        sign = "+" if float(f.get("delta", 0)) >= 0 else ""
+        lines.append(
+            f"    {f.get('label', '?')}: {sign}{f.get('delta')} — {f.get('reason', '')}"
+        )
+    hidden = _hidden_factor_count(p)
+    if hidden > 0:
+        lines.append(f"    (+ {hidden} more factor{'s' if hidden != 1 else ''})")
+    lines.append(f"  {_parcel_link(p)}")
+    lines.append("")
+    return lines
+
+
 def _render_text(filter_name: str, parcels: list[DigestParcel]) -> str:
+    actionable, worth_a_look = _split_by_tier(parcels)
     lines = [f"Daily buy-box digest — {filter_name}", ""]
-    for p in parcels:
-        lines.append(f"• {p.address or p.apn} ({p.jurisdiction_name})")
-        lines.extend(_listing_banner_text(p))
-        if p.owner_name:
-            lines.append(f"  Owner: {p.owner_name}")
-        lines.append(f"  Score: {p.score} ({p.tier})")
-        for f in _top_factors(p):
-            sign = "+" if float(f.get("delta", 0)) >= 0 else ""
-            lines.append(
-                f"    {f.get('label', '?')}: {sign}{f.get('delta')} — {f.get('reason', '')}"
-            )
-        hidden = _hidden_factor_count(p)
-        if hidden > 0:
-            lines.append(f"    (+ {hidden} more factor{'s' if hidden != 1 else ''})")
-        lines.append(f"  {_parcel_link(p)}")
+
+    if actionable:
+        lines.append(f"═══ ACTIONABLE — {len(actionable)} deal{'s' if len(actionable) != 1 else ''} ═══")
         lines.append("")
+        for p in actionable:
+            lines.extend(_render_parcel_text(p))
+
+    if worth_a_look:
+        lines.append(f"═══ WORTH A LOOK — {len(worth_a_look)} deal{'s' if len(worth_a_look) != 1 else ''} (one or more soft flags) ═══")
+        lines.append("")
+        for p in worth_a_look:
+            lines.extend(_render_parcel_text(p))
+
     return "\n".join(lines).strip() + "\n"
 
 
+def _render_parcel_html(p: DigestParcel) -> str:
+    title = html_lib.escape(p.address or p.apn)
+    city = html_lib.escape(p.jurisdiction_name)
+    owner = html_lib.escape(p.owner_name or "")
+    link = html_lib.escape(_parcel_link(p))
+    acres_blurb = (
+        f"<span style='color:#475569;font-weight:500'>{p.acres:.2f}ac</span> · "
+        if p.acres is not None
+        else ""
+    )
+    soft_flags_html = ""
+    if p.soft_flags:
+        flag_chips = "".join(
+            f"<span style='display:inline-block;background:#fff7ed;border:1px solid #fed7aa;"
+            f"border-radius:4px;padding:2px 8px;margin:0 4px 4px 0;color:#9a3412;font-size:12px'>"
+            f"{emoji} {html_lib.escape(label)}</span>"
+            for emoji, label in p.soft_flags
+        )
+        soft_flags_html = (
+            f"<div style='margin-top:8px;padding:6px 8px;background:#fffbeb;"
+            f"border-left:3px solid #f59e0b;font-size:12px;color:#78350f'>"
+            f"⚠️ <strong>Soft flags:</strong><div style='margin-top:4px'>{flag_chips}</div>"
+            f"</div>"
+        )
+    factor_items = "".join(
+        f"<li><strong>{html_lib.escape(str(f.get('label', '?')))}</strong>: "
+        f"{'+' if float(f.get('delta', 0)) >= 0 else ''}{html_lib.escape(str(f.get('delta')))} "
+        f"— {html_lib.escape(str(f.get('reason', '')))}</li>"
+        for f in _top_factors(p)
+    )
+    hidden = _hidden_factor_count(p)
+    if hidden > 0:
+        factor_items += (
+            f"<li style='color:#94a3b8;list-style:none;padding-left:0'>"
+            f"+ {hidden} more factor{'s' if hidden != 1 else ''}"
+            f"</li>"
+        )
+    owner_html = f"<div style='color:#64748b;font-size:13px'>Owner: {owner}</div>" if owner else ""
+    listing_html = _listing_banner_html(p)
+    return (
+        f"<div style=\"border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin:12px 0;background:#fff\">"
+        f"  <div style=\"font-weight:600;color:#0f172a;font-size:15px\">"
+        f"    <a href=\"{link}\" style=\"color:#0f172a;text-decoration:none\">{title}</a>"
+        f"  </div>"
+        f"  <div style=\"color:#475569;font-size:13px;margin-top:2px\">{acres_blurb}{city}</div>"
+        f"  {listing_html}"
+        f"  {soft_flags_html}"
+        f"  {owner_html}"
+        f"  <div style=\"margin-top:8px;font-size:13px;color:#0f172a\">"
+        f"    Score <strong>{p.score}</strong> · {html_lib.escape(p.tier)}"
+        f"  </div>"
+        f"  <ul style=\"margin:6px 0 0 16px;padding:0;color:#334155;font-size:12px\">{factor_items}</ul>"
+        f"  <a href=\"{link}\" style=\"display:inline-block;margin-top:10px;color:#0369a1;font-size:13px\">Open in dashboard →</a>"
+        f"</div>"
+    )
+
+
+def _tier_header_html(label: str, count: int, sub: str = "") -> str:
+    """Section header rendered between tiers. Plain text + a thin
+    accent rule so the email looks the same in Gmail / Outlook /
+    Apple Mail / dark-mode readers without relying on CSS classes."""
+    sub_html = f" <span style='color:#64748b;font-weight:400;font-size:13px'>{html_lib.escape(sub)}</span>" if sub else ""
+    return (
+        f"<div style='margin:20px 0 4px;font-size:14px;font-weight:700;"
+        f"color:#0f172a;letter-spacing:0.04em;text-transform:uppercase'>"
+        f"{label} — {count} deal{'s' if count != 1 else ''}{sub_html}"
+        f"</div>"
+        f"<div style='height:2px;background:#0f172a;margin-bottom:8px;width:100%'></div>"
+    )
+
+
 def _render_html(filter_name: str, parcels: list[DigestParcel]) -> str:
-    rows: list[str] = []
-    for p in parcels:
-        title = html_lib.escape(p.address or p.apn)
-        city = html_lib.escape(p.jurisdiction_name)
-        owner = html_lib.escape(p.owner_name or "")
-        link = html_lib.escape(_parcel_link(p))
-        factor_items = "".join(
-            f"<li><strong>{html_lib.escape(str(f.get('label', '?')))}</strong>: "
-            f"{'+' if float(f.get('delta', 0)) >= 0 else ''}{html_lib.escape(str(f.get('delta')))} "
-            f"— {html_lib.escape(str(f.get('reason', '')))}</li>"
-            for f in _top_factors(p)
-        )
-        hidden = _hidden_factor_count(p)
-        if hidden > 0:
-            factor_items += (
-                f"<li style='color:#94a3b8;list-style:none;padding-left:0'>"
-                f"+ {hidden} more factor{'s' if hidden != 1 else ''}"
-                f"</li>"
-            )
-        owner_html = f"<div style='color:#64748b;font-size:13px'>Owner: {owner}</div>" if owner else ""
-        listing_html = _listing_banner_html(p)
-        rows.append(
-            f"""
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin:12px 0;background:#fff">
-              <div style="font-weight:600;color:#0f172a;font-size:15px">
-                <a href="{link}" style="color:#0f172a;text-decoration:none">{title}</a>
-              </div>
-              <div style="color:#475569;font-size:13px;margin-top:2px">{city}</div>
-              {listing_html}
-              {owner_html}
-              <div style="margin-top:8px;font-size:13px;color:#0f172a">
-                Score <strong>{p.score}</strong> · {html_lib.escape(p.tier)}
-              </div>
-              <ul style="margin:6px 0 0 16px;padding:0;color:#334155;font-size:12px">{factor_items}</ul>
-              <a href="{link}" style="display:inline-block;margin-top:10px;color:#0369a1;font-size:13px">Open in dashboard →</a>
-            </div>
-            """
-        )
+    actionable, worth_a_look = _split_by_tier(parcels)
+
+    sections: list[str] = []
+    if actionable:
+        sections.append(_tier_header_html("Actionable", len(actionable)))
+        sections.extend(_render_parcel_html(p) for p in actionable)
+    if worth_a_look:
+        sections.append(_tier_header_html(
+            "Worth a Look", len(worth_a_look), sub="one or more soft flags",
+        ))
+        sections.extend(_render_parcel_html(p) for p in worth_a_look)
+
     return f"""<!doctype html>
 <html><body style="margin:0;padding:24px;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a">
   <div style="max-width:560px;margin:0 auto">
     <h1 style="font-size:18px;margin:0 0 4px">Daily buy-box digest</h1>
     <div style="color:#64748b;font-size:13px;margin-bottom:8px">{html_lib.escape(filter_name)}</div>
-    {''.join(rows)}
+    {''.join(sections)}
     <div style="color:#94a3b8;font-size:11px;margin-top:24px">
       Sent by ParcelLogic. Manage daily emails from the buy-box panel.
     </div>
