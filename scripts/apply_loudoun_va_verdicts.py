@@ -54,6 +54,7 @@ async def main() -> int:
             cited    = row.get("cited_subsection")
             cond_j   = row.get("conditions_json")
             overlays = row.get("overlay_codes")
+            subareas = row.get("sub_areas_eligible")
             notes    = row.get("notes") or ""
             legacy   = row.get("legacy_ordinance")
             if legacy:
@@ -77,17 +78,17 @@ async def main() -> int:
                       jurisdiction_id, zone_code, municipality,
                       self_storage,
                       confidence, human_reviewed, classification_source,
-                      notes, cited_subsection, conditions_json, overlay_codes,
+                      notes, cited_subsection, conditions_json, overlay_codes, sub_areas_eligible,
                       created_at, updated_at
                     ) VALUES (
                       $1::uuid, $2, NULL,
                       $3::use_permission_enum,
                       $4, TRUE, 'human'::classification_source_enum,
-                      $5, $6, $7::jsonb, $8::text[],
+                      $5, $6, $7::jsonb, $8::text[], $9::text[],
                       now(), now()
                     )
                     """,
-                    jid, zc, verdict, conf, notes, cited, cond_json_arg, overlays,
+                    jid, zc, verdict, conf, notes, cited, cond_json_arg, overlays, subareas,
                 )
                 inserted.append(zc)
             else:
@@ -102,10 +103,11 @@ async def main() -> int:
                            cited_subsection      = $5,
                            conditions_json       = $6::jsonb,
                            overlay_codes         = $7::text[],
+                           sub_areas_eligible    = $8::text[],
                            updated_at            = now()
                      WHERE id = $1
                     """,
-                    existing_id, verdict, conf, notes, cited, cond_json_arg, overlays,
+                    existing_id, verdict, conf, notes, cited, cond_json_arg, overlays, subareas,
                 )
                 updated.append(zc)
 
