@@ -76,14 +76,28 @@ NJ_COUNTIES: dict[str, str] = {
     "HUDSON":    "e7a3304a-9684-4fb6-9e25-8ba54542fe1c",
     "PASSAIC":   "7a9ed95d-df89-4864-a203-f831a987b562",
     "HUNTERDON": "e8612f49-218b-48cc-9eb0-a1dd90cf583d",
+    # Added 2026-05-21. This jurisdiction was originally created with
+    # name="Burlington County, NJ" by a live-discovery resolve bug that
+    # pointed at Ocean's GIS service; APN inspection confirmed the
+    # parcels are Ocean (PAMS_PIN prefix 1501... = Ocean county code
+    # in NJ MOD-IV). Renamed to "Ocean County, NJ" and backfilled via
+    # this script with --county OCEAN. Real Burlington needs a fresh
+    # ingest with a corrected source (NJOGIS Parcels_Composite_NJ_WM
+    # filtered by COUNTY='BURLINGTON').
+    "OCEAN":     "b26af20d-b32e-4319-beb3-dae6b48d0d99",
+    # BURLINGTON: not yet ingested under a real jurisdiction row.
+    # When the proper Burlington ingest lands, add the new
+    # jurisdiction_id here with "BURLINGTON" as the key.
 }
 
 # Counties to sweep when --all-nj is passed. Bergen + Monmouth + Somerset
 # already in good shape per the audit. Bergen is left in for paranoid
 # idempotency re-checks (it will short-circuit via the >50% guard).
+# Ocean is included so a future --all-nj re-runs the backfill if any
+# previously-unmatched parcels get a PAMS_PIN added upstream.
 ALL_NJ_SWEEP: list[str] = [
     "MORRIS", "MIDDLESEX", "ESSEX", "UNION",
-    "HUDSON", "PASSAIC", "HUNTERDON",
+    "HUDSON", "PASSAIC", "HUNTERDON", "OCEAN",
 ]
 
 COMPOSITE = (
