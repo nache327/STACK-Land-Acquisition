@@ -16,7 +16,33 @@ import {
   type ScoreTier,
 } from "@/lib/compositeScore";
 import type { BuyBoxFilter, DriveTime } from "@/lib/buy-box-filter";
-import type { PrecomputedRingMetrics } from "@/lib/isochrone-precompute";
+import type {
+  PrecomputedRingMetrics,
+  PrecomputeStatus,
+} from "@/lib/isochrone-precompute";
+
+// NJ MOD-IV property class codes. When a NJ jurisdiction has no
+// per-parcel zoning ingested (e.g. Burlington's NJOGIS composite),
+// storage_permission is derived from these classes via the backend
+// CASE in `parcels.py:_storage_perm_expr`. Showing the friendly label
+// next to the code lets the user understand the "via MOD-IV" verdict.
+const NJ_MOD_IV_LABELS: Record<string, string> = {
+  "1": "Vacant Land",
+  "2": "Residential",
+  "3A": "Farm (Regular)",
+  "3B": "Farm (Qualified)",
+  "4A": "Commercial",
+  "4B": "Industrial",
+  "4C": "Apartments",
+  "5A": "Railroad",
+  "5B": "Railroad",
+  "15A": "Public Property",
+  "15B": "Public Property",
+  "15C": "Public Property",
+  "15D": "Public Property",
+  "15E": "Public Property",
+  "15F": "Public Property",
+};
 
 interface ParcelDrawerProps {
   parcel: ParcelDetail | null;
@@ -36,6 +62,15 @@ interface ParcelDrawerProps {
     ring: PrecomputedRingMetrics | null;
     parcelAadt: number | null;
     wealthDensityAvailable: boolean;
+    /** Drive-time precompute progress. Lets the "Computing…" branch
+     *  distinguish "not started" / "in progress, not yet reached" /
+     *  "complete but parcel ineligible". */
+    precomputeStatus?: PrecomputeStatus | null;
+    /** True when this parcel is in the buy-box candidate pool (i.e.
+     *  storage_permission ∈ permitted/conditional/unclear). When false
+     *  with a complete precompute, the drawer explains why no ring
+     *  metrics exist for this parcel. */
+    parcelEligible?: boolean;
   } | null;
 }
 
@@ -184,6 +219,30 @@ export function ParcelDrawer({
           <Row label="Address" value={parcel.address} />
           <Row label="Owner" value={parcel.owner_name} />
           <Row label="Zone" value={parcel.zoning_code} />
+          {/* When real zoning isn't ingested (NJOGIS-only counties) the
+              storage verdict comes from MOD-IV land-use class. Surface
+              both so the user sees how Storage="Permitted" can co-exist
+              with Zone="—". */}
+          {!parcel.zoning_code && parcel.land_use_code && (
+            <Row
+              label="Land Use (NJ MOD-IV)"
+              value={
+                NJ_MOD_IV_LABELS[parcel.land_use_code]
+                  ? `${parcel.land_use_code} — ${NJ_MOD_IV_LABELS[parcel.land_use_code]}`
+                  : parcel.land_use_code
+              }
+            />
+          )}
+          {parcel.storage_permission && (
+            <Row
+              label="Storage"
+              value={
+                parcel.storage_permission.charAt(0).toUpperCase() +
+                parcel.storage_permission.slice(1) +
+                (!parcel.zoning_code && parcel.land_use_code ? " (via MOD-IV)" : "")
+              }
+            />
+          )}
           <Row label="Acres" value={parcel.acres?.toFixed(3)} />
           <Row
             label="Flood Zone"
@@ -394,7 +453,15 @@ function BuyBoxMatchPanel({
 }: {
   match: NonNullable<ParcelDrawerProps["buyBoxMatch"]>;
 }) {
-  const { driveTimeMinutes, filter, ring, parcelAadt, wealthDensityAvailable } = match;
+  const {
+    driveTimeMinutes,
+    filter,
+    ring,
+    parcelAadt,
+    wealthDensityAvailable,
+    precomputeStatus,
+    parcelEligible,
+  } = match;
 
   const rows: MatchRow[] = useMemo(() => {
     const out: MatchRow[] = [];
@@ -510,7 +577,22 @@ function BuyBoxMatchPanel({
 
       {!ring ? (
         <div className="text-xs text-slate-400">
-          Computing drive-time metrics — open the dashboard with the buy box active to populate.
+          {(() => {
+            // Three-way fallback so the user can tell why a ring is missing:
+            //   not started  → Buy Box panel hasn't been opened yet
+            //   in progress  → precompute hasn't reached this parcel
+            //   complete + ineligible → parcel isn't in the candidate pool
+            if (parcelEligible === false && precomputeStatus?.complete) {
+              return "This parcel is not in the buy-box candidate pool (storage not permitted for self-storage).";
+            }
+            if (!precomputeStatus) {
+              return "Open the Buy Box panel to start drive-time analysis.";
+            }
+            if (!precomputeStatus.complete) {
+              return `Drive-time metrics queued — currently computing ${precomputeStatus.progress.toLocaleString()} of ${precomputeStatus.total.toLocaleString()} parcels.`;
+            }
+            return "Drive-time ring not yet computed for this parcel — try re-opening the Buy Box panel.";
+          })()}
         </div>
       ) : rows.length === 0 ? (
         <div className="text-xs text-slate-400">

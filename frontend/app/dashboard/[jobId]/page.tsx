@@ -1103,12 +1103,19 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
               buyBoxFilter.driveTimeMinutes as 2 | 5 | 10 | 15
             ] ?? null;
             const candidateRow = mapParcels.find((p) => p.parcel_id === parcelDetail.id);
+            // A parcel is "eligible" for the candidate pool iff its
+            // storage_permission resolves to something other than
+            // prohibited/unclassified. mapParcels is the candidate-search
+            // result, so membership is the cleanest signal here.
+            const parcelEligible = candidateRow != null;
             return {
               driveTimeMinutes: buyBoxFilter.driveTimeMinutes,
               filter: buyBoxFilter,
               ring,
               parcelAadt: candidateRow?.aadt ?? null,
               wealthDensityAvailable,
+              precomputeStatus,
+              parcelEligible,
             };
           })()}
         />
