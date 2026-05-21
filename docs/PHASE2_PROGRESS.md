@@ -140,14 +140,15 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
-| 1 | Somerset County, NJ | 79 | 10,567 (per Lane E dry-run) | high (13 codes ordinance-cited) | pending merge | Lane E |
-| 2 | Norfolk County, MA | ~100 | 31,127 | medium (pattern-batch MA family) | not started | Lane E |
-| 3 | Middlesex County, MA | ~181 | 85,787 | medium (reuses Norfolk pattern) | not started | Lane E |
-| 4 | Highland, UT | 4 | 937 | trivial (PD-1 + zero-bind cleanup) | not started | Lane E |
-| 5 | Loudoun VA cleanup | 5 | <2,000 | trivial | not started | Lane E |
-| 6 | Howard MD cleanup | 2 | <500 | trivial | not started | Lane E |
+| 1 | Somerset County, NJ | 79 | 10,567 (per Lane E dry-run) | high (13 codes ordinance-cited) | PR #91 open | Lane E |
+| 2 | Loudoun VA + Howard MD cleanup | 7 | TBD from dry-run | trivial/defensible-only | next | Lane E |
+| 3 | Highland, UT | 4 | 937 | trivial (PD-1 + zero-bind cleanup) | queued | Lane E |
+| 4 | Norfolk County, MA | ~100 | 31,127 | medium (pattern-batch MA family) | queued | Lane E |
+| 5 | Middlesex County, MA | ~181 | 85,787 | medium (reuses Norfolk pattern) | queued | Lane E |
 
 _Lane E: append progress notes here (script written / PR opened / merged / refreshed / operational flip)._
+
+- 2026-05-21 22:20 UTC — Somerset NJ script ready and pushed to PR #91. Dry-run: 13 rows, 10,567 parcels move unclear→classified. `PAC-2` / `PAC-3` deliberately left unclear because absent from matrix.
 
 ---
 
@@ -207,7 +208,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | watchdog PR | local WIP, not pushed | **B2** (digest cron coexistence) | 2026-05-21 (master) |
-| E — Matrix Intelligence | Somerset PR (ready) → Norfolk MA pattern-batch | local WIP, not pushed | none | 2026-05-21 (master) |
+| E — Matrix Intelligence | Somerset NJ PR push → Loudoun VA + Howard MD cleanup | PR #91 | none | 2026-05-21 22:20 UTC (Lane E session start) |
 
 ---
 
@@ -216,7 +217,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 **Owner:** Lane E (primarily); other lanes append when their work flips a jurisdiction operational.
 **Sprint window:** 2026-05-22 → 2026-06-05.
 
-_Nothing yet — sprint just started._
+| jurisdiction | PR | operational evidence | parcels classified | logged |
+|---|---:|---|---:|---|
+| Allentown, PA | #90 | 18/18 human-reviewed, 0 unclear, 100% zoned | 41,872 | 2026-05-21 |
 
 ---
 
@@ -240,7 +243,7 @@ _Nothing yet — sprint just started._
 |---:|---|---|---|---:|
 | #89 | fix(audit-cli): disable statement_timeout for full-sweep against prod-scale data | A | **MERGED** (`9fed012`) 2026-05-21 | done |
 | #90 | feat(allentown-2025): apply 2025 ordinance verdicts + ship vocabulary_aliases table | E | **MERGED** 2026-05-21 | done |
-| (local) | Lane E: Somerset NJ adjudication | E | not pushed | next |
+| #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | open | next |
 | (local) | Lane E: Loudoun VA adjudication script (`loudoun_va_matrix_adjudication.py` in worktree) | E | not pushed | sequence after Somerset |
 | (local) | Lane D: queued_job_watchdog.py + railway-cron.toml | D | not pushed; **blocked on B2** | after B2 resolved |
 | (drafted) | Lane A: truthfulness patch (`audit_zoning_coverage.py` `_build_audit`) | A | drafted by Lane A | after Somerset, after fresh audit |
@@ -282,6 +285,7 @@ _Nothing yet — sprint just started._
 
 ### 2026-05-21 (Phase 1 close / Phase 2 sprint kickoff)
 
+- **OPEN** PR #91 `feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional`. Lane E. Adds `backend/scripts/somerset_nj_matrix_adjudication.py`; dry-run moves 10,567 parcels unclear→classified. No Railway run or coverage refresh yet.
 - **VERIFY** Railway prod is running PR #89 commit `9fed01293aae` (`pipeline_version: 9fed01293aae` from `/health` and `/api/debug/env` at 2026-05-21 22:18 UTC). Lane A. B1 deploy verified; commit age was ~17 minutes at check time.
 - **RESOLVE** Burlington County, NJ active failure cluster moved out of section 8. Latest forced rerun `9617a23c-330d-42f5-bacf-fb5a04a7c401` reached `ready` after PR #85; no duplicate boundary PR opened.
 - **MERGE** PR #89 `fix(audit-cli): disable statement_timeout for full-sweep against prod-scale data` (`9fed012`). Lane A. Closes B1. Audit CLI now runs full-sweep against prod-scale.
