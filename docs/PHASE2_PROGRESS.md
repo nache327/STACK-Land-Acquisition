@@ -176,18 +176,21 @@ _Lane B: log each retry result here. Reassess once you see outcomes — most Cat
 **Owner:** Lane A (Integrator)
 **Write format:** failure cluster by line + jurisdiction; resolved clusters removed.
 
-**Last 14d (source: live `jobs` query 2026-05-21):**
+**Last 14d (source: live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-07, refreshed 2026-05-21 22:18 UTC):**
 
 | count | jurisdiction(s) | pipeline line | class | status |
 |---:|---|---|---|---|
-| 7 + 1 cancel | Burlington County, NJ | 1656/1680/1688/1712 | boundary timeout | **RESOLVED by PR #85** (verified ready post-deploy) |
-| 5 | Monmouth County, NJ | 1286/1298/1329 | mixed | partially addressed by PR #85; structural Cat-B remains |
-| 5 | Marlboro, NJ | 1298 | upstream stage | needs retry |
+| 13 | Marlboro, NJ | 1298 / coverage_refresh | mixed upstream + coverage_refresh | needs retry; normalize duplicated `marlboro`/`Marlboro` rows |
+| 7 | Fairfax County, VA | mixed | mixed pipeline/network | Lane B retry/triage pending |
+| 5 | Monmouth County, NJ | 1286/1298/1329 + coverage_refresh | mixed | partially addressed by PR #85; structural Cat-B remains |
+| 5 | Cook County, IL | mixed | other_pipeline/stale | not boundary class |
+| 3 | Montgomery County, MD | mixed | other_pipeline/other | retry/triage pending |
+| 3 | Nassau County, NY | mixed | other_pipeline/other | Lane B retry pending |
+| 3 | Wake County, NC | 1417/1401 | parcel ingest | not boundary class; needs source check |
 | 2 | Middlesex County, NJ | 1410/1688 | boundary | PR #85 should resolve; retry pending |
-| 2 | Wake County, NC | 1417/1401 | parcel ingest | not boundary class; needs source check |
-| 2 | Cook County, IL | 1076 | parcel_fetch | not boundary class |
-| 1 | Bergen NJ / Fairfax VA / Mont PA each | various | boundary | PR #85 should resolve; transient |
-| 1 | Allentown, PA | httpx network | transient | likely resolved |
+| 2 | Montgomery County, PA | mixed incl. bootstrap | mixed | PR #85 should resolve boundary component; retry pending |
+| 1 | Bergen County, NJ | bootstrap | boundary | PR #85 should resolve; transient |
+| 1 | Allentown, PA | httpx network | transient | likely resolved by later operationalization |
 | 1 | Somerset County, NJ | 1077 | upstream | not boundary |
 
 _Lane A: append new clusters here. Remove resolved clusters (move to section 15 as changelog entries)._
@@ -200,7 +203,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | truthfulness patch (drafted, hold until next audit confirms 48→46) | — | none | 2026-05-21 (master) |
+| A — Integrator | verified Railway prod deploy of `9fed01293aae`; next: Vercel auto-deploy re-enable | — | truthfulness patch held by master sequencing | 2026-05-21 22:18 UTC (prod `/health` + `/api/debug/env`; commit age ~17m at verification) |
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | watchdog PR | local WIP, not pushed | **B2** (digest cron coexistence) | 2026-05-21 (master) |
@@ -279,6 +282,8 @@ _Nothing yet — sprint just started._
 
 ### 2026-05-21 (Phase 1 close / Phase 2 sprint kickoff)
 
+- **VERIFY** Railway prod is running PR #89 commit `9fed01293aae` (`pipeline_version: 9fed01293aae` from `/health` and `/api/debug/env` at 2026-05-21 22:18 UTC). Lane A. B1 deploy verified; commit age was ~17 minutes at check time.
+- **RESOLVE** Burlington County, NJ active failure cluster moved out of section 8. Latest forced rerun `9617a23c-330d-42f5-bacf-fb5a04a7c401` reached `ready` after PR #85; no duplicate boundary PR opened.
 - **MERGE** PR #89 `fix(audit-cli): disable statement_timeout for full-sweep against prod-scale data` (`9fed012`). Lane A. Closes B1. Audit CLI now runs full-sweep against prod-scale.
 - **MERGE** PR #90 `feat(allentown-2025): apply 2025 ordinance verdicts + ship vocabulary_aliases table`. Lane E. Allentown PA flipped operational (18/18 human-reviewed, 0 unclear, 100% zoned).
 - **[DRIFT-LOG]** PR #90 introduced new `vocabulary_aliases` table. Underlying adjudication is in scope; the new table is an architectural addition that wasn't pre-flagged in plan. Logged for governance review at sprint close — not rolled back.
