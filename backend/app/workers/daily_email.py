@@ -131,6 +131,9 @@ async def _top_parcels_for_filter(
     min_acres = filter_json.get("minAcres")
     max_acres = filter_json.get("maxAcres")
     max_price_per_acre = filter_json.get("maxPricePerAcre")
+    # maxTotalPrice closes the 15ac * $900k/ac = $13.5M sneak-through —
+    # both per-acre AND total caps need to fire for a deal to qualify.
+    max_total_price = filter_json.get("maxTotalPrice")
 
     # ``require_listed`` is a hard filter: drop parcels with no current
     # matched listing (confidence >= 0.85). The LATERAL join below
@@ -231,6 +234,11 @@ async def _top_parcels_for_filter(
                OR p.acres = 0
                OR (lst.sale_price / p.acres)
                    <= CAST(:max_price_per_acre AS DOUBLE PRECISION))
+          -- Total-price ceiling. Unpriced listings pass through and
+          -- surface as the "no asking price" soft flag instead.
+          AND (CAST(:max_total_price AS DOUBLE PRECISION) IS NULL
+               OR lst.sale_price IS NULL
+               OR lst.sale_price <= CAST(:max_total_price AS DOUBLE PRECISION))
         ORDER BY pbs.score DESC, pbs.parcel_id
         LIMIT :lim
         """
@@ -245,6 +253,7 @@ async def _top_parcels_for_filter(
             "min_acres": min_acres,
             "max_acres": max_acres,
             "max_price_per_acre": max_price_per_acre,
+            "max_total_price": max_total_price,
         },
     )
     out: list[DigestParcel] = []
