@@ -1,0 +1,342 @@
+{
+  "_meta": {
+    "jurisdiction_id": "dc2d9d42-aa78-45e3-8c85-970e69a30240",
+    "jurisdiction_name": "Howard County, MD",
+    "generated_at": "2026-05-21",
+    "source": "Howard MD sprint brief (reviewer's ordinance read) + general US zoning conventions",
+    "ordinance_sources_attempted": [
+      "https://library.municode.com/md/howard_county/codes/zoning  (HTTP 403)",
+      "http://howardcounty-md.elaws.us/code/                       (HTTP 503)",
+      "web.archive.org                                              (blocked by fetch env)"
+    ],
+    "user_action_required": [
+      "Spot-check every row marked tier=requires_ordinance_read",
+      "Spot-check at least 10 rows marked tier=brief_verified",
+      "Once verified, set human_reviewed=TRUE per row"
+    ],
+    "tier_meanings": {
+      "brief_verified":     "Reviewer's brief explicitly verified this verdict against ordinance text. Default confidence 0.95.",
+      "brief_likely":       "Reviewer's brief said 'likely X' (no explicit verification). Default confidence 0.70.",
+      "convention":         "Inferred from US zoning conventions (e.g. residential zones never permit self-storage). Default confidence 0.85.",
+      "requires_ordinance_read": "Brief explicitly said 'needs ordinance read'. Verdict is a placeholder. Default confidence 0.40."
+    }
+  },
+  "rows": [
+    {
+      "zone_code": "B-2",
+      "verdict": "conditional",
+      "confidence": 0.95,
+      "tier": "brief_verified",
+      "cited_subsection": "§131.0 Conditional Uses (B-2 self-storage rule)",
+      "conditions_json": {
+        "min_acres": 5,
+        "requires_public_water_sewer": true
+      },
+      "overlay_codes": null,
+      "notes": "Conditional Use granted in B-2 for self-storage iff lot >= 5 ac AND within planned service area for public water + public sewer. Buy-box should hard-filter B-2 parcels < 5ac (treat as prohibited)."
+    },
+    {
+      "zone_code": "M-1",
+      "verdict": "permitted",
+      "confidence": 0.85,
+      "tier": "brief_likely",
+      "cited_subsection": "§122.0 M-1 Manufacturing Light - permitted uses",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Brief: 'likely PERMITTED — verify §122'. Self-storage / mini-warehouse typically permitted by-right in light-industrial districts. Spot-check §122.0 use list."
+    },
+    {
+      "zone_code": "M-2",
+      "verdict": "permitted",
+      "confidence": 0.85,
+      "tier": "brief_likely",
+      "cited_subsection": "Howard County zoning - M-2 Manufacturing Heavy permitted uses",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Brief: 'likely PERMITTED — verify ordinance'. Heavy-industrial almost always permits self-storage by-right. Spot-check."
+    },
+    {
+      "zone_code": "CAC-CLI",
+      "verdict": "permitted",
+      "confidence": 0.80,
+      "tier": "brief_likely",
+      "cited_subsection": "Howard County zoning - CAC w/ CLI overlay",
+      "conditions_json": null,
+      "overlay_codes": ["CLI"],
+      "notes": "Corridor Activity Center + Continuing Light Industrial overlay. Brief: 'likely permitted (light industrial overlay)'. Base CAC may be conditional; CLI overlay typically restores light-industrial permitted-by-right uses."
+    },
+
+    {
+      "zone_code": "B-1",
+      "verdict": "prohibited",
+      "confidence": 0.50,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Brief: 'needs ordinance read — likely prohibited or conditional'. B-1 (Local Business) typically caps lot size + use intensity, so self-storage is often excluded. Default to prohibited pending verification."
+    },
+    {
+      "zone_code": "B-R",
+      "verdict": "prohibited",
+      "confidence": 0.45,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Business Rural. Brief: 'needs ordinance read'. Rural-business zones occasionally permit self-storage as accessory; default prohibited pending verification."
+    },
+    {
+      "zone_code": "SC",
+      "verdict": "prohibited",
+      "confidence": 0.55,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Shopping Center. Brief: 'likely prohibited or conditional'. SC zones usually restrict to retail/service; self-storage rarely listed."
+    },
+    {
+      "zone_code": "POR",
+      "verdict": "prohibited",
+      "confidence": 0.50,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Planned Office Research. Brief: 'needs ordinance read'. Office/research zones almost always prohibit storage; default prohibited."
+    },
+    {
+      "zone_code": "PEC",
+      "verdict": "conditional",
+      "confidence": 0.50,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Planned Employment Center. Brief: 'needs ordinance read'. PEC sometimes permits warehouse/storage as employment-supporting; default conditional pending verification."
+    },
+    {
+      "zone_code": "NT",
+      "verdict": "conditional",
+      "confidence": 0.40,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "New Town (Columbia). Brief: 'needs ordinance read — complex'. NT districts have area-specific use lists. Existing matrix has 'N T' at 0.80 confidence (human=true, conditional) — defer to that until ordinance read."
+    },
+    {
+      "zone_code": "MXD",
+      "verdict": "conditional",
+      "confidence": 0.55,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Mixed Use. Brief: 'needs ordinance read'. MXD zones sometimes permit storage as part of mixed-use program."
+    },
+    {
+      "zone_code": "TOD",
+      "verdict": "prohibited",
+      "confidence": 0.65,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Transit Oriented Development. Brief: 'needs ordinance read'. TOD zones almost universally prohibit auto-oriented uses like self-storage to maximize transit ridership; default prohibited."
+    },
+    {
+      "zone_code": "CCT",
+      "verdict": "prohibited",
+      "confidence": 0.50,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Community Center Transition. Brief: 'needs ordinance read'. Transitional zones usually restrict to medium-intensity commercial; default prohibited."
+    },
+
+    {
+      "zone_code": "CC",
+      "verdict": "prohibited",
+      "confidence": 0.85,
+      "tier": "brief_likely",
+      "cited_subsection": "Howard County zoning - CC Convenience Center",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Convenience Center. Brief: 'likely prohibited'. CC = small neighborhood-scale retail; self-storage not a convenience use."
+    },
+    {
+      "zone_code": "HO",
+      "verdict": "prohibited",
+      "confidence": 0.85,
+      "tier": "brief_likely",
+      "cited_subsection": "Howard County zoning - HO Historic Office",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Historic Office. Brief: 'likely prohibited'. Historic-preservation overlay zones never permit auto-oriented commercial."
+    },
+    {
+      "zone_code": "PSC",
+      "verdict": "prohibited",
+      "confidence": 0.85,
+      "tier": "brief_likely",
+      "cited_subsection": "Howard County zoning - PSC Planned Senior Community",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Planned Senior Community. Brief: 'likely prohibited'. Senior-housing PDs prohibit non-residential commercial uses."
+    },
+    {
+      "zone_code": "PGCC",
+      "verdict": "prohibited",
+      "confidence": 0.85,
+      "tier": "brief_likely",
+      "cited_subsection": "Howard County zoning - PGCC Planned Golf Course Community",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Planned Golf Course Community. Brief: 'likely prohibited'. Golf-course PDs are residential-with-amenity, no commercial storage."
+    },
+
+    {
+      "zone_code": "R-ED",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-ED Residential Environmental Development",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Residential. Self-storage never permitted in US residential districts. Convention-based."
+    },
+    {
+      "zone_code": "R-20",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-20 Single 20,000 SF",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Residential single-family. Self-storage prohibited. Convention."
+    },
+    {
+      "zone_code": "R-12",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-12 Single 12,000 SF",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Residential single-family. Self-storage prohibited. Convention."
+    },
+    {
+      "zone_code": "RSI",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - RSI Senior-Institutional",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Senior-Institutional residential. Self-storage prohibited. Convention."
+    },
+    {
+      "zone_code": "R-SC",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-SC Single Cluster",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Residential single cluster. Self-storage prohibited. Convention."
+    },
+    {
+      "zone_code": "R-SC-I",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-SC + Institutional overlay",
+      "conditions_json": null,
+      "overlay_codes": ["I"],
+      "notes": "Residential single cluster with Institutional Overlay. Overlay adds schools/churches but doesn't introduce storage. Base R-SC prohibits self-storage."
+    },
+    {
+      "zone_code": "R-SA-8",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-SA-8 Single Attached",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Residential single attached (townhomes). Self-storage prohibited."
+    },
+    {
+      "zone_code": "R-SA-8-I",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-SA-8 + Institutional overlay",
+      "conditions_json": null,
+      "overlay_codes": ["I"],
+      "notes": "Residential single attached + Institutional Overlay. Self-storage prohibited."
+    },
+    {
+      "zone_code": "R-VH",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-VH Village Housing",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Village Housing residential. Self-storage prohibited."
+    },
+    {
+      "zone_code": "R-A-15",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-A-15 Apartments",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Apartment residential. Self-storage prohibited."
+    },
+    {
+      "zone_code": "R-MH",
+      "verdict": "prohibited",
+      "confidence": 0.95,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - R-MH Mobile Homes",
+      "conditions_json": null,
+      "overlay_codes": null,
+      "notes": "Mobile Home residential. Self-storage prohibited."
+    },
+    {
+      "zone_code": "RC-DEO",
+      "verdict": "prohibited",
+      "confidence": 0.90,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - RC w/ Density Exchange Option overlay",
+      "conditions_json": null,
+      "overlay_codes": ["DEO"],
+      "notes": "Rural Conservation + Density Exchange Option. Conservation/rural-residential base, no self-storage. DEO is a density-transfer mechanism, doesn't add storage uses."
+    },
+    {
+      "zone_code": "RR-DEO",
+      "verdict": "prohibited",
+      "confidence": 0.90,
+      "tier": "convention",
+      "cited_subsection": "Howard County zoning - RR w/ Density Exchange Option overlay",
+      "conditions_json": null,
+      "overlay_codes": ["DEO"],
+      "notes": "Rural Residential + Density Exchange Option. Rural residential, no self-storage."
+    },
+    {
+      "zone_code": "SW",
+      "verdict": "prohibited",
+      "confidence": 0.40,
+      "tier": "requires_ordinance_read",
+      "cited_subsection": null,
+      "conditions_json": null,
+      "overlay_codes": ["SW"],
+      "notes": "Solid Waste Overlay. Brief: 'overlay — handle separately'. SW restricts to landfill/transfer-station use. Self-storage almost certainly prohibited within SW overlay. Verify."
+    }
+  ]
+}
