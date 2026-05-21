@@ -499,6 +499,7 @@ async def main() -> None:
     engine = create_async_engine(database_url, echo=False, pool_pre_ping=True)
 
     async with engine.connect() as conn:
+        await conn.execute(text("SET LOCAL statement_timeout = 0"))
         schema = await _load_schema_profile(conn)
         if not schema.has_parcels_table or not schema.has_zone_use_matrix_table:
             raise RuntimeError(
