@@ -207,7 +207,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | A — Integrator | verified Railway prod deploy of `9fed01293aae`; next: Vercel auto-deploy re-enable | — | truthfulness patch held by master sequencing | 2026-05-21 22:18 UTC (prod `/health` + `/api/debug/env`; commit age ~17m at verification) |
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
-| D — Operator + Workflow | watchdog PR | local WIP, not pushed | **B2** (digest cron coexistence) | 2026-05-21 (master) |
+| D — Operator + Workflow | queued-job watchdog cron coexisting with daily digest; added query-failure exit safeguard | local WIP, not pushed | none | 2026-05-21 (Lane D B2 resolved locally) |
 | E — Matrix Intelligence | Somerset NJ PR push → Loudoun VA + Howard MD cleanup | PR #91 | none | 2026-05-21 22:20 UTC (Lane E session start) |
 
 ---
@@ -272,7 +272,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | ID | blocker | owner | downstream impact | status |
 |---|---|---|---|---|
 | ~~B1~~ | ~~audit CLI times out on prod~~ | Lane A | ~~master can't refresh KPIs~~ | **RESOLVED via PR #89** |
-| B2 | Lane D watchdog PR overwrites daily-digest cron in `railway-cron.toml` | user / Lane D | watchdog can't merge | **OPEN** — needs user decision |
+| ~~B2~~ | ~~Lane D watchdog PR overwrites daily-digest cron in `railway-cron.toml`~~ | ~~user / Lane D~~ | ~~watchdog can't merge~~ | **RESOLVED locally** — user confirmed digest remains required; cron file now carries digest + watchdog entries |
 | B3 | truthfulness patch held pending audit verification | Lane A | sequencing | **deferrable** — patch is drafted; merge after Somerset |
 | B4 | Burlington `ready` but 0 zoning_code on 174,851 of 174,852 parcels | Lane B | Burlington reclassified Cat-B | **OPEN** — reclassified, not a defect |
 | B5 | alias_mappings framework abstraction (PR #86) + vocabulary_aliases table (PR #90) | logged | governance | **LOG ONLY** (Section 7 #3 in plan); not rolled back |
@@ -285,6 +285,8 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-21 (Phase 1 close / Phase 2 sprint kickoff)
 
+- **CRON** Lane D resolved B2 locally after user confirmed daily digest remains required in production. `backend/railway-cron.toml` now carries both daily digest (`0 12 * * *`) and queued-job watchdog (`*/5 * * * *`) entries. Watchdog validated read-only with `OK` exit 0; no alert firing.
+- **WATCHDOG** Lane D added minimal query-failure safeguard to `queued_job_watchdog.py`: DB/query exceptions print to stderr and exit 2.
 - **OPEN** PR #91 `feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional`. Lane E. Adds `backend/scripts/somerset_nj_matrix_adjudication.py`; dry-run moves 10,567 parcels unclear→classified. No Railway run or coverage refresh yet.
 - **VERIFY** Railway prod is running PR #89 commit `9fed01293aae` (`pipeline_version: 9fed01293aae` from `/health` and `/api/debug/env` at 2026-05-21 22:18 UTC). Lane A. B1 deploy verified; commit age was ~17 minutes at check time.
 - **RESOLVE** Burlington County, NJ active failure cluster moved out of section 8. Latest forced rerun `9617a23c-330d-42f5-bacf-fb5a04a7c401` reached `ready` after PR #85; no duplicate boundary PR opened.
