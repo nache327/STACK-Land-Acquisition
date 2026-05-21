@@ -483,6 +483,22 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     monmouth  = _nj("Monmouth",  "Monmouth County, NJ")
     morris    = _nj("Morris",    "Morris County, NJ")
     hunterdon = _nj("Hunterdon", "Hunterdon County, NJ")
+    # Counties with existing DB rows but no registry entry until now —
+    # adding them here prevents future "Bergen County, NJ" / "Somerset
+    # County, NJ" inputs from falling through to live-discovery (the
+    # same path that miscoded Burlington → Ocean on 2026-05-20).
+    bergen    = _nj("Bergen",    "Bergen County, NJ")
+    somerset  = _nj("Somerset",  "Somerset County, NJ")
+    # Ocean: jurisdiction row exists (id b26af20d-...) because a live-
+    # discovery bug created it under the name "Burlington County, NJ".
+    # Renamed in prod 2026-05-21 after APN inspection (PAMS_PIN '1501_*'
+    # = Ocean county). Future "Ocean County, NJ" inputs now route to
+    # the correct NJOGIS slice via the fast path.
+    ocean     = _nj("Ocean",     "Ocean County, NJ")
+    # Burlington is the original ask — adding it here so a fresh
+    # "Burlington County, NJ" input routes to NJOGIS COUNTY='BURLINGTON'
+    # instead of repeating the live-discovery → Ocean mistake.
+    burlington = _nj("Burlington", "Burlington County, NJ")
     return {
         "hudson county":          hudson,
         "hudson county, nj":      hudson,
@@ -516,6 +532,14 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
         "hunterdon county, nj":   hunterdon,
         "flemington":             hunterdon,
         "flemington, nj":         hunterdon,
+        "bergen county":          bergen,
+        "bergen county, nj":      bergen,
+        "somerset county":        somerset,
+        "somerset county, nj":    somerset,
+        "ocean county":           ocean,
+        "ocean county, nj":       ocean,
+        "burlington county":      burlington,
+        "burlington county, nj":  burlington,
     }
 
 
