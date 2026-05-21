@@ -3,20 +3,26 @@ County, NJ.
 
 Why: opening a Burlington parcel in the drawer rendered the MARKET
 SATURATION panel with `Pop` 246,106 at 10 mi but `Pop 0` at 1/3/5 mi.
-Root cause: the lazy `ensure_census_tracts(...)` call in
-`saturation.py:86` short-circuits when ANY populated tract intersects
-the bbox — but for Burlington the first lazy fetch landed some tracts
-without ACS population (likely a partial fetch). Inner rings happened
-to overlap the NULL-pop tracts; the 10-mile ring overlapped outer
-populated tracts and rendered fine.
 
-Fix: delete every cached `census_tracts` row whose geometry intersects
-the Burlington bbox. Next time any user opens a Burlington parcel
-drawer, `ensure_census_tracts(...)` will see zero cached coverage and
-do a full fetch (TIGER geometries + ACS population) for the bbox.
+Root cause (confirmed via diagnostic 2026-05-21): Burlington County NJ
+(FIPS 34-005) has only ~8 of its ~110 census tracts cached. The bbox
+also intersects Philadelphia (PA-42-101 has 406 tracts cached) and
+neighboring NJ counties, so `ensure_census_tracts(...)` sees 638
+populated tracts in the bbox and short-circuits — it never realises
+that Burlington itself is barely covered. Inner rings (1/3/5 mi)
+around mid-county parcels find ZERO intersecting tracts and the
+weighted-sum returns 0. The 10-mi ring reaches Philly+Camden tracts
+and renders 246K.
 
-Idempotent: re-running just re-deletes (no-op if already refetched).
-Safe to run any time — only affects this jurisdiction's footprint.
+Fix: age out the `fetched_at` column for every tract whose geometry
+intersects the Burlington bbox. The cache-coverage check filters on
+`fetched_at > 90-days-ago`, so this makes the check return 0 → the
+service re-fetches the full TIGER + ACS bbox → INSERTs the missing
+Burlington tracts and UPDATEs the existing rows via ON CONFLICT.
+
+No DELETE, no data loss — only the staleness timestamp is moved
+backwards. Re-running is idempotent (no-op once tracts have been
+re-fetched and their `fetched_at` is fresh again).
 
 Verification afterwards:
   1. Open any Burlington parcel drawer.
@@ -64,8 +70,8 @@ async def main() -> int:
         xmax = float(row["xmax"]) + BBOX_PAD_DEG
         ymax = float(row["ymax"]) + BBOX_PAD_DEG
         print(f"  jurisdiction: Burlington County, NJ ({row['n_parcels']:,} parcels)")
-        print(f"  bbox (padded {BBOX_PAD_DEG}°): "
-              f"({xmin:.4f}, {ymin:.4f}) → ({xmax:.4f}, {ymax:.4f})")
+        print(f"  bbox (padded {BBOX_PAD_DEG} deg): "
+              f"({xmin:.4f}, {ymin:.4f}) -> ({xmax:.4f}, {ymax:.4f})")
 
         # 2. Pre-state breakdown.
         pre = await conn.fetchrow(
@@ -85,10 +91,17 @@ async def main() -> int:
         print(f"  pre:  {pre['total']:,} tracts in bbox "
               f"({pre['with_pop']:,} populated, {pre['null_pop']:,} NULL-pop)")
 
-        # 3. Wipe the bbox so the next lazy fetch refetches cleanly.
+        # 3. Age out fetched_at so the cache-coverage check returns 0.
+        # The check is "fetched_at > now() - 90 days AND population IS NOT
+        # NULL AND ST_Intersects(bbox)". We set fetched_at to epoch so
+        # the cutoff filter excludes every tract; the next lazy call
+        # then re-fetches TIGER+ACS for the whole bbox and INSERTs the
+        # ~100 missing Burlington tracts (UPSERT on geoid handles the
+        # existing rows).
         result = await conn.execute(
             """
-            DELETE FROM census_tracts
+            UPDATE census_tracts
+               SET fetched_at = TIMESTAMPTZ 'epoch'
              WHERE ST_Intersects(
                      geom,
                      ST_MakeEnvelope($1, $2, $3, $4, 4326)
@@ -96,26 +109,20 @@ async def main() -> int:
             """,
             xmin, ymin, xmax, ymax,
         )
-        # `result` is e.g. "DELETE 1234"
+        # `result` is e.g. "UPDATE 638"
         print(f"  {result}")
 
-        # 4. Post-state.
-        post_total = await conn.fetchval(
-            """
-            SELECT COUNT(*) FROM census_tracts
-             WHERE ST_Intersects(
-                     geom,
-                     ST_MakeEnvelope($1, $2, $3, $4, 4326)
-                   )
-            """,
-            xmin, ymin, xmax, ymax,
+        # 4. Post-state — these rows are now considered stale.
+        nj_005 = await conn.fetchval(
+            "SELECT COUNT(*) FROM census_tracts WHERE state_fips='34' AND county_fips='005'"
         )
-        print(f"  post: {post_total:,} tracts remain in bbox (expect 0)")
+        print(f"  NJ-005 (Burlington Co.) tracts currently in DB: {nj_005}")
         print()
         print("  Next step: open any Burlington parcel drawer in the UI.")
         print("  The MARKET SATURATION panel will trigger a fresh fetch of")
-        print("  TIGER geometries + ACS population for the bbox; all 4 rings")
-        print("  should then show non-zero Pop.")
+        print("  TIGER geometries + ACS population for the bbox; missing")
+        print("  Burlington tracts will be INSERTed and all 4 rings should")
+        print("  then show non-zero Pop.")
         return 0
     finally:
         await conn.close()
