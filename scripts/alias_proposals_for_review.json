@@ -1,0 +1,772 @@
+{
+  "loudoun_va": {
+    "jid": "8ebaf814-11f9-4e18-89de-d8b947660174",
+    "mappings": [
+      {
+        "alias_code": "AR1",
+        "canonical_code": "AR-1",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 14394,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:12.765873+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R8",
+        "canonical_code": "R-8",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 4115,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:14.670225+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R16",
+        "canonical_code": "R-16",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 3859,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:16.292978+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R4",
+        "canonical_code": "R-4",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 3572,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:18.020656+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R1",
+        "canonical_code": "R-1",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 2440,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:19.624711+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "AR2",
+        "canonical_code": "AR-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 2404,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:20.895984+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "PDAAAR",
+        "canonical_code": "PD-AAAR",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 1970,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:21.882278+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "PDRV",
+        "canonical_code": "PD-RV",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 1581,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:22.770623+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CR1",
+        "canonical_code": "CR-1",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 1436,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:23.627419+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R2",
+        "canonical_code": "R-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 1134,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:24.259223+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "JLMA2",
+        "canonical_code": "JLMA-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 696,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:24.788412+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "JLMA3",
+        "canonical_code": "JLMA-3",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 539,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:25.318013+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "A3",
+        "canonical_code": "A-3",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 410,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:25.803998+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CR2",
+        "canonical_code": "CR-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 398,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:26.243722+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "TR10",
+        "canonical_code": "TR-10",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 310,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:26.700979+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "A10",
+        "canonical_code": "A-10",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 208,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:27.107368+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R24",
+        "canonical_code": "R-24",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 202,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:27.526021+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "JLMA1",
+        "canonical_code": "JLMA-1",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 144,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:27.891315+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CR3",
+        "canonical_code": "CR-3",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 98,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:28.247753+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CCSC",
+        "canonical_code": "CC-SC",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 83,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:28.640247+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CCCC",
+        "canonical_code": "CC-CC",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 75,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:29.020117+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "MRHI",
+        "canonical_code": "MR-HI",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 74,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:29.409026+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "PDMUB",
+        "canonical_code": "PD-MUB",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 70,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:29.771393+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R3",
+        "canonical_code": "R-3",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 50,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:30.124683+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "PDRDP",
+        "canonical_code": "PD-RDP",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 41,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:30.484515+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "TR2",
+        "canonical_code": "TR-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 26,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:30.850359+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "JLMA20",
+        "canonical_code": "JLMA-20",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 22,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:31.199113+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CR4",
+        "canonical_code": "CR-4",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 19,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:31.567202+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "CCNC",
+        "canonical_code": "CC-NC",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 5,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:32.249081+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "PDSA",
+        "canonical_code": "PD-SA",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 5,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:31.91432+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      }
+    ]
+  },
+  "howard_md": {
+    "jid": "dc2d9d42-aa78-45e3-8c85-970e69a30240",
+    "mappings": [
+      {
+        "alias_code": "R20",
+        "canonical_code": "R-20",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 21444,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:38.25584+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RSC",
+        "canonical_code": "R-SC",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 10453,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:40.867972+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RRDEO",
+        "canonical_code": "RR-DEO",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 8353,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:43.055808+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RCDEO",
+        "canonical_code": "RC-DEO",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 7676,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:44.733962+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "R12",
+        "canonical_code": "R-12",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 4818,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:46.149279+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RED",
+        "canonical_code": "R-ED",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 3737,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:47.237888+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RSA8",
+        "canonical_code": "R-SA-8",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 3073,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:48.131779+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RA15",
+        "canonical_code": "R-A-15",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 1704,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:48.835592+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "MXD 3",
+        "canonical_code": "MXD",
+        "alias_type": "case_variant",
+        "parcel_count": 985,
+        "confidence": 0.800000011920929,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "space removed then trailing-strip '3' then matches a canonical"
+      },
+      {
+        "alias_code": "RMH",
+        "canonical_code": "R-MH",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 788,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:49.326308+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "B2",
+        "canonical_code": "B-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 402,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:49.764646+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "M2",
+        "canonical_code": "M-2",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 402,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:50.202315+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "MXD3",
+        "canonical_code": "MXD",
+        "alias_type": "truncation",
+        "parcel_count": 208,
+        "confidence": 0.8500000238418579,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "trailing-strip '3' then matches a canonical"
+      },
+      {
+        "alias_code": "RA 15",
+        "canonical_code": "R-A-15",
+        "alias_type": "case_variant",
+        "parcel_count": 203,
+        "confidence": 0.9200000166893005,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "space removed then single hyphen-restore candidate matches canonical"
+      },
+      {
+        "alias_code": "RSA 8",
+        "canonical_code": "R-SA-8",
+        "alias_type": "case_variant",
+        "parcel_count": 201,
+        "confidence": 0.9200000166893005,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "space removed then single hyphen-restore candidate matches canonical"
+      },
+      {
+        "alias_code": "R 20",
+        "canonical_code": "R-20",
+        "alias_type": "case_variant",
+        "parcel_count": 197,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:50.578071+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "B1",
+        "canonical_code": "B-1",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 186,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:50.938131+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "MXD6",
+        "canonical_code": "MXD",
+        "alias_type": "truncation",
+        "parcel_count": 162,
+        "confidence": 0.8500000238418579,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "trailing-strip '6' then matches a canonical"
+      },
+      {
+        "alias_code": "M1",
+        "canonical_code": "M-1",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 154,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:51.30423+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "RVH",
+        "canonical_code": "R-VH",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 107,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:51.681437+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "M 2",
+        "canonical_code": "M-2",
+        "alias_type": "case_variant",
+        "parcel_count": 31,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:52.014436+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "PECMX",
+        "canonical_code": "PEC",
+        "alias_type": "truncation",
+        "parcel_count": 30,
+        "confidence": 0.699999988079071,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "trailing-strip 'X' then trailing-strip 'M' then matches a canonical"
+      },
+      {
+        "alias_code": "B 1",
+        "canonical_code": "B-1",
+        "alias_type": "case_variant",
+        "parcel_count": 28,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:52.343488+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "M 1",
+        "canonical_code": "M-1",
+        "alias_type": "case_variant",
+        "parcel_count": 22,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:52.68144+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "R 12",
+        "canonical_code": "R-12",
+        "alias_type": "case_variant",
+        "parcel_count": 21,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:53.031761+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "PORMX",
+        "canonical_code": "POR",
+        "alias_type": "truncation",
+        "parcel_count": 16,
+        "confidence": 0.699999988079071,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: POR+MX overlay composite, not alias. Handle via overlay_codes schema in composite decomposition sprint."
+      },
+      {
+        "alias_code": "R SC",
+        "canonical_code": "R-SC",
+        "alias_type": "case_variant",
+        "parcel_count": 14,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:53.36389+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "B2POR",
+        "canonical_code": "B-2",
+        "alias_type": "truncation",
+        "parcel_count": 12,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "M1NT",
+        "canonical_code": "M-1",
+        "alias_type": "truncation",
+        "parcel_count": 9,
+        "confidence": 0.6700000166893005,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "trailing-strip 'T' then trailing-strip 'N' then single hyphen-restore candidate matches canonical"
+      },
+      {
+        "alias_code": "RSCMX",
+        "canonical_code": "R-SC",
+        "alias_type": "truncation",
+        "parcel_count": 8,
+        "confidence": 0.6700000166893005,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "M1MXD",
+        "canonical_code": "M-1",
+        "alias_type": "truncation",
+        "parcel_count": 6,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "trailing-strip 'D' then trailing-strip 'X' then trailing-strip 'M' then single hyphen-restore candidate matches canonical"
+      },
+      {
+        "alias_code": "R20MX",
+        "canonical_code": "R-20",
+        "alias_type": "truncation",
+        "parcel_count": 4,
+        "confidence": 0.6700000166893005,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "R MH",
+        "canonical_code": "R-MH",
+        "alias_type": "case_variant",
+        "parcel_count": 4,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:53.701702+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "M1 NT",
+        "canonical_code": "M-1",
+        "alias_type": "case_variant",
+        "parcel_count": 4,
+        "confidence": 0.6200000047683716,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "space removed then trailing-strip 'T' then trailing-strip 'N' then single hyphen-restore candidate matches canonical"
+      },
+      {
+        "alias_code": "B2 M1",
+        "canonical_code": "B-2",
+        "alias_type": "case_variant",
+        "parcel_count": 4,
+        "confidence": 0.6200000047683716,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "BR",
+        "canonical_code": "B-R",
+        "alias_type": "hyphen_stripped",
+        "parcel_count": 4,
+        "confidence": 0.9700000286102295,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:54.028318+00",
+        "notes": "single hyphen-restore candidate matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, confidence >= 0.95)"
+      },
+      {
+        "alias_code": "B2PEC",
+        "canonical_code": "B-2",
+        "alias_type": "truncation",
+        "parcel_count": 2,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B1PEC",
+        "canonical_code": "B-1",
+        "alias_type": "truncation",
+        "parcel_count": 2,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B2RA1",
+        "canonical_code": "B-2",
+        "alias_type": "truncation",
+        "parcel_count": 2,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "RSCS",
+        "canonical_code": "R-SC",
+        "alias_type": "truncation",
+        "parcel_count": 2,
+        "confidence": 0.8199999928474426,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B 2",
+        "canonical_code": "B-2",
+        "alias_type": "case_variant",
+        "parcel_count": 2,
+        "confidence": 0.949999988079071,
+        "human_reviewed": true,
+        "promoted_at": "2026-05-21 20:12:54.363112+00",
+        "notes": "space-to-hyphen matches canonical | Bulk-approved 2026-05-21 (HIGH-conf mechanical, conf>=0.95 with float-precision tolerance)"
+      },
+      {
+        "alias_code": "B2RCD",
+        "canonical_code": "B-2",
+        "alias_type": "truncation",
+        "parcel_count": 2,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B2R12",
+        "canonical_code": "B-2",
+        "alias_type": "truncation",
+        "parcel_count": 1,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B2 SC",
+        "canonical_code": "B-2",
+        "alias_type": "case_variant",
+        "parcel_count": 1,
+        "confidence": 0.6200000047683716,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B2B1",
+        "canonical_code": "B-2",
+        "alias_type": "truncation",
+        "parcel_count": 1,
+        "confidence": 0.6700000166893005,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      },
+      {
+        "alias_code": "B1R12",
+        "canonical_code": "B-1",
+        "alias_type": "truncation",
+        "parcel_count": 1,
+        "confidence": 0.5199999809265137,
+        "human_reviewed": false,
+        "promoted_at": null,
+        "notes": "DECLINED: base + overlay composite (B-1/B-2/R + overlay). Handle via overlay_codes schema in composite decomposition sprint, not alias."
+      }
+    ]
+  }
+}

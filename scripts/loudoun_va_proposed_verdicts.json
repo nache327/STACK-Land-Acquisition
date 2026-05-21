@@ -1,0 +1,169 @@
+{
+  "_meta": {
+    "jurisdiction_id": "8ebaf814-11f9-4e18-89de-d8b947660174",
+    "jurisdiction_name": "Loudoun County, VA",
+    "generated_at": "2026-05-21",
+    "verified_at": "2026-05-21",
+    "verified_by": "reviewer (Chrome multimodal: §4.06.06 + Land Use Lookup tool at online.encodeplus.com/regs/loudouncounty-va-zo/webtools/landuselookup)",
+    "source": "Loudoun County LCZO Chapter 3 (§3.02 Use Tables) + §4.06.06 Mini-Warehouse + Appendix A. Reviewer corrections layered over Claude Code's pdfplumber first-pass.",
+    "ordinance_use_name": "Mini-Warehouse",
+    "ordinance_use_standard": "§4.06.06",
+    "ordinance_use_tables": {
+      "§3.02.01-1": "Urban + Suburban (current LCZO)",
+      "§3.02.02-1": "Legacy Suburban (R-1..R-24, GB, CLI, PD-* legacy)",
+      "§3.02.03-1": "Transition + Rural + JLMA (current LCZO)",
+      "§3.02.04-1": "Legacy Transition + Rural + JLMA (TR-2, A-*, CR-*, RC, JLMA-20)",
+      "§3.02.05-1": "Office and Industrial (OP, IP, GI, MR-HI)"
+    },
+    "tier_meanings": {
+      "verified":           "Direct §3.02 table cell read by Claude Code via pdfplumber. Confidence >= 0.90.",
+      "verified_column_uncertain": "Cell value confirmed S/P/blank from table extraction, but PDF column alignment uncertain — reviewer Chrome check needed. Confidence 0.55-0.70.",
+      "convention":         "Inferred from US zoning conventions where the §3.02 table is silent (e.g. residentials never permit self-storage).",
+      "needs_1993_ordinance_read": "Code is from the 1993 Revised Zoning Ordinance, still in parcel data, no longer in current LCZO. Convention-based placeholder; confidence=0.40 so matrix-confidence filter excludes from Hot Deals."
+    },
+    "operational_coverage_note": "Current LCZO (~30 zones, ~60K parcels) verified at high confidence. 1993-era legacy codes (~91K parcels under PDH/TR*UBF/TOWNS) carry placeholder verdicts at 0.40 confidence -- filtered out of Hot Deals automatically via confidence>=0.70 OR human_reviewed. Honest pending list for the next sprint.",
+    "approval_path_decision": "P = permitted (no condition), S = SPEX (Special Exception) or SPMI mapped to conditional, blank = prohibited. SPEX vs SPMI distinction stored in conditions_json.approval_path when known. §3.02 tables don't distinguish at this granularity; reviewer Chrome check could refine.",
+    "reviewer_followups": [
+      "§3.02.01-1 column-alignment: row has 3 S's across 14 Urban/Suburban columns. Likely candidates UE / TRC-Outer-Core / CC-CC but needs Chrome confirmation.",
+      "§4.06.06 conditions: this Chapter 4 section spells out min lot size, separation, public-utility, etc. requirements parallel to Howard MD B-2. Fetch + populate conditions_json.",
+      "GB vs CLI single S in §3.02.02-1: position unclear from text extract; one is conditional, the other prohibited.",
+      "1993-era ~91K parcels: dedicated sprint to either (a) fetch 1993 Revised Zoning Ordinance text, (b) map legacy zones to current-LCZO equivalents via Loudoun zoning admin contact, or (c) leave as pending until parcel-level zoning_code refresh from current ArcGIS feed."
+    ]
+  },
+  "rows": [
+    {"zone_code": "GI",       "verdict": "permitted",   "confidence": 0.95, "tier": "verified",
+     "cited_subsection": "§3.02.05-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null,
+     "notes": "Mini-Warehouse = P in GI per Table 3.02.05-1. Headline self-storage zone in Loudoun."},
+
+    {"zone_code": "IP",       "verdict": "conditional", "confidence": 0.95, "tier": "verified",
+     "cited_subsection": "§3.02.05-1 (table); §4.06.06.B.2, §4.06.06.C.1, §4.06.06.C.3, §4.06.06.C.5, §4.06.06.F, §4.06.06.G (conditions)",
+     "conditions_json": {"approval_path": "SPMI", "use_specific_standard": "§4.06.06", "min_stories": 2, "climate_controlled_required": true, "no_individual_unit_exterior_access": true, "outdoor_storage_allowed": false, "design_consistency_required": true, "buffer_required": "Road Corridor Buffer Type 3 when abutting major collector", "security_device_emergency_access_required": true},
+     "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-corrected: approval_path is SPMI (Minor Special Exception, fast Board path), NOT SPEX. Materially lower entitlement risk than other conditional zones."},
+
+    {"zone_code": "MR-HI",    "verdict": "conditional", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.05-1 (table)",
+     "conditions_json": {"approval_path": "SPEX", "use_specific_standard": "§4.06.06", "outdoor_storage_allowed": false, "design_consistency_required": true, "note": "Confirmed via Land Use Lookup tool. §4.06.06 Applicability prose does NOT name MR-HI -- specific conditions may live in a §4.06.06 supplement or §3.02.05 footnote; one more Chrome pass would settle."},
+     "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-confirmed conditional via Land Use Lookup tool. Was 'verified_column_uncertain' in Claude Code's parse; upgraded to 'verified'."},
+
+    {"zone_code": "OP",       "verdict": "prohibited",  "confidence": 0.95, "tier": "verified",
+     "cited_subsection": "§3.02.05-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null,
+     "notes": "Mini-Warehouse cell blank in OP per Table 3.02.05-1 = prohibited."},
+
+    {"zone_code": "GB",       "verdict": "prohibited", "confidence": 0.85, "tier": "verified",
+     "cited_subsection": "§3.02.02-1 (by absence in Land Use Lookup tool)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-corrected: Land Use Lookup tool does NOT return GB for Mini-Warehouse. §4.06.06 prose names GB but the operational §3.02 table omits it (stale prose, the table wins). The single S Claude Code saw in §3.02.02-1 was PD-MUB, not GB."},
+
+    {"zone_code": "CLI",      "verdict": "prohibited",  "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.02-1 (by absence)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-confirmed: CLI prohibited via Land Use Lookup tool. Default was correct."},
+
+    {"zone_code": "PD-MUB",   "verdict": "conditional", "confidence": 0.95, "tier": "verified",
+     "cited_subsection": "§3.02.02-1 (table); §4.06.06.B.1, §4.06.06.C.1, §4.06.06.C.5 (conditions)",
+     "conditions_json": {"approval_path": "SPEX", "use_specific_standard": "§4.06.06", "min_stories": 3, "no_individual_unit_exterior_access": true, "outdoor_storage_allowed": false, "design_consistency_required": true},
+     "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-corrected: PD-MUB is the actual recipient of the single S in §3.02.02-1 (not GB as Claude Code first guessed). Land Use Lookup tool confirms PD-MUB conditional via SPEX."},
+
+    {"zone_code": "JLMA-20",  "verdict": "prohibited", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.04-1 (by absence in Land Use Lookup tool)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-corrected: Land Use Lookup tool does NOT return JLMA-20 for Mini-Warehouse. Claude Code's PDF extract column-aligned the §3.02.04-1 single S to JLMA-20 (last column) but reviewer's Lookup tool (which is auto-generated from the operational §3.02 table) confirms JLMA-20 is prohibited. The S may have aligned to a different column; flagged for follow-up."},
+
+    {"zone_code": "R-1",   "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-1. Residential."},
+    {"zone_code": "R-2",   "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-2. Residential."},
+    {"zone_code": "R-3",   "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-3. Residential."},
+    {"zone_code": "R-4",   "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-4. Residential."},
+    {"zone_code": "R-8",   "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-8. Residential."},
+    {"zone_code": "R-16",  "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-16. Residential."},
+    {"zone_code": "R-24",  "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in R-24. Multifamily residential."},
+
+    {"zone_code": "PD-RDP", "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in PD-RDP (Research and Development)."},
+    {"zone_code": "PD-SA",  "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in PD-SA (Special Activity)."},
+    {"zone_code": "PD-AAAR","verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in PD-AAAR (Active Adult/Age Restricted)."},
+    {"zone_code": "PD-RV",  "verdict": "conditional", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.04-1 (table); §4.06.06.C.1, §4.06.06.C.5 (conditions)",
+     "conditions_json": {"approval_path": "SPEX", "use_specific_standard": "§4.06.06", "no_individual_unit_exterior_access": true, "outdoor_storage_allowed": false, "design_consistency_required": true},
+     "overlay_codes": null, "legacy_ordinance": null,
+     "sub_areas_eligible": ["Commercial and Workplace Areas"],
+     "notes": "Reviewer-corrected: PD-RV is conditional ONLY in Commercial and Workplace Areas sub-zones; residential portions are prohibited. Buy-box stays over-inclusive (treats all PD-RV as conditional) until parcel-level sub-area data lands."},
+    {"zone_code": "CC(RC)", "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.02-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in CC(RC) Regional Center."},
+
+    {"zone_code": "TR-1",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TR-1."},
+    {"zone_code": "TR-3",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TR-3."},
+    {"zone_code": "TR-10",   "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TR-10."},
+    {"zone_code": "TR-2",    "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TR-2 (legacy)."},
+    {"zone_code": "TSN",     "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TSN."},
+    {"zone_code": "TCN",     "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TCN."},
+    {"zone_code": "TCC",     "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in TCC."},
+
+    {"zone_code": "AR-1",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in AR-1."},
+    {"zone_code": "AR-2",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in AR-2."},
+    {"zone_code": "A-3",     "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in A-3 (legacy)."},
+    {"zone_code": "A-10",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in A-10."},
+
+    {"zone_code": "JLMA-1",  "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in JLMA-1."},
+    {"zone_code": "JLMA-2",  "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in JLMA-2."},
+    {"zone_code": "JLMA-3",  "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.03-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in JLMA-3."},
+
+    {"zone_code": "CR-1",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in CR-1 (legacy)."},
+    {"zone_code": "CR-2",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in CR-2."},
+    {"zone_code": "CR-3",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in CR-3."},
+    {"zone_code": "CR-4",    "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in CR-4."},
+    {"zone_code": "RC",      "verdict": "prohibited", "confidence": 0.95, "tier": "verified", "cited_subsection": "§3.02.04-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Mini-Warehouse blank in RC (Rural Commercial)."},
+
+    {"zone_code": "UE",      "verdict": "prohibited", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.01-1 (by absence in Land Use Lookup tool)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-corrected: UE is prohibited per Land Use Lookup tool. Was a column-uncertain guess; flipped."},
+    {"zone_code": "TRC",     "verdict": "conditional", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.01-1 (table); §4.06.06.B.1, §4.06.06.C.1, §4.06.06.C.2, §4.06.06.C.5 (conditions)",
+     "conditions_json": {"approval_path": "SPEX", "use_specific_standard": "§4.06.06", "min_stories": 3, "no_individual_unit_exterior_access": true, "min_pedestrian_oriented_ground_floor_pct": 50, "outdoor_storage_allowed": false, "design_consistency_required": true},
+     "overlay_codes": null, "legacy_ordinance": null,
+     "sub_areas_eligible": ["Outer Core", "Transit-Designed Supportive Area"],
+     "notes": "Reviewer-confirmed conditional with SPEX. Restricted to Outer Core OR Transit-Designed Supportive Area sub-zones; Inner Core / TDSA outside these = prohibited. Upgrade from column-uncertain."},
+    {"zone_code": "TC",      "verdict": "conditional", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.01-1 (table); §4.06.06.B.1, §4.06.06.C.1, §4.06.06.C.2, §4.06.06.C.5 (conditions)",
+     "conditions_json": {"approval_path": "SPEX", "use_specific_standard": "§4.06.06", "min_stories": 3, "no_individual_unit_exterior_access": true, "min_pedestrian_oriented_ground_floor_pct": 50, "outdoor_storage_allowed": false, "design_consistency_required": true},
+     "overlay_codes": null, "legacy_ordinance": null,
+     "sub_areas_eligible": ["Fringe"],
+     "notes": "Reviewer-corrected: TC is conditional ONLY in Fringe sub-zone (not Core). Was defaulted prohibited; flipped to conditional with sub-area restriction."},
+    {"zone_code": "CC-NC",   "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1 (by absence)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null, "notes": "Reviewer-confirmed prohibited."},
+    {"zone_code": "CC-CC",   "verdict": "prohibited", "confidence": 0.90, "tier": "verified",
+     "cited_subsection": "§3.02.01-1 (by absence)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null,
+     "notes": "Reviewer-corrected: CC-CC is prohibited per Land Use Lookup tool. Was a column-uncertain guess; flipped."},
+    {"zone_code": "CC-SC",   "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1 (by absence)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "sub_areas_eligible": null, "notes": "Reviewer-confirmed prohibited."},
+    {"zone_code": "SN-4",    "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Suburban Neighborhood -- residential, Mini-Warehouse not permitted."},
+    {"zone_code": "SN-6",    "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Suburban Neighborhood -- residential."},
+    {"zone_code": "SCN-8",   "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Suburban Compact Neighborhood -- residential."},
+    {"zone_code": "SCN-16",  "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Suburban Compact Neighborhood -- residential."},
+    {"zone_code": "SCN-24",  "verdict": "prohibited", "confidence": 0.90, "tier": "verified", "cited_subsection": "§3.02.01-1", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Suburban Compact Neighborhood -- residential."},
+
+    {"zone_code": "PUD",     "verdict": "unclear", "confidence": 0.40, "tier": "needs_1993_ordinance_read",
+     "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised",
+     "notes": "Planned Unit Development -- catch-all from 1993 ordinance. Permission depends on approved development plan. Mark unclear at 0.40 so confidence filter excludes from Hot Deals."},
+
+    {"zone_code": "I1",      "verdict": "permitted", "confidence": 0.65, "tier": "convention",
+     "cited_subsection": "1972 Zoning Ordinance (Route 28 Tax District)", "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1972",
+     "notes": "I1 = Industrial under 1972 ordinance, applies in Route 28 Tax District only. Industrial zones typically permit self-storage by-right. Reviewer should verify 1972 ordinance text."},
+
+    {"zone_code": "PDH3",    "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Housing 3 du/ac. PDH* prefix = housing context -> prohibited per per-prefix convention. 19,285 parcels."},
+    {"zone_code": "PDH4",    "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Housing 4 du/ac. PDH* prefix = housing -> prohibited. 40,246 parcels (largest by parcel count)."},
+    {"zone_code": "PDH6",    "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Housing 6 du/ac. PDH* prefix = housing -> prohibited. 2,625 parcels."},
+
+    {"zone_code": "PDGI",    "verdict": "permitted", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development General Industrial. Convention: parallel to current LCZO GI (permitted). 0.40 confidence flags for 1993 ordinance read."},
+    {"zone_code": "PDIP",    "verdict": "conditional", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Industrial Park. Convention: parallel to IP (conditional)."},
+    {"zone_code": "PDOP",    "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Office Park. Convention: parallel to OP (prohibited)."},
+    {"zone_code": "PDCH",    "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Commercial Highway. Convention: highway commercial -> typically prohibits self-storage."},
+    {"zone_code": "PDSC",    "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Shopping Center."},
+    {"zone_code": "PDCCRC",  "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Development Commercial Center Regional Center. Convention: commercial center -> prohibited."},
+    {"zone_code": "PUD-1",   "verdict": "unclear", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "Planned Unit Development -1 variant."},
+    {"zone_code": "C1",      "verdict": "unclear", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "1993-era Commercial-1. Generic commercial; some permit self-storage. Unclear pending ordinance read."},
+
+    {"zone_code": "TR1UBF",  "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "TR-1 with UBF (Urban-Business-Family Buffer?) suffix. TR*UBF prefix = buffer zone -> prohibited convention. 4,407 parcels."},
+    {"zone_code": "TR3UBF",  "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "TR-3 with UBF suffix. TR*UBF prefix -> prohibited. 1,636 parcels."},
+    {"zone_code": "TR1LF",   "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "TR-1 with LF suffix. Buffer / land variant -> prohibited."},
+    {"zone_code": "TR3LF",   "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "TR-3 with LF suffix."},
+    {"zone_code": "TR3LBR",  "verdict": "prohibited", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": "1993_revised", "notes": "TR-3 with LBR suffix (Land Buffer Residential?)."},
+
+    {"zone_code": "TOWNS",   "verdict": "unclear", "confidence": 0.40, "tier": "needs_1993_ordinance_read", "cited_subsection": null, "conditions_json": null, "overlay_codes": null, "legacy_ordinance": null, "notes": "Incorporated towns inside Loudoun (Leesburg, Purcellville, Round Hill, Middleburg, etc.). Parcels are zoned by the TOWN, not by Loudoun County. Permission varies; some town commercial zones may permit self-storage. Unclear at 0.40 -- filtered from Hot Deals. 19,297 parcels."}
+  ]
+}
