@@ -1701,14 +1701,14 @@ async def _run(db: AsyncSession, job: Job) -> None:
     except Exception as exc:
         logger.warning("pre-coverage-refresh session.close() failed (non-fatal): %r", exc)
     try:
-        async with asyncio.timeout(10):
+        async with asyncio.timeout(60):
             job = await db.merge(job)
             jurisdiction = await db.merge(jurisdiction)
     except Exception as exc:
         logger.warning("pre-coverage-refresh merge failed (will best-effort continue): %r", exc)
 
     coverage_started = _stage_started(job, "coverage_refresh", jurisdiction_id=str(jurisdiction.id))
-    async with asyncio.timeout(30):
+    async with asyncio.timeout(180):
         await refresh_jurisdiction_coverage_level(jurisdiction, db)
     await db.flush()
     _stage_completed(job, "coverage_refresh", coverage_started, coverage_level=jurisdiction.coverage_level.value)
