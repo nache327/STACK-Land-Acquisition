@@ -140,15 +140,17 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
-| 1 | Somerset County, NJ | 79 | 10,567 (per Lane E dry-run) | high (13 codes ordinance-cited) | PR #91 open | Lane E |
-| 2 | Loudoun VA + Howard MD cleanup | 7 | TBD from dry-run | trivial/defensible-only | next | Lane E |
-| 3 | Highland, UT | 4 | 937 | trivial (PD-1 + zero-bind cleanup) | queued | Lane E |
-| 4 | Norfolk County, MA | ~100 | 31,127 | medium (pattern-batch MA family) | queued | Lane E |
-| 5 | Middlesex County, MA | ~181 | 85,787 | medium (reuses Norfolk pattern) | queued | Lane E |
+| 1 | Norfolk County, MA | ~100 | 31,127 | medium (pattern-batch MA family) | queued | Lane E |
+| 2 | Middlesex County, MA | ~181 | 85,787 | medium (reuses Norfolk pattern) | queued | Lane E |
+| 3 | Highland, UT | 4 | 937 | trivial (PD-1 only if ordinance supports; zero-bind unsupported stays unclear) | queued | Lane E |
+| done | Somerset County, NJ | 66 remaining | 2,194 remaining unclear-bound | applied; operational | #91 merged + prod applied 2026-05-26 | Lane E |
+| done | Loudoun VA + Howard MD cleanup | 4 remaining active rows | 19,309 remaining unclear-bound | applied; Howard operational, Loudoun partial by design | PR #95 patched/applied; merge pending | Lane E |
 
 _Lane E: append progress notes here (script written / PR opened / merged / refreshed / operational flip)._
 
 - 2026-05-21 22:20 UTC — Somerset NJ script ready and pushed to PR #91. Dry-run: 13 rows, 10,567 parcels move unclear→classified. `PAC-2` / `PAC-3` deliberately left unclear because absent from matrix.
+- 2026-05-26 18:23 UTC — Somerset NJ applied to prod via session-mode DB endpoint after Railway CLI auth remained expired. Updated 13 rows (`EP-250`, `G-B`, `LD`, `LD-1`, `LD-3`, `PAC`, `S-100`, `S-50`, `S-60`, `S-75`, `S-80`, `S-C-V`, `SMD`), moving 10,567 parcels unclear→classified. Refresh: operational, 66 remaining unclear rows, 2,194 remaining unclear-bound parcels, 98.4% classified parcel coverage.
+- 2026-05-26 18:23 UTC — Loudoun + Howard cleanup applied to prod. Loudoun PR #95 corrected before apply to leave `TOWNS` and `PUD-1` unclear rather than overclassify out-of-scope / unverified rows; classified only `C1`, `PDCH`, and `PUD` (63 parcels unclear→classified). Loudoun remains partial with 2 active unclear rows / 19,298 unclear-bound parcels. Howard reviewed `2R0` and `OT`, moved 0 parcels, and remains operational with 2 active unclear rows / 11 unclear-bound parcels.
 
 ---
 
@@ -209,7 +211,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | queued-job watchdog cron | PR #97 merged | Railway cron-log verification blocked by expired local CLI auth | 2026-05-26 (web deploy on `2e8d9e0`; cron logs pending Railway login) |
-| E — Matrix Intelligence | Somerset NJ PR push → Loudoun VA + Howard MD cleanup | PR #91 | none | 2026-05-21 22:20 UTC (Lane E session start) |
+| E — Matrix Intelligence | Norfolk County MA pattern batch next; Somerset applied/refreshed; Loudoun + Howard cleanup applied | #95 open (patched; merge pending) | Railway CLI auth unavailable; direct session DB endpoint used for prod apply/refresh | 2026-05-26 18:23 UTC |
 
 ---
 
@@ -220,6 +222,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | jurisdiction | PR | operational evidence | parcels classified | logged |
 |---|---:|---|---:|---|
+| Somerset County, NJ | #91 | 98.4% classified parcel coverage, 100% matrix match, 66 remaining unclear rows / 2,194 unclear-bound parcels, no blocking gaps | 117,387 | 2026-05-26 |
 | Allentown, PA | #90 | 18/18 human-reviewed, 0 unclear, 100% zoned | 41,872 | 2026-05-21 |
 
 ---
@@ -230,9 +233,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | jurisdiction | flipped on | lane | parcels classified |
 |---|---|---|---:|
+| Somerset County, NJ | 2026-05-26 (via #91 + prod apply/refresh) | E | 117,387 |
 | Allentown, PA | ~2026-05-21 (via PR #90 + 8e82965 + prior matrix) | E | 41,872 |
 | Howard County, MD | live before this sprint | E | 89,461 (95.6% canonical) |
-| Loudoun County, VA | live before this sprint | E | 132,410 (100% LCZO) |
 
 ---
 
@@ -244,9 +247,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 |---:|---|---|---|---:|
 | #89 | fix(audit-cli): disable statement_timeout for full-sweep against prod-scale data | A | **MERGED** (`9fed012`) 2026-05-21 | done |
 | #90 | feat(allentown-2025): apply 2025 ordinance verdicts + ship vocabulary_aliases table | E | **MERGED** 2026-05-21 | done |
-| #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | open | next |
+| #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | **MERGED** (`0893e28`) 2026-05-22 | done; prod applied/refreshed 2026-05-26 |
 | #94 | fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern) | A | open | urgent; before Lane B retries five overlay-failed jurisdictions |
-| (local) | Lane E: Loudoun VA adjudication script (`loudoun_va_matrix_adjudication.py` in worktree) | E | not pushed | sequence after Somerset |
+| #95 | feat(matrix): Loudoun VA + Howard MD unclear-row cleanup | E | open; patched + prod applied | merge after review/checks |
 | #97 | feat(ops): queued-job watchdog cron | D | **MERGED** (`2e8d9e0`) 2026-05-26 | done |
 | (drafted) | Lane A: truthfulness patch (`audit_zoning_coverage.py` `_build_audit`) | A | drafted by Lane A | after Somerset, after fresh audit |
 
@@ -287,6 +290,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-26
 
+- **APPLY+REFRESH** Somerset County, NJ. Lane E. `somerset_nj_matrix_adjudication.py` applied 13 ordinance-cited rows (`EP-250`, `G-B`, `LD`, `LD-1`, `LD-3`, `PAC`, `S-100`, `S-50`, `S-60`, `S-75`, `S-80`, `S-C-V`, `SMD`) via session-mode DB endpoint. Parcel delta: 10,567 unclear→classified. Refresh: operational, 66 remaining unclear rows, 2,194 remaining unclear-bound parcels.
+- **APPLY+REFRESH** Loudoun VA + Howard MD cleanup. Lane E. PR #95 corrected before apply: `TOWNS` and `PUD-1` left unclear; `C1`, `PDCH`, `PUD` classified conditional with cited Loudoun ordinance sources. Loudoun parcel delta: 63 unclear→classified; operational did not flip (partial, high unclear share from `TOWNS`). Howard `2R0` and `OT` reviewed and left unclear; parcel delta 0; operational remains true.
+- **RUNPATH** Railway CLI still unavailable locally (`invalid_grant` / no linked project). Lane E used the configured Supabase session-mode DB endpoint for apply/refresh because the transaction pooler rejects asyncpg prepared statements.
 - **MERGED** PR #97 `feat(ops): queued-job watchdog cron` into `main` as `2e8d9e0`. Lane D. Main CI passed and Railway web `/health` + `/api/debug/env` report `pipeline_version: 2e8d9e09fcbf`; Railway cron service log verification is blocked locally because `railway logs` returns `invalid_grant` / `Unauthorized` until `railway login` is refreshed.
 - **OPEN** PR #97 `feat(ops): queued-job watchdog cron`. Lane D. Adds `backend/scripts/queued_job_watchdog.py` with 0/1/2 exits and updates `backend/railway-cron.toml` so the queued-job watchdog runs every 10 minutes while the daily digest still runs during the 12:00 UTC hour.
 
