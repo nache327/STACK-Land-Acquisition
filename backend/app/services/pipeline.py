@@ -1729,8 +1729,16 @@ async def _run(db: AsyncSession, job: Job) -> None:
         # or backfill_parcel_zoning_from_districts in a downstream stage)
         # raises MissingGreenlet. AsyncSession is not concurrency-safe.
         async with asyncio.timeout(ENRICHMENT_TIMEOUT_SECONDS):
-            flood_count = await apply_flood_overlay(jurisdiction.id, db)
-            wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+            try:
+                flood_count = await apply_flood_overlay(jurisdiction.id, db)
+            except Exception as flood_exc:
+                logger.warning("Flood overlay failed (non-fatal): %s", flood_exc)
+                flood_count = 0
+            try:
+                wetland_count = await apply_wetland_overlay(jurisdiction.id, db)
+            except Exception as wetland_exc:
+                logger.warning("Wetland overlay failed (non-fatal): %s", wetland_exc)
+                wetland_count = 0
         # AADT runs on a SEPARATE raw asyncpg connection inside
         # apply_aadt_overlay (no shared state with the SQLAlchemy session).
         # If it raises, contain it so the rest of the pipeline still
