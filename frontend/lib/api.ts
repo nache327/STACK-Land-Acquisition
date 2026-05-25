@@ -343,4 +343,148 @@ export const api = {
     const raw = await res.json() as { results: Record<string, SaturationBatchResult> };
     return raw.results;
   },
+
+  // ---- admin / source review ----------------------------------------------
+
+  async listSources(
+    jurisdictionId: string,
+    opts: {
+      status?: string;
+      municipality?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ): Promise<{ sources: import("./schemas").ZoningSource[]; total?: number }> {
+    const params = new URLSearchParams();
+    if (opts.status) params.set("status", opts.status);
+    if (opts.municipality) params.set("municipality", opts.municipality);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const raw = await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/_sources${qs ? `?${qs}` : ""}`,
+    );
+    if (Array.isArray(raw)) return { sources: raw as import("./schemas").ZoningSource[] };
+    return raw as { sources: import("./schemas").ZoningSource[]; total?: number };
+  },
+
+  async reviewSource(
+    jurisdictionId: string,
+    sourceId: string,
+    body: import("./schemas").SourceReviewRequest,
+  ): Promise<unknown> {
+    return fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/_sources/${sourceId}/_review`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  },
+
+  async bulkReviewSources(
+    jurisdictionId: string,
+    body: import("./schemas").BulkReviewRequest,
+  ): Promise<import("./schemas").BulkReviewResponse> {
+    return fetchJSON<import("./schemas").BulkReviewResponse>(
+      `/api/jurisdictions/${jurisdictionId}/_sources/_bulk-review`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  },
+
+  async getSpatialCheck(
+    jurisdictionId: string,
+    sourceId: string,
+  ): Promise<import("./schemas").SpatialCheckResponse> {
+    return fetchJSON<import("./schemas").SpatialCheckResponse>(
+      `/api/jurisdictions/${jurisdictionId}/_sources/${sourceId}/_spatial-check`,
+    );
+  },
+
+  // ---- admin / coverage ---------------------------------------------------
+
+  async listAdminCoverage(): Promise<{
+    count: number;
+    jurisdictions: import("./schemas").CoverageJurisdiction[];
+  }> {
+    return fetchJSON("/api/admin/coverage");
+  },
+
+  async getCoverageProgression(
+    jurisdictionId: string,
+  ): Promise<{ snapshots: import("./schemas").ProgressionSnapshot[] }> {
+    return fetchJSON(
+      `/api/admin/coverage/progression?jurisdiction_id=${jurisdictionId}`,
+    );
+  },
+
+  async refreshCoverage(
+    jurisdictionId?: string,
+  ): Promise<{ snapshots_written: number; summary?: unknown }> {
+    const qs = jurisdictionId ? `?jurisdiction_id=${jurisdictionId}` : "";
+    return fetchJSON(`/api/admin/coverage/refresh${qs}`, { method: "POST" });
+  },
+
+  // ---- admin / discovery + ingest ----------------------------------------
+
+  async discoverMunicipalZoning(
+    countyId: string,
+  ): Promise<unknown> {
+    return fetchJSON(
+      `/api/jurisdictions/${countyId}/_discover-municipal-zoning`,
+      { method: "POST" },
+    );
+  },
+
+  async ingestMunicipalZoning(
+    countyId: string,
+    body: { source_id?: string; municipality?: string } = {},
+  ): Promise<unknown> {
+    return fetchJSON(
+      `/api/jurisdictions/${countyId}/_ingest-municipal-zoning`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+  },
+
+  // ---- admin / sources queue (stub — backend endpoint not yet wired) ------
+
+  async getSourcesQueue(opts: {
+    status?: string;
+    state?: string;
+    limit?: number;
+  } = {}): Promise<{
+    sources: import("./schemas").QueueSource[];
+    total?: number;
+  }> {
+    // Falls back to a cross-jurisdiction aggregate; until /admin/sources/queue
+    // ships, this returns an empty queue gracefully.
+    void opts;
+    return { sources: [] };
+  },
+
+  // ---- admin / rescore (stubs — backend endpoints not yet wired) ----------
+
+  async rescoreStaleSources(
+    jurisdictionId: string,
+    body: import("./schemas").RescoreRequest = {},
+  ): Promise<import("./schemas").RescoreResponse> {
+    void jurisdictionId;
+    void body;
+    throw new Error("rescoreStaleSources: endpoint not yet deployed");
+  },
+
+  async rescoreRollback(
+    jurisdictionId: string,
+    snapshot: import("./schemas").RescoreSnapshot,
+  ): Promise<import("./schemas").RollbackResponse> {
+    void jurisdictionId;
+    void snapshot;
+    throw new Error("rescoreRollback: endpoint not yet deployed");
+  },
+
+  // ---- admin / remediation (stub — backend endpoint not yet wired) -------
+
+  async getMunicipalitiesRemediation(
+    jurisdictionId: string,
+  ): Promise<{ municipalities: import("./schemas").RemediationMunicipality[] }> {
+    void jurisdictionId;
+    return { municipalities: [] };
+  },
 };
