@@ -143,27 +143,113 @@ async def _top_parcels_for_filter(
     # both per-acre AND total caps need to fire for a deal to qualify.
     max_total_price = filter_json.get("maxTotalPrice")
 
-    # ``require_listed`` is a hard filter: drop parcels with no current
-    # matched listing (confidence >= 0.85). The LATERAL join below
-    # picks the most-recently-seen listing per parcel; the WHERE branch
-    # turns the requirement on/off without two SQL paths.
+    # Pre-narrow into a MATERIALIZED `eligible` CTE BEFORE the three
+    # LATERAL joins (listing / zone-matrix / dashboard-job). The driving
+    # table depends on require_listed:
     #
-    # The `zum` LATERAL is new — used for the conditional-zoning and
-    # low-confidence soft flags. It picks the most-specific matrix row
-    # (municipality-scoped wins over NULL-default) mirroring
-    # `buybox_scoring.py`'s lateral pattern so the flags reflect the
-    # same row the scorer used.
-    sql = text(
+    #   require_listed=true (Hot Deals): `score >= :min_score` matches
+    #     ~354k parcels for the filter — score is barely selective. The
+    #     selective predicate is "has a current matched listing"
+    #     (~600 rows total), so DRIVE from forsale_listings and join INTO
+    #     pbs/parcels. DISTINCT ON (p.id) collapses parcels with multiple
+    #     current listings (the outer `lst` LATERAL re-picks the
+    #     most-recent one, so which listing wins here is irrelevant).
+    #     ~0.9 s vs ~69 s for the old pbs-driven LATERAL-over-all plan
+    #     (verified on prod, identical row set).
+    #
+    #   require_listed=false (e.g. Default Box): no listing requirement to
+    #     drive from, so scan pbs via ix_pbs_filter_unnotified
+    #     (buybox_filter_id, score DESC) WHERE notified_at IS NULL.
+    #
+    # AS MATERIALIZED is load-bearing in both: without it Postgres inlines
+    # the CTE and re-runs the LATERAL subqueries per-row across the whole
+    # set (the pre-fix plan). Materializing keeps the LATERALs below
+    # against just the narrowed result.
+    #
+    # The `zum` LATERAL feeds the conditional-zoning / low-confidence soft
+    # flags; it picks the most-specific matrix row (municipality-scoped
+    # wins over NULL-default) mirroring buybox_scoring.py.
+    _eligible_cols = """
+                p.id              AS parcel_id,
+                p.apn             AS apn,
+                p.address         AS address,
+                p.owner_name      AS owner_name,
+                p.acres           AS acres,
+                p.has_structure   AS has_structure,
+                p.improvement_value AS improvement_value,
+                p.in_flood_zone   AS in_flood_zone,
+                p.in_wetland      AS in_wetland,
+                p.zoning_code     AS zoning_code,
+                p.city            AS city,
+                p.jurisdiction_id AS jurisdiction_id,
+                pbs.score         AS score,
+                pbs.tier          AS tier,
+                pbs.factors       AS factors
+    """
+    # Parcel/score-only predicates shared by both driving shapes. NULL
+    # acres bindings pass through. The NOT EXISTS is the alert-then-digest
+    # dedupe: skip parcels already emailed as a real-time listing alert in
+    # the last 14 days (58 Dunkard Church / 199 Grandview both hit this
+    # dupe in the May 13-20 reviewer audit).
+    _eligible_predicates = """
+              AND pbs.notified_at IS NULL
+              AND pbs.score >= :min_score
+              AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL
+                   OR p.acres IS NULL
+                   OR p.acres >= CAST(:min_acres AS DOUBLE PRECISION))
+              AND (CAST(:max_acres AS DOUBLE PRECISION) IS NULL
+                   OR p.acres IS NULL
+                   OR p.acres <= CAST(:max_acres AS DOUBLE PRECISION))
+              AND NOT EXISTS (
+                SELECT 1 FROM notified_listings nl
+                 WHERE nl.filter_id = :fid
+                   AND nl.parcel_id = p.id
+                   AND nl.notified_at > NOW() - INTERVAL '14 days'
+              )
+    """
+    if require_listed:
+        # Listings-driven: forsale_listings (current, conf>=0.85) is the
+        # selective set. INNER joins to parcels + pbs; DISTINCT ON collapses
+        # multi-listing parcels back to one row each.
+        eligible_cte = f"""
+        WITH eligible AS MATERIALIZED (
+            SELECT DISTINCT ON (p.id)
+            {_eligible_cols}
+            FROM forsale_listings fl
+            JOIN parcels p ON p.id = fl.matched_parcel_id
+            JOIN parcel_buybox_scores pbs
+                 ON pbs.parcel_id = p.id
+                AND pbs.buybox_filter_id = :fid
+            WHERE fl.is_current = true
+              AND fl.match_confidence >= 0.85
+            {_eligible_predicates}
+            ORDER BY p.id
+        )
         """
+    else:
+        # pbs-driven: no listing requirement to narrow on.
+        eligible_cte = f"""
+        WITH eligible AS MATERIALIZED (
+            SELECT
+            {_eligible_cols}
+            FROM parcel_buybox_scores pbs
+            JOIN parcels p ON p.id = pbs.parcel_id
+            WHERE pbs.buybox_filter_id = :fid
+            {_eligible_predicates}
+        )
+        """
+    sql = text(
+        eligible_cte
+        + """
         SELECT
-            p.id            AS parcel_id,
-            p.apn           AS apn,
-            p.address       AS address,
-            p.owner_name    AS owner_name,
-            p.acres         AS acres,
-            pbs.score       AS score,
-            pbs.tier        AS tier,
-            pbs.factors     AS factors,
+            e.parcel_id     AS parcel_id,
+            e.apn           AS apn,
+            e.address       AS address,
+            e.owner_name    AS owner_name,
+            e.acres         AS acres,
+            e.score         AS score,
+            e.tier          AS tier,
+            e.factors       AS factors,
             j.id            AS jurisdiction_id,
             j.name          AS jurisdiction_name,
             lst.source                  AS listing_source,
@@ -176,23 +262,22 @@ async def _top_parcels_for_filter(
             latest_job.id               AS dashboard_job_id,
             -- Soft flags (computed in SQL so the WHERE-level filter and
             -- the email render see the same booleans).
-            (p.has_structure = TRUE OR COALESCE(p.improvement_value, 0) > 50000)
+            (e.has_structure = TRUE OR COALESCE(e.improvement_value, 0) > 50000)
                 AS soft_has_building,
             (lst.sale_price IS NULL)                       AS soft_no_price,
             (zum.self_storage::text = 'conditional')       AS soft_conditional,
             (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
                 AS soft_low_confidence,
-            (p.in_flood_zone = TRUE)                       AS soft_flood,
-            (p.in_wetland    = TRUE)                       AS soft_wetland
-        FROM parcel_buybox_scores pbs
-        JOIN parcels p       ON p.id = pbs.parcel_id
-        JOIN jurisdictions j ON j.id = p.jurisdiction_id
+            (e.in_flood_zone = TRUE)                       AS soft_flood,
+            (e.in_wetland    = TRUE)                       AS soft_wetland
+        FROM eligible e
+        JOIN jurisdictions j ON j.id = e.jurisdiction_id
         LEFT JOIN LATERAL (
             SELECT source, sale_price, days_on_market,
                    listing_broker_company, listing_broker_contact,
                    listing_broker_phone, listing_broker_email
               FROM forsale_listings
-             WHERE matched_parcel_id = p.id
+             WHERE matched_parcel_id = e.parcel_id
                AND is_current = true
                AND match_confidence >= 0.85
              ORDER BY last_seen_at DESC
@@ -201,9 +286,9 @@ async def _top_parcels_for_filter(
         LEFT JOIN LATERAL (
             SELECT self_storage, confidence
               FROM zone_use_matrix
-             WHERE jurisdiction_id = p.jurisdiction_id
-               AND zone_code      = p.zoning_code
-               AND (municipality IS NULL OR municipality = p.city)
+             WHERE jurisdiction_id = e.jurisdiction_id
+               AND zone_code      = e.zoning_code
+               AND (municipality IS NULL OR municipality = e.city)
                AND deleted_at IS NULL
              ORDER BY (municipality IS NULL) ASC
              LIMIT 1
@@ -216,51 +301,29 @@ async def _top_parcels_for_filter(
             -- spinning forever on a 404.
             SELECT id
               FROM jobs
-             WHERE jurisdiction_id = j.id
+             WHERE jurisdiction_id = e.jurisdiction_id
                AND status = 'ready'
              ORDER BY finished_at DESC NULLS LAST, created_at DESC
              LIMIT 1
         ) latest_job ON true
-        WHERE pbs.buybox_filter_id = :fid
-          AND pbs.notified_at IS NULL
-          AND pbs.score >= :min_score
-          AND (NOT :require_listed OR lst.source IS NOT NULL)
-          -- Alert-then-digest dedupe: skip parcels that were already
-          -- emailed as a real-time listing alert in the last 14 days.
-          -- listing_alerts.py keys dedupe on (filter, listing); this
-          -- worker keys on parcels.notified_at. Without the cross-check,
-          -- a parcel alerted Monday gets digested Tuesday -- 58 Dunkard
-          -- Church and 199 Grandview both hit this dupe in the May 13-20
-          -- reviewer audit.
-          AND NOT EXISTS (
-            SELECT 1 FROM notified_listings nl
-             WHERE nl.filter_id = :fid
-               AND nl.parcel_id = p.id
-               AND nl.notified_at > NOW() - INTERVAL '14 days'
-          )
-          -- Hot Deals v2: hard-filter knobs. NULL bindings pass through
-          -- so non-Hot-Deals filters (e.g. Default Box) are unaffected.
-          AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL
-               OR p.acres IS NULL
-               OR p.acres >= CAST(:min_acres AS DOUBLE PRECISION))
-          AND (CAST(:max_acres AS DOUBLE PRECISION) IS NULL
-               OR p.acres IS NULL
-               OR p.acres <= CAST(:max_acres AS DOUBLE PRECISION))
+        -- Listing-dependent filters stay here: they need lst, which only
+        -- exists after the LATERAL join above.
+        WHERE (NOT :require_listed OR lst.source IS NOT NULL)
           -- Price-per-acre cap fires only when both price and acres
           -- are populated. Unpriced listings pass through and surface
           -- as the "no asking price" soft flag instead.
           AND (CAST(:max_price_per_acre AS DOUBLE PRECISION) IS NULL
                OR lst.sale_price IS NULL
-               OR p.acres IS NULL
-               OR p.acres = 0
-               OR (lst.sale_price / p.acres)
+               OR e.acres IS NULL
+               OR e.acres = 0
+               OR (lst.sale_price / e.acres)
                    <= CAST(:max_price_per_acre AS DOUBLE PRECISION))
           -- Total-price ceiling. Unpriced listings pass through and
           -- surface as the "no asking price" soft flag instead.
           AND (CAST(:max_total_price AS DOUBLE PRECISION) IS NULL
                OR lst.sale_price IS NULL
                OR lst.sale_price <= CAST(:max_total_price AS DOUBLE PRECISION))
-        ORDER BY pbs.score DESC, pbs.parcel_id
+        ORDER BY e.score DESC, e.parcel_id
         LIMIT :lim
         """
     )
