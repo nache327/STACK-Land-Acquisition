@@ -1,26 +1,18 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T22:54:34Z",
+  "updated_at": "2026-05-26T23:00:00Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-a-integrator",
-      "action": "Finish B9 forced-retry cache preflight bypass before additional Nassau retries.",
-      "wake_condition": "Awake; Nassau 3c7ce534 failed at pipeline.py:1229 before parcel counters.",
-      "dependency_order": "Run before Lane B Nassau validation retry.",
-      "expected_kpi": "failed-job reduction for forced retries blocked before parcel download"
-    },
-    {
-      "rank": 2,
       "lane": "lane-b-retry-sweep",
-      "action": "Pause Nassau retry until B9 fix is merged and deployed; Monmouth B7 validation may proceed only if it does not compete with B9 deploy verification.",
-      "wake_condition": "B9 fix merged to main, deployed, and `/health.pipeline_version` confirms the deploy SHA.",
-      "dependency_order": "Retry Nassau County NY first after B9 deploy, then Monmouth County NJ for B7 validation.",
+      "action": "Resume Nassau validation retry now that PR #109 is deployed.",
+      "wake_condition": "Immediate; `/health.pipeline_version` reports `0afa78a07579`.",
+      "dependency_order": "Retry Nassau County NY first, then Monmouth County NJ for B7 validation.",
       "expected_kpi": "failed-job reduction and clearer Cat-B source-acquisition queue"
     },
     {
-      "rank": 3,
+      "rank": 2,
       "lane": "lane-e-matrix",
       "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while B7 validation is active unless review bandwidth explicitly requests it.",
       "wake_condition": "Explicit matrix-throughput dispatch after Lane B B7 validation state is clear or review bandwidth is available.",
@@ -28,7 +20,7 @@
       "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
     },
     {
-      "rank": 4,
+      "rank": 3,
       "lane": "lane-c-spatial-cleanup",
       "action": "Run bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
       "wake_condition": "Lane B retry jobs are started or not competing for the same operational attention.",
@@ -36,7 +28,7 @@
       "expected_kpi": "bbox null count reduction"
     },
     {
-      "rank": 5,
+      "rank": 4,
       "lane": "lane-d-watchdog",
       "action": "Verify Railway cron logs for PR #97 watchdog.",
       "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
@@ -44,7 +36,7 @@
       "expected_kpi": "operator workflow confidence for stuck-job prevention"
     },
     {
-      "rank": 6,
+      "rank": 5,
       "lane": "lane-e-matrix",
       "action": "Hold next matrix recommendation; Norfolk MA, Middlesex MA, and Highland UT batch is already merged in PR #100.",
       "wake_condition": "Branch is merged and a new Lane E assignment is explicitly approved.",
@@ -86,7 +78,7 @@
         "Nassau County, NY",
         "Monmouth County, NJ"
       ],
-      "purpose": "After B9 deploy only: validate forced Nassau retry reaches parcel download/ingest, then validate deployed PR #106 non-fatal zone-use matrix bootstrap handling."
+      "purpose": "Validate forced Nassau retry reaches parcel download/ingest, then validate deployed PR #106 non-fatal zone-use matrix bootstrap handling."
     },
     {
       "rank": 2,
@@ -149,7 +141,6 @@
     }
   ],
   "duplicate_work_guards": [
-    "Do not dispatch another Nassau forced retry until B9 is merged and deployed.",
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
     "Do not dispatch Westchester/Middlesex/Fairfield broad retries until the B7 validation retries have run against deployed `ab88dba1ef6b`.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
