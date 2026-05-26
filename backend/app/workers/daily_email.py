@@ -225,6 +225,19 @@ async def _top_parcels_for_filter(
           AND pbs.notified_at IS NULL
           AND pbs.score >= :min_score
           AND (NOT :require_listed OR lst.source IS NOT NULL)
+          -- Alert-then-digest dedupe: skip parcels that were already
+          -- emailed as a real-time listing alert in the last 14 days.
+          -- listing_alerts.py keys dedupe on (filter, listing); this
+          -- worker keys on parcels.notified_at. Without the cross-check,
+          -- a parcel alerted Monday gets digested Tuesday -- 58 Dunkard
+          -- Church and 199 Grandview both hit this dupe in the May 13-20
+          -- reviewer audit.
+          AND NOT EXISTS (
+            SELECT 1 FROM notified_listings nl
+             WHERE nl.filter_id = :fid
+               AND nl.parcel_id = p.id
+               AND nl.notified_at > NOW() - INTERVAL '14 days'
+          )
           -- Hot Deals v2: hard-filter knobs. NULL bindings pass through
           -- so non-Hot-Deals filters (e.g. Default Box) are unaffected.
           AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL

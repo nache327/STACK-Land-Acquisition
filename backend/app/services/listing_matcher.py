@@ -84,12 +84,23 @@ async def _tier1_exact(
     norm = normalize(listing.address)
     if not norm:
         return None
+    # Compare against parcels.normalized_address (materialized via the
+    # same normalize() in backfill_normalized_address.py) so both sides
+    # get identical suffix/directional/route canonicalization. Fall back
+    # to the inline lower()+strip-punctuation match for jurisdictions
+    # not yet backfilled (normalized_address IS NULL) so they don't
+    # regress -- though that path only hits when listing + parcel happen
+    # to already share the abbreviated form.
     row = await db.execute(
         text(
             """
             SELECT id FROM parcels
              WHERE jurisdiction_id = :jid
-               AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr
+               AND (
+                 normalized_address = :addr
+                 OR (normalized_address IS NULL
+                     AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr)
+               )
              LIMIT 2
             """
         ).bindparams(jid=listing.jurisdiction_id, addr=norm)
@@ -117,7 +128,11 @@ async def _tier2_stripped(
             """
             SELECT id FROM parcels
              WHERE jurisdiction_id = :jid
-               AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr
+               AND (
+                 normalized_address = :addr
+                 OR (normalized_address IS NULL
+                     AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr)
+               )
              LIMIT 2
             """
         ).bindparams(jid=listing.jurisdiction_id, addr=norm)

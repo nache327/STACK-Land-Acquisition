@@ -88,10 +88,26 @@ async def _alert_rows_for_filter(
     db: AsyncSession,
     filter_id: uuid.UUID,
     jurisdiction_id: uuid.UUID,
+    filter_json: dict | None,
 ) -> list[AlertRow]:
     """Find listings in this jurisdiction that match this filter and
     haven't been alerted yet. Joins parcel_buybox_scores so the
-    score is the live scored value (post listing_score_boost)."""
+    score is the live scored value (post listing_score_boost).
+
+    Buy-box hard filters: read the same knobs the daily digest applies
+    in daily_email._top_parcels_for_filter (minAcres, maxAcres,
+    maxPricePerAcre, maxTotalPrice). Prior to this, alerts only
+    enforced the score floor (>=85) -- meaning real-time alerts shipped
+    $16M+ deals, 0.4-acre condo parcels, etc., that the daily digest
+    would have filtered out. NULL knob = filter inactive (pass-through),
+    matching daily_email's CAST(:knob AS DOUBLE PRECISION) IS NULL
+    semantics.
+    """
+    fj = filter_json or {}
+    min_acres          = fj.get("minAcres")
+    max_acres          = fj.get("maxAcres")
+    max_price_per_acre = fj.get("maxPricePerAcre")
+    max_total_price    = fj.get("maxTotalPrice")
     sql = text(
         """
         SELECT
@@ -139,6 +155,25 @@ async def _alert_rows_for_filter(
           AND l.match_confidence >= 0.85
           AND pbs.score >= :min_score
           AND nl.id IS NULL
+          -- Buy-box hard filters (mirror daily_email._top_parcels_for_filter).
+          -- NULL knob = pass-through; NULL parcel acres = pass-through
+          -- (acreage-missing parcels surface for manual review, same as
+          -- the daily digest convention).
+          AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL
+               OR p.acres IS NULL
+               OR p.acres >= CAST(:min_acres AS DOUBLE PRECISION))
+          AND (CAST(:max_acres AS DOUBLE PRECISION) IS NULL
+               OR p.acres IS NULL
+               OR p.acres <= CAST(:max_acres AS DOUBLE PRECISION))
+          AND (CAST(:max_price_per_acre AS DOUBLE PRECISION) IS NULL
+               OR l.sale_price IS NULL
+               OR p.acres IS NULL
+               OR p.acres = 0
+               OR (l.sale_price / p.acres)
+                   <= CAST(:max_price_per_acre AS DOUBLE PRECISION))
+          AND (CAST(:max_total_price AS DOUBLE PRECISION) IS NULL
+               OR l.sale_price IS NULL
+               OR l.sale_price <= CAST(:max_total_price AS DOUBLE PRECISION))
         ORDER BY pbs.score DESC, l.last_seen_at DESC
         """
     )
@@ -148,6 +183,10 @@ async def _alert_rows_for_filter(
             "fid": filter_id,
             "jid": jurisdiction_id,
             "min_score": ALERT_SCORE_MIN,
+            "min_acres": min_acres,
+            "max_acres": max_acres,
+            "max_price_per_acre": max_price_per_acre,
+            "max_total_price": max_total_price,
         },
     )
     out: list[AlertRow] = []
@@ -284,7 +323,12 @@ async def fire_alerts_for_upload(
     total_alerts = 0
     filters_sent = 0
     for f in filters:
-        rows = await _alert_rows_for_filter(db, f.id, jurisdiction_id)
+        # filter_json carries the hard-filter knobs (minAcres, maxAcres,
+        # maxPricePerAcre, maxTotalPrice). Pass through so the SQL can
+        # apply the same guardrails as the daily digest.
+        rows = await _alert_rows_for_filter(
+            db, f.id, jurisdiction_id, f.filter_json,
+        )
         if not rows:
             continue
         if not settings.digest_default_recipient:
