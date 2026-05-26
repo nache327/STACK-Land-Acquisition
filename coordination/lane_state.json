@@ -39,18 +39,18 @@
       "updated_at": "2026-05-26T18:45:00Z"
     },
     "lane-a-integrator": {
-      "branch": "fix/pipeline-nonfatal-zone-matrix-bootstrap",
-      "status": "running",
-      "task": "Classify Lane B retry failure clusters B7, B6, and B8; carry PR #106 narrow B7 containment through review/merge/deploy.",
+      "branch": "docs/phase2-b7-deploy-state",
+      "status": "completed",
+      "task": "B7 classified, fixed, merged, and deployed; B6/B8 classified as separate follow-ups.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Awake; Lane B Monmouth terminal state confirmed B7 after parcel download/ingest completed and before overlays.",
+      "wake_condition": "Wake if Nassau/Monmouth retry still fails at bootstrap after PR #106 deploy, or if B6/B8 need Lane A code triage.",
       "latest_kpi_delta": {
-        "b7": "confirmed: Monmouth 08b0f866 and Nassau 80120217 failed at pipeline.py:1680 -> bootstrap_zone_use_matrix; New York 557b3c44 has same signature; PR #106 open",
+        "b7": "confirmed and fixed: PR #106 merged as ab88dba1ef6b6203f1752d078683be57696dadb4; Railway /health.pipeline_version reports ab88dba1ef6b",
         "b6": "classified separately: Westchester 886141e2 failed at pipeline.py:1752 db.commit after overlays",
         "b8": "classified separately: Middlesex 110b0a01 and Fairfield 30997930 cancelled during large-county mapping plateau"
       },
-      "updated_at": "2026-05-26T22:20:19Z"
+      "updated_at": "2026-05-26T22:32:00Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
