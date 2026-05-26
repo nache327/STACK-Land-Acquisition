@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T20:08:25Z",
+  "updated_at": "2026-05-26T22:20:19Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -10,6 +10,30 @@
       "dependency": "Burlington per-town zoning source acquisition",
       "unblock_condition": "Verified per-town zoning source path staged beyond the single Westampton scoped pilot, or Burlington explicitly remains Cat-B with next town target selected.",
       "status": "open"
+    },
+    {
+      "id": "B6",
+      "owner_lane": "lane-a-integrator",
+      "severity": "high",
+      "dependency": "Westchester post-overlay commit/session reliability classification",
+      "unblock_condition": "Westchester post-overlay db.commit() failure at pipeline.py:1752 is fixed or explicitly parked with a retry-safe disposition.",
+      "status": "active_separate_followup"
+    },
+    {
+      "id": "B7",
+      "owner_lane": "lane-a-integrator",
+      "severity": "high",
+      "dependency": "PR #106 non-fatal zone-use matrix bootstrap reliability patch",
+      "unblock_condition": "PR #106 is merged and a deployed main SHA contains non-fatal handling for bootstrap_zone_use_matrix failures, then Nassau/Monmouth retries may resume.",
+      "status": "confirmed_pr_open"
+    },
+    {
+      "id": "B8",
+      "owner_lane": "lane-a-integrator",
+      "severity": "medium",
+      "dependency": "Middlesex/Fairfield large-county mapping plateau classification",
+      "unblock_condition": "Mapping plateau/cancel class is either reproduced with enough evidence for a narrow code fix or parked with an explicit operator retry plan.",
+      "status": "parked_separate_followup"
     },
     {
       "id": "D1",
