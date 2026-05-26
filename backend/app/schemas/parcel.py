@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.zoning_district import ZoneClass
 
@@ -34,6 +34,16 @@ class ParcelRead(BaseModel):
     storage_permission: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    # Flood/wetland flags are NULL for parcels whose ingest hasn't run the
+    # FEMA/wetland overlay yet (common right after a fresh county load).
+    # Treat NULL as "not flagged" so the row still serializes — these are
+    # display booleans, and "unknown" surfaces as unflagged rather than
+    # 500-ing the whole list. See _coerce_flag on CandidateParcelRow too.
+    @field_validator("in_flood_zone", "in_wetland", mode="before")
+    @classmethod
+    def _coerce_flag(cls, v: object) -> bool:
+        return bool(v)
 
 
 class ParcelDetail(ParcelRead):
@@ -145,6 +155,14 @@ class CandidateParcelRow(BaseModel):
     violation_reasons: list[str]
     geom: dict[str, Any] | None = None
     listing_summary: ListingSummary | None = None
+
+    # NULL flood/wetland flags (ingest hasn't run the overlay) coerce to
+    # False so a fresh-loaded county still renders on the map instead of
+    # 500-ing. Mirrors ParcelRead._coerce_flag.
+    @field_validator("in_flood_zone", "in_wetland", mode="before")
+    @classmethod
+    def _coerce_flag(cls, v: object) -> bool:
+        return bool(v)
 
 
 class CandidateParcelSearchResponse(BaseModel):
