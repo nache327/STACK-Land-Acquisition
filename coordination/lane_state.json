@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T20:15:09Z",
+  "updated_at": "2026-05-26T22:41:44Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -97,18 +97,21 @@
       "updated_at": "2026-05-26T00:00:00Z"
     },
     "lane-e-matrix": {
-      "branch": null,
-      "status": "awaiting_merge",
-      "task": "Merge PR #95 after review/checks, then start Norfolk County MA pattern batch.",
-      "blocked": true,
-      "blocker": "E1",
-      "wake_condition": "PR #95 checks pass and no reviewer objections remain.",
+      "branch": "feat/matrix-norfolk-ma-pattern-batch",
+      "status": "paused_after_merge",
+      "task": "MA/Highland matrix batch commit hygiene complete: PR #100 merged; no new matrix scope started.",
+      "blocked": false,
+      "blocker": null,
+      "wake_condition": "Wake only if review bandwidth explicitly requests next Matrix Operationalization Queue item after Lane B B7 validation state is clear.",
       "latest_kpi_delta": {
         "somerset_nj": "operational after 10,567 parcels unclear to classified",
         "loudoun_va_howard_md_cleanup": "applied; Loudoun remains partial by design, Howard remains operational",
-        "next_unclear_reduction_target": "Norfolk County, MA, about 100 unclear rows and 31,127 parcels at stake"
+        "norfolk_ma": "PR #100 merged after prod apply/refresh; 16,489 parcels moved unclear to classified; remains partial",
+        "middlesex_ma": "PR #100 merged after prod apply/refresh; 18,401 parcels moved unclear to classified; remains partial",
+        "highland_ut": "PR #100 merged after prod apply/refresh; PD-1 reviewed and left unclear; 0 parcel delta",
+        "expected_trustworthy_parcel_verdict_delta": 34890
       },
-      "updated_at": "2026-05-26T18:23:00Z"
+      "updated_at": "2026-05-26T22:41:44Z"
     }
   }
 }
