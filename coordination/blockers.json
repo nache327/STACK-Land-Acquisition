@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T22:41:44Z",
+  "updated_at": "2026-05-26T22:54:34Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -26,6 +26,14 @@
       "dependency": "Middlesex/Fairfield large-county mapping plateau classification",
       "unblock_condition": "Mapping plateau/cancel class is either reproduced with enough evidence for a narrow code fix or parked with an explicit operator retry plan.",
       "status": "parked_separate_followup"
+    },
+    {
+      "id": "B9",
+      "owner_lane": "lane-a-integrator",
+      "severity": "high",
+      "dependency": "Nassau forced-retry parcel cache preflight count bypass",
+      "unblock_condition": "A deployed main SHA skips the existing parcel-count cache preflight for forced jobs, then Nassau validation retry may resume.",
+      "status": "confirmed_fix_in_progress"
     },
     {
       "id": "D1",

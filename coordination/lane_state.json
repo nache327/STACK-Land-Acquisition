@@ -39,18 +39,19 @@
       "updated_at": "2026-05-26T18:45:00Z"
     },
     "lane-a-integrator": {
-      "branch": "docs/phase2-b7-deploy-state",
-      "status": "completed",
-      "task": "B7 classified, fixed, merged, and deployed; B6/B8 classified as separate follow-ups.",
+      "branch": "fix/b9-nassau-download-existing-count",
+      "status": "running",
+      "task": "B9 Nassau forced retry failed during download_parcels cache preflight count; implement narrow forced-run cache-count bypass.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake if Nassau/Monmouth retry still fails at bootstrap after PR #106 deploy, or if B6/B8 need Lane A code triage.",
+      "wake_condition": "Awake; Lane B Nassau validation job 3c7ce534 failed before B7 bootstrap at pipeline.py:1229.",
       "latest_kpi_delta": {
         "b7": "confirmed and fixed: PR #106 merged as ab88dba1ef6b6203f1752d078683be57696dadb4; Railway /health.pipeline_version reports ab88dba1ef6b",
+        "b9": "confirmed: Nassau 3c7ce534 force=true failed at pipeline.py:1229 existing_count cache preflight before parcel counters; patch skips cache count for forced jobs",
         "b6": "classified separately: Westchester 886141e2 failed at pipeline.py:1752 db.commit after overlays",
         "b8": "classified separately: Middlesex 110b0a01 and Fairfield 30997930 cancelled during large-county mapping plateau"
       },
-      "updated_at": "2026-05-26T22:32:00Z"
+      "updated_at": "2026-05-26T22:54:34Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,

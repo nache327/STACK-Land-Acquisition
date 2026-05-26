@@ -1226,16 +1226,24 @@ async def _run(db: AsyncSession, job: Job) -> None:
     await db.commit()
     await check_cancelled(db, job)
 
-    existing_count = await db.scalar(
-        select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction.id)
-    )
+    force_refresh = bool(getattr(job, "force", False))
+    existing_count = 0
+    if force_refresh:
+        logger.info(
+            "Forced job for jurisdiction %s — skipping parcel cache preflight count",
+            jurisdiction.id,
+        )
+    else:
+        existing_count = await db.scalar(
+            select(func.count(Parcel.id)).where(Parcel.jurisdiction_id == jurisdiction.id)
+        )
     # Skip download+ingest if this jurisdiction already has substantial parcel data.
     # Counting parcels directly is more reliable than checking job_steps state,
     # which can be inconsistent across retries/cancellations.
     # > 1000 threshold rules out empty or barely-started jurisdictions.
     # job.force bypasses the cache so a fresh download repopulates parcels.raw
     # (and via the inline mapper, assessed_value + is_residential).
-    parcels_cached = (existing_count or 0) > 1000 and not getattr(job, "force", False)
+    parcels_cached = (existing_count or 0) > 1000 and not force_refresh
 
     if parcels_cached:
         logger.info(
