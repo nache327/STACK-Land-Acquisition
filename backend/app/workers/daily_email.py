@@ -32,7 +32,15 @@ from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db import async_session_maker
+from app.db import long_running_session_maker
+# The candidate-selection SQL in _top_parcels_for_filter joins
+# parcel_buybox_scores (now ~1M rows after Howard MD + Loudoun +
+# Allentown matrix sprints added ~270K each) against parcels,
+# jurisdictions, and 3 LATERAL subqueries. Default async_session_maker
+# is command_timeout=90s; the query consistently runs 90-180s on
+# prod data. long_running_session_maker uses command_timeout=600
+# (built originally for the coverage audit sweep) — same shape of
+# legitimately-long-but-bounded query.
 from app.models.buybox_filter import BuyboxFilter
 from app.models.parcel_buybox_score import ParcelBuyboxScore
 from app.services.email_resend import send_email
@@ -646,7 +654,7 @@ async def run_once(force: bool = False) -> dict:
     parcels_emailed = 0
     eligible_total = 0
     errors: list[str] = []
-    async with async_session_maker() as db:
+    async with long_running_session_maker() as db:
         eligible = await _eligible_filters(db, force=force)
         eligible_total = len(eligible)
         logger.info("digest sweep: %d eligible filter(s)", eligible_total)
