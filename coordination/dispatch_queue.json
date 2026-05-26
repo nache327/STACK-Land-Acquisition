@@ -1,18 +1,26 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T20:08:25Z",
+  "updated_at": "2026-05-26T22:20:19Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
-      "action": "Resume retry sweep now that PR #94 is merged and deployed.",
-      "wake_condition": "Immediate; no active blocker listed.",
-      "dependency_order": "Run before new substrate changes.",
-      "expected_kpi": "failed-job reduction and clearer Cat-B source-acquisition queue"
+      "lane": "lane-a-integrator",
+      "action": "Finish B7 non-fatal zone-use matrix bootstrap patch and block duplicate Lane B retries until it is merged and deployed.",
+      "wake_condition": "Awake; Monmouth 08b0f866 confirmed terminal bootstrap failure after parcel download/ingest.",
+      "dependency_order": "Run before Nassau/Monmouth retry.",
+      "expected_kpi": "failed-job reduction for post-ingest heuristic-bootstrap terminal failures"
     },
     {
       "rank": 2,
+      "lane": "lane-b-retry-sweep",
+      "action": "Pause duplicate retry dispatch while B7 is confirmed and the B7 fix is not yet deployed.",
+      "wake_condition": "B7 fix merged to main, deployed, and `/health.pipeline_version` confirms the deploy SHA.",
+      "dependency_order": "Resume only after B7 deploy verification; then retry Nassau and Monmouth first.",
+      "expected_kpi": "failed-job reduction and clearer Cat-B source-acquisition queue"
+    },
+    {
+      "rank": 3,
       "lane": "lane-e-matrix",
       "action": "Complete review/checks and merge PR #95 before starting Norfolk MA.",
       "wake_condition": "PR #95 checks pass and no reviewer objections remain.",
@@ -20,7 +28,7 @@
       "expected_kpi": "unclear-row cleanup governance and reduced open PR risk"
     },
     {
-      "rank": 3,
+      "rank": 4,
       "lane": "lane-c-spatial-cleanup",
       "action": "Run bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
       "wake_condition": "Lane B retry jobs are started or not competing for the same operational attention.",
@@ -28,7 +36,7 @@
       "expected_kpi": "bbox null count reduction"
     },
     {
-      "rank": 4,
+      "rank": 5,
       "lane": "lane-d-watchdog",
       "action": "Verify Railway cron logs for PR #97 watchdog.",
       "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
@@ -36,7 +44,7 @@
       "expected_kpi": "operator workflow confidence for stuck-job prevention"
     },
     {
-      "rank": 5,
+      "rank": 6,
       "lane": "lane-e-matrix",
       "action": "Start Norfolk County MA pattern batch after PR #95 merge.",
       "wake_condition": "PR #95 merged and no post-merge audit regression is reported.",
@@ -75,16 +83,30 @@
       "rank": 1,
       "lane": "lane-b-retry-sweep",
       "jurisdictions": [
-        "Middlesex County, NJ",
-        "Westchester County, NY",
         "Nassau County, NY",
-        "Fairfield County, CT",
-        "Marlboro, NJ"
+        "Monmouth County, NJ"
       ],
-      "purpose": "Validate PR #94 non-fatal overlay behavior."
+      "purpose": "After B7 deploy only: validate non-fatal zone-use matrix bootstrap handling before broader retry sweep."
     },
     {
       "rank": 2,
+      "lane": "lane-b-retry-sweep",
+      "jurisdictions": [
+        "Westchester County, NY"
+      ],
+      "purpose": "After B7 validation only: isolate B6 post-overlay commit/session class as a separate follow-up."
+    },
+    {
+      "rank": 3,
+      "lane": "lane-b-retry-sweep",
+      "jurisdictions": [
+        "Middlesex County, NJ",
+        "Fairfield County, CT"
+      ],
+      "purpose": "After B7 validation only: reproduce or park B8 large-county mapping plateau/cancel class."
+    },
+    {
+      "rank": 4,
       "lane": "lane-b-retry-sweep",
       "jurisdictions": [
         "Wake County, NC"
@@ -127,6 +149,8 @@
     }
   ],
   "duplicate_work_guards": [
+    "Do not dispatch additional Nassau, Monmouth, or same-signature bootstrap retries until B7 is merged and deployed.",
+    "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
     "Do not start another Loudoun or Howard cleanup branch while PR #95 remains open.",
     "Do not treat Burlington County as a matrix problem; it is tracked as Cat-B structural coverage.",

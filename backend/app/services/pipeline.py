@@ -1676,16 +1676,33 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 pass
 
     matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
-    async with asyncio.timeout(30):
-        seeded_matrix = await bootstrap_zone_use_matrix(
-            jurisdiction.id,
-            db,
-            missing_only=True,
+    try:
+        async with asyncio.timeout(30):
+            seeded_matrix = await bootstrap_zone_use_matrix(
+                jurisdiction.id,
+                db,
+                missing_only=True,
+            )
+        if seeded_matrix:
+            logger.info("Bootstrapped %d zone_use_matrix rows", seeded_matrix)
+            await db.commit()
+        _stage_completed(job, "zone_matrix_bootstrap", matrix_started, rows_seeded=seeded_matrix)
+    except Exception as exc:
+        logger.warning("Zone-use matrix bootstrap failed (non-fatal): %s", exc)
+        try:
+            async with asyncio.timeout(5):
+                await db.rollback()
+                await db.refresh(job)
+                await db.refresh(jurisdiction)
+        except Exception:
+            pass
+        _stage_completed(
+            job,
+            "zone_matrix_bootstrap",
+            matrix_started,
+            rows_seeded=0,
+            bootstrap_error=type(exc).__name__,
         )
-    if seeded_matrix:
-        logger.info("Bootstrapped %d zone_use_matrix rows", seeded_matrix)
-        await db.commit()
-    _stage_completed(job, "zone_matrix_bootstrap", matrix_started, rows_seeded=seeded_matrix)
 
     # `bulk_ingest_zoning_for_jurisdiction` (cached path above) and
     # `bootstrap_zone_use_matrix` both run raw asyncpg work that can keep

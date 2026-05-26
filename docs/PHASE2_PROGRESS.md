@@ -184,18 +184,14 @@ _Lane B: log each retry result here. Reassess once you see outcomes — most Cat
 **Owner:** Lane A (Integrator)
 **Write format:** failure cluster by line + jurisdiction; resolved clusters removed.
 
-**Last 14d (source: live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-12, refreshed 2026-05-26 18:45 UTC):**
+**Last 14d (sources: `backend/tmp/jobs_all_latest.json`, `backend/tmp/job_monomouth_08b0f866.json`, `backend/tmp/job_westchester_886141e2.json`; refreshed by Lane A 2026-05-26 22:20 UTC):**
 
 | count | jurisdiction(s) | pipeline line | class | status |
 |---:|---|---|---|---|
-| 5 | Middlesex NJ / Westchester NY / Nassau NY / Fairfield CT / Marlboro NJ | `pipeline.py:1732` -> `apply_flood_overlay` -> `overlays.py:193` | flood overlay fatal after successful parcel ingest | code resolved by PR #94; Railway deployed `116dd4e1fc45`; Lane B retry pending |
-| 7 | Marlboro, NJ / marlboro, NJ | 1298 + mixed | mixed upstream + coverage_refresh + duplicate casing | needs retry; normalize duplicated `marlboro`/`Marlboro` rows |
-| 5 | Monmouth County, NJ | 1286/1298/1329 + coverage_refresh | mixed | structural Cat-B remains; Lane B source path needed |
-| 4 | Cook County, IL | 1076/1276 + mixed | other_pipeline/stale | not boundary class |
-| 3 | Middlesex County, NJ | 1410/1688/1732 | boundary + overlay historical | boundary component addressed by PR #85; overlay component addressed by PR #94; retry pending |
-| 3 | Wake County, NC | 1417/1401/1278 | parcel ingest + upstream | not boundary class; needs source check |
-| 7 | Burlington County, NJ | 1656/1680/1688/1712 | historical boundary/coverage failures | resolved operationally by PR #85 + Cat-B reclassification; no new Lane A code action |
-| 1 each | Arapahoe CO / Douglas CO / Mecklenburg NC / Fulton GA / Norfolk MA / Allentown PA / Bergen NJ / Somerset NJ / New York NY / Loudoun VA | mixed singletons | isolated historical failures | retry/triage by owning lane; no shared Lane A substrate blocker identified |
+| 2 confirmed + 1 same-signature | Nassau County NY / Monmouth County NJ; New York NY same signature | `pipeline.py:1680` -> `bootstrap_zone_use_matrix` -> `matrix_bootstrap.py:70` | **B7 confirmed:** non-essential heuristic matrix bootstrap terminal failure after parcel download/ingest, before overlays | narrow Lane A patch in progress on `fix/pipeline-nonfatal-zone-matrix-bootstrap`; duplicate retries blocked until merge + deploy |
+| 1 | Westchester County, NY | `pipeline.py:1752` -> `await db.commit()` | **B6 classified separately:** post-overlay commit/session failure | active separate follow-up; do not bundle into B7 bootstrap patch |
+| 2 cancelled | Middlesex County NJ / Fairfield County CT | mapping plateau before bootstrap/overlays | **B8 classified separately:** large-county mapping plateau/cancel class | parked separate follow-up; do not retry until B7 deploy and explicit operator plan |
+| historical | Middlesex NJ / Westchester NY / Nassau NY / Fairfield CT / Marlboro NJ | `pipeline.py:1732` -> `apply_flood_overlay` -> `overlays.py:193` | flood overlay fatal after successful parcel ingest | code resolved by PR #94; Railway deployed `116dd4e1fc45`; superseded by current B6/B7/B8 retry evidence |
 
 _Lane A: append new clusters here. Remove resolved clusters (move to section 15 as changelog entries)._
 
@@ -207,7 +203,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | merged/deployed #94, #92, #98; refreshed post-truthfulness audit and Lane A failure status | docs/phase2-lane-a-post-truthfulness | none | 2026-05-26 18:45 UTC (`/health.pipeline_version: a29b86eeb301`; audit_post_truthfulness: 45 op / 29 partial / 7 not_loaded) |
+| A — Integrator | B7 confirmed from Lane B Monmouth terminal output; B6/B8 classified as separate follow-ups; narrow B7 containment patch in progress | fix/pipeline-nonfatal-zone-matrix-bootstrap | B7 active until patch merge/deploy; B6 active separate follow-up; B8 parked separate follow-up | 2026-05-26 22:20 UTC (Monmouth `08b0f866`, Nassau `80120217`, Westchester `886141e2`, Middlesex `110b0a01`, Fairfield `30997930`) |
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | queued-job watchdog cron | PR #97 merged | Railway cron-log verification blocked by expired local CLI auth | 2026-05-26 (web deploy on `2e8d9e0`; cron logs pending Railway login) |
@@ -281,6 +277,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | ~~B2~~ | ~~Lane D watchdog PR overwrites daily-digest cron in `railway-cron.toml`~~ | ~~user / Lane D~~ | ~~watchdog can't merge~~ | **RESOLVED in PR #97** — daily digest remains in the cron command; watchdog runs from the same Railway cron service |
 | ~~B3~~ | ~~truthfulness patch held pending audit verification~~ | ~~Lane A~~ | ~~sequencing~~ | **RESOLVED via PR #98** — post-merge audit generated `backend/tmp/audit_post_truthfulness.json` |
 | B4 | Burlington `ready` but 0 zoning_code on 174,851 of 174,852 parcels | Lane B | Burlington reclassified Cat-B | **OPEN** — reclassified, not a defect |
+| B6 | Westchester post-overlay `db.commit()` failure at `pipeline.py:1752` | Lane A | retry sweep cannot treat Westchester as validated by B7 patch | **ACTIVE SEPARATE FOLLOW-UP** — not bundled with B7 |
+| B7 | Nassau + Monmouth `bootstrap_zone_use_matrix` terminal failure at `pipeline.py:1680` / `matrix_bootstrap.py:70` after parcel download; Monmouth evidence shows `download_parcels` 251,486 and `ingest_parcels` 251,486 completed, no overlay step ran | Lane A | Lane B retry dispatch paused for same-signature jobs | **CONFIRMED; FIX IN PROGRESS** — narrow non-fatal bootstrap containment branch `fix/pipeline-nonfatal-zone-matrix-bootstrap` |
+| B8 | Middlesex + Fairfield large-county mapping plateau/cancel class (`parcels_mapped` 114,000 / 122,000; cancelled, no terminal traceback) | Lane A / Lane B | retry sequencing; not a matrix or overlay defect | **PARKED SEPARATE FOLLOW-UP** — needs explicit operator plan before more retries |
 | B5 | alias_mappings framework abstraction (PR #86) + vocabulary_aliases table (PR #90) | logged | governance | **LOG ONLY** (Section 7 #3 in plan); not rolled back |
 
 ---
@@ -291,6 +290,8 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-26
 
+- **PATCH IN PROGRESS** B7 non-fatal zone-use matrix bootstrap containment. Lane A. Evidence: Monmouth job `08b0f866-5fe6-4efb-8403-ed331416f1ea` failed at `pipeline.py:1680` -> `bootstrap_zone_use_matrix` after `download_parcels` completed 251,486 features and `ingest_parcels` completed 251,486 parcels; no overlay step ran. Nassau job `80120217-61c2-4de7-9484-f43f2d4d5c7a` and New York job `557b3c44-92f3-402e-8275-c86c6a1712e6` show the same terminal bootstrap signature. Branch `fix/pipeline-nonfatal-zone-matrix-bootstrap` makes heuristic matrix bootstrap non-fatal.
+- **CLASSIFY** B6 and B8. Lane A. B6 is Westchester job `886141e2-7ef3-4800-b635-20ecb8af2eaa`, a distinct post-overlay `db.commit()` failure at `pipeline.py:1752`; separate follow-up. B8 is Middlesex job `110b0a01-e723-43da-967c-bca50bba6848` plus Fairfield job `30997930-3a03-47ce-8411-730b688a4c6d`, both cancelled during large-county mapping plateau (`parcels_mapped` 114,000 / 122,000); parked separate follow-up. Duplicate Lane B retries remain blocked until B7 is merged and deployed.
 - **APPLY+REFRESH** Highland, UT. Lane E. `highland_ut_matrix_adjudication.py` applied review metadata to `PD-1`; row remains unclear because Highland City Development Code Article 5 makes the adopted PD narrative the governing use regulation. Parcel delta: 0 unclear→classified. Refresh: partial, 4 remaining unclear rows, 937 remaining unclear-bound parcels.
 - **APPLY+REFRESH** Middlesex County, MA. Lane E. `pattern_middlesex_ma_adjudication.py` applied Lowell batch 1 to 9 ordinance-cited rows (`NB`, `SMF`, `SMU`, `SSF`, `TSF`, `TTF`, `UMF`, `UMU`, `USF`). Parcel delta: 18,401 unclear→classified. Refresh: partial, 172 remaining unclear rows, 67,386 remaining unclear-bound parcels.
 - **APPLY+REFRESH** Norfolk County, MA. Lane E. `pattern_norfolk_ma_adjudication.py` applied 12 ordinance-cited residential short-code rows (`G`, `GR`, `S`, `S-7`, `S1`, `S10`, `S15`, `S2`, `S25`, `S40`, `T-5`, `T-6`). Parcel delta: 16,489 unclear→classified. Refresh: partial, 88 remaining unclear rows, 14,638 remaining unclear-bound parcels.
