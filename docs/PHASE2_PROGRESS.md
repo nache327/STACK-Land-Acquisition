@@ -13,6 +13,10 @@
 - Drift flags get appended to section 15 (Daily Changelog) with `[DRIFT]` tag.
 - Lane Status (section 9) is a one-row update per lane per session — overwrite, don't append.
 
+## Shared orchestration state
+
+Operational coordination has moved from workspace-local `.context/*.json` files to repo-shared `coordination/` JSON files. Lanes should use `coordination/lane_state.json`, `coordination/blockers.json`, and `coordination/dispatch_queue.json` for shared machine-readable state across Conductor workspaces.
+
 ---
 
 ## 1. Current KPI Snapshot
