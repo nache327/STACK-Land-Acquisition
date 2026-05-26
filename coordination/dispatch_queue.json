@@ -6,7 +6,7 @@
     {
       "rank": 1,
       "lane": "lane-a-integrator",
-      "action": "Finish B7 non-fatal zone-use matrix bootstrap patch and block duplicate Lane B retries until it is merged and deployed.",
+      "action": "Review/merge/deploy PR #106 for B7 non-fatal zone-use matrix bootstrap handling; block duplicate Lane B retries until deployed.",
       "wake_condition": "Awake; Monmouth 08b0f866 confirmed terminal bootstrap failure after parcel download/ingest.",
       "dependency_order": "Run before Nassau/Monmouth retry.",
       "expected_kpi": "failed-job reduction for post-ingest heuristic-bootstrap terminal failures"
@@ -15,7 +15,7 @@
       "rank": 2,
       "lane": "lane-b-retry-sweep",
       "action": "Pause duplicate retry dispatch while B7 is confirmed and the B7 fix is not yet deployed.",
-      "wake_condition": "B7 fix merged to main, deployed, and `/health.pipeline_version` confirms the deploy SHA.",
+      "wake_condition": "PR #106 merged to main, deployed, and `/health.pipeline_version` confirms the deploy SHA.",
       "dependency_order": "Resume only after B7 deploy verification; then retry Nassau and Monmouth first.",
       "expected_kpi": "failed-job reduction and clearer Cat-B source-acquisition queue"
     },

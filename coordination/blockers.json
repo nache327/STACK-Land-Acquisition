@@ -23,9 +23,9 @@
       "id": "B7",
       "owner_lane": "lane-a-integrator",
       "severity": "high",
-      "dependency": "Non-fatal zone-use matrix bootstrap reliability patch",
-      "unblock_condition": "A deployed main SHA contains non-fatal handling for bootstrap_zone_use_matrix failures, then Nassau/Monmouth retries may resume.",
-      "status": "confirmed_fix_in_progress"
+      "dependency": "PR #106 non-fatal zone-use matrix bootstrap reliability patch",
+      "unblock_condition": "PR #106 is merged and a deployed main SHA contains non-fatal handling for bootstrap_zone_use_matrix failures, then Nassau/Monmouth retries may resume.",
+      "status": "confirmed_pr_open"
     },
     {
       "id": "B8",
