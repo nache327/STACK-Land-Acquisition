@@ -39,19 +39,20 @@
       "updated_at": "2026-05-26T18:45:00Z"
     },
     "lane-a-integrator": {
-      "branch": "docs/b9-deploy-state",
-      "status": "completed",
-      "task": "B9 classified, fixed, merged, and deployed; Nassau validation retry may resume.",
+      "branch": "fix/b10-coverage-refresh-session-boundary",
+      "status": "running",
+      "task": "B10 Nassau coverage refresh DB execute failure after successful forced download/ingest; implement fresh-session coverage refresh boundary.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake if Nassau retry still fails before parcel download after PR #109 deploy, or if it reaches B7 bootstrap and fails despite PR #106.",
+      "wake_condition": "Awake; Lane B Nassau validation job 7cda9f3e reached post-zone-matrix coverage_refresh and failed at spatial_backfill.py:152.",
       "latest_kpi_delta": {
-        "b7": "confirmed and fixed: PR #106 merged as ab88dba1ef6b6203f1752d078683be57696dadb4; Railway /health.pipeline_version reports ab88dba1ef6b",
+        "b7": "code fixed by PR #106 but not fully validation-cleared; Nassau reached post-zone-matrix path and failed with B10",
         "b9": "confirmed and fixed: PR #109 merged as 0afa78a07579bd9d7c78b2f529d0519b8b2b893e; Railway /health.pipeline_version reports 0afa78a07579",
+        "b10": "confirmed: Nassau 7cda9f3e downloaded 420,594 and ingested 420,577, then failed at pipeline.py:1737 -> refresh_jurisdiction_coverage_level -> db.execute",
         "b6": "classified separately: Westchester 886141e2 failed at pipeline.py:1752 db.commit after overlays",
         "b8": "classified separately: Middlesex 110b0a01 and Fairfield 30997930 cancelled during large-county mapping plateau"
       },
-      "updated_at": "2026-05-26T23:00:00Z"
+      "updated_at": "2026-05-26T23:41:05Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,

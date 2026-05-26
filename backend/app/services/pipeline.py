@@ -1734,9 +1734,17 @@ async def _run(db: AsyncSession, job: Job) -> None:
 
     coverage_started = _stage_started(job, "coverage_refresh", jurisdiction_id=str(jurisdiction.id))
     async with asyncio.timeout(180):
-        await refresh_jurisdiction_coverage_level(jurisdiction, db)
-    await db.flush()
-    _stage_completed(job, "coverage_refresh", coverage_started, coverage_level=jurisdiction.coverage_level.value)
+        async with async_session_maker() as coverage_db:
+            fresh_jurisdiction = await coverage_db.get(Jurisdiction, jurisdiction.id)
+            if fresh_jurisdiction is None:
+                raise RuntimeError(f"Jurisdiction {jurisdiction.id} not found for coverage refresh")
+            coverage_level = await refresh_jurisdiction_coverage_level(
+                fresh_jurisdiction,
+                coverage_db,
+            )
+            await coverage_db.commit()
+            jurisdiction.coverage_level = coverage_level
+    _stage_completed(job, "coverage_refresh", coverage_started, coverage_level=coverage_level.value)
 
     # ── Step 3b: apply overlays (flood + wetland, non-fatal) ─────────────
     enrichment_started = _stage_started(job, "enrichment")
