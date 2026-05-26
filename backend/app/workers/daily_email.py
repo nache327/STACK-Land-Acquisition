@@ -269,7 +269,13 @@ async def _top_parcels_for_filter(
             (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
                 AS soft_low_confidence,
             (e.in_flood_zone = TRUE)                       AS soft_flood,
-            (e.in_wetland    = TRUE)                       AS soft_wetland
+            (e.in_wetland    = TRUE)                       AS soft_wetland,
+            -- NULL acres = lot size unverified (mostly condo units whose
+            -- ingest carried no parcel geometry). They pass the acres
+            -- hard filters via the `OR p.acres IS NULL` branches, so we
+            -- surface them — but flagged, which demotes them to
+            -- "Worth a Look" rather than polluting Actionable.
+            (e.acres IS NULL)                              AS soft_acres_unverified
         FROM eligible e
         JOIN jurisdictions j ON j.id = e.jurisdiction_id
         LEFT JOIN LATERAL (
@@ -384,6 +390,7 @@ _SOFT_FLAG_RULES: list[tuple[str, str, str]] = [
     ("soft_low_confidence", "❓",  "low-confidence zoning verdict (<0.70)"),
     ("soft_flood",          "🌊",  "in flood zone"),
     ("soft_wetland",        "🐸",  "in wetland"),
+    ("soft_acres_unverified", "📐", "acres unverified"),
 ]
 
 
