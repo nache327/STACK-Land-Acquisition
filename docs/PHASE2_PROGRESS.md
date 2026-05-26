@@ -1,6 +1,6 @@
 # Phase 2 Progress — STACK Land Acquisition
 
-**Last audit refresh:** 2026-05-21 (post PR #89, verified via `tmp/audit_cli_after.json`)
+**Last audit refresh:** 2026-05-26 (post PR #98, verified via `backend/tmp/audit_post_truthfulness.json`)
 **Phase 2 sprint:** 1 of 6 (each sprint = 14 days; sprint window 2026-05-22 → 2026-06-05)
 **Plan reference:** `/Users/arench/.claude/plans/virtual-herding-iverson.md`
 
@@ -18,20 +18,20 @@
 ## 1. Current KPI Snapshot
 
 **Owner:** master thread (refresh after every audit)
-**Source:** `tmp/audit_cli_after.json` (2026-05-21, post-PR-#89 verification by Lane A)
+**Source:** `backend/tmp/audit_post_truthfulness.json` (2026-05-26 18:45 UTC, post-PR-#98 verification by Lane A)
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | 46 (projected) | live audit + truthfulness rule | first measurement |
-| 1 #1 | Audit-operational jurisdictions | **48** | audit_cli_after.json `.summary.operational_count` | +1 (was 47) |
-| 1 #2 | Trustworthy parcel verdict count | ~3.6M | derived from sum of `parcels_with_matrix_match` minus unclear across operationals | first measurement |
-| 1 #3 | Avg unclear share (partials) | ~18% | derived; will tighten as Lane E ships | first measurement |
-| 1 #4 | Fake-operationals | 2 (Essex NJ, Draper City UT) | truthfulness rule applied to audit JSON | down from 4 morning; pending truthfulness merge |
-| 2 #5 | Failed jobs / 14d | 47 | live `jobs` table | unchanged; Burlington loop closed via PR #85 |
-| 2 #5 | Stuck jobs (>10min, non-terminal) | 0 | live `jobs` table | unchanged |
-| 2 #6 | Snapshot table latest capture | 2026-05-19 21:56 UTC | live `coverage_snapshots` | stale; refresh blocked on Railway 502 |
-| 2 #7 | Ingest success last 14d | 109 ready / 47 failed / 13 cancelled | live `jobs` table | — |
-| 2 #8 | Jurisdictions with `bbox IS NULL` | 7 | live `jurisdictions` table | Lane C target |
+| 1 #1 | Honest operational jurisdictions | **45** | audit_post_truthfulness.json `.summary.operational_count` | -4 vs same-audit old readiness logic (49) |
+| 1 #1 | Audit-operational jurisdictions | **45** | audit_post_truthfulness.json `.summary.operational_count` | -3 vs 2026-05-21 audit baseline (48) |
+| 1 #2 | Trustworthy parcel verdict count | **3,292,352** | audit_post_truthfulness.json operational classified parcel sum | now exact |
+| 1 #3 | Avg unclear share (partials) | **18.3%** | audit_post_truthfulness.json weighted partial unclear/matrix parcel share (`141,459 / 773,627`) | +0.3pp vs prior rounded estimate |
+| 1 #4 | Fake-operationals | **0** | audit_post_truthfulness.json query: operational + zoning-code coverage `<70` | -4 |
+| 2 #5 | Failed jobs / 14d | **42** | live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-12 | -5 vs prior 47 |
+| 2 #5 | Stuck jobs (>10min, non-terminal) | **0** | live `/api/admin/jobs?stale_only=true&limit=500` | unchanged |
+| 2 #6 | Snapshot table latest capture | 2026-05-19 21:56 UTC | live `coverage_snapshots` max `captured_at` | stale |
+| 2 #7 | Ingest success last 14d | **91 ready / 42 failed / 5 cancelled** | live jobs endpoints, filtered since 2026-05-12 | refreshed window |
+| 2 #8 | Jurisdictions with `bbox IS NULL` | **7** | audit_post_truthfulness.json `has_bbox=false` | unchanged |
 
 ---
 
@@ -40,42 +40,40 @@
 **Owner:** master thread
 **Definition:** `operational_readiness = "operational"` AND `parcel_zoning_code_coverage_pct ≥ 70` AND no fake-op flags.
 
-**Current value:** **46** (projected post-truthfulness merge)
-**Audit-operational value:** **48** (pre-truthfulness, includes 2 fake-ops)
+**Current value:** **45** (verified post-truthfulness merge)
+**Audit-operational value:** **45** (post-PR-#98; truthfulness rule is now part of audit readiness)
 
-**Phase-1 close delta:** +1 honest operational (Allentown PA flipped via PR #90).
-**Confidence:** high for 48 (verified live); high for 46 projection (Essex + Draper both below 70% threshold per audit JSON).
+**Phase-1 close delta:** -3 vs 2026-05-21 audit baseline (48); -4 vs same-audit old readiness logic (49).
+**Confidence:** verified by `backend/tmp/audit_post_truthfulness.json` generated after PR #98 merged.
 
-To validate post-merge: `jq '[.jurisdictions[] | select(.operational_readiness=="operational") | select(.parcel_zoning_code_coverage_pct < 70) | .name]' tmp/audit_<date>.json` must return `[]`.
+Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="operational") | select(.parcel_zoning_code_coverage_pct < 70) | .name]' backend/tmp/audit_post_truthfulness.json` returns `[]`.
 
 ---
 
 ## 3. Audit-Operational Count
 
 **Owner:** master thread
-**Current value:** **48**
+**Current value:** **45**
 
-Source: `tmp/audit_cli_after.json` summary block, 2026-05-21 evening.
+Source: `backend/tmp/audit_post_truthfulness.json` summary block, 2026-05-26 18:45 UTC.
 
-**Flagged as fake-operational (drop on truthfulness patch merge):**
+**Fake-operational check:** none remain after PR #98.
+
+**Demoted by truthfulness threshold (old readiness logic: operational; new readiness: partial):**
 
 | jurisdiction | parcel_zoning_code_coverage_pct | rationale |
 |---|---:|---|
-| Essex County, NJ | 23.8 | 76% of 175,932 parcels lack zoning_code |
-| Draper City, UT | 65.9 | 34% of 25,515 parcels lack zoning_code |
-
-**Previously flagged but resolved/under-threshold:**
-- Montgomery PA (2.2%) — audit-operational; needs separate truthfulness review.
-- Bergen NJ (3.1%) — audit-operational; needs separate truthfulness review.
-
-> Note: Lane A's truthfulness patch projection cited only Essex + Draper. Master thread to verify post-merge whether Mont PA + Bergen NJ also fall under the rule (they're at 2.2% and 3.1% respectively — well below 70%). If yes, honest count drops to 44, not 46.
+| Bergen County, NJ | 3.1 | 273,027 of 281,646 parcels lack zoning_code |
+| Draper City, UT | 65.9 | 8,694 of 25,515 parcels lack zoning_code |
+| Essex County, NJ | 23.8 | 133,975 of 175,932 parcels lack zoning_code |
+| Montgomery County, PA | 2.2 | 294,876 of 301,424 parcels lack zoning_code |
 
 ---
 
 ## 4. Partial Jurisdictions
 
 **Owner:** master thread
-**Count:** **26** (per audit_cli_after.json)
+**Count:** **29** (per `backend/tmp/audit_post_truthfulness.json`)
 
 **Category split (Plan §"Major Strategic Realization"):**
 
@@ -179,23 +177,18 @@ _Lane B: log each retry result here. Reassess once you see outcomes — most Cat
 **Owner:** Lane A (Integrator)
 **Write format:** failure cluster by line + jurisdiction; resolved clusters removed.
 
-**Last 14d (source: live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-07, refreshed 2026-05-21 22:18 UTC):**
+**Last 14d (source: live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-12, refreshed 2026-05-26 18:45 UTC):**
 
 | count | jurisdiction(s) | pipeline line | class | status |
 |---:|---|---|---|---|
-| 5 | Middlesex NJ / Westchester NY / Nassau NY / Fairfield CT / Marlboro NJ | `pipeline.py:1732` -> `apply_flood_overlay` -> `overlays.py:193` | flood overlay fatal after successful parcel ingest | PR #94 opened to make flood + wetland overlay failures non-fatal; retry after merge + deploy |
-| 13 | Marlboro, NJ | 1298 / coverage_refresh | mixed upstream + coverage_refresh | needs retry; normalize duplicated `marlboro`/`Marlboro` rows |
-| 7 | Fairfax County, VA | mixed | mixed pipeline/network | Lane B retry/triage pending |
-| 5 | Monmouth County, NJ | 1286/1298/1329 + coverage_refresh | mixed | partially addressed by PR #85; structural Cat-B remains |
-| 5 | Cook County, IL | mixed | other_pipeline/stale | not boundary class |
-| 3 | Montgomery County, MD | mixed | other_pipeline/other | retry/triage pending |
-| 3 | Nassau County, NY | mixed | other_pipeline/other | Lane B retry pending |
-| 3 | Wake County, NC | 1417/1401 | parcel ingest | not boundary class; needs source check |
-| 2 | Middlesex County, NJ | 1410/1688 | boundary | PR #85 should resolve; retry pending |
-| 2 | Montgomery County, PA | mixed incl. bootstrap | mixed | PR #85 should resolve boundary component; retry pending |
-| 1 | Bergen County, NJ | bootstrap | boundary | PR #85 should resolve; transient |
-| 1 | Allentown, PA | httpx network | transient | likely resolved by later operationalization |
-| 1 | Somerset County, NJ | 1077 | upstream | not boundary |
+| 5 | Middlesex NJ / Westchester NY / Nassau NY / Fairfield CT / Marlboro NJ | `pipeline.py:1732` -> `apply_flood_overlay` -> `overlays.py:193` | flood overlay fatal after successful parcel ingest | code resolved by PR #94; Railway deployed `116dd4e1fc45`; Lane B retry pending |
+| 7 | Marlboro, NJ / marlboro, NJ | 1298 + mixed | mixed upstream + coverage_refresh + duplicate casing | needs retry; normalize duplicated `marlboro`/`Marlboro` rows |
+| 5 | Monmouth County, NJ | 1286/1298/1329 + coverage_refresh | mixed | structural Cat-B remains; Lane B source path needed |
+| 4 | Cook County, IL | 1076/1276 + mixed | other_pipeline/stale | not boundary class |
+| 3 | Middlesex County, NJ | 1410/1688/1732 | boundary + overlay historical | boundary component addressed by PR #85; overlay component addressed by PR #94; retry pending |
+| 3 | Wake County, NC | 1417/1401/1278 | parcel ingest + upstream | not boundary class; needs source check |
+| 7 | Burlington County, NJ | 1656/1680/1688/1712 | historical boundary/coverage failures | resolved operationally by PR #85 + Cat-B reclassification; no new Lane A code action |
+| 1 each | Arapahoe CO / Douglas CO / Mecklenburg NC / Fulton GA / Norfolk MA / Allentown PA / Bergen NJ / Somerset NJ / New York NY / Loudoun VA | mixed singletons | isolated historical failures | retry/triage by owning lane; no shared Lane A substrate blocker identified |
 
 _Lane A: append new clusters here. Remove resolved clusters (move to section 15 as changelog entries)._
 
@@ -207,7 +200,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | verified Railway prod deploy of `9fed01293aae`; next: Vercel auto-deploy re-enable | — | truthfulness patch held by master sequencing | 2026-05-21 22:18 UTC (prod `/health` + `/api/debug/env`; commit age ~17m at verification) |
+| A — Integrator | merged/deployed #94, #92, #98; refreshed post-truthfulness audit and Lane A failure status | docs/phase2-lane-a-post-truthfulness | none | 2026-05-26 18:45 UTC (`/health.pipeline_version: a29b86eeb301`; audit_post_truthfulness: 45 op / 29 partial / 7 not_loaded) |
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | queued-job watchdog cron | PR #97 merged | Railway cron-log verification blocked by expired local CLI auth | 2026-05-26 (web deploy on `2e8d9e0`; cron logs pending Railway login) |
@@ -248,10 +241,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #89 | fix(audit-cli): disable statement_timeout for full-sweep against prod-scale data | A | **MERGED** (`9fed012`) 2026-05-21 | done |
 | #90 | feat(allentown-2025): apply 2025 ordinance verdicts + ship vocabulary_aliases table | E | **MERGED** 2026-05-21 | done |
 | #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | **MERGED** (`0893e28`) 2026-05-22 | done; prod applied/refreshed 2026-05-26 |
-| #94 | fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern) | A | open | urgent; before Lane B retries five overlay-failed jurisdictions |
+| #92 | fix(deploy): re-enable Vercel git deployments | A | **MERGED** (`ba7a958`) 2026-05-26 | done; Vercel deploy run `26466874832` succeeded |
+| #94 | fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern) | A | **MERGED** (`116dd4e`) 2026-05-26 | done; Railway deploy verified |
 | #95 | feat(matrix): Loudoun VA + Howard MD unclear-row cleanup | E | open; patched + prod applied | merge after review/checks |
 | #97 | feat(ops): queued-job watchdog cron | D | **MERGED** (`2e8d9e0`) 2026-05-26 | done |
-| (drafted) | Lane A: truthfulness patch (`audit_zoning_coverage.py` `_build_audit`) | A | drafted by Lane A | after Somerset, after fresh audit |
+| #98 | fix(audit): require 70% parcel zoning coverage for operational | A | **MERGED** (`a29b86e`) 2026-05-26 | done; post-merge audit refreshed |
 
 ---
 
@@ -262,7 +256,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 1. ~~PR #89 (audit CLI timeout)~~ ✅ merged
 2. **Lane E Somerset NJ** — already verified, citations real, 10,567 parcels move. Open PR + merge.
-3. **Lane A truthfulness patch** — merge AFTER Somerset so the next audit refresh captures both deltas in one snapshot diff.
+3. ~~Lane A truthfulness patch PR #98~~ ✅ merged; post-truthfulness audit refreshed.
 4. ~~Lane D watchdog PR #97~~ ✅ merged; Railway web deploy serves `2e8d9e0`, cron-log OK run still pending Railway CLI login.
 5. **Lane B Burlington-pattern retries** — no PRs; operational sweep.
 6. **Lane C bbox sweep** — no PRs unless bug surfaces.
@@ -278,7 +272,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 |---|---|---|---|---|
 | ~~B1~~ | ~~audit CLI times out on prod~~ | Lane A | ~~master can't refresh KPIs~~ | **RESOLVED via PR #89** |
 | ~~B2~~ | ~~Lane D watchdog PR overwrites daily-digest cron in `railway-cron.toml`~~ | ~~user / Lane D~~ | ~~watchdog can't merge~~ | **RESOLVED in PR #97** — daily digest remains in the cron command; watchdog runs from the same Railway cron service |
-| B3 | truthfulness patch held pending audit verification | Lane A | sequencing | **deferrable** — patch is drafted; merge after Somerset |
+| ~~B3~~ | ~~truthfulness patch held pending audit verification~~ | ~~Lane A~~ | ~~sequencing~~ | **RESOLVED via PR #98** — post-merge audit generated `backend/tmp/audit_post_truthfulness.json` |
 | B4 | Burlington `ready` but 0 zoning_code on 174,851 of 174,852 parcels | Lane B | Burlington reclassified Cat-B | **OPEN** — reclassified, not a defect |
 | B5 | alias_mappings framework abstraction (PR #86) + vocabulary_aliases table (PR #90) | logged | governance | **LOG ONLY** (Section 7 #3 in plan); not rolled back |
 
@@ -290,6 +284,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-26
 
+- **AUDIT** `backend/tmp/audit_post_truthfulness.json` generated after PR #98. Lane A. Verified 45 operational / 29 partial / 7 not_loaded / 81 total; zero operational jurisdictions have parcel zoning-code coverage below 70%. Same-audit old readiness logic would have reported 49 operational.
+- **MERGE+VERIFY** PR #98 `fix(audit): require 70% parcel zoning coverage for operational` merged as `a29b86eeb301117138b4ca1e8fe0ebc347aa92f9`; Railway `/health.pipeline_version` reports `a29b86eeb301`. Lane A. Demoted Bergen County NJ, Draper City UT, Essex County NJ, and Montgomery County PA from operational to partial.
+- **MERGE+VERIFY** PR #92 `fix(deploy): re-enable Vercel git deployments` merged as `ba7a9582d1207aa02849fbc3ebcf267be571257c`. Lane A. Vercel deploy workflow run `26466874832` completed successfully for the main push; production frontend returned HTTP 200 from Vercel.
+- **MERGE+VERIFY** PR #94 `fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern)` merged as `116dd4e1fc45f340649801fc02c4b608ed41e659`; Railway `/health.pipeline_version` reported `116dd4e1fc45` before subsequent main merges. Lane A. Historical overlay-fatal failures remain in the 14-day failed-job window; new retries should no longer fail the whole job on flood/wetland overlay errors.
 - **APPLY+REFRESH** Somerset County, NJ. Lane E. `somerset_nj_matrix_adjudication.py` applied 13 ordinance-cited rows (`EP-250`, `G-B`, `LD`, `LD-1`, `LD-3`, `PAC`, `S-100`, `S-50`, `S-60`, `S-75`, `S-80`, `S-C-V`, `SMD`) via session-mode DB endpoint. Parcel delta: 10,567 unclear→classified. Refresh: operational, 66 remaining unclear rows, 2,194 remaining unclear-bound parcels.
 - **APPLY+REFRESH** Loudoun VA + Howard MD cleanup. Lane E. PR #95 corrected before apply: `TOWNS` and `PUD-1` left unclear; `C1`, `PDCH`, `PUD` classified conditional with cited Loudoun ordinance sources. Loudoun parcel delta: 63 unclear→classified; operational did not flip (partial, high unclear share from `TOWNS`). Howard `2R0` and `OT` reviewed and left unclear; parcel delta 0; operational remains true.
 - **RUNPATH** Railway CLI still unavailable locally (`invalid_grant` / no linked project). Lane E used the configured Supabase session-mode DB endpoint for apply/refresh because the transaction pooler rejects asyncpg prepared statements.
