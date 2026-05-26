@@ -208,7 +208,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | A — Integrator | verified Railway prod deploy of `9fed01293aae`; next: Vercel auto-deploy re-enable | — | truthfulness patch held by master sequencing | 2026-05-21 22:18 UTC (prod `/health` + `/api/debug/env`; commit age ~17m at verification) |
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
-| D — Operator + Workflow | watchdog PR | local WIP, not pushed | **B2** (digest cron coexistence) | 2026-05-21 (master) |
+| D — Operator + Workflow | queued-job watchdog cron | PR #97 | none | 2026-05-26 (B2 resolved; digest retained in cron command) |
 | E — Matrix Intelligence | Somerset NJ PR push → Loudoun VA + Howard MD cleanup | PR #91 | none | 2026-05-21 22:20 UTC (Lane E session start) |
 
 ---
@@ -247,7 +247,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | open | next |
 | #94 | fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern) | A | open | urgent; before Lane B retries five overlay-failed jurisdictions |
 | (local) | Lane E: Loudoun VA adjudication script (`loudoun_va_matrix_adjudication.py` in worktree) | E | not pushed | sequence after Somerset |
-| (local) | Lane D: queued_job_watchdog.py + railway-cron.toml | D | not pushed; **blocked on B2** | after B2 resolved |
+| #97 | feat(ops): queued-job watchdog cron | D | open | after B2 resolved |
 | (drafted) | Lane A: truthfulness patch (`audit_zoning_coverage.py` `_build_audit`) | A | drafted by Lane A | after Somerset, after fresh audit |
 
 ---
@@ -260,7 +260,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 1. ~~PR #89 (audit CLI timeout)~~ ✅ merged
 2. **Lane E Somerset NJ** — already verified, citations real, 10,567 parcels move. Open PR + merge.
 3. **Lane A truthfulness patch** — merge AFTER Somerset so the next audit refresh captures both deltas in one snapshot diff.
-4. **Lane D watchdog** — merge AFTER B2 (digest cron coexistence) resolved.
+4. **Lane D watchdog PR #97** — merge after review; B2 digest cron coexistence is resolved in `railway-cron.toml`.
 5. **Lane B Burlington-pattern retries** — no PRs; operational sweep.
 6. **Lane C bbox sweep** — no PRs unless bug surfaces.
 7. **Lane E Norfolk MA pattern-batch** — next sprint task.
@@ -274,7 +274,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | ID | blocker | owner | downstream impact | status |
 |---|---|---|---|---|
 | ~~B1~~ | ~~audit CLI times out on prod~~ | Lane A | ~~master can't refresh KPIs~~ | **RESOLVED via PR #89** |
-| B2 | Lane D watchdog PR overwrites daily-digest cron in `railway-cron.toml` | user / Lane D | watchdog can't merge | **OPEN** — needs user decision |
+| ~~B2~~ | ~~Lane D watchdog PR overwrites daily-digest cron in `railway-cron.toml`~~ | ~~user / Lane D~~ | ~~watchdog can't merge~~ | **RESOLVED in PR #97** — daily digest remains in the cron command; watchdog runs from the same Railway cron service |
 | B3 | truthfulness patch held pending audit verification | Lane A | sequencing | **deferrable** — patch is drafted; merge after Somerset |
 | B4 | Burlington `ready` but 0 zoning_code on 174,851 of 174,852 parcels | Lane B | Burlington reclassified Cat-B | **OPEN** — reclassified, not a defect |
 | B5 | alias_mappings framework abstraction (PR #86) + vocabulary_aliases table (PR #90) | logged | governance | **LOG ONLY** (Section 7 #3 in plan); not rolled back |
@@ -284,6 +284,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ## 15. Daily Changelog
 
 **Owner:** any lane appends (reverse chronological).
+
+### 2026-05-26
+
+- **OPEN** PR #97 `feat(ops): queued-job watchdog cron`. Lane D. Adds `backend/scripts/queued_job_watchdog.py` with 0/1/2 exits and updates `backend/railway-cron.toml` so the queued-job watchdog runs every 10 minutes while the daily digest still runs during the 12:00 UTC hour.
 
 ### 2026-05-21 (Phase 1 close / Phase 2 sprint kickoff)
 
