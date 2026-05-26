@@ -1,12 +1,19 @@
-# Railway service config — daily-digest cron
+# Railway service config — ops cron
 #
 # This file is consumed by a separate Railway service (NOT the web
 # or worker service). Set the service's Config Path to
 # `backend/railway-cron.toml` in the Railway dashboard.
 #
-# The cron schedule fires once daily at 12:00 UTC, which is:
+# Railway supports one cron schedule/start command per service config.
+# This service therefore runs the queued-job watchdog every 10 minutes
+# and also runs the daily digest during the 12:00 UTC hour.
+#
+# The daily digest gate preserves the previous 12:00 UTC delivery window:
 #   - 7:00 AM ET when standard time (EST)
 #   - 8:00 AM ET when daylight saving (EDT)
+# `run_once(force=False)` keeps duplicate invocations inside the hour
+# idempotent through the 23h `last_email_sent_at` cooldown.
+#
 # Run-time itself is brief (typically <10 seconds — one INSERT per
 # eligible filter into parcel_buybox_scores.notified_at, plus a
 # single Resend POST per filter). Railway shuts the container down
@@ -32,10 +39,10 @@ builder = "NIXPACKS"
 buildCommand = "pip install --no-cache-dir -e ."
 
 [deploy]
-startCommand = "python -m app.workers.daily_email"
+startCommand = "python scripts/queued_job_watchdog.py; watchdog_exit=$?; digest_exit=0; if [ \"$(date -u +%H)\" = \"12\" ]; then python -m app.workers.daily_email; digest_exit=$?; fi; if [ \"$watchdog_exit\" -eq 2 ]; then exit 2; fi; if [ \"$digest_exit\" -ne 0 ]; then exit \"$digest_exit\"; fi; exit \"$watchdog_exit\""
 # Cron syntax: minute hour day-of-month month day-of-week
-# `0 12 * * *` = every day at 12:00 UTC
-cronSchedule = "0 12 * * *"
+# `*/10 * * * *` = every 10 minutes UTC
+cronSchedule = "*/10 * * * *"
 # Never auto-restart — the script is a one-shot. Restart-on-fail
 # would create infinite loops on Resend outages.
 restartPolicyType = "NEVER"
