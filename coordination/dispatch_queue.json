@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T22:32:00Z",
+  "updated_at": "2026-05-26T22:41:44Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
@@ -14,10 +14,10 @@
     {
       "rank": 2,
       "lane": "lane-e-matrix",
-      "action": "Complete review/checks and merge PR #95 before starting Norfolk MA.",
-      "wake_condition": "PR #95 checks pass and no reviewer objections remain.",
-      "dependency_order": "Merge before additional matrix work.",
-      "expected_kpi": "unclear-row cleanup governance and reduced open PR risk"
+      "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while B7 validation is active unless review bandwidth explicitly requests it.",
+      "wake_condition": "Explicit matrix-throughput dispatch after Lane B B7 validation state is clear or review bandwidth is available.",
+      "dependency_order": "Pause Lane E throughput; do not add scope beyond the merged MA/Highland batch.",
+      "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
     },
     {
       "rank": 3,
@@ -38,10 +38,10 @@
     {
       "rank": 5,
       "lane": "lane-e-matrix",
-      "action": "Start Norfolk County MA pattern batch after PR #95 merge.",
-      "wake_condition": "PR #95 merged and no post-merge audit regression is reported.",
-      "dependency_order": "Do not stack ahead of PR #95.",
-      "expected_kpi": "unclear-row reduction for about 31,127 parcels at stake"
+      "action": "Hold next matrix recommendation; Norfolk MA, Middlesex MA, and Highland UT batch is already merged in PR #100.",
+      "wake_condition": "Branch is merged and a new Lane E assignment is explicitly approved.",
+      "dependency_order": "Do not start new matrix scope from this dispatch queue entry.",
+      "expected_kpi": "none until next approved matrix batch"
     }
   ],
   "merge_sequence": [
@@ -49,7 +49,7 @@
       "rank": 1,
       "item": "PR #95",
       "lane": "lane-e-matrix",
-      "state": "open; patched and prod applied"
+      "state": "merged; patched and prod applied"
     },
     {
       "rank": 2,
@@ -65,9 +65,9 @@
     },
     {
       "rank": 4,
-      "item": "Lane E Norfolk County MA pattern batch",
+      "item": "PR #100 Lane E Norfolk/Middlesex/Highland matrix batch",
       "lane": "lane-e-matrix",
-      "state": "queued"
+      "state": "merged; CI passed; prod apply/refresh already completed"
     }
   ],
   "retry_sequence": [
@@ -113,7 +113,7 @@
         "lane-e-matrix",
         "master"
       ],
-      "action": "Run or request post-merge audit refresh, then start Norfolk MA if no regression appears."
+      "action": "Completed: PR #95 merged and PR #100 MA/Highland follow-up merged; Lane E pauses pending explicit next matrix dispatch."
     },
     {
       "condition": "Railway auth refreshed",

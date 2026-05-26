@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T22:32:00Z",
+  "updated_at": "2026-05-26T22:41:44Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -33,14 +33,6 @@
       "severity": "medium",
       "dependency": "Railway CLI authentication",
       "unblock_condition": "Local Railway auth refreshed so cron service logs can be checked, or an alternate verified cron-log source is provided.",
-      "status": "open"
-    },
-    {
-      "id": "E1",
-      "owner_lane": "lane-e-matrix",
-      "severity": "medium",
-      "dependency": "PR #95 review and merge",
-      "unblock_condition": "PR #95 checks pass and the patched Loudoun VA + Howard MD cleanup is merged.",
       "status": "open"
     },
     {
@@ -85,6 +77,20 @@
       "id": "B7",
       "owner_lane": "lane-a-integrator",
       "cleared_by": "PR #106 Railway deploy ab88dba1ef6b",
+      "cleared_at": "2026-05-26",
+      "status": "cleared"
+    },
+    {
+      "id": "E1",
+      "owner_lane": "lane-e-matrix",
+      "cleared_by": "PR #95 merged and prod apply/refresh verified",
+      "cleared_at": "2026-05-26",
+      "status": "cleared"
+    },
+    {
+      "id": "E2",
+      "owner_lane": "lane-e-matrix",
+      "cleared_by": "PR #100 merged; MA/Highland matrix branch contained only intended scripts/docs and CI passed",
       "cleared_at": "2026-05-26",
       "status": "cleared"
     }

@@ -142,9 +142,9 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
-| done | Norfolk County, MA | 88 remaining | 14,638 remaining unclear-bound | applied; partial (residential short-code batch only) | branch `feat/matrix-norfolk-ma-pattern-batch` | Lane E |
-| done | Middlesex County, MA | 172 remaining | 67,386 remaining unclear-bound | applied; partial (Lowell batch 1 only) | branch `feat/matrix-norfolk-ma-pattern-batch` | Lane E |
-| done | Highland, UT | 4 remaining | 937 remaining unclear-bound | reviewed; partial (PD-1 unsupported without adopted PD narrative) | branch `feat/matrix-norfolk-ma-pattern-batch` | Lane E |
+| done | Norfolk County, MA | 88 remaining | 14,638 remaining unclear-bound | applied; partial (residential short-code batch only) | PR #100 merged (`6eb9eaf`) | Lane E |
+| done | Middlesex County, MA | 172 remaining | 67,386 remaining unclear-bound | applied; partial (Lowell batch 1 only) | PR #100 merged (`6eb9eaf`) | Lane E |
+| done | Highland, UT | 4 remaining | 937 remaining unclear-bound | reviewed; partial (PD-1 unsupported without adopted PD narrative) | PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Somerset County, NJ | 66 remaining | 2,194 remaining unclear-bound | applied; operational | #91 merged + prod applied 2026-05-26 | Lane E |
 | done | Loudoun VA + Howard MD cleanup | 4 remaining active rows | 19,309 remaining unclear-bound | applied; Howard operational, Loudoun partial by design | PR #95 patched/applied/merged 2026-05-26 | Lane E |
 
@@ -156,6 +156,7 @@ _Lane E: append progress notes here (script written / PR opened / merged / refre
 - 2026-05-26 19:19 UTC — Norfolk County MA pattern batch applied to prod via `pattern_norfolk_ma_adjudication.py`. Updated 12 rows (`G`, `GR`, `S`, `S-7`, `S1`, `S10`, `S15`, `S2`, `S25`, `S40`, `T-5`, `T-6`) using Norwood, Needham, and Brookline ordinance citations. Parcel delta: 16,489 unclear→classified. Refresh: partial, 88 remaining unclear rows, 14,638 remaining unclear-bound parcels, 90.5% classified parcel coverage.
 - 2026-05-26 19:57 UTC — Middlesex County MA Lowell batch 1 applied to prod via `pattern_middlesex_ma_adjudication.py`. Updated 9 rows (`NB`, `SMF`, `SMU`, `SSF`, `TSF`, `TTF`, `UMF`, `UMU`, `USF`) using Lowell Zoning Ordinance Article XII / Section 12.9 citations. Parcel delta: 18,401 unclear→classified. Refresh: partial, 172 remaining unclear rows, 67,386 remaining unclear-bound parcels, 82.8% classified parcel coverage.
 - 2026-05-26 20:19 UTC — Highland UT cleanup applied to prod via `highland_ut_matrix_adjudication.py`. `PD-1` reviewed against Highland City Development Code Article 5 and left unclear because the adopted PD narrative governs uses; zero-bind unsupported rows left unclear. Parcel delta: 0. Refresh: partial, 4 remaining unclear rows, 937 remaining unclear-bound parcels, 87.1% classified parcel coverage.
+- 2026-05-26 22:41 UTC — PR #100 merged as `6eb9eaf` for the Norfolk/Middlesex/Highland matrix batch. Merge diff contains only `backend/scripts/highland_ut_matrix_adjudication.py`, `backend/scripts/pattern_middlesex_ma_adjudication.py`, `backend/scripts/pattern_norfolk_ma_adjudication.py`, and Lane E updates to this file. Validation: GitHub Backend Tests passed, Frontend Tests passed, Supabase Preview skipped; local `py_compile` passed for all three scripts.
 
 ---
 
@@ -207,7 +208,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | queued-job watchdog cron | PR #97 merged | Railway cron-log verification blocked by expired local CLI auth | 2026-05-26 (web deploy on `2e8d9e0`; cron logs pending Railway login) |
-| E — Matrix Intelligence | Norfolk, Middlesex, and Highland batches applied/refreshed; branch ready for PR | none open from current branch | Railway CLI auth unavailable; direct session DB endpoint used for prod apply/refresh | 2026-05-26 20:19 UTC |
+| E — Matrix Intelligence | MA/Highland matrix batch commit hygiene complete; PR #100 merged; no new matrix scope started | PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-26 22:41 UTC |
 
 ---
 
@@ -246,9 +247,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | **MERGED** (`0893e28`) 2026-05-22 | done; prod applied/refreshed 2026-05-26 |
 | #92 | fix(deploy): re-enable Vercel git deployments | A | **MERGED** (`ba7a958`) 2026-05-26 | done; Vercel deploy run `26466874832` succeeded |
 | #94 | fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern) | A | **MERGED** (`116dd4e`) 2026-05-26 | done; Railway deploy verified |
-| #95 | feat(matrix): Loudoun VA + Howard MD unclear-row cleanup | E | open; patched + prod applied | merge after review/checks |
+| #95 | feat(matrix): Loudoun VA + Howard MD unclear-row cleanup | E | **MERGED** (`2612bd0`) 2026-05-26 | done; patched + prod applied/refreshed |
 | #97 | feat(ops): queued-job watchdog cron | D | **MERGED** (`2e8d9e0`) 2026-05-26 | done |
 | #98 | fix(audit): require 70% parcel zoning coverage for operational | A | **MERGED** (`a29b86e`) 2026-05-26 | done; post-merge audit refreshed |
+| #100 | feat(matrix): apply MA pattern batches and Highland review | E | **MERGED** (`6eb9eaf`) 2026-05-26 | done; CI passed; prod apply/refresh already completed |
 
 ---
 
@@ -263,7 +265,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 4. ~~Lane D watchdog PR #97~~ ✅ merged; Railway web deploy serves `2e8d9e0`, cron-log OK run still pending Railway CLI login.
 5. **Lane B Burlington-pattern retries** — no PRs; operational sweep.
 6. **Lane C bbox sweep** — no PRs unless bug surfaces.
-7. **Lane E Norfolk MA pattern-batch** — next sprint task.
+7. ~~Lane E Norfolk/Middlesex/Highland matrix batch PR #100~~ ✅ merged; prod apply/refresh completed before merge.
 
 ---
 
@@ -290,6 +292,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-26
 
+- **MERGE+VALIDATE** PR #100 `feat(matrix): apply MA pattern batches and Highland review` merged as `6eb9eaf`. Lane E. Scope verified as three matrix scripts plus Lane E docs only; GitHub Backend Tests and Frontend Tests passed; local `py_compile` passed for `pattern_norfolk_ma_adjudication.py`, `pattern_middlesex_ma_adjudication.py`, and `highland_ut_matrix_adjudication.py`. E2 commit-hygiene blocker cleared.
 - **MERGE+VERIFY** PR #106 `fix(pipeline): make matrix bootstrap non-fatal` merged as `ab88dba1ef6b6203f1752d078683be57696dadb4`; Railway `/health.pipeline_version` reports `ab88dba1ef6b`. Lane A. B7 cleared for validation retry: Nassau County NY and Monmouth County NJ first; keep B6 Westchester and B8 Middlesex/Fairfield separate.
 - **OPEN** PR #106 B7 non-fatal zone-use matrix bootstrap containment. Lane A. Evidence: Monmouth job `08b0f866-5fe6-4efb-8403-ed331416f1ea` failed at `pipeline.py:1680` -> `bootstrap_zone_use_matrix` after `download_parcels` completed 251,486 features and `ingest_parcels` completed 251,486 parcels; no overlay step ran. Nassau job `80120217-61c2-4de7-9484-f43f2d4d5c7a` and New York job `557b3c44-92f3-402e-8275-c86c6a1712e6` show the same terminal bootstrap signature. Branch `fix/pipeline-nonfatal-zone-matrix-bootstrap` makes heuristic matrix bootstrap non-fatal.
 - **CLASSIFY** B6 and B8. Lane A. B6 is Westchester job `886141e2-7ef3-4800-b635-20ecb8af2eaa`, a distinct post-overlay `db.commit()` failure at `pipeline.py:1752`; separate follow-up. B8 is Middlesex job `110b0a01-e723-43da-967c-bca50bba6848` plus Fairfield job `30997930-3a03-47ce-8411-730b688a4c6d`, both cancelled during large-county mapping plateau (`parcels_mapped` 114,000 / 122,000); parked separate follow-up.
