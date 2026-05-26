@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-05-26T20:15:09Z",
+  "source": {
+    "progress_doc": "docs/PHASE2_PROGRESS.md",
+    "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
+    "origin_main_at_snapshot": "6eb9eaf"
+  },
+  "current_known_state": {
+    "lane_b": "ready_to_resume",
+    "pr_94_deploy_blocker": "cleared",
+    "pr_95": "next_merge_apply_item",
+    "railway_auth_blocker": "active",
+    "burlington": "structural_coverage_blocker"
+  },
+  "kpi_focus": [
+    "honest operational jurisdictions",
+    "trustworthy parcel verdicts",
+    "unclear-row reduction",
+    "failed-job reduction",
+    "audit truthfulness"
+  ],
+  "lanes": {
+    "master": {
+      "branch": "main",
+      "status": "running",
+      "task": "Maintain repo-shared orchestration state, merge sequencing, and post-truthfulness KPI awareness.",
+      "blocked": false,
+      "blocker": null,
+      "wake_condition": null,
+      "latest_kpi_delta": {
+        "honest_operational_jurisdictions": 45,
+        "audit_operational_jurisdictions": 45,
+        "trustworthy_parcel_verdict_count": 3292352,
+        "avg_unclear_share_partials": "18.3%",
+        "failed_jobs_14d": 42,
+        "fake_operationals": 0
+      },
+      "updated_at": "2026-05-26T18:45:00Z"
+    },
+    "lane-a-integrator": {
+      "branch": "docs/phase2-lane-a-post-truthfulness",
+      "status": "awaiting_audit_or_new_failure_cluster",
+      "task": "Monitor post-merge audit and active failure clusters after PR #94, #92, and #98 deploys.",
+      "blocked": false,
+      "blocker": null,
+      "wake_condition": "Wake if Lane B retries fail with a new shared substrate class or if post-merge audit regresses.",
+      "latest_kpi_delta": {
+        "failed_jobs_14d": "42, down 5 vs prior 47",
+        "fake_operationals": "0, down 4"
+      },
+      "updated_at": "2026-05-26T18:45:00Z"
+    },
+    "lane-b-retry-sweep": {
+      "branch": null,
+      "status": "ready_to_resume",
+      "task": "Run retry queue and Burlington per-town pilot against post-PR-#85 and post-PR-#94 substrate.",
+      "blocked": false,
+      "blocker": null,
+      "wake_condition": "Immediate; PR #94 deploy blocker is cleared.",
+      "latest_kpi_delta": {
+        "eligible_retries": [
+          "Wake County, NC",
+          "Middlesex County, NJ",
+          "Westchester County, NY",
+          "Nassau County, NY",
+          "Fairfield County, CT",
+          "Marlboro, NJ"
+        ],
+        "burlington_status": "ready parcels but Cat-B structural coverage blocker remains"
+      },
+      "updated_at": "2026-05-21T00:00:00Z"
+    },
+    "lane-c-spatial-cleanup": {
+      "branch": null,
+      "status": "queued",
+      "task": "Run bbox refresh sweep for 7 jurisdictions and investigate prod refresh-bbox 404 if still reproducible.",
+      "blocked": false,
+      "blocker": null,
+      "wake_condition": "Wake after Lane B retry jobs are started or confirmed not competing for operational attention.",
+      "latest_kpi_delta": {
+        "jurisdictions_with_bbox_null": 7
+      },
+      "updated_at": "2026-05-21T00:00:00Z"
+    },
+    "lane-d-watchdog": {
+      "branch": null,
+      "status": "blocked",
+      "task": "Verify queued-job watchdog cron logs after PR #97 merge and web deploy.",
+      "blocked": true,
+      "blocker": "D1",
+      "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
+      "latest_kpi_delta": {
+        "stuck_jobs_over_10min": 0
+      },
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    "lane-e-matrix": {
+      "branch": null,
+      "status": "awaiting_merge",
+      "task": "Merge PR #95 after review/checks, then start Norfolk County MA pattern batch.",
+      "blocked": true,
+      "blocker": "E1",
+      "wake_condition": "PR #95 checks pass and no reviewer objections remain.",
+      "latest_kpi_delta": {
+        "somerset_nj": "operational after 10,567 parcels unclear to classified",
+        "loudoun_va_howard_md_cleanup": "applied; Loudoun remains partial by design, Howard remains operational",
+        "next_unclear_reduction_target": "Norfolk County, MA, about 100 unclear rows and 31,127 parcels at stake"
+      },
+      "updated_at": "2026-05-26T18:23:00Z"
+    }
+  }
+}

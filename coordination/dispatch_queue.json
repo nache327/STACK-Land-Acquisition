@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-05-26T20:08:25Z",
+  "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
+  "recommended_next_actions": [
+    {
+      "rank": 1,
+      "lane": "lane-b-retry-sweep",
+      "action": "Resume retry sweep now that PR #94 is merged and deployed.",
+      "wake_condition": "Immediate; no active blocker listed.",
+      "dependency_order": "Run before new substrate changes.",
+      "expected_kpi": "failed-job reduction and clearer Cat-B source-acquisition queue"
+    },
+    {
+      "rank": 2,
+      "lane": "lane-e-matrix",
+      "action": "Complete review/checks and merge PR #95 before starting Norfolk MA.",
+      "wake_condition": "PR #95 checks pass and no reviewer objections remain.",
+      "dependency_order": "Merge before additional matrix work.",
+      "expected_kpi": "unclear-row cleanup governance and reduced open PR risk"
+    },
+    {
+      "rank": 3,
+      "lane": "lane-c-spatial-cleanup",
+      "action": "Run bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
+      "wake_condition": "Lane B retry jobs are started or not competing for the same operational attention.",
+      "dependency_order": "Can run after Lane B dispatch.",
+      "expected_kpi": "bbox null count reduction"
+    },
+    {
+      "rank": 4,
+      "lane": "lane-d-watchdog",
+      "action": "Verify Railway cron logs for PR #97 watchdog.",
+      "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
+      "dependency_order": "External auth unblock required.",
+      "expected_kpi": "operator workflow confidence for stuck-job prevention"
+    },
+    {
+      "rank": 5,
+      "lane": "lane-e-matrix",
+      "action": "Start Norfolk County MA pattern batch after PR #95 merge.",
+      "wake_condition": "PR #95 merged and no post-merge audit regression is reported.",
+      "dependency_order": "Do not stack ahead of PR #95.",
+      "expected_kpi": "unclear-row reduction for about 31,127 parcels at stake"
+    }
+  ],
+  "merge_sequence": [
+    {
+      "rank": 1,
+      "item": "PR #95",
+      "lane": "lane-e-matrix",
+      "state": "open; patched and prod applied"
+    },
+    {
+      "rank": 2,
+      "item": "Lane B retry sweep",
+      "lane": "lane-b-retry-sweep",
+      "state": "no PR expected unless retries expose a bug"
+    },
+    {
+      "rank": 3,
+      "item": "Lane C bbox sweep",
+      "lane": "lane-c-spatial-cleanup",
+      "state": "no PR expected unless bug surfaces"
+    },
+    {
+      "rank": 4,
+      "item": "Lane E Norfolk County MA pattern batch",
+      "lane": "lane-e-matrix",
+      "state": "queued"
+    }
+  ],
+  "retry_sequence": [
+    {
+      "rank": 1,
+      "lane": "lane-b-retry-sweep",
+      "jurisdictions": [
+        "Middlesex County, NJ",
+        "Westchester County, NY",
+        "Nassau County, NY",
+        "Fairfield County, CT",
+        "Marlboro, NJ"
+      ],
+      "purpose": "Validate PR #94 non-fatal overlay behavior."
+    },
+    {
+      "rank": 2,
+      "lane": "lane-b-retry-sweep",
+      "jurisdictions": [
+        "Wake County, NC"
+      ],
+      "purpose": "Probe parcel-ingest/upstream failure separately from PR #94 overlay class."
+    }
+  ],
+  "lane_wakeups": [
+    {
+      "condition": "PR #95 merged",
+      "wake_lanes": [
+        "lane-e-matrix",
+        "master"
+      ],
+      "action": "Run or request post-merge audit refresh, then start Norfolk MA if no regression appears."
+    },
+    {
+      "condition": "Railway auth refreshed",
+      "wake_lanes": [
+        "lane-d-watchdog",
+        "lane-e-matrix"
+      ],
+      "action": "Verify watchdog cron logs and restore CLI apply/refresh path for future matrix work."
+    },
+    {
+      "condition": "Lane B retry succeeds for overlay-fatal cluster",
+      "wake_lanes": [
+        "lane-a-integrator",
+        "master"
+      ],
+      "action": "Move resolved failure cluster out of active failures and refresh failed-job KPI."
+    },
+    {
+      "condition": "Lane B retry fails with a new shared substrate class",
+      "wake_lanes": [
+        "lane-a-integrator",
+        "master"
+      ],
+      "action": "Pause duplicate retries, assign substrate triage to Lane A, and update blockers."
+    }
+  ],
+  "duplicate_work_guards": [
+    "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
+    "Do not start another Loudoun or Howard cleanup branch while PR #95 remains open.",
+    "Do not treat Burlington County as a matrix problem; it is tracked as Cat-B structural coverage.",
+    "Do not start Lane D cron changes while the only remaining issue is external Railway log access."
+  ]
+}

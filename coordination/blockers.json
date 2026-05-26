@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-05-26T20:08:25Z",
+  "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
+  "active_blockers": [
+    {
+      "id": "B4",
+      "owner_lane": "lane-b-retry-sweep",
+      "severity": "medium",
+      "dependency": "Burlington per-town zoning source acquisition",
+      "unblock_condition": "Verified per-town zoning source path staged beyond the single Westampton scoped pilot, or Burlington explicitly remains Cat-B with next town target selected.",
+      "status": "open"
+    },
+    {
+      "id": "D1",
+      "owner_lane": "lane-d-watchdog",
+      "severity": "medium",
+      "dependency": "Railway CLI authentication",
+      "unblock_condition": "Local Railway auth refreshed so cron service logs can be checked, or an alternate verified cron-log source is provided.",
+      "status": "open"
+    },
+    {
+      "id": "E1",
+      "owner_lane": "lane-e-matrix",
+      "severity": "medium",
+      "dependency": "PR #95 review and merge",
+      "unblock_condition": "PR #95 checks pass and the patched Loudoun VA + Howard MD cleanup is merged.",
+      "status": "open"
+    },
+    {
+      "id": "G1",
+      "owner_lane": "master",
+      "severity": "low",
+      "dependency": "Governance review of architecture drift logs",
+      "unblock_condition": "Sprint-close governance accepts or remediates alias_mappings framework abstraction and vocabulary_aliases table drift.",
+      "status": "log_only"
+    }
+  ],
+  "recently_cleared_blockers": [
+    {
+      "id": "B1",
+      "owner_lane": "lane-a-integrator",
+      "cleared_by": "PR #89",
+      "cleared_at": "2026-05-21",
+      "status": "cleared"
+    },
+    {
+      "id": "B2",
+      "owner_lane": "lane-d-watchdog",
+      "cleared_by": "PR #97",
+      "cleared_at": "2026-05-26",
+      "status": "cleared"
+    },
+    {
+      "id": "B3",
+      "owner_lane": "lane-a-integrator",
+      "cleared_by": "PR #98",
+      "cleared_at": "2026-05-26",
+      "status": "cleared"
+    },
+    {
+      "id": "B-PR94-DEPLOY",
+      "owner_lane": "lane-a-integrator",
+      "cleared_by": "PR #94 Railway deploy",
+      "cleared_at": "2026-05-26",
+      "status": "cleared"
+    }
+  ]
+}
