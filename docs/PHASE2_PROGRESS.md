@@ -181,6 +181,7 @@ _Lane B: log each retry result here. Reassess once you see outcomes — most Cat
 
 | count | jurisdiction(s) | pipeline line | class | status |
 |---:|---|---|---|---|
+| 5 | Middlesex NJ / Westchester NY / Nassau NY / Fairfield CT / Marlboro NJ | `pipeline.py:1732` -> `apply_flood_overlay` -> `overlays.py:193` | flood overlay fatal after successful parcel ingest | PR #94 opened to make flood + wetland overlay failures non-fatal; retry after merge + deploy |
 | 13 | Marlboro, NJ | 1298 / coverage_refresh | mixed upstream + coverage_refresh | needs retry; normalize duplicated `marlboro`/`Marlboro` rows |
 | 7 | Fairfax County, VA | mixed | mixed pipeline/network | Lane B retry/triage pending |
 | 5 | Monmouth County, NJ | 1286/1298/1329 + coverage_refresh | mixed | partially addressed by PR #85; structural Cat-B remains |
@@ -244,6 +245,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #89 | fix(audit-cli): disable statement_timeout for full-sweep against prod-scale data | A | **MERGED** (`9fed012`) 2026-05-21 | done |
 | #90 | feat(allentown-2025): apply 2025 ordinance verdicts + ship vocabulary_aliases table | E | **MERGED** 2026-05-21 | done |
 | #91 | feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional | E | open | next |
+| #94 | fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern) | A | open | urgent; before Lane B retries five overlay-failed jurisdictions |
 | (local) | Lane E: Loudoun VA adjudication script (`loudoun_va_matrix_adjudication.py` in worktree) | E | not pushed | sequence after Somerset |
 | (local) | Lane D: queued_job_watchdog.py + railway-cron.toml | D | not pushed; **blocked on B2** | after B2 resolved |
 | (drafted) | Lane A: truthfulness patch (`audit_zoning_coverage.py` `_build_audit`) | A | drafted by Lane A | after Somerset, after fresh audit |
@@ -285,6 +287,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-21 (Phase 1 close / Phase 2 sprint kickoff)
 
+- **OPEN** PR #94 `fix(pipeline): non-fatal flood + wetland overlays (match AADT containment pattern)`. Lane A. KPI refs: Tier-2 #5 failed jobs/14d and Tier-2 #8 overlay correctness. Contains flood and wetland exceptions individually so one failed overlay emits a warning but does not fail the whole post-ingest job.
+- **FOLLOW-UP** Stored job tracebacks are capped/truncated at 2048 chars for the overlay failure cluster. Logged for later operational diagnostics; not bundled with PR #94.
+- **FOLLOW-UP** `POST /api/admin/jurisdictions/{id}/refresh-bbox` returns 404 on prod for Lane C bbox sweep. Separate investigation; not bundled with PR #94.
 - **OPEN** PR #91 `feat(matrix): Somerset NJ adjudication — 13 unclear rows → prohibited/conditional`. Lane E. Adds `backend/scripts/somerset_nj_matrix_adjudication.py`; dry-run moves 10,567 parcels unclear→classified. No Railway run or coverage refresh yet.
 - **VERIFY** Railway prod is running PR #89 commit `9fed01293aae` (`pipeline_version: 9fed01293aae` from `/health` and `/api/debug/env` at 2026-05-21 22:18 UTC). Lane A. B1 deploy verified; commit age was ~17 minutes at check time.
 - **RESOLVE** Burlington County, NJ active failure cluster moved out of section 8. Latest forced rerun `9617a23c-330d-42f5-bacf-fb5a04a7c401` reached `ready` after PR #85; no duplicate boundary PR opened.
