@@ -25,6 +25,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -327,9 +328,15 @@ def _pct(numerator: int, denominator: int) -> float:
     return round((numerator / denominator) * 100, 1)
 
 
-def _operational_readiness(blocking_gaps: list[str], parcel_count: int) -> str:
+def _operational_readiness(
+    blocking_gaps: list[str],
+    parcel_count: int,
+    parcel_zoning_code_coverage_pct: float,
+) -> str:
     if parcel_count == 0:
         return "not_loaded"
+    if parcel_zoning_code_coverage_pct < 70.0:
+        return "partial"
     if not blocking_gaps:
         return "operational"
     return "partial"
@@ -445,7 +452,11 @@ def _build_audit(row: Any, schema: SchemaProfile) -> JurisdictionAudit:
         matrix_distinct_zone_match_pct=matrix_distinct_zone_match_pct,
         self_storage_classified_parcel_pct=self_storage_classified_parcel_pct,
         self_storage_positive_parcel_pct=self_storage_positive_parcel_pct,
-        operational_readiness=_operational_readiness(blocking_gaps, int(row.parcel_count)),
+        operational_readiness=_operational_readiness(
+            blocking_gaps,
+            int(row.parcel_count),
+            parcel_zoning_code_coverage_pct,
+        ),
         blocking_gaps=blocking_gaps,
     )
 
@@ -496,7 +507,15 @@ async def main() -> None:
 
     settings = Settings()
     database_url = args.database_url or settings.database_url
-    engine = create_async_engine(database_url, echo=False, pool_pre_ping=True)
+    engine = create_async_engine(
+        database_url,
+        echo=False,
+        pool_pre_ping=True,
+        connect_args={
+            "statement_cache_size": 0,
+            "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
+        },
+    )
 
     async with engine.connect() as conn:
         await conn.execute(text("SET LOCAL statement_timeout = 0"))
