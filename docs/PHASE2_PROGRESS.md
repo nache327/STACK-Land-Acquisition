@@ -138,17 +138,20 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
-| 1 | Norfolk County, MA | ~100 | 31,127 | medium (pattern-batch MA family) | queued | Lane E |
-| 2 | Middlesex County, MA | ~181 | 85,787 | medium (reuses Norfolk pattern) | queued | Lane E |
-| 3 | Highland, UT | 4 | 937 | trivial (PD-1 only if ordinance supports; zero-bind unsupported stays unclear) | queued | Lane E |
+| done | Norfolk County, MA | 88 remaining | 14,638 remaining unclear-bound | applied; partial (residential short-code batch only) | branch `feat/matrix-norfolk-ma-pattern-batch` | Lane E |
+| done | Middlesex County, MA | 172 remaining | 67,386 remaining unclear-bound | applied; partial (Lowell batch 1 only) | branch `feat/matrix-norfolk-ma-pattern-batch` | Lane E |
+| done | Highland, UT | 4 remaining | 937 remaining unclear-bound | reviewed; partial (PD-1 unsupported without adopted PD narrative) | branch `feat/matrix-norfolk-ma-pattern-batch` | Lane E |
 | done | Somerset County, NJ | 66 remaining | 2,194 remaining unclear-bound | applied; operational | #91 merged + prod applied 2026-05-26 | Lane E |
-| done | Loudoun VA + Howard MD cleanup | 4 remaining active rows | 19,309 remaining unclear-bound | applied; Howard operational, Loudoun partial by design | PR #95 patched/applied; merge pending | Lane E |
+| done | Loudoun VA + Howard MD cleanup | 4 remaining active rows | 19,309 remaining unclear-bound | applied; Howard operational, Loudoun partial by design | PR #95 patched/applied/merged 2026-05-26 | Lane E |
 
 _Lane E: append progress notes here (script written / PR opened / merged / refreshed / operational flip)._
 
 - 2026-05-21 22:20 UTC — Somerset NJ script ready and pushed to PR #91. Dry-run: 13 rows, 10,567 parcels move unclear→classified. `PAC-2` / `PAC-3` deliberately left unclear because absent from matrix.
 - 2026-05-26 18:23 UTC — Somerset NJ applied to prod via session-mode DB endpoint after Railway CLI auth remained expired. Updated 13 rows (`EP-250`, `G-B`, `LD`, `LD-1`, `LD-3`, `PAC`, `S-100`, `S-50`, `S-60`, `S-75`, `S-80`, `S-C-V`, `SMD`), moving 10,567 parcels unclear→classified. Refresh: operational, 66 remaining unclear rows, 2,194 remaining unclear-bound parcels, 98.4% classified parcel coverage.
 - 2026-05-26 18:23 UTC — Loudoun + Howard cleanup applied to prod. Loudoun PR #95 corrected before apply to leave `TOWNS` and `PUD-1` unclear rather than overclassify out-of-scope / unverified rows; classified only `C1`, `PDCH`, and `PUD` (63 parcels unclear→classified). Loudoun remains partial with 2 active unclear rows / 19,298 unclear-bound parcels. Howard reviewed `2R0` and `OT`, moved 0 parcels, and remains operational with 2 active unclear rows / 11 unclear-bound parcels.
+- 2026-05-26 19:19 UTC — Norfolk County MA pattern batch applied to prod via `pattern_norfolk_ma_adjudication.py`. Updated 12 rows (`G`, `GR`, `S`, `S-7`, `S1`, `S10`, `S15`, `S2`, `S25`, `S40`, `T-5`, `T-6`) using Norwood, Needham, and Brookline ordinance citations. Parcel delta: 16,489 unclear→classified. Refresh: partial, 88 remaining unclear rows, 14,638 remaining unclear-bound parcels, 90.5% classified parcel coverage.
+- 2026-05-26 19:57 UTC — Middlesex County MA Lowell batch 1 applied to prod via `pattern_middlesex_ma_adjudication.py`. Updated 9 rows (`NB`, `SMF`, `SMU`, `SSF`, `TSF`, `TTF`, `UMF`, `UMU`, `USF`) using Lowell Zoning Ordinance Article XII / Section 12.9 citations. Parcel delta: 18,401 unclear→classified. Refresh: partial, 172 remaining unclear rows, 67,386 remaining unclear-bound parcels, 82.8% classified parcel coverage.
+- 2026-05-26 20:19 UTC — Highland UT cleanup applied to prod via `highland_ut_matrix_adjudication.py`. `PD-1` reviewed against Highland City Development Code Article 5 and left unclear because the adopted PD narrative governs uses; zero-bind unsupported rows left unclear. Parcel delta: 0. Refresh: partial, 4 remaining unclear rows, 937 remaining unclear-bound parcels, 87.1% classified parcel coverage.
 
 ---
 
@@ -204,7 +207,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | queued-job watchdog cron | PR #97 merged | Railway cron-log verification blocked by expired local CLI auth | 2026-05-26 (web deploy on `2e8d9e0`; cron logs pending Railway login) |
-| E — Matrix Intelligence | Norfolk County MA pattern batch next; Somerset applied/refreshed; Loudoun + Howard cleanup applied | #95 open (patched; merge pending) | Railway CLI auth unavailable; direct session DB endpoint used for prod apply/refresh | 2026-05-26 18:23 UTC |
+| E — Matrix Intelligence | Norfolk, Middlesex, and Highland batches applied/refreshed; branch ready for PR | none open from current branch | Railway CLI auth unavailable; direct session DB endpoint used for prod apply/refresh | 2026-05-26 20:19 UTC |
 
 ---
 
@@ -284,6 +287,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-26
 
+- **APPLY+REFRESH** Highland, UT. Lane E. `highland_ut_matrix_adjudication.py` applied review metadata to `PD-1`; row remains unclear because Highland City Development Code Article 5 makes the adopted PD narrative the governing use regulation. Parcel delta: 0 unclear→classified. Refresh: partial, 4 remaining unclear rows, 937 remaining unclear-bound parcels.
+- **APPLY+REFRESH** Middlesex County, MA. Lane E. `pattern_middlesex_ma_adjudication.py` applied Lowell batch 1 to 9 ordinance-cited rows (`NB`, `SMF`, `SMU`, `SSF`, `TSF`, `TTF`, `UMF`, `UMU`, `USF`). Parcel delta: 18,401 unclear→classified. Refresh: partial, 172 remaining unclear rows, 67,386 remaining unclear-bound parcels.
+- **APPLY+REFRESH** Norfolk County, MA. Lane E. `pattern_norfolk_ma_adjudication.py` applied 12 ordinance-cited residential short-code rows (`G`, `GR`, `S`, `S-7`, `S1`, `S10`, `S15`, `S2`, `S25`, `S40`, `T-5`, `T-6`). Parcel delta: 16,489 unclear→classified. Refresh: partial, 88 remaining unclear rows, 14,638 remaining unclear-bound parcels.
+- **MERGED** PR #95 `feat(matrix): Loudoun VA + Howard MD unclear-row cleanup` after Lane E correction/rebase and passing CI. Prod apply/refresh had already completed from the patched branch; branch deletion failed locally only because another worktree still held the source branch.
 - **AUDIT** `backend/tmp/audit_post_truthfulness.json` generated after PR #98. Lane A. Verified 45 operational / 29 partial / 7 not_loaded / 81 total; zero operational jurisdictions have parcel zoning-code coverage below 70%. Same-audit old readiness logic would have reported 49 operational.
 - **MERGE+VERIFY** PR #98 `fix(audit): require 70% parcel zoning coverage for operational` merged as `a29b86eeb301117138b4ca1e8fe0ebc347aa92f9`; Railway `/health.pipeline_version` reports `a29b86eeb301`. Lane A. Demoted Bergen County NJ, Draper City UT, Essex County NJ, and Montgomery County PA from operational to partial.
 - **MERGE+VERIFY** PR #92 `fix(deploy): re-enable Vercel git deployments` merged as `ba7a9582d1207aa02849fbc3ebcf267be571257c`. Lane A. Vercel deploy workflow run `26466874832` completed successfully for the main push; production frontend returned HTTP 200 from Vercel.
