@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T23:00:00Z",
+  "updated_at": "2026-05-26T23:41:05Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -26,6 +26,14 @@
       "dependency": "Middlesex/Fairfield large-county mapping plateau classification",
       "unblock_condition": "Mapping plateau/cancel class is either reproduced with enough evidence for a narrow code fix or parked with an explicit operator retry plan.",
       "status": "parked_separate_followup"
+    },
+    {
+      "id": "B10",
+      "owner_lane": "lane-a-integrator",
+      "severity": "high",
+      "dependency": "Nassau post-ingest coverage-refresh DB session boundary",
+      "unblock_condition": "A deployed main SHA runs coverage_refresh in a fresh DB session after large-county ingest/matrix bootstrap, then Nassau-only validation retry may resume.",
+      "status": "confirmed_fix_in_progress"
     },
     {
       "id": "D1",
