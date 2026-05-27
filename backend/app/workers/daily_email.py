@@ -99,6 +99,15 @@ class DigestParcel:
 # Don't re-fire within 23h. Slightly under 24h so a 7am cron never skips
 # a day because of clock drift / late starts.
 _RESEND_INTERVAL = timedelta(hours=23)
+# UTC hour the digest is allowed to send (12:00 UTC = 7am EST / 8am EDT).
+# The cron service ticks every 10 min all day for the watchdog; this gate
+# keeps the digest to the intended morning window. It lives HERE in Python
+# rather than as a shell `[ "$(date -u +%H)" = "12" ]` test in the cron
+# start command — that shell form silently evaluated false on Railway
+# (the $(date) substitution didn't behave at runtime), so the digest
+# never fired and went 4 days dark (May 23–27). Python reads the UTC hour
+# reliably and is unit-testable.
+_DIGEST_SEND_HOUR_UTC = 12
 # Soft floor on score — we want "noteworthy" parcels in the digest, not
 # the bottom of the score distribution. Maps roughly to the user spec's
 # `classification IN ('match', 'borderline')`.
@@ -772,11 +781,35 @@ def send_daily_digest_actor() -> None:
 # ─── CLI entry point ─────────────────────────────────────────────────────
 
 def _cli() -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Send the daily buy-box digest.")
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="bypass the UTC send-hour gate AND the 23h cooldown "
+        "(manual smoke test). Does not stamp last_email_sent_at.",
+    )
+    args = ap.parse_args()
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
-    result = asyncio.run(run_once())
+
+    # Send-hour gate. The combined watchdog+digest cron ticks every 10 min,
+    # so without this every tick would send. We only send during the
+    # 12:00 UTC hour. Checked here (not in the cron shell command) because
+    # the prior shell `$(date -u +%H)` gate never fired on Railway.
+    hour = datetime.now(timezone.utc).hour
+    if not args.force and hour != _DIGEST_SEND_HOUR_UTC:
+        print(
+            f"digest skip: UTC hour {hour:02d} != send hour "
+            f"{_DIGEST_SEND_HOUR_UTC:02d} (use --force to override)"
+        )
+        sys.exit(0)
+
+    result = asyncio.run(run_once(force=args.force))
     print(f"digest done: {result}")
     # Non-zero exit when any filter errored so Railway's cron logs
     # surface the failure instead of silently marking the run green.

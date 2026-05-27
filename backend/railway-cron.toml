@@ -39,7 +39,14 @@ builder = "NIXPACKS"
 buildCommand = "pip install --no-cache-dir -e ."
 
 [deploy]
-startCommand = "python scripts/queued_job_watchdog.py; watchdog_exit=$?; digest_exit=0; if [ \"$(date -u +%H)\" = \"12\" ]; then python -m app.workers.daily_email; digest_exit=$?; fi; if [ \"$watchdog_exit\" -eq 2 ]; then exit 2; fi; if [ \"$digest_exit\" -ne 0 ]; then exit \"$digest_exit\"; fi; exit \"$watchdog_exit\""
+# Always run BOTH the watchdog and the digest module every tick. The
+# digest module self-gates to the 12:00 UTC hour in Python
+# (_DIGEST_SEND_HOUR_UTC) and exits 0 immediately on off-hours, so the
+# off-hour cost is just a process start. We deliberately do NOT gate the
+# digest with a shell `[ "$(date -u +%H)" = "12" ]` test here: that form
+# silently evaluated false on Railway and the digest never fired for 4
+# days (May 23–27). Avoid $(...) command substitution in this string.
+startCommand = "python scripts/queued_job_watchdog.py; watchdog_exit=$?; python -m app.workers.daily_email; digest_exit=$?; if [ \"$watchdog_exit\" -eq 2 ]; then exit 2; fi; if [ \"$digest_exit\" -ne 0 ]; then exit \"$digest_exit\"; fi; exit \"$watchdog_exit\""
 # Cron syntax: minute hour day-of-month month day-of-week
 # `*/10 * * * *` = every 10 minutes UTC
 cronSchedule = "*/10 * * * *"
