@@ -3,6 +3,8 @@ import type { Feature, Polygon, MultiPolygon } from "geojson";
 import { fetchIsochrone, fetchCensusTracts } from "@/lib/isochrone";
 import type { TractData } from "@/lib/isochrone";
 import type { CandidateParcelRow } from "@/lib/schemas";
+import { api } from "@/lib/api";
+import type { ServerRingMetricRow, RingDemographicWrite } from "@/lib/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -190,6 +192,73 @@ export async function fetchHomeDensityForRing(
     homesOver2M: data.homes_over_2m,
     homesOver5M: data.homes_over_5m,
   };
+}
+
+// ── Shared server cache (parcel_ring_metrics) ───────────────────────────────
+//
+// Seed the precompute from the server-side cache so a city computed by ANY
+// user/session is reused, instead of re-running Mapbox + Census per parcel.
+// Demographics are written back from processOne (best-effort); wealth-density
+// homes_over_* flow through the value-density path.
+
+const _RING_TIMES = [2, 5, 10, 15] as const;
+
+function finiteOrNull(n: number | null | undefined): number | null {
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
+}
+
+/** Group flat server rows into the 4-ring PrecomputedParcelData shape. A
+ *  parcel is included ONLY when all four drive-time rings are present, so a
+ *  partial row set recomputes fully on the next run. */
+function serverRowsToPrecomputed(
+  rows: ServerRingMetricRow[],
+): Map<string, PrecomputedParcelData> {
+  const byParcel = new Map<string, Map<number, ServerRingMetricRow>>();
+  for (const r of rows) {
+    const pid = String(r.parcel_id);
+    let rings = byParcel.get(pid);
+    if (!rings) { rings = new Map(); byParcel.set(pid, rings); }
+    rings.set(r.drive_time_minutes, r);
+  }
+
+  const out = new Map<string, PrecomputedParcelData>();
+  byParcel.forEach((rings, pid) => {
+    if (!_RING_TIMES.every((dt) => rings.has(dt))) return;
+    const ring = (dt: 2 | 5 | 10 | 15): PrecomputedRingMetrics => {
+      const r = rings.get(dt)!;
+      return {
+        totalPopulation: r.population ?? 0,
+        hnwHouseholds: r.hnw_households ?? 0,
+        weightedMedianHHI: r.median_hhi ?? 0,
+        weightedMedianHomeValue: r.median_home_value ?? 0,
+        homesOver1M: r.homes_over_1m,
+        homesOver2M: r.homes_over_2m,
+        homesOver5M: r.homes_over_5m,
+        tractCount: 0, // display-only; not persisted server-side
+        lastComputed: r.computed_at,
+      };
+    };
+    out.set(pid, {
+      parcelId: pid,
+      rings: { 2: ring(2), 5: ring(5), 10: ring(10), 15: ring(15) },
+    });
+  });
+  return out;
+}
+
+/** Fetch the jurisdiction's cached ring metrics. Best-effort: returns an
+ *  empty map on any error so the dashboard still renders + falls back to the
+ *  client precompute. */
+export async function loadServerRingMetrics(
+  jurisdictionId: string,
+): Promise<Map<string, PrecomputedParcelData>> {
+  try {
+    const rows = await api.getJurisdictionRingMetrics(jurisdictionId);
+    return serverRowsToPrecomputed(rows);
+  } catch (err) {
+    console.warn("[precompute] server ring-metrics load failed:", err);
+    return new Map();
+  }
 }
 
 // ── Cache ──────────────────────────────────────────────────────────────────────
@@ -454,6 +523,17 @@ export async function precomputeCityIsochrones(
   const MIN_DELAY_MS = 250;
   let lastStart = 0;
 
+  // Write-through buffer for the shared server cache. Demographics for each
+  // freshly-computed parcel are batched and POSTed best-effort, so the next
+  // load (any user) reads them back instead of recomputing. Failures are
+  // swallowed — they must never block or abort the precompute.
+  const writeBuffer: RingDemographicWrite[] = [];
+  const flushWriteBuffer = async (): Promise<void> => {
+    const batch = writeBuffer.splice(0, 200);
+    if (batch.length === 0) return;
+    await api.upsertRingDemographicsBulk(batch).catch(() => {});
+  };
+
   async function processOne(parcel: CandidateParcelRow): Promise<void> {
     if (callbacks.signal?.aborted) return;
 
@@ -527,6 +607,25 @@ export async function precomputeCityIsochrones(
       results.set(parcelId, data);
       completed++;
 
+      // Write demographics through to the shared server cache (best-effort,
+      // batched). homes_over_* are NOT sent here — they persist via the
+      // value-density endpoint, so we don't risk clobbering them.
+      const parcelIdNum = Number(parcelId);
+      if (Number.isFinite(parcelIdNum)) {
+        for (const dt of _RING_TIMES) {
+          const ring = data.rings[dt];
+          writeBuffer.push({
+            parcel_id: parcelIdNum,
+            drive_time_minutes: dt,
+            population: finiteOrNull(ring.totalPopulation),
+            median_hhi: finiteOrNull(ring.weightedMedianHHI),
+            median_home_value: finiteOrNull(ring.weightedMedianHomeValue),
+            hnw_households: finiteOrNull(ring.hnwHouseholds),
+          });
+        }
+        if (writeBuffer.length >= 200) void flushWriteBuffer();
+      }
+
       console.log(`[precompute] ✓ ${parcelId} — ${completed}/${total} — pop@10min: ${data.rings[10].totalPopulation.toLocaleString()}`);
 
       callbacks.onParcelComputed(parcelId, data);
@@ -553,6 +652,11 @@ export async function precomputeCityIsochrones(
   }
 
   await Promise.allSettled(workers);
+
+  // Drain any remaining write-through items to the shared cache.
+  while (writeBuffer.length > 0) {
+    await flushWriteBuffer();
+  }
 
   if (!callbacks.signal?.aborted) {
     console.log(`[precompute] Complete — ${results.size} parcels computed`);
