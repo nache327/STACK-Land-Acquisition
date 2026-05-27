@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-27T21:37:51Z",
+  "updated_at": "2026-05-27T21:47:02Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -16,8 +16,8 @@
       "owner_lane": "lane-a-integrator",
       "severity": "high",
       "dependency": "Expanded post-overlay/run_overlays commit/session reliability",
-      "unblock_condition": "Narrow post-overlay commit/session containment patch is merged and deployed, then Nassau-only retry validates past run_overlays.",
-      "status": "patch_in_progress"
+      "unblock_condition": "Nassau-only retry validates past run_overlays on deployed PR #119.",
+      "status": "ready_for_nassau_only_retry_after_pr119_deploy"
     },
     {
       "id": "D1",
