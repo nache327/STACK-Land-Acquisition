@@ -1749,6 +1749,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
     # ── Step 3b: apply overlays (flood + wetland, non-fatal) ─────────────
     enrichment_started = _stage_started(job, "enrichment")
     enrichment_step = await start_job_step(db, job, "run_overlays")
+    enrichment_step_id = enrichment_step.__dict__.get("id")
+    overlay_job_id = job.__dict__["id"]
     await _set_status(db, job, JobStatus.running_overlays)
     await db.commit()
     await check_cancelled(db, job)
@@ -1810,10 +1812,59 @@ async def _run(db: AsyncSession, job: Job) -> None:
     except Exception as exc:
         _stage_failed(job, "enrichment", enrichment_started, exc)
         logger.warning("Overlay step failed (non-fatal): %s", exc)
-        await db.rollback()
-        enrichment_step = await db.merge(enrichment_step)
-        await fail_job_step(db, enrichment_step, exc, status="warning")
-        await db.commit()
+        try:
+            await db.rollback()
+            enrichment_step = await db.merge(enrichment_step)
+            await fail_job_step(db, enrichment_step, exc, status="warning")
+            await db.commit()
+        except Exception as warning_exc:
+            logger.warning(
+                "Overlay warning persistence failed on pipeline session "
+                "(non-fatal); retrying with fresh session: %r",
+                warning_exc,
+            )
+            try:
+                async with asyncio.timeout(30):
+                    async with async_session_maker() as overlay_warning_db:
+                        warning_step = (
+                            await overlay_warning_db.get(JobStep, enrichment_step_id)
+                            if enrichment_step_id is not None
+                            else None
+                        )
+                        if warning_step is not None:
+                            await fail_job_step(
+                                overlay_warning_db,
+                                warning_step,
+                                exc,
+                                status="warning",
+                            )
+                        warning_job = await overlay_warning_db.get(Job, overlay_job_id)
+                        if warning_job is not None:
+                            warning_job.status = JobStatus.running
+                        await overlay_warning_db.commit()
+            except Exception as fallback_exc:
+                logger.warning(
+                    "Overlay warning fresh-session persistence failed "
+                    "(non-fatal); continuing pipeline: %r",
+                    fallback_exc,
+                )
+            try:
+                async with asyncio.timeout(5):
+                    await db.close()
+            except Exception as close_exc:
+                logger.warning(
+                    "post-overlay session.close() failed (non-fatal): %r",
+                    close_exc,
+                )
+            try:
+                async with asyncio.timeout(60):
+                    job = await db.merge(job)
+                    jurisdiction = await db.merge(jurisdiction)
+            except Exception as merge_exc:
+                logger.warning(
+                    "post-overlay merge failed (will best-effort continue): %r",
+                    merge_exc,
+                )
         try:
             async with asyncio.timeout(5):
                 await db.refresh(job)
