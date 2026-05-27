@@ -39,20 +39,20 @@
       "updated_at": "2026-05-26T18:45:00Z"
     },
     "lane-a-integrator": {
-      "branch": "docs/b10-deploy-state",
+      "branch": "fix/b8-ingest-mapping-heartbeat",
       "status": "completed",
-      "task": "B10 classified, fixed, merged, and deployed; next retry remains Nassau-only.",
+      "task": "B8 classified as a large-county ingest mapping stale-lock/data-volume class; no narrow code patch made.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake if Nassau retry still fails at coverage_refresh after PR #111 deploy, or if it reaches a new shared substrate class.",
+      "wake_condition": "Wake after Nassau job 91bb9444 reaches terminal state and a Nassau-only retry either validates past B8/B10/B7 or produces a new terminal class.",
       "latest_kpi_delta": {
-        "b7": "code fixed by PR #106 but not fully validation-cleared; Nassau reached post-zone-matrix path and failed with B10",
+        "b7": "code fixed by PR #106 but not fully validation-cleared; latest Nassau validation is blocked before bootstrap by B8 mapping stale-lock",
         "b9": "confirmed and fixed: PR #109 merged as 0afa78a07579bd9d7c78b2f529d0519b8b2b893e; Railway /health.pipeline_version reports 0afa78a07579",
-        "b10": "confirmed and fixed: PR #111 merged as 7411a2fa934e6fea8e80efcf1fa333ece0c8b4a5; Railway /health.pipeline_version reports 7411a2fa934e",
+        "b10": "confirmed and fixed: PR #111 merged as 7411a2fa934e6fea8e80efcf1fa333ece0c8b4a5; validation still pending because Nassau job 91bb9444 has not reached post-ingest path",
         "b6": "classified separately: Westchester 886141e2 failed at pipeline.py:1752 db.commit after overlays",
-        "b8": "classified separately: Middlesex 110b0a01 and Fairfield 30997930 cancelled during large-county mapping plateau"
+        "b8": "active retry-gated: Nassau 91bb9444 auto-recovered from stale ingest mapping to attempt=3 at status=downloading_parcels, locked_at=2026-05-27T17:21:22.865101Z; prior attempt stalled at 320000/420594 mapped; same family as Middlesex 110b0a01 and Fairfield 30997930 mapping plateaus"
       },
-      "updated_at": "2026-05-26T23:53:15Z"
+      "updated_at": "2026-05-27T17:22:16Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,

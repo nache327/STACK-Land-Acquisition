@@ -185,15 +185,15 @@ _Lane B: log each retry result here. Reassess once you see outcomes — most Cat
 **Owner:** Lane A (Integrator)
 **Write format:** failure cluster by line + jurisdiction; resolved clusters removed.
 
-**Last 14d (sources: `backend/tmp/jobs_all_latest.json`, `backend/tmp/job_monomouth_08b0f866.json`, `backend/tmp/job_westchester_886141e2.json`; refreshed by Lane A 2026-05-26 22:20 UTC):**
+**Last 14d (sources: `backend/tmp/jobs_all_latest.json`, `backend/tmp/job_monomouth_08b0f866.json`, `backend/tmp/job_westchester_886141e2.json`, live admin job `91bb9444-377a-4a3e-a3fb-45d7b63ba18e`; refreshed by Lane A 2026-05-27 17:22 UTC):**
 
 | count | jurisdiction(s) | pipeline line | class | status |
 |---:|---|---|---|---|
-| 1 | Nassau County, NY | `pipeline.py:1737` -> `refresh_jurisdiction_coverage_level` -> `spatial_backfill.py:152` | **B10 confirmed:** coverage refresh DB execute failure after successful forced download/ingest and post-zone-matrix path | code resolved by PR #111; Railway deployed `7411a2fa934e`; retry Nassau-only to validate |
+| 1 | Nassau County, NY | `pipeline.py:1737` -> `refresh_jurisdiction_coverage_level` -> `spatial_backfill.py:152` | **B10 confirmed:** coverage refresh DB execute failure after successful forced download/ingest and post-zone-matrix path | code resolved by PR #111; Railway deployed `7411a2fa934e`; validation still pending because latest Nassau job has not reached post-ingest path |
 | 1 | Nassau County, NY | `pipeline.py:1229` -> `existing_count = await db.scalar(...)` | **B9 confirmed:** forced retry ran unnecessary existing-parcel cache count and failed before parcel counters/download | code resolved by PR #109; Railway deployed `0afa78a07579`; retry Nassau to validate |
-| 2 confirmed + 1 same-signature | Nassau County NY / Monmouth County NJ; New York NY same signature | `pipeline.py:1680` -> `bootstrap_zone_use_matrix` -> `matrix_bootstrap.py:70` | **B7 confirmed:** non-essential heuristic matrix bootstrap terminal failure after parcel download/ingest, before overlays | code resolved by PR #106; Railway deployed `ab88dba1ef6b`; not validated cleared because Nassau B9 failed before bootstrap |
+| 2 confirmed + 1 same-signature | Nassau County NY / Monmouth County NJ; New York NY same signature | `pipeline.py:1680` -> `bootstrap_zone_use_matrix` -> `matrix_bootstrap.py:70` | **B7 confirmed:** non-essential heuristic matrix bootstrap terminal failure after parcel download/ingest, before overlays | code resolved by PR #106; Railway deployed `ab88dba1ef6b`; not validated cleared because latest Nassau retry did not reach bootstrap |
 | 1 | Westchester County, NY | `pipeline.py:1752` -> `await db.commit()` | **B6 classified separately:** post-overlay commit/session failure | active separate follow-up; do not bundle into B7 bootstrap patch |
-| 2 cancelled | Middlesex County NJ / Fairfield County CT | mapping plateau before bootstrap/overlays | **B8 classified separately:** large-county mapping plateau/cancel class | parked separate follow-up; do not retry until B7 deploy and explicit operator plan |
+| 2 cancelled + 1 active attempt-3 | Middlesex County NJ / Fairfield County CT / Nassau County NY | ingest mapping plateau before bootstrap/overlays | **B8 active:** large-county ingest mapping stale-lock/data-volume class; Nassau `91bb9444` auto-recovered from stale attempt 2 (`320000 / 420594` mapped, no traceback) to attempt 3, status `downloading_parcels`, `locked_at=2026-05-27T17:21:22.865101Z` | retry-gated; wait for Nassau `91bb9444` terminal state before any new retry; no narrow code patch made |
 | historical | Middlesex NJ / Westchester NY / Nassau NY / Fairfield CT / Marlboro NJ | `pipeline.py:1732` -> `apply_flood_overlay` -> `overlays.py:193` | flood overlay fatal after successful parcel ingest | code resolved by PR #94; Railway deployed `116dd4e1fc45`; superseded by current B6/B7/B8 retry evidence |
 
 _Lane A: append new clusters here. Remove resolved clusters (move to section 15 as changelog entries)._
@@ -206,7 +206,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | B10 classified/fixed/merged/deployed; B7 still not fully validation-cleared pending Nassau retry | PR #111 merged (`7411a2f`) | B6 active separate follow-up; B8 parked separate follow-up | 2026-05-26 23:53 UTC (`/health.pipeline_version: 7411a2fa934e`; Nassau `7cda9f3e`) |
+| A — Integrator | B8 classified as large-county ingest mapping stale-lock/data-volume class; latest Nassau validation blocked before B7/B10 validation | no code PR; coordination/docs update only | B8 active attempt-3 running; B6 active separate follow-up; B7/B10 validation pending | 2026-05-27 17:22 UTC (Nassau `91bb9444`: attempts=3, `downloading_parcels`, prior attempt stalled at `320000 / 420594`) |
 | B — Discovery + Coverage | retry queue + Burlington per-town pilot | — | none | 2026-05-21 (master) |
 | C — Spatial + CRS | bbox refresh sweep (7 jurisdictions) | — | none | 2026-05-21 (master) |
 | D — Operator + Workflow | queued-job watchdog cron | PR #97 merged | Railway cron-log verification blocked by expired local CLI auth | 2026-05-26 (web deploy on `2e8d9e0`; cron logs pending Railway login) |
@@ -283,7 +283,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | B4 | Burlington `ready` but 0 zoning_code on 174,851 of 174,852 parcels | Lane B | Burlington reclassified Cat-B | **OPEN** — reclassified, not a defect |
 | B6 | Westchester post-overlay `db.commit()` failure at `pipeline.py:1752` | Lane A | retry sweep cannot treat Westchester as validated by B7 patch | **ACTIVE SEPARATE FOLLOW-UP** — not bundled with B7 |
 | ~~B7~~ | ~~Nassau + Monmouth `bootstrap_zone_use_matrix` terminal failure at `pipeline.py:1680` / `matrix_bootstrap.py:70` after parcel download; Monmouth evidence shows `download_parcels` 251,486 and `ingest_parcels` 251,486 completed, no overlay step ran~~ | ~~Lane A~~ | ~~Lane B retry dispatch paused for same-signature jobs~~ | **RESOLVED via PR #106** — merged `ab88dba1ef6b6203f1752d078683be57696dadb4`; Railway `/health.pipeline_version` reports `ab88dba1ef6b` |
-| B8 | Middlesex + Fairfield large-county mapping plateau/cancel class (`parcels_mapped` 114,000 / 122,000; cancelled, no terminal traceback) | Lane A / Lane B | retry sequencing; not a matrix or overlay defect | **PARKED SEPARATE FOLLOW-UP** — needs explicit operator plan before more retries |
+| B8 | Middlesex + Fairfield + Nassau large-county ingest mapping plateau/stale-lock class (`parcels_mapped` 114,000 / 122,000 cancelled; Nassau `91bb9444` stale at `320000 / 420594` on attempt 2 and auto-recovered to attempt 3, no terminal traceback) | Lane A / Lane B | retry sequencing; not a matrix, overlay, or source-download defect | **ACTIVE ATTEMPT-3 RUNNING** — wait for Nassau `91bb9444-377a-4a3e-a3fb-45d7b63ba18e` to reach terminal state before any retry; no broad Middlesex/Fairfield retry |
 | ~~B9~~ | ~~Nassau forced validation retry `3c7ce534-ce81-461e-bab5-76eb64e0105f` failed during `download_parcels` before parcel counters at `pipeline.py:1229 existing_count = await db.scalar(...)`; job `force=true` made the cache count unnecessary~~ | ~~Lane A~~ | ~~Nassau cannot validate B7 until forced-run cache preflight is bypassed~~ | **RESOLVED via PR #109** — merged `0afa78a07579bd9d7c78b2f529d0519b8b2b893e`; Railway `/health.pipeline_version` reports `0afa78a07579` |
 | ~~B10~~ | ~~Nassau validation retry `7cda9f3e-eff5-403f-b345-ba083e359e9d` completed `download_parcels` 420,594 and `ingest_parcels` 420,577, then failed at `pipeline.py:1737` / `spatial_backfill.py:152` during `coverage_refresh` DB execute~~ | ~~Lane A~~ | ~~Nassau cannot validate B7/continue to overlays until coverage refresh uses a reliable session boundary~~ | **RESOLVED via PR #111** — merged `7411a2fa934e6fea8e80efcf1fa333ece0c8b4a5`; Railway `/health.pipeline_version` reports `7411a2fa934e` |
 | B5 | alias_mappings framework abstraction (PR #86) + vocabulary_aliases table (PR #90) | logged | governance | **LOG ONLY** (Section 7 #3 in plan); not rolled back |
@@ -293,6 +293,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ## 15. Daily Changelog
 
 **Owner:** any lane appends (reverse chronological).
+
+### 2026-05-27
+
+- **CLASSIFY** B8. Lane A. Latest Nassau validation job `91bb9444-377a-4a3e-a3fb-45d7b63ba18e` is not B7/B10: attempt 2 became active/stale during `ingesting_parcels` at `320000 / 420594` mapped and `0` upserted with no traceback, after two completed `download_parcels` steps for the same 420,594-feature Nassau endpoint. At 2026-05-27 17:22 UTC the watchdog had auto-recovered it to attempt 3 (`downloading_parcels`, `locked_at=2026-05-27T17:21:22.865101Z`). This matches the Middlesex `110b0a01` and Fairfield `30997930` large-county mapping plateau family rather than a Nassau-specific source issue. No narrow code patch made; wait for Nassau `91bb9444` terminal state before any new retry, then retry Nassau County NY only if needed.
 
 ### 2026-05-26
 
