@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import html as html_lib
 import logging
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -107,7 +108,18 @@ _RESEND_INTERVAL = timedelta(hours=23)
 # (the $(date) substitution didn't behave at runtime), so the digest
 # never fired and went 4 days dark (May 23–27). Python reads the UTC hour
 # reliably and is unit-testable.
-_DIGEST_SEND_HOUR_UTC = 12
+#
+# Configurable via the DIGEST_SEND_HOUR_UTC env var (default 12). Setting
+# it to the current UTC hour on the cron service makes the next 10-min
+# tick send immediately — an ops lever to fire an off-cycle digest with
+# no code change. The 23h cooldown still applies, so flipping it on (and
+# back) sends at most once per 23h. Invalid values fall back to 12.
+try:
+    _DIGEST_SEND_HOUR_UTC = int(os.getenv("DIGEST_SEND_HOUR_UTC", "12"))
+    if not 0 <= _DIGEST_SEND_HOUR_UTC <= 23:
+        _DIGEST_SEND_HOUR_UTC = 12
+except (TypeError, ValueError):
+    _DIGEST_SEND_HOUR_UTC = 12
 # Soft floor on score — we want "noteworthy" parcels in the digest, not
 # the bottom of the score distribution. Maps roughly to the user spec's
 # `classification IN ('match', 'borderline')`.
