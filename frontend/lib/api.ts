@@ -45,6 +45,34 @@ export interface ServerParcelScore {
   computed_at: string;
 }
 
+// One cached drive-time ring row from the shared server cache
+// (GET /api/jurisdictions/:id/ring-metrics). Flat (parcel × drive-time);
+// the precompute groups by parcel into its 4-ring shape.
+export interface ServerRingMetricRow {
+  parcel_id: number;
+  drive_time_minutes: number;
+  population: number | null;
+  median_hhi: number | null;
+  median_home_value: number | null;
+  hnw_households: number | null;
+  homes_over_1m: number | null;
+  homes_over_2m: number | null;
+  homes_over_5m: number | null;
+  computed_at: string;
+}
+
+// One demographic ring written back to the shared cache
+// (POST /api/parcels/ring-metrics/bulk). Wealth-density homes_over_* are
+// NOT sent here — they flow through the value-density path.
+export interface RingDemographicWrite {
+  parcel_id: number;
+  drive_time_minutes: number;
+  population: number | null;
+  median_hhi: number | null;
+  median_home_value: number | null;
+  hnw_households: number | null;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -342,5 +370,29 @@ export const api = {
     }
     const raw = await res.json() as { results: Record<string, SaturationBatchResult> };
     return raw.results;
+  },
+
+  // ---- ring-metrics shared cache ------------------------------------------
+
+  // Bulk-read all non-stale cached drive-time ring metrics for a
+  // jurisdiction's parcels, used to seed the dashboard precompute so
+  // already-computed parcels are skipped.
+  async getJurisdictionRingMetrics(
+    jurisdictionId: string
+  ): Promise<ServerRingMetricRow[]> {
+    const raw = await fetchJSON<{ rows: ServerRingMetricRow[] }>(
+      `/api/jurisdictions/${jurisdictionId}/ring-metrics`,
+    );
+    return raw.rows;
+  },
+
+  // Write computed ring demographics back to the shared cache (best-effort).
+  async upsertRingDemographicsBulk(
+    items: RingDemographicWrite[]
+  ): Promise<{ upserted: number }> {
+    return fetchJSON<{ upserted: number }>("/api/parcels/ring-metrics/bulk", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    });
   },
 };

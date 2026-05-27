@@ -36,6 +36,7 @@ import {
   precomputeCityIsochrones,
   saveCityCache,
   loadCityCacheAsync,
+  loadServerRingMetrics,
   clearCityCache,
   getCacheMetadata,
   purgeOrphanMeta,
@@ -501,44 +502,66 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     // read meta for this jurisdiction — otherwise an orphan v6 meta
     // pointing at non-existent data still gets read as "cached" by
     // any code that trusts meta in isolation.
-    purgeOrphanMeta().then(() => loadCityCacheAsync(jurisdictionId)).then((cached) => {
+    purgeOrphanMeta().then(() => loadCityCacheAsync(jurisdictionId)).then(async (cached) => {
+      // Seed from the SHARED server cache (parcel_ring_metrics) so a city
+      // computed by any prior user/session is reused instead of re-running
+      // Mapbox + Census per parcel. Merge with the local browser cache, with
+      // LOCAL winning on conflicts (it may carry fresher homesOver* from a
+      // wealth-density slider session). Best-effort — empty map on failure.
+      const serverData = await loadServerRingMetrics(jurisdictionId);
+      let merged: Map<string, PrecomputedParcelData> | null = null;
+      if (serverData.size > 0 || (cached && cached.size > 0)) {
+        merged = new Map(serverData);
+        cached?.forEach((v, k) => merged!.set(k, v));
+      }
+
       const meta = getCacheMetadata(jurisdictionId);
-      const saved = cached?.size ?? 0;
-      const expected = meta?.expected ?? 0;
-      // Orphan meta defense: meta exists but no data was loadable
-      // (purge would already have cleaned a cross-version orphan; this
-      // catches the same-version edge case where the data write failed
-      // after meta was somehow persisted). Drop the meta and run fresh.
+      const saved = merged?.size ?? 0;
+      // True target = # eligible parcels currently on the map (the same
+      // storage_permission filter the precompute applies). Floor the stored
+      // meta.expected with it so a PARTIAL server seed on a fresh browser
+      // still recomputes the rest instead of being treated as complete.
+      const eligibleCount = mapParcels.filter((p) =>
+        ["permitted", "conditional", "unclear"].includes(p.storage_permission ?? ""),
+      ).length;
+      const expected = Math.max(meta?.expected ?? 0, eligibleCount);
+
+      // Orphan meta defense: meta exists but nothing was loadable AND the
+      // server had nothing either. Drop the meta and run fresh.
       if (saved === 0 && meta !== null) {
         try { localStorage.removeItem(`parcellogic_precompute_meta_v7_${jurisdictionId}`); } catch { /* ignore */ }
         startPrecompute(jurisdictionId);
         return;
       }
-      // Partial cache: a prior run finished but some parcels failed
-      // (rate-limit / network) and never made it to results. Without
-      // this check the dashboard treated `saved` items as complete and
-      // any unmapped parcel showed "Computing…" forever.
+
+      // Partial cache: some eligible parcels are still missing (a prior run
+      // failed/aborted, or the server seed only covered part of the city).
       const isPartial = saved > 0 && expected > 0 && saved < expected;
       const isComplete = saved > 0 && (expected === 0 || saved >= expected);
 
-      if (isComplete && cached) {
-        setPrecomputeData(cached);
+      if (isComplete && merged) {
+        setPrecomputeData(merged);
         setPrecomputeStatus({
           progress: saved,
           total: saved,
           complete: true,
           lastComputed: meta?.lastComputed,
         });
-      } else if (isPartial && cached) {
-        // Resume — keep what we have, recompute the rest.
-        setPrecomputeData(cached);
+        // Persist the server-seeded set to the local cache so subsequent
+        // reloads are instant even offline (no-op if it was already local).
+        saveCityCache(jurisdictionId, merged, saved);
+      } else if (isPartial && merged) {
+        // Resume — keep what we have (local + server), recompute the rest.
+        // The precompute's skipIds logic skips every parcel already in
+        // `merged`, so only the missing ones hit Mapbox/Census.
+        setPrecomputeData(merged);
         setPrecomputeStatus({
           progress: saved,
           total: expected,
           complete: false,
           lastComputed: meta?.lastComputed,
         });
-        startPrecompute(jurisdictionId, cached);
+        startPrecompute(jurisdictionId, merged);
       } else {
         startPrecompute(jurisdictionId);
       }

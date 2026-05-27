@@ -3,6 +3,7 @@ GET /api/jurisdictions/:id/parcels — filtered parcel list (Phase 2+)
 GET /api/parcels/:id               — single parcel detail (drawer)
 """
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -517,3 +518,167 @@ async def backfill_assessed_value(
         "batches_done": batches_done,
         "done": done,
     }
+
+
+# ─── Drive-time ring demographics cache ──────────────────────────────────
+#
+# Shared server-side cache of per-parcel drive-time ring metrics, persisted
+# to parcel_ring_metrics. The dashboard precompute (Mapbox isochrone +
+# Census ACS) is otherwise client-side and per-user, so every reload / new
+# user recomputes from scratch. With write-through + bulk read, a city is
+# computed once and every later load (any user) reads it back near-instantly.
+#
+# Demographics are written by the bulk-upsert below; wealth-density
+# homes_over_* stay on the value-density path above. See
+# app/models/parcel_ring_metric.py — the table was built for this; only the
+# demographic write-through was missing.
+
+_RING_METRICS_TTL_DAYS = 90
+_VALID_DRIVE_TIMES = (2, 5, 10, 15)
+
+# Cap concurrent bulk-upserts so burst write-through from the precompute
+# doesn't exhaust the connection pool. Mirrors _value_density_sem; each POST
+# is a single batched statement holding one session briefly.
+_ring_demo_sem = asyncio.Semaphore(4)
+
+
+class _RingDemoItem(BaseModel):
+    parcel_id: int
+    drive_time_minutes: int
+    population: int | None = None
+    median_hhi: float | None = None
+    median_home_value: float | None = None
+    hnw_households: int | None = None
+
+
+class _RingDemoBulkRequest(BaseModel):
+    items: list[_RingDemoItem]
+
+
+class _RingDemoBulkResponse(BaseModel):
+    upserted: int
+
+
+@router.post("/parcels/ring-metrics/bulk", response_model=_RingDemoBulkResponse)
+async def upsert_ring_demographics(
+    payload: _RingDemoBulkRequest,
+) -> _RingDemoBulkResponse:
+    """Bulk-upsert per-parcel drive-time ring DEMOGRAPHICS into
+    parcel_ring_metrics (write-through from the dashboard precompute).
+
+    Writes ONLY the demographic columns + computed_at. The wealth-density
+    ``homes_over_*`` columns are intentionally never named here, so a
+    concurrent value-density upsert for the same (parcel_id, drive_time)
+    is preserved; brand-new rows simply leave them NULL (tolerated by the
+    value-density fast-path and the buybox scoring LEFT JOIN).
+    """
+    from app.db import async_session_maker
+
+    rows = [
+        {
+            "pid": it.parcel_id,
+            "dt": it.drive_time_minutes,
+            "pop": it.population,
+            "hhi": it.median_hhi,
+            "hv": it.median_home_value,
+            "hnw": it.hnw_households,
+        }
+        for it in payload.items
+        if it.drive_time_minutes in _VALID_DRIVE_TIMES
+    ]
+    if not rows:
+        return _RingDemoBulkResponse(upserted=0)
+
+    async with _ring_demo_sem:
+        async with async_session_maker() as db:
+            await db.execute(
+                text(
+                    """
+                    INSERT INTO parcel_ring_metrics
+                      (parcel_id, drive_time_minutes, population, median_hhi,
+                       median_home_value, hnw_households)
+                    VALUES (:pid, :dt, :pop, :hhi, :hv, :hnw)
+                    ON CONFLICT (parcel_id, drive_time_minutes) DO UPDATE
+                      SET population        = EXCLUDED.population,
+                          median_hhi        = EXCLUDED.median_hhi,
+                          median_home_value = EXCLUDED.median_home_value,
+                          hnw_households    = EXCLUDED.hnw_households,
+                          computed_at       = NOW()
+                    """
+                ),
+                rows,
+            )
+            await db.commit()
+    return _RingDemoBulkResponse(upserted=len(rows))
+
+
+class _RingMetricRow(BaseModel):
+    parcel_id: int
+    drive_time_minutes: int
+    population: int | None = None
+    median_hhi: float | None = None
+    median_home_value: float | None = None
+    hnw_households: int | None = None
+    homes_over_1m: int | None = None
+    homes_over_2m: int | None = None
+    homes_over_5m: int | None = None
+    computed_at: datetime
+
+
+class _RingMetricsResponse(BaseModel):
+    rows: list[_RingMetricRow]
+
+
+@router.get(
+    "/jurisdictions/{jurisdiction_id}/ring-metrics",
+    response_model=_RingMetricsResponse,
+)
+async def list_ring_metrics(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> _RingMetricsResponse:
+    """All non-stale cached ring metrics for a jurisdiction's parcels.
+
+    The dashboard calls this once on load to seed its precompute and skip
+    re-fetching parcels that are already cached (TTL: 90 days). Rows are a
+    flat (parcel_id, drive_time) list; the frontend groups them into the
+    4-ring shape.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=_RING_METRICS_TTL_DAYS)
+    result = await db.execute(
+        text(
+            """
+            SELECT prm.parcel_id, prm.drive_time_minutes,
+                   prm.population, prm.median_hhi, prm.median_home_value,
+                   prm.hnw_households,
+                   prm.homes_over_1m, prm.homes_over_2m, prm.homes_over_5m,
+                   prm.computed_at
+            FROM parcel_ring_metrics prm
+            JOIN parcels p ON p.id = prm.parcel_id
+            WHERE p.jurisdiction_id = :jid
+              AND prm.computed_at >= :cutoff
+            ORDER BY prm.parcel_id, prm.drive_time_minutes
+            """
+        ),
+        {"jid": str(jurisdiction_id), "cutoff": cutoff},
+    )
+
+    def _f(v: object) -> float | None:
+        return float(v) if v is not None else None  # Numeric -> float | None
+
+    rows = [
+        _RingMetricRow(
+            parcel_id=m["parcel_id"],
+            drive_time_minutes=m["drive_time_minutes"],
+            population=m["population"],
+            median_hhi=_f(m["median_hhi"]),
+            median_home_value=_f(m["median_home_value"]),
+            hnw_households=m["hnw_households"],
+            homes_over_1m=m["homes_over_1m"],
+            homes_over_2m=m["homes_over_2m"],
+            homes_over_5m=m["homes_over_5m"],
+            computed_at=m["computed_at"],
+        )
+        for m in (row._mapping for row in result)
+    ]
+    return _RingMetricsResponse(rows=rows)
