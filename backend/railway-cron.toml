@@ -34,6 +34,9 @@
 #      and confirming the timestamps moved without you doing
 #      anything manual.
 
+# redeploy marker 2026-05-27 — forces Railway to rebuild and re-read the
+# startCommand below. A prior deploy kept running a stale cached command
+# (the old shell date-gate), so the digest module never executed.
 [build]
 builder = "NIXPACKS"
 buildCommand = "pip install --no-cache-dir -e ."
