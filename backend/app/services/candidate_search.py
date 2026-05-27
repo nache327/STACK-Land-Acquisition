@@ -124,6 +124,10 @@ async def search_candidate_parcels(
         conditions.append(Parcel.zoning_code.in_(filters.zones))
     if filters.zone_classes:
         conditions.append(Parcel.zone_class.in_(filters.zone_classes))
+    if filters.cities:
+        # Drill into one or more cities within a (possibly multi-city) county
+        # jurisdiction. parcels.city is the per-parcel city/township.
+        conditions.append(Parcel.city.in_(filters.cities))
     if filters.storage_permissions:
         # Map frontend strings to UsePermission enum values for the filter
         perm_map = {
@@ -200,6 +204,7 @@ async def search_candidate_parcels(
             Parcel.id.label("parcel_id"),
             Parcel.apn,
             Parcel.address,
+            Parcel.city,
             Parcel.acres,
             Parcel.zoning_code,
             Parcel.zone_class,
@@ -290,6 +295,7 @@ async def search_candidate_parcels(
                 parcel_id=row.parcel_id,
                 apn=row.apn,
                 address=row.address,
+                city=row.city,
                 acres=float(row.acres) if row.acres is not None else None,
                 zoning_code=row.zoning_code,
                 zone_class=row.zone_class,

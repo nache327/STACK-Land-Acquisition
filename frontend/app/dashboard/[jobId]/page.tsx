@@ -286,6 +286,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         ...(filters.zoneClasses.length > 0
           ? { zone_classes: filters.zoneClasses }
           : {}),
+        ...(filters.cities.length > 0 ? { cities: filters.cities } : {}),
         ...(filters.storagePermissions.length > 0
           ? { storage_permissions: filters.storagePermissions }
           : {}),

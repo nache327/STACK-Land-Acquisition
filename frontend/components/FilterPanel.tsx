@@ -33,6 +33,7 @@ export interface FilterState {
   storagePermissions: StoragePermission[];
   zones: string[];
   zoneClasses: ZoneClass[];
+  cities: string[];
   minAcres: number | null;
   maxAcres: number | null;
   excludeFlood: boolean;
@@ -45,6 +46,7 @@ export const DEFAULT_FILTERS: FilterState = {
   storagePermissions: [],
   zones: [],
   zoneClasses: [],
+  cities: [],
   minAcres: 1.5,
   maxAcres: 15,
   excludeFlood: false,
@@ -87,6 +89,15 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Cities within this jurisdiction (for county-as-jurisdiction drill-down).
+  // Single-city jurisdictions return 0–1 rows → the City section hides itself.
+  const { data: cityCounts } = useQuery({
+    queryKey: ["jurisdiction-cities", jurisdictionId],
+    queryFn: () => api.getJurisdictionCities(jurisdictionId!),
+    enabled: !!jurisdictionId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     onChange(filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,6 +122,15 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
       zoneClasses: prev.zoneClasses.includes(klass)
         ? prev.zoneClasses.filter((c) => c !== klass)
         : [...prev.zoneClasses, klass],
+    }));
+  }
+
+  function toggleCity(city: string) {
+    setFilters((prev) => ({
+      ...prev,
+      cities: prev.cities.includes(city)
+        ? prev.cities.filter((c) => c !== city)
+        : [...prev.cities, city],
     }));
   }
 
@@ -157,6 +177,56 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
       </section>
 
       <div className="border-t border-slate-800" />
+
+      {/* ── City (county drill-down) ──────────────────────────────────── */}
+      {(cityCounts?.length ?? 0) > 1 && (
+        <>
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                City
+              </h3>
+              {filters.cities.length > 0 && (
+                <button
+                  onClick={() => update({ cities: [] })}
+                  className="text-[10px] text-slate-600 transition hover:text-slate-400"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="max-h-44 space-y-0.5 overflow-y-auto pr-1">
+              {(cityCounts ?? []).map(({ city, parcel_count }) => {
+                const checked = filters.cities.includes(city);
+                return (
+                  <label
+                    key={city}
+                    className={[
+                      "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition",
+                      checked ? "bg-slate-800" : "hover:bg-slate-800/50",
+                    ].join(" ")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCity(city)}
+                      className="h-3 w-3 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                    />
+                    <span className="flex-1 truncate text-xs font-medium text-slate-300">
+                      {city}
+                    </span>
+                    <span className="text-[10px] tabular-nums text-slate-600">
+                      {parcel_count.toLocaleString()}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="border-t border-slate-800" />
+        </>
+      )}
 
       {/* ── DATA section header ───────────────────────────────────────── */}
       <div className="pt-1">

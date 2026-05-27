@@ -183,6 +183,7 @@ export type ParcelSearchSort = z.infer<typeof ParcelSearchSortSchema>;
 export const CandidateParcelSearchFiltersSchema = z.object({
   zones: z.array(z.string()).optional(),
   zone_classes: z.array(ZoneClassSchema).optional(),
+  cities: z.array(z.string()).optional(),
   min_acres: z.number().nullable().optional(),
   max_acres: z.number().nullable().optional(),
   vacant_only: z.boolean().default(false),
@@ -219,6 +220,7 @@ export const CandidateParcelRowSchema = z.object({
   parcel_id: z.number().int(),
   apn: z.string(),
   address: z.string().nullable(),
+  city: z.string().nullable().optional(),
   acres: z.number().nullable(),
   zoning_code: z.string().nullable().optional(),
   zone_class: ZoneClassSchema.nullable().optional(),

@@ -282,6 +282,35 @@ async def soft_delete_zone(
     return None
 
 
+class _CityCount(BaseModel):
+    city: str
+    parcel_count: int
+
+
+@router.get(
+    "/jurisdictions/{jurisdiction_id}/cities",
+    response_model=list[_CityCount],
+)
+async def list_jurisdiction_cities(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> list[_CityCount]:
+    """Distinct cities (parcels.city) within a jurisdiction, with parcel
+    counts, for the dashboard city-drill-down dropdown. Most county
+    jurisdictions span many cities; single-city jurisdictions return one
+    row. NULL-city parcels are omitted."""
+    result = await db.execute(
+        select(Parcel.city, func.count().label("n"))
+        .where(
+            Parcel.jurisdiction_id == jurisdiction_id,
+            Parcel.city.isnot(None),
+        )
+        .group_by(Parcel.city)
+        .order_by(func.count().desc())
+    )
+    return [_CityCount(city=row.city, parcel_count=row.n) for row in result.all()]
+
+
 @router.get("/jurisdictions/{jurisdiction_id}/parcels/map")
 async def get_parcels_map_layer(
     jurisdiction_id: uuid.UUID,

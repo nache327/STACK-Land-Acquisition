@@ -73,6 +73,13 @@ export interface RingDemographicWrite {
   hnw_households: number | null;
 }
 
+// One row from GET /api/jurisdictions/:id/cities — a distinct city within
+// a jurisdiction and how many parcels it has. Drives the city dropdown.
+export interface CityCount {
+  city: string;
+  parcel_count: number;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -235,6 +242,17 @@ export const api = {
       `/api/jurisdictions/${jurisdictionId}`
     );
     return JurisdictionSchema.parse(raw);
+  },
+
+  // Distinct cities (parcels.city) within a jurisdiction + parcel counts,
+  // for the city-drill-down dropdown. Empty for single-city jurisdictions
+  // whose parcels.city is unset.
+  async getJurisdictionCities(
+    jurisdictionId: string
+  ): Promise<CityCount[]> {
+    return fetchJSON<CityCount[]>(
+      `/api/jurisdictions/${jurisdictionId}/cities`
+    );
   },
 
   async getZoningDistricts(jurisdictionId: string): Promise<ZoningDistrictList> {
