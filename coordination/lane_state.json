@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-26T22:41:44Z",
+  "updated_at": "2026-05-27T17:46:28Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -88,15 +88,16 @@
     },
     "lane-d-watchdog": {
       "branch": null,
-      "status": "blocked",
-      "task": "Verify queued-job watchdog cron logs after PR #97 merge and web deploy.",
-      "blocked": true,
-      "blocker": "D1",
-      "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
+      "status": "completed_stale_cleanup",
+      "task": "Cancelled stale Nassau County NY job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e through existing operator API path; no retry started.",
+      "blocked": false,
+      "blocker": null,
+      "wake_condition": "Wake only if another active/stale job needs operator cleanup or Railway cron-log access is restored.",
       "latest_kpi_delta": {
-        "stuck_jobs_over_10min": 0
+        "stuck_jobs_over_10min": 0,
+        "nassau_91bb9444": "cancelled at 2026-05-27T17:46:11.394136Z; final active_only=0; final stale_only=0"
       },
-      "updated_at": "2026-05-26T00:00:00Z"
+      "updated_at": "2026-05-27T17:46:28Z"
     },
     "lane-e-matrix": {
       "branch": "feat/matrix-norfolk-ma-pattern-batch",

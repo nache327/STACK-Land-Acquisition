@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-27T17:22:16Z",
+  "updated_at": "2026-05-27T17:46:28Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -24,8 +24,8 @@
       "owner_lane": "lane-a-integrator",
       "severity": "high",
       "dependency": "Large-county ingest mapping stale-lock/auto-retry terminal disposition",
-      "unblock_condition": "Nassau job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e reaches terminal state after its watchdog-recovered attempt 3, and the next explicit retry is Nassau-only with no Middlesex/Fairfield broad retry until Nassau either validates past ingest mapping or produces a terminal trace.",
-      "status": "active_attempt3_running"
+      "unblock_condition": "Next explicit retry is Nassau-only with no Middlesex/Fairfield broad retry until Nassau either validates past ingest mapping or produces a terminal trace.",
+      "status": "ready_for_nassau_only_retry_after_lane_d_cancelled_91bb9444"
     },
     {
       "id": "D1",

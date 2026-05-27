@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-27T17:22:16Z",
+  "updated_at": "2026-05-27T17:46:28Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
       "lane": "lane-b-retry-sweep",
-      "action": "Pause retries until Nassau job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e reaches terminal state after watchdog-recovered attempt 3.",
-      "wake_condition": "Wake only after Nassau 91bb9444 is terminal and B8 disposition is recorded.",
-      "dependency_order": "Do not retry Nassau, Monmouth, Westchester, Middlesex, or Fairfield while Nassau 91bb9444 is active/non-terminal.",
+      "action": "Resume with Nassau County NY only after Lane D cancelled stale job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e.",
+      "wake_condition": "Immediate for Nassau-only retry; active_only=0 and stale_only=0 after Lane D cleanup.",
+      "dependency_order": "Do not retry Monmouth, Westchester, Middlesex, or Fairfield until Nassau either validates past ingest mapping or produces a terminal trace.",
       "expected_kpi": "avoid duplicate large-county ingest retries and preserve B7/B10 validation clarity"
     },
     {
@@ -115,6 +115,14 @@
       "action": "Completed: PR #95 merged and PR #100 MA/Highland follow-up merged; Lane E pauses pending explicit next matrix dispatch."
     },
     {
+      "condition": "Nassau job 91bb9444 cancelled by Lane D",
+      "wake_lanes": [
+        "lane-b-retry-sweep",
+        "master"
+      ],
+      "action": "Lane B can run the next Nassau County NY-only retry; keep Monmouth/Westchester/Middlesex/Fairfield paused until Nassau disposition is known."
+    },
+    {
       "condition": "Railway auth refreshed",
       "wake_lanes": [
         "lane-d-watchdog",
@@ -142,7 +150,7 @@
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
     "Do not dispatch Monmouth until Nassau validates past B8 ingest mapping and B10.",
-    "Do not dispatch any retry while Nassau job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e remains active/non-terminal.",
+    "Nassau job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e is cancelled; Lane B may dispatch Nassau County NY only, but no Monmouth/Westchester/Middlesex/Fairfield retry until Nassau disposition is known.",
     "Do not dispatch Westchester/Middlesex/Fairfield broad retries until the B7 validation retries have run against deployed `ab88dba1ef6b`.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
     "Do not start another Loudoun or Howard cleanup branch while PR #95 remains open.",
