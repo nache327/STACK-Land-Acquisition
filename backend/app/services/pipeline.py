@@ -622,6 +622,20 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "south salt lake":  _ugrc("Parcels_SaltLake", "South Salt Lake",  "South Salt Lake, UT",  "Salt Lake"),
     "bluffdale":        _ugrc("Parcels_SaltLake", "Bluffdale",        "Bluffdale, UT",        "Salt Lake"),
     "salt lake city":   _ugrc("Parcels_SaltLake", "Salt Lake City",   "Salt Lake City, UT",   "Salt Lake"),
+    # ── Salt Lake County as ONE jurisdiction ──────────────────────────────────
+    # County-wide pull (no PARCEL_CITY filter); ingest maps PARCEL_CITY ->
+    # parcels.city so the dashboard city filter drills into each city. This
+    # supersedes the per-city SL County jurisdictions above — once it's
+    # ingested + scored, retire those via scripts/retire_slco_city_jurisdictions.py
+    # and re-key their zoning under municipality=<city>.
+    "salt lake county": JurisdictionConfig(
+        name="Salt Lake County, UT",
+        state="UT",
+        county="Salt Lake",
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
+        where_clause=None,
+    ),
     # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
     "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),

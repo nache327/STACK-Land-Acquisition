@@ -178,6 +178,17 @@ _OWNER_FIELDS = [
     "owner_name", "ownername", "taxpayer", "taxpayer_nm",
     "grantee", "own_full", "own1",
 ]
+_CITY_FIELDS = [
+    # UGRC (UT) county parcel layers carry the municipality per parcel — this is
+    # what makes a county-as-jurisdiction ingest hold real per-city values.
+    "PARCEL_CITY",
+    # Common municipality/city field names across county/state services.
+    "CITY", "City", "city",
+    "MUNICIPALITY", "Municipality", "municipality", "MUNI", "MUNI_NAME",
+    "TOWN", "Town", "TOWN_NAME", "TOWNSHIP", "PLACE_NAME",
+    # NYS ITS county schema
+    "MUNI_NAME_FULL",
+]
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -393,6 +404,7 @@ def _map_row(
         "jurisdiction_id": jurisdiction_id,
         "apn": apn,
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
+        "city": str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None,
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
         "zone_class": zone_class_val,
@@ -483,7 +495,7 @@ async def ingest_parcels(
 # ─── COPY-based bulk upsert ────────────────────────────────────────────────
 
 _STAGE_COLUMNS = [
-    "jurisdiction_id", "apn", "address", "owner_name",
+    "jurisdiction_id", "apn", "address", "city", "owner_name",
     "zoning_code", "zone_class", "land_use_code", "acres",
     "county_link", "in_flood_zone", "in_wetland", "avg_slope_pct",
     "has_structure", "improvement_value",
@@ -496,6 +508,7 @@ CREATE TEMP TABLE IF NOT EXISTS _stage_parcels (
     jurisdiction_id uuid,
     apn text,
     address text,
+    city text,
     owner_name text,
     zoning_code text,
     zone_class text,
@@ -519,14 +532,14 @@ _TRUNCATE_STAGE_SQL = "TRUNCATE _stage_parcels"
 
 _MERGE_SQL = """
 INSERT INTO parcels (
-    jurisdiction_id, apn, address, owner_name, zoning_code, zone_class,
+    jurisdiction_id, apn, address, city, owner_name, zoning_code, zone_class,
     land_use_code, acres, county_link, in_flood_zone, in_wetland,
     avg_slope_pct, has_structure, improvement_value,
     assessed_value, is_residential,
     geom, centroid, raw
 )
 SELECT
-    s.jurisdiction_id, s.apn, s.address, s.owner_name,
+    s.jurisdiction_id, s.apn, s.address, s.city, s.owner_name,
     s.zoning_code, s.zone_class::zone_class_enum,
     s.land_use_code, s.acres, s.county_link,
     s.in_flood_zone, s.in_wetland, s.avg_slope_pct,
@@ -538,6 +551,7 @@ SELECT
 FROM _stage_parcels s
 ON CONFLICT ON CONSTRAINT uq_parcels_jurisdiction_apn DO UPDATE SET
     address = EXCLUDED.address,
+    city = COALESCE(EXCLUDED.city, parcels.city),
     owner_name = EXCLUDED.owner_name,
     zoning_code = COALESCE(EXCLUDED.zoning_code, parcels.zoning_code),
     zone_class = COALESCE(EXCLUDED.zone_class, parcels.zone_class),
@@ -564,6 +578,7 @@ def _row_to_record(r: dict) -> tuple:
         r["jurisdiction_id"],
         r["apn"],
         r.get("address"),
+        r.get("city"),
         r.get("owner_name"),
         r.get("zoning_code"),
         r.get("zone_class"),

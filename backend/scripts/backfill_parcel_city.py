@@ -20,6 +20,11 @@ SQL = """
         FROM parcels p
         JOIN jurisdictions j ON p.jurisdiction_id = j.id
         WHERE p.city IS NULL
+          -- NEVER stamp the jurisdiction name onto a county-as-jurisdiction's
+          -- parcels: those span many cities and must keep their real per-row
+          -- city (from PARCEL_CITY at ingest, or a spatial join). Only the
+          -- single-city (city_gis / regrid) jurisdictions get the safe fallback.
+          AND (j.parcel_source::text IS DISTINCT FROM 'county_gis')
         LIMIT :n
         FOR UPDATE OF p SKIP LOCKED
     )

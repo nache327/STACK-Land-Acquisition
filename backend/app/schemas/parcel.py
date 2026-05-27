@@ -93,6 +93,10 @@ class CandidateParcelSearchFilters(BaseModel):
     storage_permissions: list[str] | None = None
     min_acres: float | None = Field(None, ge=0)
     max_acres: float | None = Field(None, ge=0)
+    # Restrict to parcels in these cities (parcels.city). Used to drill into
+    # one city within a county-as-jurisdiction (e.g. a Salt Lake County or
+    # NJ-county jurisdiction that spans many cities). NULL/empty = all cities.
+    cities: list[str] | None = None
     vacant_only: bool = False
     exclude_flood: bool = False
     exclude_wetland: bool = False
@@ -140,6 +144,7 @@ class CandidateParcelRow(BaseModel):
     parcel_id: int
     apn: str
     address: str | None
+    city: str | None = None
     acres: float | None
     zoning_code: str | None = None
     zone_class: ZoneClass | None = None
