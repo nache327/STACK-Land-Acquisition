@@ -136,9 +136,48 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _run_digest_tick() -> int:
+    """Launch the daily digest as a subprocess and return its exit code.
+
+    Why here: the cron service's config-as-code ``startCommand`` (meant to
+    run the digest alongside this watchdog) never took effect on Railway —
+    only the watchdog command ran, so the digest went 4 days dark
+    (May 23–27) despite eligible deals. The watchdog tick provably fires
+    every 10 min, so we launch the digest from it. A fresh subprocess
+    avoids event-loop / engine-reuse issues from a second ``asyncio.run``
+    in this process, and reuses the exact ``_cli`` entrypoint — which
+    self-gates to ``DIGEST_SEND_HOUR_UTC`` (default 12) and is idempotent
+    via the 23h ``last_email_sent_at`` cooldown. Its stdout/stderr flow
+    into the cron logs so ``digest done: {...}`` / ``digest skip: ...`` is
+    visible. Failure here never masks the watchdog's own alert exit code.
+    """
+    import subprocess
+
+    backend_dir = str(Path(__file__).resolve().parent.parent)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "app.workers.daily_email"],
+            cwd=backend_dir,
+            timeout=600,
+        )
+        return proc.returncode
+    except Exception as exc:  # noqa: BLE001 — never let the digest sink the tick
+        print(f"digest tick failed to launch: {exc}", file=sys.stderr)
+        return 1
+
+
 def main() -> None:
     args = parse_args()
-    raise SystemExit(asyncio.run(run(args.stale_after_minutes)))
+    watchdog_code = asyncio.run(run(args.stale_after_minutes))
+    digest_code = _run_digest_tick()
+    # Exit-code precedence: a stuck-jobs query failure (2) is the loudest
+    # signal and wins. Otherwise surface a digest failure (non-zero), then
+    # fall back to the watchdog's own code (0 = clean, 1 = stuck jobs).
+    if watchdog_code == 2:
+        raise SystemExit(2)
+    if digest_code != 0:
+        raise SystemExit(digest_code)
+    raise SystemExit(watchdog_code)
 
 
 if __name__ == "__main__":
