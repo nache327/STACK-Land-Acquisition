@@ -39,20 +39,20 @@
       "updated_at": "2026-05-26T18:45:00Z"
     },
     "lane-a-integrator": {
-      "branch": "fix/b8-ingest-mapping-heartbeat",
-      "status": "completed",
-      "task": "B8 classified as a large-county ingest mapping stale-lock/data-volume class; no narrow code patch made.",
+      "branch": "fix/b6-run-overlays-commit",
+      "status": "running",
+      "task": "B6 expanded to Nassau + Westchester post-overlay/run_overlays commit-session failure; narrow non-fatal overlay recovery patch in progress.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake after Nassau job 91bb9444 reaches terminal state and a Nassau-only retry either validates past B8/B10/B7 or produces a new terminal class.",
+      "wake_condition": "Wake after B6 patch is merged/deployed and Nassau-only validation retry is run.",
       "latest_kpi_delta": {
-        "b7": "code fixed by PR #106 but not fully validation-cleared; latest Nassau validation is blocked before bootstrap by B8 mapping stale-lock",
-        "b9": "confirmed and fixed: PR #109 merged as 0afa78a07579bd9d7c78b2f529d0519b8b2b893e; Railway /health.pipeline_version reports 0afa78a07579",
-        "b10": "confirmed and fixed: PR #111 merged as 7411a2fa934e6fea8e80efcf1fa333ece0c8b4a5; validation still pending because Nassau job 91bb9444 has not reached post-ingest path",
-        "b6": "classified separately: Westchester 886141e2 failed at pipeline.py:1752 db.commit after overlays",
-        "b8": "active retry-gated: Nassau 91bb9444 auto-recovered from stale ingest mapping to attempt=3 at status=downloading_parcels, locked_at=2026-05-27T17:21:22.865101Z; prior attempt stalled at 320000/420594 mapped; same family as Middlesex 110b0a01 and Fairfield 30997930 mapping plateaus"
+        "b7": "Nassau validation cleared B7 on job d98324cc: bootstrap hard failure did not recur; Monmouth still not run",
+        "b8": "Nassau validation cleared B8 on job d98324cc: download_parcels 420594 and ingest_parcels 420577 completed, dedupe_count=17, no stale/plateau",
+        "b9": "cleared: forced-run cache preflight failure did not recur",
+        "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
+        "b6": "confirmed expanded: Westchester 886141e2 post-overlay db.commit plus Nassau d98324cc run_overlays db.commit at pipeline.py:1785; patch contains overlay commit/session failure as non-fatal and refreshes session"
       },
-      "updated_at": "2026-05-27T17:22:16Z"
+      "updated_at": "2026-05-27T21:37:51Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,

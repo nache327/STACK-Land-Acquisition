@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-27T17:46:28Z",
+  "updated_at": "2026-05-27T21:37:51Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
-      "action": "Resume with Nassau County NY only after Lane D cancelled stale job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e.",
-      "wake_condition": "Immediate for Nassau-only retry; active_only=0 and stale_only=0 after Lane D cleanup.",
-      "dependency_order": "Do not retry Monmouth, Westchester, Middlesex, or Fairfield until Nassau either validates past ingest mapping or produces a terminal trace.",
-      "expected_kpi": "avoid duplicate large-county ingest retries and preserve B7/B10 validation clarity"
+      "lane": "lane-a-integrator",
+      "action": "Finish and merge the B6 expanded run_overlays commit/session containment patch.",
+      "wake_condition": "Immediate; Nassau job d98324cc failed at pipeline.py:1785 await db.commit() during run_overlays after B8/B10/B7 cleared on Nassau.",
+      "dependency_order": "Do not retry Nassau or run Monmouth until the B6 patch is deployed.",
+      "expected_kpi": "failed-job reduction and validation of post-overlay completion"
     },
     {
       "rank": 2,
@@ -77,7 +77,7 @@
       "jurisdictions": [
         "Nassau County, NY"
       ],
-      "purpose": "After Nassau 91bb9444 reaches terminal state, run Nassau County NY only to validate whether ingest mapping completes and then continues beyond the B7/B10 path."
+      "purpose": "After the B6 run_overlays commit/session patch is deployed, retry Nassau County NY only to validate past run_overlays."
     },
     {
       "rank": 2,
@@ -149,8 +149,8 @@
   ],
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
-    "Do not dispatch Monmouth until Nassau validates past B8 ingest mapping and B10.",
-    "Nassau job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e is cancelled; Lane B may dispatch Nassau County NY only, but no Monmouth/Westchester/Middlesex/Fairfield retry until Nassau disposition is known.",
+    "Do not dispatch Monmouth until Nassau validates past B6 run_overlays after the new patch is deployed.",
+    "Do not dispatch Nassau, Monmouth, Westchester, Middlesex, or Fairfield while the expanded B6 run_overlays commit/session patch is not deployed.",
     "Do not dispatch Westchester/Middlesex/Fairfield broad retries until the B7 validation retries have run against deployed `ab88dba1ef6b`.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
     "Do not start another Loudoun or Howard cleanup branch while PR #95 remains open.",
