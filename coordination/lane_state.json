@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T19:13:29Z",
+  "updated_at": "2026-05-28T19:43:45Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
     "origin_main_at_snapshot": "6eb9eaf"
   },
   "current_known_state": {
-    "lane_b": "ready_for_westchester_only",
+    "lane_b": "paused_after_westchester_ready",
     "pr_94_deploy_blocker": "cleared",
     "pr_95": "next_merge_apply_item",
     "railway_auth_blocker": "active",
@@ -15,14 +15,14 @@
     "nassau": "parked_b8_recurring_mapping_stale",
     "nassau_stale_job": "3b4582c5-e47e-4bc7-8d38-7853e0173a89_cancelled",
     "b8": "reopened_recurring_large_county_mapping_stale_lock",
-    "b6": "monmouth_validated_ready_with_log_only_overlay_warning",
+    "b6": "fatal_terminal_cleared_by_westchester_ready",
     "b7": "cleared_for_monomouth",
     "monmouth": "validated_ready_no_retest",
-    "westchester": "authorized_isolated_b6_validation",
+    "westchester": "validated_ready_no_retest",
     "middlesex_fairfield": "parked_b8_family",
     "lane_e": "paused",
-    "lane_c": "paused",
-    "run_overlays_warning": "operator_log_only"
+    "lane_c": "ready_for_bbox_sweep",
+    "run_overlays_warning": "recurring_operator_log_only"
   },
   "kpi_focus": [
     "honest operational jurisdictions",
@@ -35,7 +35,7 @@
     "master": {
       "branch": "main",
       "status": "running",
-      "task": "Maintain repo-shared orchestration state; Lane A/D completed Monmouth warning review and Westchester is authorized for isolated B6 validation.",
+      "task": "Maintain repo-shared orchestration state; Westchester ready result cleared fatal B6 and Lane C is next for bbox sweep.",
       "blocked": false,
       "blocker": null,
       "wake_condition": null,
@@ -46,54 +46,54 @@
         "avg_unclear_share_partials": "18.3%",
         "failed_jobs_14d": 42,
         "fake_operationals": 0,
-        "decision": "Monmouth job a9515ff6 reached ready on deploy ce0fb85fd899; B7 cleared for Monmouth; B6 fatal terminal failure did not recur; run_overlays warning classified log-only; Westchester is authorized as isolated B6 validation."
+        "decision": "Westchester job 9f8ecb57 reached ready on deploy 577cd5351885; fatal B6 post-overlay/run_overlays terminal failure did not recur; recurring run_overlays invalid-transaction warning remains log-only; Lane C can wake."
       },
-      "updated_at": "2026-05-28T19:13:29Z"
+      "updated_at": "2026-05-28T19:43:45Z"
     },
     "lane-a-integrator": {
       "status": "completed",
       "branch": "docs/monmouth-overlay-warning",
-      "task": "Monmouth classified: ready despite non-fatal run_overlays transaction warning; B6 can proceed to isolated Westchester validation.",
+      "task": "B6 fatal post-overlay/run_overlays terminal failure cleared by Westchester ready validation; recurring warning remains log-only.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake if Westchester isolated validation still fails at post-overlay/run_overlays commit or reaches a new terminal class.",
+      "wake_condition": "Wake if the recurring run_overlays warning is reclassified as blocking or a new reliability failure appears.",
       "latest_kpi_delta": {
         "b7": "cleared for Monmouth: job a9515ff6 reached run_overlays and ready; bootstrap_zone_use_matrix hard failure did not recur",
         "b8": "reopened: Nassau job 3b4582c5 recurred as ingest mapping stale; Lane D cancelled it with active_only=0/stale_only=0",
         "b9": "cleared: forced-run cache preflight failure did not recur",
         "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
-        "b6": "Monmouth job a9515ff6 reached ready; run_overlays warning is residual non-fatal B6 containment/log-only, not a terminal blocker; Westchester isolated validation can proceed"
+        "b6": "cleared fatal class: Westchester job 9f8ecb57 reached ready; old terminal post-overlay/run_overlays commit failure did not recur; warning recurred but stayed non-fatal/log-only"
       },
-      "updated_at": "2026-05-28T19:13:29Z"
+      "updated_at": "2026-05-28T19:43:45Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
-      "status": "ready_for_westchester_only",
-      "task": "Run Westchester County NY only for isolated B6 validation.",
+      "status": "paused_after_westchester_ready",
+      "task": "Westchester County NY isolated B6 validation completed ready; no further retry authorized.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Immediate for Westchester County NY only; do not run Nassau/Middlesex/Fairfield/Monmouth.",
+      "wake_condition": "Wake only if Master explicitly authorizes another retry wave.",
       "latest_kpi_delta": {
         "monmouth": "ready job a9515ff6; download_parcels 251486; ingest_parcels 251486; complete_feasibility completed",
-        "next_retry": "Westchester County, NY only",
+        "westchester": "ready job 9f8ecb57; download_parcels 258145; ingest_parcels 257914; dedupe_count 231; B6 fatal failure did not recur",
+        "next_retry": "none",
         "nassau": "parked; do not retry until B8 mitigation or deliberate large-county scaling experiment",
-        "westchester": "authorized for isolated B6 validation",
         "middlesex_fairfield": "parked under B8 large-county family",
         "burlington_status": "ready parcels but Cat-B structural coverage blocker remains"
       },
-      "updated_at": "2026-05-28T19:13:29Z"
+      "updated_at": "2026-05-28T19:43:45Z"
     },
     "lane-c-spatial-cleanup": {
       "branch": null,
-      "status": "paused",
+      "status": "ready_for_bbox_sweep",
       "task": "Run bbox refresh sweep for 7 jurisdictions and investigate prod refresh-bbox 404 if still reproducible.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake after Westchester isolated B6 validation and reliability queue clears.",
+      "wake_condition": "Immediate: reliability queue is clear enough after Westchester ready validation.",
       "latest_kpi_delta": {
         "jurisdictions_with_bbox_null": 7
       },
-      "updated_at": "2026-05-28T18:09:21Z"
+      "updated_at": "2026-05-28T19:43:45Z"
     },
     "lane-d-watchdog": {
       "branch": null,

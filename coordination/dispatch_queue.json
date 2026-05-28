@@ -1,31 +1,31 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T19:13:29Z",
+  "updated_at": "2026-05-28T19:43:45Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
-      "action": "Run Westchester County NY only for isolated B6 validation against deployed PR #119 or newer.",
-      "wake_condition": "Immediate; Monmouth job a9515ff6 reached ready with only non-fatal/log-only run_overlays warning and Lane D verified active_only=0/stale_only=0.",
-      "dependency_order": "Westchester only. Do not run Nassau, Middlesex, Fairfield, or another Monmouth retry in this wave.",
-      "expected_kpi": "B6 validation on the original Westchester post-overlay commit class"
+      "lane": "lane-c-spatial-cleanup",
+      "action": "Run bbox refresh sweep for the 7 jurisdictions with bbox NULL and verify whether prod refresh-bbox 404 still reproduces.",
+      "wake_condition": "Immediate; B6 fatal terminal class cleared by Westchester ready result and reliability queue is clear enough for spatial cleanup.",
+      "dependency_order": "Run Lane C only; do not start new ingest retries or matrix scope during this handoff.",
+      "expected_kpi": "bbox null count reduction"
     },
     {
       "rank": 2,
       "lane": "lane-e-matrix",
-      "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while Westchester B6 validation is active unless review bandwidth explicitly requests it.",
-      "wake_condition": "Explicit matrix-throughput dispatch after Lane B Westchester validation state is clear or review bandwidth is available.",
+      "action": "No immediate matrix action: PR #95 and PR #100 are merged; keep paused while Lane C spatial cleanup runs unless explicitly dispatched.",
+      "wake_condition": "Explicit matrix-throughput dispatch after Lane C handoff or review bandwidth is available.",
       "dependency_order": "Pause Lane E throughput; do not add scope beyond the merged MA/Highland batch.",
       "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
     },
     {
       "rank": 3,
-      "lane": "lane-c-spatial-cleanup",
-      "action": "Hold bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
-      "wake_condition": "Reliability queue clears after Westchester B6 validation.",
-      "dependency_order": "Pause behind Westchester isolated validation.",
-      "expected_kpi": "bbox null count reduction"
+      "lane": "lane-b-retry-sweep",
+      "action": "No immediate retry action after Westchester ready result.",
+      "wake_condition": "Explicit Master dispatch only.",
+      "dependency_order": "Sleep behind Lane C; Nassau/Middlesex/Fairfield remain parked under B8.",
+      "expected_kpi": "none until next retry wave is explicitly authorized"
     },
     {
       "rank": 4,
@@ -65,11 +65,11 @@
   "retry_sequence": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
+      "lane": "lane-c-spatial-cleanup",
       "jurisdictions": [
-        "Westchester County, NY"
+        "7 jurisdictions with bbox NULL"
       ],
-      "purpose": "Isolated B6 validation after Monmouth reached ready with only a non-fatal run_overlays warning."
+      "purpose": "Spatial cleanup after fatal B6 retry path cleared."
     },
     {
       "rank": 3,
@@ -110,9 +110,10 @@
     {
       "condition": "Westchester County NY validates past post-overlay/run_overlays commit",
       "wake_lanes": [
+        "lane-c-spatial-cleanup",
         "master"
       ],
-      "action": "Reconcile B6 validation state and decide whether the post-overlay commit blocker can be closed."
+      "action": "Completed by Westchester job 9f8ecb57 reaching ready; B6 fatal terminal blocker closed and Lane C can run bbox sweep."
     },
     {
       "condition": "Westchester County NY fails with a new or recurring reliability class",
@@ -150,8 +151,9 @@
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
     "Do not dispatch another Monmouth retry; job a9515ff6 reached ready and needs no retest.",
+    "Do not dispatch another Westchester retry; job 9f8ecb57 reached ready and fatal B6 did not recur.",
     "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
-    "Do not dispatch anything besides Westchester for isolated B6 validation until Westchester disposition is known.",
+    "Do not dispatch new ingest retries while Lane C bbox sweep is next.",
     "Do not dispatch Middlesex or Fairfield while B8 remains parked.",
     "Do not start a second Monmouth retry unless Master explicitly authorizes it from terminal evidence.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
