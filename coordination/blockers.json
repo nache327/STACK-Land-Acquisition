@@ -18,16 +18,26 @@
       "dependency": "Expanded post-overlay/run_overlays commit/session reliability",
       "unblock_condition": "Westchester County NY isolated validation passes post-overlay/run_overlays commit on deployed PR #119 or newer.",
       "status": "monmouth_validated_ready_westchester_next",
+      "evidence": {
+        "monmouth_job": "a9515ff6-41e3-4440-9609-8fef93e75a82",
+        "deployed_pipeline_version": "ce0fb85fd899",
+        "terminal_state": "ready",
+        "download_parcels": 251486,
+        "ingest_parcels": 251486,
+        "dedupe_count": 0,
+        "bootstrap_zone_use_matrix": "no hard failure; job reached run_overlays",
+        "coverage_refresh": "passed by run order evidence; job reached run_overlays",
+        "run_overlays": "non-fatal warning, not terminal failed; log-only residual B6 containment warning",
+        "warning_signature": "Can't reconnect until invalid transaction is rolled back. Please rollback() fully before proceeding",
+        "complete_feasibility": "completed",
+        "final_queues": "stale_only=0; active_only=1 unrelated Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb",
+        "disposition": "not a new blocker; no code patch justified; Westchester isolated validation can proceed"
+      },
       "history": [
         {
           "previous_unblock_condition": "Nassau-only retry validates past run_overlays on deployed PR #119.",
           "changed_at": "2026-05-28T17:38:06Z",
           "reason": "Master Planning approved parking Nassau after post-PR119 job 3b4582c5 recurred as B8 mapping stale at 210000/420594 before run_overlays."
-        },
-        {
-          "previous_unblock_condition": "Monmouth County NJ retry validates past run_overlays on deployed PR #119 or newer.",
-          "changed_at": "2026-05-28T19:05:21Z",
-          "reason": "Monmouth job a9515ff6 reached ready; run_overlays warning was non-fatal/log-only and complete_feasibility completed."
         }
       ]
     },
@@ -100,9 +110,9 @@
     {
       "id": "B7",
       "owner_lane": "lane-a-integrator",
-      "cleared_by": "PR #106 Railway deploy ab88dba1ef6b",
-      "cleared_at": "2026-05-26",
-      "status": "cleared"
+      "cleared_by": "PR #106 Railway deploy ab88dba1ef6b; Monmouth job a9515ff6 reached run_overlays and ready without bootstrap_zone_use_matrix hard failure",
+      "cleared_at": "2026-05-28",
+      "status": "cleared_for_monomouth"
     },
     {
       "id": "B9",

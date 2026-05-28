@@ -22,9 +22,9 @@
     {
       "rank": 3,
       "lane": "lane-c-spatial-cleanup",
-      "action": "Run bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
-      "wake_condition": "Lane B retry jobs are started or not competing for the same operational attention.",
-      "dependency_order": "Can run after Lane B dispatch.",
+      "action": "Hold bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
+      "wake_condition": "Reliability queue clears after Westchester B6 validation.",
+      "dependency_order": "Pause behind Westchester isolated validation.",
       "expected_kpi": "bbox null count reduction"
     },
     {
@@ -34,14 +34,6 @@
       "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
       "dependency_order": "External auth unblock required.",
       "expected_kpi": "operator workflow confidence for stuck-job prevention"
-    },
-    {
-      "rank": 5,
-      "lane": "lane-e-matrix",
-      "action": "Hold next matrix recommendation; Norfolk MA, Middlesex MA, and Highland UT batch is already merged in PR #100.",
-      "wake_condition": "Branch is merged and a new Lane E assignment is explicitly approved.",
-      "dependency_order": "Do not start new matrix scope from this dispatch queue entry.",
-      "expected_kpi": "none until next approved matrix batch"
     }
   ],
   "merge_sequence": [
@@ -157,8 +149,8 @@
   ],
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
-    "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
     "Do not dispatch another Monmouth retry; job a9515ff6 reached ready and needs no retest.",
+    "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
     "Do not dispatch anything besides Westchester for isolated B6 validation until Westchester disposition is known.",
     "Do not dispatch Middlesex or Fairfield while B8 remains parked.",
     "Do not start a second Monmouth retry unless Master explicitly authorizes it from terminal evidence.",
