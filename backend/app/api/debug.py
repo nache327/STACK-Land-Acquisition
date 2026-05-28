@@ -21,32 +21,6 @@ from app.version import get_pipeline_version
 router = APIRouter(prefix="/debug", tags=["debug"])
 
 
-@router.get("/zone_matrix_meta")
-async def debug_zone_matrix_meta(db: AsyncSession = Depends(get_db)) -> dict:
-    """One-off: dump alembic_version + zone_use_matrix index defs + column
-    types so we can see why ON CONFLICT (..., coalesce(municipality, ''))
-    isn't binding to uq_zone_matrix. Remove once crosswalk is unblocked."""
-    av = (await db.execute(text("SELECT version_num FROM alembic_version"))).scalar()
-    indexes = (await db.execute(text(
-        "SELECT indexname, indexdef FROM pg_indexes "
-        "WHERE tablename = 'zone_use_matrix'"
-    ))).all()
-    cols = (await db.execute(text(
-        "SELECT column_name, data_type, udt_name, character_maximum_length, is_nullable "
-        "FROM information_schema.columns WHERE table_name = 'zone_use_matrix' "
-        "ORDER BY ordinal_position"
-    ))).all()
-    return {
-        "alembic_version": av,
-        "indexes": [{"name": i.indexname, "def": i.indexdef} for i in indexes],
-        "columns": [
-            {"name": c.column_name, "data_type": c.data_type, "udt_name": c.udt_name,
-             "char_max_length": c.character_maximum_length, "nullable": c.is_nullable}
-            for c in cols
-        ],
-    }
-
-
 @router.get("/env")
 async def debug_env() -> dict:
     return {
