@@ -56,6 +56,29 @@ from app.services.zoning_system import _strip_state_suffix
 logger = logging.getLogger(__name__)
 
 
+def _normalize_for_match(name: str) -> str:
+    """Normalize a jurisdiction name or parcels.city value into the canonical
+    form used for sibling matching.
+
+    - strip a trailing ', XX' state suffix (e.g. 'Sandy, UT' → 'Sandy')
+    - strip a trailing ' City' (e.g. 'Draper City' → 'Draper') because the
+      UGRC PARCEL_CITY layer drops 'City' and county-jurisdiction parcels
+      under it carry the bare form.
+    - case-fold so 'Salt Lake City' and 'salt lake city' match.
+
+    Note: keeps 'Salt Lake City' as 'Salt Lake' would be wrong — only the
+    *trailing* ' City' is stripped, never an internal occurrence.
+    """
+    s = _strip_state_suffix(name).strip()
+    # Don't strip 'City' from 'Salt Lake City' — only when ' City' is a true
+    # trailing word and removing it leaves a non-empty stem distinct from
+    # 'Salt Lake City'. We check: stripping leaves something AND the
+    # something doesn't itself end in ' City' (so we don't recurse).
+    if s.lower().endswith(" city") and s[:-5].strip().lower() != "salt lake":
+        s = s[:-5].strip()
+    return s.casefold()
+
+
 @dataclass(frozen=True)
 class CrosswalkRowPlan:
     """One planned upsert into the county jurisdiction."""
@@ -136,14 +159,28 @@ async def crosswalk_county_from_cities(
             f"to county-as-jurisdiction setups."
         )
 
-    siblings = (await db.execute(
+    # Sibling discovery is driven by parcels.city values under the county
+    # (the authoritative city list — those are the strings the LATERAL join
+    # in buybox_scoring keys on), not by the jurisdictions.county field
+    # which is unreliable (NULL for most UT cities; mixed 'Salt Lake' vs
+    # 'Salt Lake County' values for the rest). We pick up every UT
+    # jurisdiction whose normalized name matches one of those cities.
+    parcel_cities = set((await db.execute(
+        text(
+            "SELECT DISTINCT city FROM parcels "
+            "WHERE jurisdiction_id = :jid AND city IS NOT NULL"
+        ).bindparams(jid=county.id)
+    )).scalars().all())
+    parcel_city_lookup = {_normalize_for_match(c): c for c in parcel_cities}
+
+    all_state_jurs = (await db.execute(
         select(Jurisdiction).where(
             Jurisdiction.state == county.state,
-            Jurisdiction.county == county.county,
             Jurisdiction.id != county.id,
             Jurisdiction.parcel_source.is_distinct_from(ParcelSource.county_gis),
         )
     )).scalars().all()
+    siblings = [j for j in all_state_jurs if _normalize_for_match(j.name) in parcel_city_lookup]
 
     if not siblings:
         logger.warning(
@@ -161,7 +198,13 @@ async def crosswalk_county_from_cities(
         }
 
     sibling_ids = [s.id for s in siblings]
-    sibling_name_by_id = {s.id: s.name for s in siblings}
+    # The municipality we write MUST equal parcels.city verbatim (that's
+    # the join key in buybox_scoring's LATERAL). For each sibling we
+    # already found the matching parcels.city via normalization — use
+    # that exact value, NOT the jurisdiction's name.
+    sibling_parcel_city_by_id = {
+        s.id: parcel_city_lookup[_normalize_for_match(s.name)] for s in siblings
+    }
 
     src_rows = (await db.execute(
         select(ZoneUseMatrix).where(
@@ -174,7 +217,7 @@ async def crosswalk_county_from_cities(
     city_rows: list[dict] = []
     for r in src_rows:
         city_rows.append({
-            "city_name": sibling_name_by_id[r.jurisdiction_id],
+            "city_name": sibling_parcel_city_by_id[r.jurisdiction_id],
             "zone_code": r.zone_code,
             "zone_name": r.zone_name,
             "self_storage": r.self_storage,
