@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T19:05:21Z",
+  "updated_at": "2026-05-28T19:13:29Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
       "lane": "lane-b-retry-sweep",
       "action": "Run Westchester County NY only for isolated B6 validation against deployed PR #119 or newer.",
-      "wake_condition": "Immediate; Monmouth job a9515ff6 reached ready with only non-fatal/log-only run_overlays warning.",
+      "wake_condition": "Immediate; Monmouth job a9515ff6 reached ready with only non-fatal/log-only run_overlays warning and Lane D verified active_only=0/stale_only=0.",
       "dependency_order": "Westchester only. Do not run Nassau, Middlesex, Fairfield, or another Monmouth retry in this wave.",
       "expected_kpi": "B6 validation on the original Westchester post-overlay commit class"
     },

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T19:05:21Z",
+  "updated_at": "2026-05-28T19:13:29Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -64,7 +64,7 @@
         "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
         "b6": "Monmouth job a9515ff6 reached ready; run_overlays warning is residual non-fatal B6 containment/log-only, not a terminal blocker; Westchester isolated validation can proceed"
       },
-      "updated_at": "2026-05-28T19:05:21Z"
+      "updated_at": "2026-05-28T19:13:29Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
@@ -97,17 +97,19 @@
     },
     "lane-d-watchdog": {
       "branch": null,
-      "status": "review_monomouth_warning",
-      "task": "Operator-check Monmouth ready job and capture any available run_overlays transaction warning evidence; Nassau cleanup remains complete.",
+      "status": "completed_operator_verification",
+      "task": "Verified Monmouth job a9515ff6-41e3-4440-9609-8fef93e75a82 is terminal ready and queues are empty; Salt Lake job 896e2dde-01cf-4338-8db0-befec01f82cb is also ready/not stale. No retry or cleanup started.",
       "blocked": false,
       "blocker": null,
       "wake_condition": "Immediate for queue/log verification; otherwise wake only if another active/stale job needs cleanup or Railway cron-log access is restored.",
       "latest_kpi_delta": {
         "stuck_jobs_over_10min": 0,
         "nassau_3b4582c5": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0; Monmouth released by Master Planning decision",
-        "monmouth_a9515ff6": "ready with non-fatal run_overlays invalid-transaction warning; stale_only=0; active_only=1 unrelated Salt Lake job 896e2dde"
+        "monmouth_a9515ff6": "ready; finished_at=2026-05-28T18:09:21.737917Z; locked_at=null; active_only=0; stale_only=0; run_overlays warning captured from job step error",
+        "salt_lake_896e2dde": "ready; finished_at=2026-05-28T18:15:43.112952Z; locked_at=null; not active/stale and not blocking Monmouth/B6 sequencing",
+        "queue_state": "GET /api/admin/jobs?active_only=true&limit=500 returned count=0; GET /api/admin/jobs?stale_only=true&limit=500 returned count=0 at operator check"
       },
-      "updated_at": "2026-05-28T18:09:21Z"
+      "updated_at": "2026-05-28T19:07:56Z"
     },
     "lane-e-matrix": {
       "branch": "feat/matrix-norfolk-ma-pattern-batch",
