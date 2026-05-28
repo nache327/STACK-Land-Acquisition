@@ -50,6 +50,27 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
     );
   }
 
+  // Show the City column only when this jurisdiction has per-city rows
+  // (county-as-jurisdiction with a crosswalked or manually-entered matrix).
+  // Single-city jurisdictions keep the original compact layout.
+  const hasMunicipalityRows = zones.some((z) => z.municipality);
+
+  // When per-city rows exist, sort so same code rows group together with
+  // the NULL county-default first, then cities alphabetically. Otherwise
+  // preserve the input order.
+  const sortedZones = hasMunicipalityRows
+    ? [...zones].sort((a, b) => {
+        if (a.zone_code !== b.zone_code) {
+          return a.zone_code.localeCompare(b.zone_code);
+        }
+        const am = a.municipality ?? "";
+        const bm = b.municipality ?? "";
+        if (am === "" && bm !== "") return -1;
+        if (bm === "" && am !== "") return 1;
+        return am.localeCompare(bm);
+      })
+    : zones;
+
   return (
     <div className="overflow-auto">
       <table className="w-full border-collapse text-sm">
@@ -58,6 +79,11 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
             <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">
               Zone
             </th>
+            {hasMunicipalityRows && (
+              <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">
+                City
+              </th>
+            )}
             <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">
               Name
             </th>
@@ -75,9 +101,9 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
           </tr>
         </thead>
         <tbody>
-          {zones.map((zone) => (
+          {sortedZones.map((zone) => (
             <tr
-              key={zone.zone_code}
+              key={zone.id}
               className={[
                 "border-t border-slate-100 transition-colors hover:bg-slate-50/60",
                 zone.human_reviewed ? "bg-emerald-50/30" : "",
@@ -123,6 +149,19 @@ export function ZoneMatrix({ zones, onCellClick }: ZoneMatrixProps) {
                   )}
                 </div>
               </td>
+
+              {/* City (only shown when per-city rows exist) */}
+              {hasMunicipalityRows && (
+                <td className="px-3 py-2 text-xs">
+                  {zone.municipality ? (
+                    <span className="font-medium text-slate-700">
+                      {zone.municipality}
+                    </span>
+                  ) : (
+                    <span className="italic text-slate-400">County default</span>
+                  )}
+                </td>
+              )}
 
               {/* Zone name */}
               <td className="px-3 py-2 text-xs text-slate-500">

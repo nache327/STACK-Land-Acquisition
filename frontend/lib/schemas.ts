@@ -254,7 +254,7 @@ export const CitationSchema = z.object({
   quote: z.string(),
 });
 
-export const ClassificationSourceSchema = z.enum(["llm", "rule", "human", "unclear", "llm_low_confidence", "llm_rule"]);
+export const ClassificationSourceSchema = z.enum(["llm", "rule", "human", "unclear", "llm_low_confidence", "llm_rule", "crosswalk", "inherited_pending"]);
 export type ClassificationSource = z.infer<typeof ClassificationSourceSchema>;
 
 export const ZoneRowSchema = z.object({
@@ -262,6 +262,10 @@ export const ZoneRowSchema = z.object({
   jurisdiction_id: z.string().uuid(),
   zone_code: z.string(),
   zone_name: z.string().nullable(),
+  // NULL = county-default; a value = a specific city under a county
+  // jurisdiction (matches parcels.city). The backend's LATERAL join in
+  // buybox_scoring picks the city-specific row over the NULL default.
+  municipality: z.string().nullable().optional(),
   self_storage: UsePermissionSchema,
   mini_warehouse: UsePermissionSchema,
   light_industrial: UsePermissionSchema,
