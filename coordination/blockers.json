@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T17:38:39Z",
+  "updated_at": "2026-05-28T17:38:06Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -16,16 +16,35 @@
       "owner_lane": "lane-a-integrator",
       "severity": "high",
       "dependency": "Expanded post-overlay/run_overlays commit/session reliability",
-      "unblock_condition": "Nassau-only retry validates past run_overlays on deployed PR #119.",
-      "status": "ready_for_nassau_only_retry_after_pr119_deploy"
+      "unblock_condition": "Monmouth County NJ retry validates past run_overlays on deployed PR #119 or newer.",
+      "status": "deployed_pending_monomouth_validation",
+      "history": [
+        {
+          "previous_unblock_condition": "Nassau-only retry validates past run_overlays on deployed PR #119.",
+          "changed_at": "2026-05-28T17:38:06Z",
+          "reason": "Master Planning approved parking Nassau after post-PR119 job 3b4582c5 recurred as B8 mapping stale at 210000/420594 before run_overlays."
+        }
+      ]
     },
     {
       "id": "B8",
       "owner_lane": "lane-a-integrator",
-      "severity": "high",
-      "dependency": "Nassau large-county ingest mapping stale-lock recurrence",
-      "unblock_condition": "Master decides next Nassau disposition after Lane D cancelled job 3b4582c5-e47e-4bc7-8d38-7853e0173a89; do not release Monmouth from Nassau sequencing based on this cleanup alone.",
-      "status": "active_cancelled_by_lane_d_no_retry_started"
+      "severity": "medium",
+      "dependency": "Recurring large-county ingest mapping stale-lock/scaling class across Nassau, Middlesex, and Fairfield",
+      "unblock_condition": "Code-level mitigation, deliberate large-county scaling experiment, or explicit Master decision to resume Nassau/Middlesex/Fairfield retries.",
+      "status": "reopened_nassau_middlesex_fairfield_parked",
+      "evidence": {
+        "latest_nassau_job": "3b4582c5-e47e-4bc7-8d38-7853e0173a89",
+        "deployed_pipeline_version": "6e8d7ee52c8c",
+        "terminal_class": "ingest_mapping_stale_at_210000",
+        "download_parcels": 420594,
+        "mapping_stalled_at": 210000,
+        "mapping_total": 420594,
+        "active_only_before_cleanup": 1,
+        "stale_only_before_cleanup": 1,
+        "lane_d_cleanup": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0",
+        "decision": "Single happy-path Nassau job d98324cc was insufficient evidence; Nassau is parked and Monmouth becomes the B6/B7 validation gate."
+      }
     },
     {
       "id": "D1",
