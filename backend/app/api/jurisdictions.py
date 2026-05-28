@@ -285,6 +285,7 @@ async def soft_delete_zone(
 @router.post("/jurisdictions/{jurisdiction_id}/_crosswalk-cities")
 async def crosswalk_cities_into_county(
     jurisdiction_id: uuid.UUID,
+    seed_stubs: bool = False,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Copy sibling per-city zone matrices into this county jurisdiction.
@@ -305,20 +306,19 @@ async def crosswalk_cities_into_county(
     (cities present in parcel data with no sibling matrix to copy from)
     so name-normalization gaps surface instead of silently leaving
     parcels on the NULL county-default row.
+
+    With `?seed_stubs=true`, also inserts placeholder rows for every
+    (city, zone_code) pair where the city has parcels but no sibling
+    matrix — `classification_source='inherited_pending'`, all permissions
+    unclear. The stubs become editable in the verifier and are replaced
+    by a real matrix when one becomes available on a later crosswalk run.
     """
     from app.services.zone_matrix_crosswalk import crosswalk_county_from_cities
 
     try:
-        return await crosswalk_county_from_cities(jurisdiction_id, db)
+        return await crosswalk_county_from_cities(jurisdiction_id, db, seed_stubs=seed_stubs)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        import logging, traceback
-        logging.getLogger(__name__).exception("crosswalk failed")
-        raise HTTPException(
-            status_code=500,
-            detail={"error": type(e).__name__, "message": str(e), "trace": traceback.format_exc().splitlines()[-6:]},
-        )
 
 
 class _CityCount(BaseModel):
