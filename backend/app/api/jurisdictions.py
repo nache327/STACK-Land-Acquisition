@@ -321,6 +321,36 @@ async def crosswalk_cities_into_county(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/_admin/optimize-parcels")
+async def admin_optimize_parcels(db: AsyncSession = Depends(get_db)) -> dict:
+    """One-shot: add the (jurisdiction_id, city) composite index parcels was
+    missing and ANALYZE the table. Both are necessary for the dashboard's
+    /cities and /zone-class-summary endpoints to return in reasonable time
+    on county-sized jurisdictions (SLCo has 397k parcels and the GROUP BY
+    queries were timing out without the composite index + fresh stats).
+
+    Idempotent — IF NOT EXISTS on the index, ANALYZE is always safe.
+    CREATE INDEX uses CONCURRENTLY so it doesn't lock writes; that requires
+    AUTOCOMMIT, so we grab a raw connection from the engine and set
+    isolation_level explicitly. ANALYZE then runs inline.
+    """
+    from app.db import engine
+    out = {}
+    raw = await engine.connect()
+    try:
+        await raw.execution_options(isolation_level="AUTOCOMMIT")
+        await raw.execute(text(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS "
+            "ix_parcels_jurisdiction_city ON parcels (jurisdiction_id, city)"
+        ))
+        out["index_created"] = True
+        await raw.execute(text("ANALYZE parcels"))
+        out["analyzed"] = True
+    finally:
+        await raw.close()
+    return out
+
+
 @router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning-from-siblings")
 async def backfill_zoning_from_siblings(
     jurisdiction_id: uuid.UUID,
