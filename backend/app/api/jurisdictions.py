@@ -321,6 +321,103 @@ async def crosswalk_cities_into_county(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning-from-siblings")
+async def backfill_zoning_from_siblings(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Copy parcels.zoning_code from sibling per-city jurisdictions onto
+    this county's parcels by APN match.
+
+    Without this, the county-wide UGRC parcel ingest leaves zoning_code
+    NULL (the county-wide pull of Parcels_SaltLake/FeatureServer/0
+    doesn't carry the ZONING attribute the per-city pulls populate via
+    spatial join to each city's zoning polygons). The LATERAL join in
+    buybox_scoring then resolves every parcel to no matrix row — even
+    after crosswalk runs, the per-city verdicts never fire.
+
+    The sibling per-city UT jurisdictions hold the same parcels under a
+    different jurisdiction_id but the same APN, with zoning_code already
+    populated (R-1, R-1-8, R3, etc.). This endpoint joins the two on
+    (apn) and copies the zoning_code + zone_class across. Scoped to the
+    county's own parcels (`p.jurisdiction_id = county.id`) and only
+    fills NULL slots, so it's idempotent and never overwrites real data.
+
+    Returns rows_updated per city + a total.
+    """
+    from app.services.zone_matrix_crosswalk import _normalize_for_match
+    from app.models.jurisdiction import ParcelSource
+
+    county = await db.get(Jurisdiction, jurisdiction_id)
+    if county is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+    if county.parcel_source != ParcelSource.county_gis:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{county.name} is not a county (parcel_source={county.parcel_source})",
+        )
+
+    # Sibling discovery — same approach as the crosswalk: parcels.city is
+    # the authoritative city list; look up UT jurisdictions whose
+    # normalized name matches one of those values.
+    parcel_cities = set((await db.execute(
+        text(
+            "SELECT DISTINCT city FROM parcels "
+            "WHERE jurisdiction_id = :jid AND city IS NOT NULL"
+        ).bindparams(jid=county.id)
+    )).scalars().all())
+    parcel_city_lookup = {_normalize_for_match(c): c for c in parcel_cities}
+
+    all_state_jurs = (await db.execute(
+        select(Jurisdiction).where(
+            Jurisdiction.state == county.state,
+            Jurisdiction.id != county.id,
+            Jurisdiction.parcel_source.is_distinct_from(ParcelSource.county_gis),
+        )
+    )).scalars().all()
+    siblings = [
+        (j, parcel_city_lookup[_normalize_for_match(j.name)])
+        for j in all_state_jurs
+        if _normalize_for_match(j.name) in parcel_city_lookup
+    ]
+
+    per_city: dict[str, int] = {}
+    total = 0
+    for sibling, parcel_city in siblings:
+        # Per-city UPDATE. Constrain by parcels.city on the destination
+        # side so we never copy from an APN that lives in a different
+        # county's namespace (UGRC APNs are unique within a county, but
+        # we still want explicit safety).
+        result = await db.execute(
+            text(
+                """
+                UPDATE parcels p
+                   SET zoning_code = s.zoning_code,
+                       zone_class  = COALESCE(s.zone_class, p.zone_class)
+                  FROM parcels s
+                 WHERE p.jurisdiction_id = :cid
+                   AND p.zoning_code IS NULL
+                   AND p.city = :city
+                   AND p.apn IS NOT NULL
+                   AND s.jurisdiction_id = :sid
+                   AND s.apn = p.apn
+                   AND s.zoning_code IS NOT NULL
+                """
+            ).bindparams(cid=county.id, sid=sibling.id, city=parcel_city)
+        )
+        per_city[parcel_city] = result.rowcount or 0
+        total += per_city[parcel_city]
+
+    await db.flush()
+
+    return {
+        "county_jurisdiction_id": str(county.id),
+        "siblings_seen": len(siblings),
+        "rows_updated": total,
+        "per_city": per_city,
+    }
+
+
 class _CityCount(BaseModel):
     city: str
     parcel_count: int
