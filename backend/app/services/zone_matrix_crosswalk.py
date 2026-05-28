@@ -45,7 +45,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -220,7 +220,16 @@ async def crosswalk_county_from_cities(
             notes=plan.notes,
             classification_source=ClassificationSource.crosswalk,
         ).on_conflict_do_update(
-            constraint="uq_zone_matrix",
+            # Migration 0028 dropped the named UNIQUE CONSTRAINT and replaced it
+            # with a UNIQUE INDEX `uq_zone_matrix` on
+            # (jurisdiction_id, zone_code, COALESCE(municipality, '')).
+            # `ON CONFLICT ON CONSTRAINT` only works with actual constraints —
+            # for an index we must spell out the matching expressions here.
+            index_elements=[
+                ZoneUseMatrix.jurisdiction_id,
+                ZoneUseMatrix.zone_code,
+                func.coalesce(ZoneUseMatrix.municipality, ""),
+            ],
             set_=dict(
                 zone_name=plan.zone_name,
                 self_storage=plan.self_storage,
