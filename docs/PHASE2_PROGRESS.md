@@ -207,8 +207,8 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
 | A — Integrator | Monmouth run_overlays warning classified no-code/log-only; B6 can proceed to Westchester isolated validation | none | B6 pending Westchester validation; B8 reopened with Nassau parked; B7 cleared on Monmouth | 2026-05-28 19:13 UTC (Monmouth `a9515ff6` ready; Lane D queues empty) |
-| B — Discovery + Coverage | paused after Monmouth ready validation; Burlington per-town pilot remains separate | — | no retries until warning review; Nassau/Middlesex/Fairfield parked under B8; Westchester held | 2026-05-28 18:09 UTC (Monmouth ready) |
-| C — Spatial + CRS | paused behind Monmouth warning review | — | reliability queue not clear | 2026-05-28 18:09 UTC (master) |
+| B — Discovery + Coverage | Westchester County NY only for isolated B6 validation; Burlington per-town pilot remains separate | — | Nassau/Middlesex/Fairfield parked under B8; no Monmouth retest | 2026-05-28 19:13 UTC (Westchester authorized) |
+| C — Spatial + CRS | paused behind Westchester isolated B6 validation | — | reliability queue not clear | 2026-05-28 19:13 UTC (master) |
 | D — Operator + Workflow | Monmouth/Salt Lake operator queue verification | — | none for Monmouth/Salt Lake cleanup; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-28 19:07 UTC (Monmouth `a9515ff6` ready; Salt Lake `896e2dde` ready; final `active_only=0`, `stale_only=0`) |
 | E — Matrix Intelligence | MA/Highland matrix batch commit hygiene complete; PR #100 merged; no new matrix scope started | PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-26 22:41 UTC |
 
