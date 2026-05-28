@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T19:07:56Z",
+  "updated_at": "2026-05-28T19:13:29Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -16,8 +16,8 @@
       "owner_lane": "lane-a-integrator",
       "severity": "high",
       "dependency": "Expanded post-overlay/run_overlays commit/session reliability",
-      "unblock_condition": "Lane A/D review classifies Monmouth non-fatal run_overlays invalid-transaction warning as non-blocking or resolves it; Westchester remains held until then.",
-      "status": "monmouth_ready_fatal_not_recurred_warning_under_review",
+      "unblock_condition": "Westchester County NY isolated validation passes post-overlay/run_overlays commit on deployed PR #119 or newer.",
+      "status": "monmouth_validated_ready_westchester_next",
       "evidence": {
         "monmouth_job": "a9515ff6-41e3-4440-9609-8fef93e75a82",
         "deployed_pipeline_version": "ce0fb85fd899",
@@ -29,7 +29,7 @@
         "dedupe_count": 0,
         "bootstrap_zone_use_matrix": "no hard failure; job reached run_overlays",
         "coverage_refresh": "passed by run order evidence; job reached run_overlays",
-        "run_overlays": "non-fatal warning, not terminal failed",
+        "run_overlays": "non-fatal warning, not terminal failed; log-only residual B6 containment warning",
         "run_overlays_status": "warning",
         "warning_signature": "Can't reconnect until invalid transaction is rolled back. Please rollback() fully before proceeding",
         "run_overlays_error": "Can't reconnect until invalid transaction is rolled back.  Please rollback() fully before proceeding (Background on this error at: https://sqlalche.me/e/20/8s2b)",
@@ -38,7 +38,8 @@
         "active_only_after_operator_check": 0,
         "stale_only_after_operator_check": 0,
         "salt_lake_896e2dde": "ready and not active/stale at operator check",
-        "final_queues": "stale_only=0; active_only=0 at Lane D operator check; Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb was ready/not stale"
+        "final_queues": "stale_only=0; active_only=0 at Lane D operator check; Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb was ready/not stale",
+        "disposition": "not a new blocker; no code patch justified; Westchester isolated validation can proceed"
       },
       "history": [
         {
@@ -46,10 +47,6 @@
           "changed_at": "2026-05-28T17:38:06Z",
           "reason": "Master Planning approved parking Nassau after post-PR119 job 3b4582c5 recurred as B8 mapping stale at 210000/420594 before run_overlays."
         }
-      ],
-      "review_required": [
-        "lane-a-integrator",
-        "lane-d-watchdog"
       ]
     },
     {
