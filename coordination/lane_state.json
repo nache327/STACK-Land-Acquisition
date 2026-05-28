@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T19:43:45Z",
+  "updated_at": "2026-05-28T20:16:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -21,7 +21,8 @@
     "westchester": "validated_ready_no_retest",
     "middlesex_fairfield": "parked_b8_family",
     "lane_e": "paused",
-    "lane_c": "ready_for_bbox_sweep",
+    "lane_c": "completed_bbox_noop",
+    "refresh_bbox_route": "missing_operator_api_gap",
     "run_overlays_warning": "recurring_operator_log_only"
   },
   "kpi_focus": [
@@ -35,7 +36,7 @@
     "master": {
       "branch": "main",
       "status": "running",
-      "task": "Maintain repo-shared orchestration state; Westchester ready result cleared fatal B6 and Lane C is next for bbox sweep.",
+      "task": "Maintain repo-shared orchestration state; Lane C bbox sweep completed with 0 updates and refresh-bbox route gap is queued for Lane A triage.",
       "blocked": false,
       "blocker": null,
       "wake_condition": null,
@@ -46,17 +47,17 @@
         "avg_unclear_share_partials": "18.3%",
         "failed_jobs_14d": 42,
         "fake_operationals": 0,
-        "decision": "Westchester job 9f8ecb57 reached ready on deploy 577cd5351885; fatal B6 post-overlay/run_overlays terminal failure did not recur; recurring run_overlays invalid-transaction warning remains log-only; Lane C can wake."
+        "decision": "Lane C bbox sweep attempted all 7 bbox-null jurisdictions and updated 0 because parcel_count=0 and geom_count=0 for all targets; missing prod refresh-bbox route is a narrow operator/API gap for Lane A triage, not a spatial data blocker."
       },
-      "updated_at": "2026-05-28T19:43:45Z"
+      "updated_at": "2026-05-28T20:16:00Z"
     },
     "lane-a-integrator": {
       "status": "completed",
       "branch": "docs/monmouth-overlay-warning",
-      "task": "B6 fatal post-overlay/run_overlays terminal failure cleared by Westchester ready validation; recurring warning remains log-only.",
+      "task": "Triage missing prod refresh-bbox operator route; B6 fatal path remains cleared.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake if the recurring run_overlays warning is reclassified as blocking or a new reliability failure appears.",
+      "wake_condition": "Immediate: classify whether absent refresh-bbox route is intentional, no-code, or a narrow API restoration.",
       "latest_kpi_delta": {
         "b7": "cleared for Monmouth: job a9515ff6 reached run_overlays and ready; bootstrap_zone_use_matrix hard failure did not recur",
         "b8": "reopened: Nassau job 3b4582c5 recurred as ingest mapping stale; Lane D cancelled it with active_only=0/stale_only=0",
@@ -64,7 +65,7 @@
         "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
         "b6": "cleared fatal class: Westchester job 9f8ecb57 reached ready; old terminal post-overlay/run_overlays commit failure did not recur; warning recurred but stayed non-fatal/log-only"
       },
-      "updated_at": "2026-05-28T19:43:45Z"
+      "updated_at": "2026-05-28T20:16:00Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
@@ -85,15 +86,18 @@
     },
     "lane-c-spatial-cleanup": {
       "branch": null,
-      "status": "ready_for_bbox_sweep",
-      "task": "Run bbox refresh sweep for 7 jurisdictions and investigate prod refresh-bbox 404 if still reproducible.",
+      "status": "completed_bbox_noop",
+      "task": "Bbox refresh sweep completed for 7 bbox-null jurisdictions; 0 updates because all targets have no parcel geometry.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Immediate: reliability queue is clear enough after Westchester ready validation.",
+      "wake_condition": "Wake only if route restoration or new parcel geometry makes bbox refresh actionable.",
       "latest_kpi_delta": {
-        "jurisdictions_with_bbox_null": 7
+        "jurisdictions_with_bbox_null": 7,
+        "bbox_updates": 0,
+        "reason": "all 7 remaining targets have parcel_count=0 and geom_count=0; ST_Extent(geom) returns NULL",
+        "refresh_bbox_route": "prod POST /api/admin/jurisdictions/{id}/refresh-bbox returns 404 and route is absent from OpenAPI/current FastAPI route search"
       },
-      "updated_at": "2026-05-28T19:43:45Z"
+      "updated_at": "2026-05-28T20:16:00Z"
     },
     "lane-d-watchdog": {
       "branch": null,
