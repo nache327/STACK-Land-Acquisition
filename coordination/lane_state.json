@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T17:38:06Z",
+  "updated_at": "2026-05-28T18:09:21Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
     "origin_main_at_snapshot": "6eb9eaf"
   },
   "current_known_state": {
-    "lane_b": "ready_for_monomouth_only",
+    "lane_b": "paused_after_monomouth_ready",
     "pr_94_deploy_blocker": "cleared",
     "pr_95": "next_merge_apply_item",
     "railway_auth_blocker": "active",
@@ -15,11 +15,14 @@
     "nassau": "parked_b8_recurring_mapping_stale",
     "nassau_stale_job": "3b4582c5-e47e-4bc7-8d38-7853e0173a89_cancelled",
     "b8": "reopened_recurring_large_county_mapping_stale_lock",
-    "b6": "deployed_pending_monomouth_validation",
-    "monmouth": "authorized",
-    "westchester": "held",
+    "b6": "fatal_terminal_not_recurred_monomouth_warning_under_review",
+    "b7": "cleared_for_monomouth",
+    "monmouth": "ready_with_nonfatal_run_overlays_warning",
+    "westchester": "held_until_warning_review",
     "middlesex_fairfield": "parked_b8_family",
-    "lane_e": "paused"
+    "lane_e": "paused",
+    "lane_c": "paused",
+    "run_overlays_warning": "lane_a_lane_d_review"
   },
   "kpi_focus": [
     "honest operational jurisdictions",
@@ -32,7 +35,7 @@
     "master": {
       "branch": "main",
       "status": "running",
-      "task": "Maintain repo-shared orchestration state; Master Planning approved parking Nassau and pivoting to Monmouth after Lane D cleanup.",
+      "task": "Maintain repo-shared orchestration state; Monmouth validation reached ready and residual run_overlays warning is queued for Lane A/D review.",
       "blocked": false,
       "blocker": null,
       "wake_condition": null,
@@ -43,66 +46,68 @@
         "avg_unclear_share_partials": "18.3%",
         "failed_jobs_14d": 42,
         "fake_operationals": 0,
-        "decision": "Park Nassau under B8 after post-PR119 retry 3b4582c5 stalled; Lane D cancelled it and final active_only=0/stale_only=0; pivot validation to Monmouth"
+        "decision": "Monmouth job a9515ff6 reached ready on deploy ce0fb85fd899; B7 cleared for Monmouth; B6 fatal terminal failure did not recur but non-fatal run_overlays invalid-transaction warning needs Lane A/D review before Westchester."
       },
-      "updated_at": "2026-05-28T17:38:06Z"
+      "updated_at": "2026-05-28T18:09:21Z"
     },
     "lane-a-integrator": {
       "branch": "docs/b6-deploy-state",
       "status": "completed",
-      "task": "B6 expanded to Nassau + Westchester post-overlay/run_overlays commit-session failure; PR #119 merged/deployed and validation gate pivots from Nassau to Monmouth.",
+      "task": "Review Monmouth non-fatal run_overlays invalid-transaction warning after ready validation.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake if Monmouth retry fails at run_overlays/post-overlay commit or reaches a new terminal class.",
+      "wake_condition": "Immediate: classify whether Monmouth warning is B6 residual, operator/log-only, or a new blocker before Westchester.",
       "latest_kpi_delta": {
-        "b7": "Nassau validation cleared B7 on job d98324cc; Monmouth is authorized next for independent corroboration",
+        "b7": "cleared for Monmouth: job a9515ff6 reached run_overlays and ready; bootstrap_zone_use_matrix hard failure did not recur",
         "b8": "reopened: Nassau job 3b4582c5 recurred as ingest mapping stale; Lane D cancelled it with active_only=0/stale_only=0",
         "b9": "cleared: forced-run cache preflight failure did not recur",
         "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
-        "b6": "confirmed expanded and patched: PR #119 merged as 4a081ce429cb1c139d21f55f31fc3c6b88bcdc34; unblock condition is now Monmouth retry validates past run_overlays"
+        "b6": "fatal terminal class did not recur for Monmouth; residual non-fatal run_overlays warning says Can't reconnect until invalid transaction is rolled back"
       },
-      "updated_at": "2026-05-28T17:38:06Z"
+      "updated_at": "2026-05-28T18:09:21Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
-      "status": "ready_for_monomouth_only",
-      "task": "Run Monmouth County NJ only; Nassau is parked and stale job 3b4582c5 cleanup is complete.",
+      "status": "paused_after_monomouth_ready",
+      "task": "Monmouth County NJ validation completed ready; no further retry until Lane A/D warning review.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Immediate for Monmouth County NJ only; do not run Nassau/Westchester/Middlesex/Fairfield.",
+      "wake_condition": "Wake only after Lane A/D disposition of Monmouth run_overlays warning.",
       "latest_kpi_delta": {
-        "next_retry": "Monmouth County, NJ only",
+        "monmouth": "ready job a9515ff6; download_parcels 251486; ingest_parcels 251486; complete_feasibility completed",
+        "next_retry": "none until warning review",
         "nassau": "parked; do not retry until B8 mitigation or deliberate large-county scaling experiment",
-        "westchester": "held until Monmouth disposition",
+        "westchester": "held until Monmouth warning review completes",
         "middlesex_fairfield": "parked under B8 large-county family",
         "burlington_status": "ready parcels but Cat-B structural coverage blocker remains"
       },
-      "updated_at": "2026-05-28T17:38:06Z"
+      "updated_at": "2026-05-28T18:09:21Z"
     },
     "lane-c-spatial-cleanup": {
       "branch": null,
-      "status": "queued",
+      "status": "paused",
       "task": "Run bbox refresh sweep for 7 jurisdictions and investigate prod refresh-bbox 404 if still reproducible.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake after Lane B retry jobs are started or confirmed not competing for operational attention.",
+      "wake_condition": "Wake after Monmouth warning review and reliability queue clears.",
       "latest_kpi_delta": {
         "jurisdictions_with_bbox_null": 7
       },
-      "updated_at": "2026-05-21T00:00:00Z"
+      "updated_at": "2026-05-28T18:09:21Z"
     },
     "lane-d-watchdog": {
       "branch": null,
-      "status": "completed_stale_cleanup",
-      "task": "Cancelled stale/active Nassau County NY job 3b4582c5-e47e-4bc7-8d38-7853e0173a89 through existing operator API path; no retry started.",
+      "status": "review_monomouth_warning",
+      "task": "Operator-check Monmouth ready job and capture any available run_overlays transaction warning evidence; Nassau cleanup remains complete.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake only if another active/stale job needs operator cleanup or Railway cron-log access is restored.",
+      "wake_condition": "Immediate for queue/log verification; otherwise wake only if another active/stale job needs cleanup or Railway cron-log access is restored.",
       "latest_kpi_delta": {
         "stuck_jobs_over_10min": 0,
-        "nassau_3b4582c5": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0; Monmouth released by Master Planning decision"
+        "nassau_3b4582c5": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0; Monmouth released by Master Planning decision",
+        "monmouth_a9515ff6": "ready with non-fatal run_overlays invalid-transaction warning; stale_only=0; active_only=1 unrelated Salt Lake job 896e2dde"
       },
-      "updated_at": "2026-05-28T17:38:39Z"
+      "updated_at": "2026-05-28T18:09:21Z"
     },
     "lane-e-matrix": {
       "branch": "feat/matrix-norfolk-ma-pattern-batch",
