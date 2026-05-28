@@ -210,10 +210,19 @@ export const api = {
   async updateZone(
     jurisdictionId: string,
     zoneCode: string,
-    patch: Record<string, unknown>
+    patch: Record<string, unknown>,
+    // For county jurisdictions with per-city matrices, pass the city
+    // name to target a specific city's row. Omit (or pass null) to
+    // target the NULL-municipality county-default row. Matches the
+    // backend's _zone_select_where triplet semantics.
+    municipality?: string | null
   ): Promise<void> {
+    const qs =
+      municipality != null && municipality !== ""
+        ? `?municipality=${encodeURIComponent(municipality)}`
+        : "";
     await fetchJSON<unknown>(
-      `/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}`,
+      `/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}${qs}`,
       {
         method: "PATCH",
         body: JSON.stringify(patch),

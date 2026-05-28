@@ -31,6 +31,8 @@ class ClassificationSource(str, enum.Enum):
     unclear = "unclear"                  # Origin unknown (legacy rows)
     llm_low_confidence = "llm_low_confidence"  # Claude parsed but confidence < 0.70
     llm_rule = "llm_rule"                # Claude parsed; unclear slots filled by rule classifier
+    crosswalk = "crosswalk"              # Copied from a sibling jurisdiction's matrix (e.g. per-city city jurisdiction → county jurisdiction)
+    inherited_pending = "inherited_pending"  # Defers to a per-town/per-city sprint not yet run
 
 
 class ZoneUseMatrix(Base):

@@ -282,6 +282,38 @@ async def soft_delete_zone(
     return None
 
 
+@router.post("/jurisdictions/{jurisdiction_id}/_crosswalk-cities")
+async def crosswalk_cities_into_county(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Copy sibling per-city zone matrices into this county jurisdiction.
+
+    For a county-as-jurisdiction (parcel_source='county_gis'), this finds
+    every sibling jurisdiction in the same (state, county) and copies its
+    active NULL-municipality zone_use_matrix rows into the county
+    jurisdiction tagged with municipality = <stripped city name>. The
+    municipality-aware LATERAL join in buybox_scoring will then resolve
+    each parcel to its own city's matrix.
+
+    Idempotent. Human edits on the county are protected by the same
+    WHERE guard the pipeline uses (human_reviewed=False AND
+    classification_source != 'human').
+
+    Returns a summary including `unmatched_cities` (crosswalked names
+    that don't appear in parcels.city) and `parcel_cities_without_zoning`
+    (cities present in parcel data with no sibling matrix to copy from)
+    so name-normalization gaps surface instead of silently leaving
+    parcels on the NULL county-default row.
+    """
+    from app.services.zone_matrix_crosswalk import crosswalk_county_from_cities
+
+    try:
+        return await crosswalk_county_from_cities(jurisdiction_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 class _CityCount(BaseModel):
     city: str
     parcel_count: int

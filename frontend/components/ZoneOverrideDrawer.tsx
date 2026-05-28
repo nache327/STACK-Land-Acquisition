@@ -99,10 +99,19 @@ export function ZoneOverrideDrawer({
 
   const mutation = useMutation({
     mutationFn: () =>
-      api.updateZone(jurisdictionId, zone.zone_code, {
-        [useKey]: permission,
-        notes: notes.trim() || null,
-      }),
+      api.updateZone(
+        jurisdictionId,
+        zone.zone_code,
+        {
+          [useKey]: permission,
+          notes: notes.trim() || null,
+        },
+        // Scope the PATCH to the specific city row when this zone row
+        // belongs to a city under a county jurisdiction. Without this,
+        // a county's per-city edit would clobber the NULL county-default
+        // row instead of the intended city row.
+        zone.municipality ?? null
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["zone-matrix", jurisdictionId],
@@ -136,7 +145,17 @@ export function ZoneOverrideDrawer({
                 </span>
               ) : null}
             </h2>
-            <p className="mt-1 text-xs text-slate-400">{USE_LABELS[useKey]}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              {USE_LABELS[useKey]}
+              {zone.municipality ? (
+                <>
+                  <span className="mx-1.5 text-slate-300">·</span>
+                  <span className="font-medium text-slate-500">
+                    {zone.municipality}
+                  </span>
+                </>
+              ) : null}
+            </p>
           </div>
           <button
             onClick={onClose}
