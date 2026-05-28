@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T18:09:21Z",
+  "updated_at": "2026-05-28T19:07:56Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -22,15 +22,23 @@
         "monmouth_job": "a9515ff6-41e3-4440-9609-8fef93e75a82",
         "deployed_pipeline_version": "ce0fb85fd899",
         "terminal_state": "ready",
+        "finished_at": "2026-05-28T18:09:21.737917Z",
+        "locked_at": null,
         "download_parcels": 251486,
         "ingest_parcels": 251486,
         "dedupe_count": 0,
         "bootstrap_zone_use_matrix": "no hard failure; job reached run_overlays",
         "coverage_refresh": "passed by run order evidence; job reached run_overlays",
         "run_overlays": "non-fatal warning, not terminal failed",
+        "run_overlays_status": "warning",
         "warning_signature": "Can't reconnect until invalid transaction is rolled back. Please rollback() fully before proceeding",
+        "run_overlays_error": "Can't reconnect until invalid transaction is rolled back.  Please rollback() fully before proceeding (Background on this error at: https://sqlalche.me/e/20/8s2b)",
         "complete_feasibility": "completed",
-        "final_queues": "stale_only=0; active_only=1 unrelated Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb"
+        "complete_feasibility_status": "ready",
+        "active_only_after_operator_check": 0,
+        "stale_only_after_operator_check": 0,
+        "salt_lake_896e2dde": "ready and not active/stale at operator check",
+        "final_queues": "stale_only=0; active_only=0 at Lane D operator check; Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb was ready/not stale"
       },
       "history": [
         {

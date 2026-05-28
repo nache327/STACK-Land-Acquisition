@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T18:09:21Z",
+  "updated_at": "2026-05-28T19:07:56Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
       "lane": "lane-a-integrator",
       "action": "Classify Monmouth non-fatal run_overlays invalid-transaction warning.",
-      "wake_condition": "Immediate: Monmouth job a9515ff6 reached ready but emitted run_overlays warning: Can't reconnect until invalid transaction is rolled back.",
+      "wake_condition": "Immediate: Monmouth job a9515ff6 reached ready but emitted run_overlays warning; Lane D verified active_only=0/stale_only=0 and Salt Lake 896e2dde ready/not stale.",
       "dependency_order": "Must complete before Westchester isolated B6 validation or any broad retry expansion.",
       "expected_kpi": "determine whether B6 is cleared enough for Westchester or needs a narrow reliability follow-up"
     },
     {
       "rank": 2,
       "lane": "lane-d-watchdog",
-      "action": "Verify Monmouth terminal ready/queue state and capture warning log evidence if available.",
-      "wake_condition": "Immediate: Lane B reported stale_only=0 and active_only=1 only for unrelated Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb.",
-      "dependency_order": "Can run in parallel with Lane A warning classification; do not cancel Salt Lake unless Master authorizes cleanup.",
-      "expected_kpi": "operator confidence before releasing Westchester"
+      "action": "No Monmouth/Salt Lake operator cleanup needed; keep watchdog log verification parked behind Railway auth.",
+      "wake_condition": "Wake only if another active/stale job appears or Railway CLI auth is refreshed.",
+      "dependency_order": "Do not cancel Salt Lake; it is ready/not stale. Do not start another Monmouth retry unless Master explicitly authorizes it from warning evidence.",
+      "expected_kpi": "operator queue confidence before releasing Westchester"
     },
     {
       "rank": 3,
@@ -130,7 +130,7 @@
         "lane-d-watchdog",
         "master"
       ],
-      "action": "Completed with ready state but non-fatal warning; Lane A/D review warning before Westchester."
+      "action": "Completed with ready state but non-fatal warning; Lane D verified active_only=0/stale_only=0 and Salt Lake ready/not stale; Lane A/D review warning before Westchester."
     },
     {
       "condition": "Monmouth County NJ fails with a new or recurring reliability class",
