@@ -322,21 +322,32 @@ async def crosswalk_county_from_cities(
 
     stubs_written = 0
     stub_cities_seeded: list[str] = []
+    stub_city_diagnostics: dict[str, dict] = {}
     if seed_stubs and parcel_cities_without_zoning:
         # For each city without a sibling matrix, find the distinct
         # zoning_codes its parcels carry, and insert one stub per pair.
         # The municipality is the verbatim parcels.city value (same as
         # the real crosswalk), so the LATERAL join in buybox_scoring
         # picks the stub over the NULL county-default.
-        stub_rows = (await db.execute(
-            text(
-                "SELECT DISTINCT city, zoning_code "
-                "FROM parcels "
-                "WHERE jurisdiction_id = :jid "
-                "  AND city = ANY(:cities) "
-                "  AND zoning_code IS NOT NULL"
-            ).bindparams(jid=county.id, cities=parcel_cities_without_zoning)
-        )).all()
+        #
+        # Per-city loop instead of a single ANY(:cities) array bind:
+        # asyncpg+SQLAlchemy text() with a Python list silently matched
+        # nothing on the first try (no error, just stubs_written=0).
+        # 9 small queries is fine and unambiguous.
+        stub_rows: list[tuple[str, str]] = []
+        for city in parcel_cities_without_zoning:
+            codes = (await db.execute(
+                text(
+                    "SELECT DISTINCT zoning_code "
+                    "FROM parcels "
+                    "WHERE jurisdiction_id = :jid "
+                    "  AND city = :c "
+                    "  AND zoning_code IS NOT NULL"
+                ).bindparams(jid=county.id, c=city)
+            )).scalars().all()
+            stub_city_diagnostics[city] = {"distinct_zoning_codes": len(codes)}
+            for code in codes:
+                stub_rows.append((city, code))
         for city, zone_code in stub_rows:
             existing = (await db.execute(
                 select(ZoneUseMatrix).where(
@@ -404,6 +415,7 @@ async def crosswalk_county_from_cities(
         "rows_skipped_human": rows_skipped_human,
         "stubs_written": stubs_written,
         "stub_cities_seeded": stub_cities_seeded,
+        "stub_city_diagnostics": stub_city_diagnostics,
         "cities_seen": cities_seen,
         "unmatched_cities": unmatched_cities,
         "parcel_cities_without_zoning": parcel_cities_without_zoning,
