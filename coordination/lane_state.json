@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:16:00Z",
+  "updated_at": "2026-05-28T20:32:23Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -22,7 +22,7 @@
     "middlesex_fairfield": "parked_b8_family",
     "lane_e": "paused",
     "lane_c": "completed_bbox_noop",
-    "refresh_bbox_route": "missing_operator_api_gap",
+    "refresh_bbox_route": "no_code_parked_not_current_kpi_blocker",
     "run_overlays_warning": "recurring_operator_log_only"
   },
   "kpi_focus": [
@@ -53,19 +53,20 @@
     },
     "lane-a-integrator": {
       "status": "completed",
-      "branch": "docs/monmouth-overlay-warning",
-      "task": "Triage missing prod refresh-bbox operator route; B6 fatal path remains cleared.",
+      "branch": "docs/bbox-route-disposition",
+      "task": "Classified missing prod refresh-bbox route as accidental operator/API gap, no-code parked because Lane C bbox sweep has no parcel geometry to refresh.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Immediate: classify whether absent refresh-bbox route is intentional, no-code, or a narrow API restoration.",
+      "wake_condition": "Wake only if new bbox-null targets have parcel geometry or an operator workflow requires route restoration.",
       "latest_kpi_delta": {
         "b7": "cleared for Monmouth: job a9515ff6 reached run_overlays and ready; bootstrap_zone_use_matrix hard failure did not recur",
         "b8": "reopened: Nassau job 3b4582c5 recurred as ingest mapping stale; Lane D cancelled it with active_only=0/stale_only=0",
         "b9": "cleared: forced-run cache preflight failure did not recur",
         "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
-        "b6": "cleared fatal class: Westchester job 9f8ecb57 reached ready; old terminal post-overlay/run_overlays commit failure did not recur; warning recurred but stayed non-fatal/log-only"
+        "b6": "cleared fatal class: Westchester job 9f8ecb57 reached ready; old terminal post-overlay/run_overlays commit failure did not recur; warning recurred but stayed non-fatal/log-only",
+        "c1": "no-code disposition: refresh-bbox route is absent/missing, but Lane C updated 0 because all 7 bbox-null targets have parcel_count=0 and geom_count=0; route restoration would not move KPI now"
       },
-      "updated_at": "2026-05-28T20:16:00Z"
+      "updated_at": "2026-05-28T20:32:23Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
