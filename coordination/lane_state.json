@@ -35,7 +35,7 @@
     "master": {
       "branch": "main",
       "status": "running",
-      "task": "Maintain repo-shared orchestration state; Monmouth validation reached ready and residual run_overlays warning is queued for Lane A/D review.",
+      "task": "Maintain repo-shared orchestration state; Lane A/D completed Monmouth warning review and Westchester is authorized for isolated B6 validation.",
       "blocked": false,
       "blocker": null,
       "wake_condition": null,
@@ -46,9 +46,9 @@
         "avg_unclear_share_partials": "18.3%",
         "failed_jobs_14d": 42,
         "fake_operationals": 0,
-        "decision": "Monmouth job a9515ff6 reached ready on deploy ce0fb85fd899; B7 cleared for Monmouth; B6 fatal terminal failure did not recur but non-fatal run_overlays invalid-transaction warning needs Lane A/D review before Westchester."
+        "decision": "Monmouth job a9515ff6 reached ready on deploy ce0fb85fd899; B7 cleared for Monmouth; B6 fatal terminal failure did not recur; run_overlays warning classified log-only; Westchester is authorized as isolated B6 validation."
       },
-      "updated_at": "2026-05-28T18:09:21Z"
+      "updated_at": "2026-05-28T19:13:29Z"
     },
     "lane-a-integrator": {
       "status": "completed",
@@ -68,20 +68,20 @@
     },
     "lane-b-retry-sweep": {
       "branch": null,
-      "status": "paused_after_monomouth_ready",
-      "task": "Monmouth County NJ validation completed ready; no further retry until Lane A/D warning review.",
+      "status": "ready_for_westchester_only",
+      "task": "Run Westchester County NY only for isolated B6 validation.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake only after Lane A/D disposition of Monmouth run_overlays warning.",
+      "wake_condition": "Immediate for Westchester County NY only; do not run Nassau/Middlesex/Fairfield/Monmouth.",
       "latest_kpi_delta": {
         "monmouth": "ready job a9515ff6; download_parcels 251486; ingest_parcels 251486; complete_feasibility completed",
-        "next_retry": "none until warning review",
+        "next_retry": "Westchester County, NY only",
         "nassau": "parked; do not retry until B8 mitigation or deliberate large-county scaling experiment",
-        "westchester": "held until Monmouth warning review completes",
+        "westchester": "authorized for isolated B6 validation",
         "middlesex_fairfield": "parked under B8 large-county family",
         "burlington_status": "ready parcels but Cat-B structural coverage blocker remains"
       },
-      "updated_at": "2026-05-28T18:09:21Z"
+      "updated_at": "2026-05-28T19:13:29Z"
     },
     "lane-c-spatial-cleanup": {
       "branch": null,
@@ -89,7 +89,7 @@
       "task": "Run bbox refresh sweep for 7 jurisdictions and investigate prod refresh-bbox 404 if still reproducible.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake after Monmouth warning review and reliability queue clears.",
+      "wake_condition": "Wake after Westchester isolated B6 validation and reliability queue clears.",
       "latest_kpi_delta": {
         "jurisdictions_with_bbox_null": 7
       },

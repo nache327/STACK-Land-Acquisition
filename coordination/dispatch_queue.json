@@ -14,8 +14,8 @@
     {
       "rank": 2,
       "lane": "lane-e-matrix",
-      "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while B7 validation is active unless review bandwidth explicitly requests it.",
-      "wake_condition": "Explicit matrix-throughput dispatch after Lane B B7 validation state is clear or review bandwidth is available.",
+      "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while Westchester B6 validation is active unless review bandwidth explicitly requests it.",
+      "wake_condition": "Explicit matrix-throughput dispatch after Lane B Westchester validation state is clear or review bandwidth is available.",
       "dependency_order": "Pause Lane E throughput; do not add scope beyond the merged MA/Highland batch.",
       "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
     },
