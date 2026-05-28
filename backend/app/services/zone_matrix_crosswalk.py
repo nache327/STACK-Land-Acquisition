@@ -220,20 +220,23 @@ async def crosswalk_county_from_cities(
             notes=plan.notes,
             classification_source=ClassificationSource.crosswalk,
         ).on_conflict_do_update(
-            # Migration 0028 dropped the named UNIQUE CONSTRAINT and replaced it
-            # with a UNIQUE INDEX `uq_zone_matrix` on
-            # (jurisdiction_id, zone_code, COALESCE(municipality, '')).
-            # `ON CONFLICT ON CONSTRAINT` only works with actual constraints —
-            # for an index we must spell out the matching expressions here.
-            # `literal_column("''")` (not a Python `""`) so the empty string
-            # renders as a SQL literal, not a bound parameter — Postgres only
-            # matches expression indexes when the COALESCE expression in
-            # ON CONFLICT is byte-identical to the indexed expression.
+            # The prod uq_zone_matrix index is partial:
+            #   CREATE UNIQUE INDEX uq_zone_matrix
+            #     ON zone_use_matrix
+            #     (jurisdiction_id, zone_code, COALESCE(municipality, ''::text))
+            #     WHERE (deleted_at IS NULL)
+            # For ON CONFLICT to bind to a partial unique index Postgres
+            # requires the index_elements AND a matching index_where predicate.
+            # `literal_column("''::text")` renders the empty string as an
+            # inline text literal (matching the indexed expression byte-for-
+            # byte); a Python "" would get parametrized to $N::VARCHAR and
+            # break the match.
             index_elements=[
                 ZoneUseMatrix.jurisdiction_id,
                 ZoneUseMatrix.zone_code,
-                func.coalesce(ZoneUseMatrix.municipality, literal_column("''")),
+                func.coalesce(ZoneUseMatrix.municipality, literal_column("''::text")),
             ],
+            index_where=ZoneUseMatrix.deleted_at.is_(None),
             set_=dict(
                 zone_name=plan.zone_name,
                 self_storage=plan.self_storage,
