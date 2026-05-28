@@ -45,7 +45,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, literal_column, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -225,10 +225,14 @@ async def crosswalk_county_from_cities(
             # (jurisdiction_id, zone_code, COALESCE(municipality, '')).
             # `ON CONFLICT ON CONSTRAINT` only works with actual constraints —
             # for an index we must spell out the matching expressions here.
+            # `literal_column("''")` (not a Python `""`) so the empty string
+            # renders as a SQL literal, not a bound parameter — Postgres only
+            # matches expression indexes when the COALESCE expression in
+            # ON CONFLICT is byte-identical to the indexed expression.
             index_elements=[
                 ZoneUseMatrix.jurisdiction_id,
                 ZoneUseMatrix.zone_code,
-                func.coalesce(ZoneUseMatrix.municipality, ""),
+                func.coalesce(ZoneUseMatrix.municipality, literal_column("''")),
             ],
             set_=dict(
                 zone_name=plan.zone_name,
