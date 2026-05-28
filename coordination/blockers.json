@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T17:38:06Z",
+  "updated_at": "2026-05-28T19:05:21Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -16,13 +16,18 @@
       "owner_lane": "lane-a-integrator",
       "severity": "high",
       "dependency": "Expanded post-overlay/run_overlays commit/session reliability",
-      "unblock_condition": "Monmouth County NJ retry validates past run_overlays on deployed PR #119 or newer.",
-      "status": "deployed_pending_monomouth_validation",
+      "unblock_condition": "Westchester County NY isolated validation passes post-overlay/run_overlays commit on deployed PR #119 or newer.",
+      "status": "monmouth_validated_ready_westchester_next",
       "history": [
         {
           "previous_unblock_condition": "Nassau-only retry validates past run_overlays on deployed PR #119.",
           "changed_at": "2026-05-28T17:38:06Z",
           "reason": "Master Planning approved parking Nassau after post-PR119 job 3b4582c5 recurred as B8 mapping stale at 210000/420594 before run_overlays."
+        },
+        {
+          "previous_unblock_condition": "Monmouth County NJ retry validates past run_overlays on deployed PR #119 or newer.",
+          "changed_at": "2026-05-28T19:05:21Z",
+          "reason": "Monmouth job a9515ff6 reached ready; run_overlays warning was non-fatal/log-only and complete_feasibility completed."
         }
       ]
     },

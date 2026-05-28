@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T17:38:39Z",
+  "updated_at": "2026-05-28T19:05:21Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
       "lane": "lane-b-retry-sweep",
-      "action": "Run Monmouth County NJ only against deployed PR #119 or newer.",
-      "wake_condition": "Immediate; Lane D cancelled stale Nassau job 3b4582c5-e47e-4bc7-8d38-7853e0173a89 and final queues were active_only=0/stale_only=0.",
-      "dependency_order": "Monmouth only. Do not run Nassau, Westchester, Middlesex, or Fairfield in this wave.",
-      "expected_kpi": "B6/B7 validation against a non-parked Monmouth path"
+      "action": "Run Westchester County NY only for isolated B6 validation against deployed PR #119 or newer.",
+      "wake_condition": "Immediate; Monmouth job a9515ff6 reached ready with only non-fatal/log-only run_overlays warning.",
+      "dependency_order": "Westchester only. Do not run Nassau, Middlesex, Fairfield, or another Monmouth retry in this wave.",
+      "expected_kpi": "B6 validation on the original Westchester post-overlay commit class"
     },
     {
       "rank": 2,
@@ -75,17 +75,9 @@
       "rank": 1,
       "lane": "lane-b-retry-sweep",
       "jurisdictions": [
-        "Monmouth County, NJ"
-      ],
-      "purpose": "Validate deployed PR #119 past run_overlays and corroborate B7 bootstrap containment outside parked Nassau."
-    },
-    {
-      "rank": 2,
-      "lane": "lane-b-retry-sweep",
-      "jurisdictions": [
         "Westchester County, NY"
       ],
-      "purpose": "Held for isolated B6 follow-up after Monmouth disposition is known."
+      "purpose": "Isolated B6 validation after Monmouth reached ready with only a non-fatal run_overlays warning."
     },
     {
       "rank": 3,
@@ -121,22 +113,22 @@
         "lane-b-retry-sweep",
         "master"
       ],
-      "action": "Lane B can run Monmouth County NJ only; keep Nassau/Westchester/Middlesex/Fairfield paused until Monmouth disposition is known."
+      "action": "Completed by Monmouth job a9515ff6 reaching ready; next Lane B action is Westchester County NY only."
     },
     {
-      "condition": "Monmouth County NJ succeeds past run_overlays",
+      "condition": "Westchester County NY validates past post-overlay/run_overlays commit",
       "wake_lanes": [
         "master"
       ],
-      "action": "Reconcile B6/B7 validation state and decide whether Westchester isolated B6 follow-up can start."
+      "action": "Reconcile B6 validation state and decide whether the post-overlay commit blocker can be closed."
     },
     {
-      "condition": "Monmouth County NJ fails with a new or recurring reliability class",
+      "condition": "Westchester County NY fails with a new or recurring reliability class",
       "wake_lanes": [
         "lane-a-integrator",
         "master"
       ],
-      "action": "Pause retries and classify the terminal signature before any Westchester or parked large-county work."
+      "action": "Pause retries and classify the terminal signature before any parked large-county work."
     },
     {
       "condition": "Railway auth refreshed",
@@ -166,7 +158,8 @@
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
     "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
-    "Do not dispatch Westchester until Monmouth disposition is known.",
+    "Do not dispatch another Monmouth retry; job a9515ff6 reached ready and needs no retest.",
+    "Do not dispatch anything besides Westchester for isolated B6 validation until Westchester disposition is known.",
     "Do not dispatch Middlesex or Fairfield while B8 remains parked.",
     "Do not start a second Monmouth retry unless Master explicitly authorizes it from terminal evidence.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
