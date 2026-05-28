@@ -1,47 +1,47 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T17:38:39Z",
+  "updated_at": "2026-05-28T18:09:21Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
-      "action": "Run Monmouth County NJ only against deployed PR #119 or newer.",
-      "wake_condition": "Immediate; Lane D cancelled stale Nassau job 3b4582c5-e47e-4bc7-8d38-7853e0173a89 and final queues were active_only=0/stale_only=0.",
-      "dependency_order": "Monmouth only. Do not run Nassau, Westchester, Middlesex, or Fairfield in this wave.",
-      "expected_kpi": "B6/B7 validation against a non-parked Monmouth path"
+      "lane": "lane-a-integrator",
+      "action": "Classify Monmouth non-fatal run_overlays invalid-transaction warning.",
+      "wake_condition": "Immediate: Monmouth job a9515ff6 reached ready but emitted run_overlays warning: Can't reconnect until invalid transaction is rolled back.",
+      "dependency_order": "Must complete before Westchester isolated B6 validation or any broad retry expansion.",
+      "expected_kpi": "determine whether B6 is cleared enough for Westchester or needs a narrow reliability follow-up"
     },
     {
       "rank": 2,
-      "lane": "lane-e-matrix",
-      "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while B7 validation is active unless review bandwidth explicitly requests it.",
-      "wake_condition": "Explicit matrix-throughput dispatch after Lane B B7 validation state is clear or review bandwidth is available.",
-      "dependency_order": "Pause Lane E throughput; do not add scope beyond the merged MA/Highland batch.",
-      "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
+      "lane": "lane-d-watchdog",
+      "action": "Verify Monmouth terminal ready/queue state and capture warning log evidence if available.",
+      "wake_condition": "Immediate: Lane B reported stale_only=0 and active_only=1 only for unrelated Salt Lake County job 896e2dde-01cf-4338-8db0-befec01f82cb.",
+      "dependency_order": "Can run in parallel with Lane A warning classification; do not cancel Salt Lake unless Master authorizes cleanup.",
+      "expected_kpi": "operator confidence before releasing Westchester"
     },
     {
       "rank": 3,
-      "lane": "lane-c-spatial-cleanup",
-      "action": "Run bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
-      "wake_condition": "Lane B retry jobs are started or not competing for the same operational attention.",
-      "dependency_order": "Can run after Lane B dispatch.",
-      "expected_kpi": "bbox null count reduction"
+      "lane": "lane-e-matrix",
+      "action": "No immediate matrix action: PR #95 and PR #100 are merged, and no new matrix scope should start while B7 validation is active unless review bandwidth explicitly requests it.",
+      "wake_condition": "Explicit matrix-throughput dispatch after Lane B B7 validation state is clear or review bandwidth is available.",
+      "dependency_order": "Pause Lane E throughput while Monmouth warning review is active; do not add scope beyond the merged MA/Highland batch.",
+      "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
     },
     {
       "rank": 4,
+      "lane": "lane-c-spatial-cleanup",
+      "action": "Hold bbox refresh sweep for the 7 jurisdictions with bbox NULL.",
+      "wake_condition": "Reliability queue clears after Monmouth warning review.",
+      "dependency_order": "Pause behind Lane A/D warning review.",
+      "expected_kpi": "bbox null count reduction"
+    },
+    {
+      "rank": 5,
       "lane": "lane-d-watchdog",
       "action": "Verify Railway cron logs for PR #97 watchdog.",
       "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
       "dependency_order": "External auth unblock required.",
       "expected_kpi": "operator workflow confidence for stuck-job prevention"
-    },
-    {
-      "rank": 5,
-      "lane": "lane-e-matrix",
-      "action": "Hold next matrix recommendation; Norfolk MA, Middlesex MA, and Highland UT batch is already merged in PR #100.",
-      "wake_condition": "Branch is merged and a new Lane E assignment is explicitly approved.",
-      "dependency_order": "Do not start new matrix scope from this dispatch queue entry.",
-      "expected_kpi": "none until next approved matrix batch"
     }
   ],
   "merge_sequence": [
@@ -73,11 +73,11 @@
   "retry_sequence": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
+      "lane": "lane-a-integrator",
       "jurisdictions": [
         "Monmouth County, NJ"
       ],
-      "purpose": "Validate deployed PR #119 past run_overlays and corroborate B7 bootstrap containment outside parked Nassau."
+      "purpose": "No retry. Review non-fatal run_overlays invalid-transaction warning from ready job a9515ff6."
     },
     {
       "rank": 2,
@@ -85,7 +85,7 @@
       "jurisdictions": [
         "Westchester County, NY"
       ],
-      "purpose": "Held for isolated B6 follow-up after Monmouth disposition is known."
+      "purpose": "Held for isolated B6 follow-up until Lane A/D warning review completes."
     },
     {
       "rank": 3,
@@ -126,9 +126,11 @@
     {
       "condition": "Monmouth County NJ succeeds past run_overlays",
       "wake_lanes": [
+        "lane-a-integrator",
+        "lane-d-watchdog",
         "master"
       ],
-      "action": "Reconcile B6/B7 validation state and decide whether Westchester isolated B6 follow-up can start."
+      "action": "Completed with ready state but non-fatal warning; Lane A/D review warning before Westchester."
     },
     {
       "condition": "Monmouth County NJ fails with a new or recurring reliability class",
@@ -165,8 +167,9 @@
   ],
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
+    "Do not dispatch any retry while Monmouth non-fatal run_overlays warning is under Lane A/D review.",
     "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
-    "Do not dispatch Westchester until Monmouth disposition is known.",
+    "Do not dispatch Westchester until Monmouth warning review completes.",
     "Do not dispatch Middlesex or Fairfield while B8 remains parked.",
     "Do not start a second Monmouth retry unless Master explicitly authorizes it from terminal evidence.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
