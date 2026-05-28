@@ -1,26 +1,18 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:16:00Z",
+  "updated_at": "2026-05-28T20:32:23Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-a-integrator",
-      "action": "Triage missing prod refresh-bbox operator route.",
-      "wake_condition": "Immediate: Lane C verified POST /api/admin/jurisdictions/{id}/refresh-bbox returns 404 and route is absent from prod OpenAPI/current FastAPI route search.",
-      "dependency_order": "Classify route as intentional/no-code or restore with narrow API PR; do not start broad backend work.",
-      "expected_kpi": "operator API hygiene; no direct bbox KPI movement because remaining bbox-null targets have no parcel geometry"
-    },
-    {
-      "rank": 2,
       "lane": "master",
-      "action": "Run Master Planning roadmap reset after Lane A route triage or no-code disposition.",
-      "wake_condition": "Lane C bbox no-op is recorded and refresh-bbox route disposition is known.",
+      "action": "Run Master Planning roadmap reset after Lane A no-code refresh-bbox route disposition.",
+      "wake_condition": "Immediate: C1 is no-code parked and Lane C bbox no-op is recorded.",
       "dependency_order": "Choose next KPI-growth lane: Lane E matrix throughput, Lane B structural coverage, or deliberate B8 scaling experiment.",
       "expected_kpi": "return from reliability triage to KPI growth sequencing"
     },
     {
-      "rank": 3,
+      "rank": 2,
       "lane": "lane-e-matrix",
       "action": "No immediate matrix action: PR #95 and PR #100 are merged; keep paused until Master Planning explicitly restarts matrix throughput.",
       "wake_condition": "Explicit matrix-throughput dispatch after Master Planning roadmap reset.",
@@ -28,7 +20,7 @@
       "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
     },
     {
-      "rank": 4,
+      "rank": 3,
       "lane": "lane-b-retry-sweep",
       "action": "No immediate retry action after Westchester ready result.",
       "wake_condition": "Explicit Master dispatch only.",
@@ -36,7 +28,7 @@
       "expected_kpi": "none until next retry wave is explicitly authorized"
     },
     {
-      "rank": 5,
+      "rank": 4,
       "lane": "lane-d-watchdog",
       "action": "Verify Railway cron logs for PR #97 watchdog.",
       "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
@@ -71,14 +63,6 @@
     }
   ],
   "retry_sequence": [
-    {
-      "rank": 1,
-      "lane": "lane-a-integrator",
-      "jurisdictions": [
-        "refresh-bbox route"
-      ],
-      "purpose": "Triage missing operator route after Lane C bbox sweep updated 0."
-    },
     {
       "rank": 3,
       "lane": "lane-b-retry-sweep",
@@ -118,10 +102,9 @@
     {
       "condition": "Lane C bbox sweep completes with 0 updates",
       "wake_lanes": [
-        "lane-a-integrator",
         "master"
       ],
-      "action": "Route gap goes to Lane A; Master Planning resumes roadmap sequencing after route disposition."
+      "action": "Completed: Lane A classified refresh-bbox route as no-code parked; Master Planning resumes roadmap sequencing."
     },
     {
       "condition": "Westchester County NY fails with a new or recurring reliability class",
@@ -161,7 +144,7 @@
     "Do not dispatch another Monmouth retry; job a9515ff6 reached ready and needs no retest.",
     "Do not dispatch another Westchester retry; job 9f8ecb57 reached ready and fatal B6 did not recur.",
     "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
-    "Do not dispatch new ingest retries while refresh-bbox route triage and Master Planning reset are pending.",
+    "Do not dispatch new ingest retries until Master Planning reset selects the next KPI lane.",
     "Do not dispatch Middlesex or Fairfield while B8 remains parked.",
     "Do not start a second Monmouth retry unless Master explicitly authorizes it from terminal evidence.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:16:00Z",
+  "updated_at": "2026-05-28T20:32:23Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -29,21 +29,6 @@
         "stale_only_before_cleanup": 1,
         "lane_d_cleanup": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0",
         "decision": "Single happy-path Nassau job d98324cc was insufficient evidence; Nassau is parked and Monmouth becomes the B6/B7 validation gate."
-      }
-    },
-    {
-      "id": "C1",
-      "owner_lane": "lane-a-integrator",
-      "severity": "low",
-      "dependency": "Missing prod refresh-bbox operator/API route",
-      "unblock_condition": "Lane A classifies absent POST /api/admin/jurisdictions/{id}/refresh-bbox route as intentional/no-code or restores it with a narrow API PR.",
-      "status": "route_triage_needed_not_spatial_blocker",
-      "evidence": {
-        "prod_pipeline_version": "ecec5a5efcf6",
-        "route_check": "POST /api/admin/jurisdictions/1726fc6f-9927-413e-b20e-936ab438de10/refresh-bbox returned 404 {\"detail\":\"Not Found\"}",
-        "route_search": "absent from prod OpenAPI and current FastAPI route search",
-        "lane_c_result": "bbox sweep updated 0 because all seven bbox-null jurisdictions have parcel_count=0 and geom_count=0",
-        "disposition": "operator/API gap only; not the cause of remaining bbox NULL rows"
       }
     },
     {
@@ -117,6 +102,21 @@
         "warning_signature": "Can't reconnect until invalid transaction is rolled back. Please rollback() fully before proceeding",
         "final_queues": "active_only=[]; stale_only=[]",
         "disposition": "fatal B6 terminal class cleared; recurring run_overlays invalid-transaction warning remains log-only/operator evidence"
+      }
+    },
+    {
+      "id": "C1",
+      "owner_lane": "lane-a-integrator",
+      "cleared_by": "Lane A no-code disposition after Lane C bbox sweep no-op",
+      "cleared_at": "2026-05-28",
+      "status": "no_code_parked_not_blocking",
+      "evidence": {
+        "prod_pipeline_version": "ecec5a5efcf6",
+        "route_check": "POST /api/admin/jurisdictions/1726fc6f-9927-413e-b20e-936ab438de10/refresh-bbox returned 404 {\"detail\":\"Not Found\"}",
+        "route_search": "absent from prod OpenAPI and current FastAPI route search; no current-origin history of a FastAPI refresh-bbox route",
+        "lane_c_result": "bbox sweep updated 0 because all seven bbox-null jurisdictions have parcel_count=0 and geom_count=0",
+        "classification": "accidentally missing/planned-but-unimplemented operator route, not intentionally removed",
+        "disposition": "no code PR justified now; route restoration would not move current bbox KPI"
       }
     },
     {
