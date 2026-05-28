@@ -143,8 +143,18 @@ def plan_crosswalk_rows(
 async def crosswalk_county_from_cities(
     county_jurisdiction_id: uuid.UUID,
     db: AsyncSession,
+    seed_stubs: bool = False,
 ) -> dict:
     """Copy sibling city zone matrices into the county jurisdiction.
+
+    When ``seed_stubs=True``, also insert placeholder rows for every
+    (city, zone_code) pair where the city has parcels under this county
+    but no sibling jurisdiction with a real matrix to copy from. The
+    stubs are tagged ``classification_source='inherited_pending'`` with
+    all permissions=unclear, so analysts can find and hand-edit them in
+    the verifier. A future crosswalk run will replace any
+    inherited_pending row whose city later gets a real sibling matrix
+    (the upsert WHERE clause excludes only human rows).
 
     Idempotent. Safe to re-run — refreshes crosswalked rows but never
     overwrites a human edit on the county.
@@ -310,12 +320,80 @@ async def crosswalk_county_from_cities(
     unmatched_cities = sorted(crosswalked_cities - parcel_cities)
     parcel_cities_without_zoning = sorted(parcel_cities - crosswalked_cities)
 
+    stubs_written = 0
+    stub_cities_seeded: list[str] = []
+    if seed_stubs and parcel_cities_without_zoning:
+        # For each city without a sibling matrix, find the distinct
+        # zoning_codes its parcels carry, and insert one stub per pair.
+        # The municipality is the verbatim parcels.city value (same as
+        # the real crosswalk), so the LATERAL join in buybox_scoring
+        # picks the stub over the NULL county-default.
+        stub_rows = (await db.execute(
+            text(
+                "SELECT DISTINCT city, zoning_code "
+                "FROM parcels "
+                "WHERE jurisdiction_id = :jid "
+                "  AND city = ANY(:cities) "
+                "  AND zoning_code IS NOT NULL"
+            ).bindparams(jid=county.id, cities=parcel_cities_without_zoning)
+        )).all()
+        for city, zone_code in stub_rows:
+            existing = (await db.execute(
+                select(ZoneUseMatrix).where(
+                    ZoneUseMatrix.jurisdiction_id == county.id,
+                    ZoneUseMatrix.zone_code == zone_code,
+                    ZoneUseMatrix.municipality == city,
+                    ZoneUseMatrix.deleted_at.is_(None),
+                )
+            )).scalar_one_or_none()
+            if existing is not None and (
+                existing.human_reviewed
+                or existing.classification_source == ClassificationSource.human
+                or existing.classification_source == ClassificationSource.crosswalk
+            ):
+                # Don't stub on top of a real crosswalk row or human edit.
+                continue
+            stmt = pg_insert(ZoneUseMatrix).values(
+                jurisdiction_id=county.id,
+                zone_code=zone_code,
+                zone_name=None,
+                municipality=city,
+                self_storage="unclear",
+                mini_warehouse="unclear",
+                light_industrial="unclear",
+                luxury_garage_condo="unclear",
+                citations=None,
+                confidence=None,
+                notes="Stub seeded by _crosswalk-cities?seed_stubs=true — awaiting per-city sibling matrix or hand-edit in the verifier.",
+                classification_source=ClassificationSource.inherited_pending,
+            ).on_conflict_do_update(
+                index_elements=[
+                    ZoneUseMatrix.jurisdiction_id,
+                    ZoneUseMatrix.zone_code,
+                    func.coalesce(ZoneUseMatrix.municipality, literal_column("''::text")),
+                ],
+                index_where=ZoneUseMatrix.deleted_at.is_(None),
+                set_=dict(
+                    # Idempotent: re-running just refreshes the inherited_pending
+                    # marker; crosswalk/human rows are excluded by the WHERE.
+                    classification_source=ClassificationSource.inherited_pending,
+                ),
+                where=(
+                    (ZoneUseMatrix.human_reviewed == False)  # noqa: E712
+                    & (ZoneUseMatrix.classification_source != ClassificationSource.human)
+                    & (ZoneUseMatrix.classification_source != ClassificationSource.crosswalk)
+                ),
+            )
+            await db.execute(stmt)
+            stubs_written += 1
+        stub_cities_seeded = sorted({c for c, _ in stub_rows})
+
     await db.flush()
 
     logger.info(
-        "Crosswalk: %s — %d siblings, %d rows written, %d human-protected, "
+        "Crosswalk: %s — %d siblings, %d rows written, %d stubs, %d human-protected, "
         "%d unmatched city names, %d parcel cities without a sibling matrix.",
-        county.name, len(siblings), rows_written, rows_skipped_human,
+        county.name, len(siblings), rows_written, stubs_written, rows_skipped_human,
         len(unmatched_cities), len(parcel_cities_without_zoning),
     )
 
@@ -324,6 +402,8 @@ async def crosswalk_county_from_cities(
         "siblings_seen": len(siblings),
         "rows_written": rows_written,
         "rows_skipped_human": rows_skipped_human,
+        "stubs_written": stubs_written,
+        "stub_cities_seeded": stub_cities_seeded,
         "cities_seen": cities_seen,
         "unmatched_cities": unmatched_cities,
         "parcel_cities_without_zoning": parcel_cities_without_zoning,

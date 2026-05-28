@@ -27,7 +27,7 @@ from typing import Any
 
 import asyncpg
 
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import func, literal_column, or_, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -2085,7 +2085,18 @@ async def _parse_and_save_ordinance(
             notes=zone.notes,
             classification_source=source,
         ).on_conflict_do_update(
-            constraint="uq_zone_matrix",
+            # uq_zone_matrix is a PARTIAL UNIQUE INDEX (not a constraint),
+            # see zone_matrix_crosswalk.py for the long version. Using
+            # constraint="uq_zone_matrix" here fails with UndefinedObjectError
+            # the moment a county ordinance is LLM-parsed. Match the
+            # indexed expression byte-for-byte: COALESCE(municipality, ''::text)
+            # WHERE deleted_at IS NULL.
+            index_elements=[
+                ZoneUseMatrix.jurisdiction_id,
+                ZoneUseMatrix.zone_code,
+                func.coalesce(ZoneUseMatrix.municipality, literal_column("''::text")),
+            ],
+            index_where=ZoneUseMatrix.deleted_at.is_(None),
             set_=dict(
                 zone_name=zone.name,
                 self_storage=zone.self_storage,
