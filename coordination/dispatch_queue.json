@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-27T21:47:02Z",
+  "updated_at": "2026-05-28T17:38:39Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "recommended_next_actions": [
     {
       "rank": 1,
       "lane": "lane-b-retry-sweep",
-      "action": "Run Nassau County NY only against deployed PR #119.",
-      "wake_condition": "Immediate; `/health.pipeline_version` reports `4a081ce429cb`.",
-      "dependency_order": "Retry Nassau County NY only; do not run Monmouth until Nassau validates past run_overlays.",
+      "action": "Hold Monmouth; latest Nassau job 3b4582c5-e47e-4bc7-8d38-7853e0173a89 was cancelled by Lane D after another ingest mapping stall.",
+      "wake_condition": "Master review of Nassau disposition; active_only=0 and stale_only=0 after cleanup, but Nassau did not validate past mapping/run_overlays.",
+      "dependency_order": "Do not run Monmouth until Master explicitly releases it after Nassau disposition.",
       "expected_kpi": "failed-job reduction and validation of post-overlay completion"
     },
     {
@@ -149,7 +149,7 @@
   ],
   "duplicate_work_guards": [
     "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
-    "Do not dispatch Monmouth until Nassau validates past B6 run_overlays on deployed PR #119.",
+    "Do not dispatch Monmouth until Master explicitly releases it; Lane D cancelled Nassau 3b4582c5 after mapping stall cleanup, which did not validate Nassau past B6/B8.",
     "Do not dispatch Westchester, Middlesex, or Fairfield while Nassau PR #119 validation is pending.",
     "Do not dispatch Westchester/Middlesex/Fairfield broad retries until the B7 validation retries have run against deployed `ab88dba1ef6b`.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",

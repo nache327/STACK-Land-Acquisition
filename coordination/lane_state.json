@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-27T17:46:28Z",
+  "updated_at": "2026-05-28T17:38:39Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -89,15 +89,15 @@
     "lane-d-watchdog": {
       "branch": null,
       "status": "completed_stale_cleanup",
-      "task": "Cancelled stale Nassau County NY job 91bb9444-377a-4a3e-a3fb-45d7b63ba18e through existing operator API path; no retry started.",
+      "task": "Cancelled stale/active Nassau County NY job 3b4582c5-e47e-4bc7-8d38-7853e0173a89 through existing operator API path; no retry started.",
       "blocked": false,
       "blocker": null,
       "wake_condition": "Wake only if another active/stale job needs operator cleanup or Railway cron-log access is restored.",
       "latest_kpi_delta": {
         "stuck_jobs_over_10min": 0,
-        "nassau_91bb9444": "cancelled at 2026-05-27T17:46:11.394136Z; final active_only=0; final stale_only=0"
+        "nassau_3b4582c5": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0; Monmouth remains unreleased"
       },
-      "updated_at": "2026-05-27T17:46:28Z"
+      "updated_at": "2026-05-28T17:38:39Z"
     },
     "lane-e-matrix": {
       "branch": "feat/matrix-norfolk-ma-pattern-batch",
