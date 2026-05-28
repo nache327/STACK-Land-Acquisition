@@ -312,6 +312,13 @@ async def crosswalk_cities_into_county(
         return await crosswalk_county_from_cities(jurisdiction_id, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import logging, traceback
+        logging.getLogger(__name__).exception("crosswalk failed")
+        raise HTTPException(
+            status_code=500,
+            detail={"error": type(e).__name__, "message": str(e), "trace": traceback.format_exc().splitlines()[-6:]},
+        )
 
 
 class _CityCount(BaseModel):
