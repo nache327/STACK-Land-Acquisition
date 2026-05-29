@@ -89,30 +89,6 @@ export function isFilterActive(filter: BuyBoxFilter): boolean {
   );
 }
 
-/** True when at least one filter is active that actually NEEDS the
- * per-parcel ring metrics (population/HHI/home value/HNW/AADT or any
- * wealth-density slider). Used to gate the dashboard's precompute
- * pass: when no such filter is active, the precompute is pure waste
- * — every parcel goes through Mapbox + Census just to produce numbers
- * nothing in the UI reads. requireListed deliberately doesn't count;
- * it filters on the listings join, not on ring data.
- *
- * The expectation is that a user who turns on a ring-needing slider
- * for the first time triggers the precompute on demand (see the
- * wakeup effect in dashboard/[jobId]/page.tsx). */
-export function needsRingMetrics(filter: BuyBoxFilter): boolean {
-  return (
-    filter.minPopulation != null ||
-    filter.minMedianHHI != null ||
-    filter.minMedianHomeValue != null ||
-    filter.minHnwHouseholds != null ||
-    filter.minAADT != null ||
-    filter.minHomesOver1M != null ||
-    filter.minHomesOver2M != null ||
-    filter.minHomesOver5M != null
-  );
-}
-
 /** True when ANY of the three wealth-density sliders is set. Drives the
  * lazy backend fetch — precompute only hits /api/parcels/value-density
  * when this returns true. */
