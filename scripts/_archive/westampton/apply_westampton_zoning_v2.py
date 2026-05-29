@@ -1,4 +1,11 @@
-"""Apply Westampton Township zoning matrix at the CORRECT scope.
+"""ARCHIVED 2026-05-29 — one-shot apply, already in prod.
+See scripts/_archive/westampton/README.md for the full sequence and the
+long-term systemic replacement (NJDCA seed → ordinance URL parser →
+per-city matrix row).
+
+---
+
+Apply Westampton Township zoning matrix at the CORRECT scope.
 
 v2 vs v1: v1 applied the matrix at jurisdiction fd74c349... — an
 orphan Westampton jurisdiction with 16 stub parcels and 0 zoning
@@ -22,10 +29,15 @@ _upload-zoning) and the spatial-join populates parcels.zoning_code,
 these matrix rows will resolve real per-parcel storage_permission
 values for Westampton parcels.
 """
-import sys
-from urllib.parse import quote
+raise SystemExit(
+    "Archived — one-shot apply already in prod. "
+    "See scripts/_archive/westampton/README.md."
+)
 
-import requests
+import sys  # noqa: E402
+from urllib.parse import quote  # noqa: E402
+
+import requests  # noqa: E402
 
 BASE = "https://capable-serenity-production-0d1a.up.railway.app/api"
 BURLINGTON_ID = "d316fb43-d0e6-4359-aa47-6475fa99cc0f"

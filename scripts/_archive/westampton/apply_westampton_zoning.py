@@ -1,4 +1,18 @@
-"""One-shot: apply Westampton Township NJ zoning rules to its
+"""ARCHIVED 2026-05-29 — superseded by apply_westampton_zoning_v2.py.
+See scripts/_archive/westampton/README.md.
+
+v1 of the Westampton matrix write — applied 16 rows to the orphan
+Westampton-only jurisdiction (fd74c349-1f6d-4941-9ce6-8b2002102303)
+before we realized the real parcels live inside Burlington County.
+Rows from this script were tombstoned by delete_westampton_orphan_matrix.py
+the same day. v2 reapplies the matrix at the correct (Burlington,
+municipality='Westampton township') scope.
+
+Preserved as a reference artifact only.
+
+---
+
+One-shot: apply Westampton Township NJ zoning rules to its
 zone_use_matrix.
 
 Source: Ord. No. 3-2026 (adopted 4/7/2026) + Chapter 250, Articles II
@@ -17,10 +31,15 @@ municipality=None.
 
 Idempotent: POST first, fall through to PATCH on 409. Re-run safe.
 """
-import sys
-from urllib.parse import quote
+raise SystemExit(
+    "Archived — superseded by apply_westampton_zoning_v2.py. "
+    "See scripts/_archive/westampton/README.md."
+)
 
-import requests
+import sys  # noqa: E402
+from urllib.parse import quote  # noqa: E402
+
+import requests  # noqa: E402
 
 BASE = "https://capable-serenity-production-0d1a.up.railway.app/api"
 WESTAMPTON_ID = "fd74c349-1f6d-4941-9ce6-8b2002102303"
