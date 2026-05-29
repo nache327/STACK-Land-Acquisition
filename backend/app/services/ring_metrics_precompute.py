@@ -159,6 +159,9 @@ async def precompute_ring_metrics_for_jurisdiction(
     state_county_pairs = set(tract_state_county.values())
     acs_by_geoid = await _load_acs_for_counties(state_county_pairs)
     summary["acs_counties"] = len(state_county_pairs)
+    summary["acs_counties_with_data"] = len(
+        {(g[:2], g[2:5]) for g in acs_by_geoid.keys()}
+    )
 
     # ── 4. Per-tract compute (in parallel, bounded) ──────────────────────
     sem = asyncio.Semaphore(_TRACT_CONCURRENCY)
@@ -242,17 +245,38 @@ async def _load_acs_for_counties(
 ) -> dict[str, TractData]:
     """Fetch ACS5 tract-level demographics for each (state, county) pair via
     the existing in-process census proxy logic. Returns dict[geoid -> TractData].
+
+    Border-tract counties that the bbox query swept in may not always have
+    ACS data (Census returns 404 for sparsely-populated or recently-split
+    counties). One bad pair shouldn't kill an entire county precompute, so
+    failures are logged and skipped — tracts under that county simply land
+    with no demographics, contributing zeros to ring aggregates.
     """
     out: dict[str, TractData] = {}
     # Reuse the proxy's underlying fetcher so we benefit from its retry +
     # in-memory caching across runs in the same process.
     from app.api.census_proxy import acs5_tract  # local import to avoid circular
+    from fastapi import HTTPException  # noqa: E402
 
     for state, county in sorted(state_county_pairs):
-        rows = await acs5_tract(
-            state=state, county=county,
-            variables="B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E",
-        )
+        try:
+            rows = await acs5_tract(
+                state=state, county=county,
+                variables="B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E",
+            )
+        except HTTPException as exc:
+            logger.warning(
+                "Precompute: ACS fetch failed for state=%s county=%s "
+                "(HTTP %s: %s) — tracts in that county will contribute zeros.",
+                state, county, exc.status_code, exc.detail,
+            )
+            continue
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Precompute: ACS fetch raised for state=%s county=%s: %s",
+                state, county, exc,
+            )
+            continue
         # Census shape: row 0 is header, rows 1..N are tract records.
         if not rows or not isinstance(rows, list):
             continue
