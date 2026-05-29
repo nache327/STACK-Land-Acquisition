@@ -143,7 +143,7 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
 | done | Norfolk County, MA | 88 remaining | 14,638 remaining unclear-bound | applied; partial (residential short-code batch only) | PR #100 merged (`6eb9eaf`) | Lane E |
-| done | Middlesex County, MA | 172 remaining | 67,386 remaining unclear-bound | applied; partial (Lowell batch 1 only) | PR #100 merged (`6eb9eaf`) | Lane E |
+| done | Middlesex County, MA | 163 remaining | 41,680 remaining unclear-bound | applied; partial (Lowell batch 1 + Somerville/Melrose/Reading batch 2) | PR #143 open (batch 2); PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Highland, UT | 4 remaining | 937 remaining unclear-bound | reviewed; partial (PD-1 unsupported without adopted PD narrative) | PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Somerset County, NJ | 66 remaining | 2,194 remaining unclear-bound | applied; operational | #91 merged + prod applied 2026-05-26 | Lane E |
 | done | Loudoun VA + Howard MD cleanup | 4 remaining active rows | 19,309 remaining unclear-bound | applied; Howard operational, Loudoun partial by design | PR #95 patched/applied/merged 2026-05-26 | Lane E |
@@ -155,6 +155,7 @@ _Lane E: append progress notes here (script written / PR opened / merged / refre
 - 2026-05-26 18:23 UTC — Loudoun + Howard cleanup applied to prod. Loudoun PR #95 corrected before apply to leave `TOWNS` and `PUD-1` unclear rather than overclassify out-of-scope / unverified rows; classified only `C1`, `PDCH`, and `PUD` (63 parcels unclear→classified). Loudoun remains partial with 2 active unclear rows / 19,298 unclear-bound parcels. Howard reviewed `2R0` and `OT`, moved 0 parcels, and remains operational with 2 active unclear rows / 11 unclear-bound parcels.
 - 2026-05-26 19:19 UTC — Norfolk County MA pattern batch applied to prod via `pattern_norfolk_ma_adjudication.py`. Updated 12 rows (`G`, `GR`, `S`, `S-7`, `S1`, `S10`, `S15`, `S2`, `S25`, `S40`, `T-5`, `T-6`) using Norwood, Needham, and Brookline ordinance citations. Parcel delta: 16,489 unclear→classified. Refresh: partial, 88 remaining unclear rows, 14,638 remaining unclear-bound parcels, 90.5% classified parcel coverage.
 - 2026-05-26 19:57 UTC — Middlesex County MA Lowell batch 1 applied to prod via `pattern_middlesex_ma_adjudication.py`. Updated 9 rows (`NB`, `SMF`, `SMU`, `SSF`, `TSF`, `TTF`, `UMF`, `UMU`, `USF`) using Lowell Zoning Ordinance Article XII / Section 12.9 citations. Parcel delta: 18,401 unclear→classified. Refresh: partial, 172 remaining unclear rows, 67,386 remaining unclear-bound parcels, 82.8% classified parcel coverage.
+- 2026-05-29 17:24 UTC — Middlesex County MA pattern batch 2 applied to prod via `pattern_middlesex_ma_batch2_adjudication.py` and opened as PR #143. Updated 9 rows (`NR`, `UR`, `URA`, `URB`, `URC`, `URD`, `S15`, `S20`, `S40`) using Somerville, Melrose, and Reading ordinance citations. Dry-run and apply parcel delta: 25,706 unclear→classified. Refresh/audit: partial, 163 remaining unclear rows, 41,680 remaining unclear-bound parcels, 89.3% classified parcel coverage. Note: `recover_operational_coverage.py --jurisdiction "Middlesex County, MA" --phase bbox` also matched Middlesex County NJ by normalized name and recomputed bbox/coverage only; no NJ ingest/matrix update was run.
 - 2026-05-26 20:19 UTC — Highland UT cleanup applied to prod via `highland_ut_matrix_adjudication.py`. `PD-1` reviewed against Highland City Development Code Article 5 and left unclear because the adopted PD narrative governs uses; zero-bind unsupported rows left unclear. Parcel delta: 0. Refresh: partial, 4 remaining unclear rows, 937 remaining unclear-bound parcels, 87.1% classified parcel coverage.
 - 2026-05-26 22:41 UTC — PR #100 merged as `6eb9eaf` for the Norfolk/Middlesex/Highland matrix batch. Merge diff contains only `backend/scripts/highland_ut_matrix_adjudication.py`, `backend/scripts/pattern_middlesex_ma_adjudication.py`, `backend/scripts/pattern_norfolk_ma_adjudication.py`, and Lane E updates to this file. Validation: GitHub Backend Tests passed, Frontend Tests passed, Supabase Preview skipped; local `py_compile` passed for all three scripts.
 
@@ -210,7 +211,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | B — Discovery + Coverage | paused after Westchester ready validation; Burlington per-town pilot remains separate | — | Nassau/Middlesex/Fairfield parked under B8; no Monmouth/Westchester retest | 2026-05-28 19:43 UTC (Westchester ready) |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
 | D — Operator + Workflow | pre-Wake clean queue check | — | none for Wake dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-29 17:13 UTC (`active_only=0`, `stale_only=0`; Lane B Wake can start) |
-| E — Matrix Intelligence | MA/Highland matrix batch commit hygiene complete; PR #100 merged; no new matrix scope started | PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-26 22:41 UTC |
+| E — Matrix Intelligence | Middlesex County MA batch 2 applied/refreshed; PR #143 open for script/docs/coordination evidence | PR #143 open; PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-29 17:26 UTC |
 
 ---
 
@@ -297,6 +298,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-29
 
+- **APPLY+REFRESH** Middlesex County MA pattern batch 2. Lane E. `pattern_middlesex_ma_batch2_adjudication.py` dry-ran and applied 9 ordinance-cited rows (`NR`, `UR`, `URA`, `URB`, `URC`, `URD`, `S15`, `S20`, `S40`) using Somerville, Melrose, and Reading sources. Parcel delta: 25,706 unclear→classified. Audit after refresh: partial, 163 remaining unclear rows, 41,680 unclear-bound parcels, 89.3% classified parcel coverage. PR #143 is open. Exact next Lane E recommendation after PR review: Norfolk County MA pattern batch 2.
 - **VERIFY** clean queue state before Lane B Wake County NC retry. Lane D. No retry or cleanup was started. `GET /api/admin/jobs?stale_only=true&limit=500` returned `count=0`, `ids=[]`; `GET /api/admin/jobs?active_only=true&limit=500` returned `count=0`, `ids=[]` at `2026-05-29T17:13:03Z`. No stale or active job blocks Wake dispatch, so Lane B can start the Wake County NC retry. Railway log access remains blocked locally: `railway logs --lines 1` returns `invalid_grant` and `No linked project found`.
 
 ### 2026-05-28
