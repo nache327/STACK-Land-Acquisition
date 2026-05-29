@@ -354,10 +354,11 @@ async def admin_optimize_parcels(db: AsyncSession = Depends(get_db)) -> dict:
 @router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning-from-siblings")
 async def backfill_zoning_from_siblings(
     jurisdiction_id: uuid.UUID,
+    strategy: str = "apn",
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Copy parcels.zoning_code from sibling per-city jurisdictions onto
-    this county's parcels by APN match.
+    this county's parcels.
 
     Without this, the county-wide UGRC parcel ingest leaves zoning_code
     NULL (the county-wide pull of Parcels_SaltLake/FeatureServer/0
@@ -366,14 +367,18 @@ async def backfill_zoning_from_siblings(
     buybox_scoring then resolves every parcel to no matrix row — even
     after crosswalk runs, the per-city verdicts never fire.
 
-    The sibling per-city UT jurisdictions hold the same parcels under a
-    different jurisdiction_id but the same APN, with zoning_code already
-    populated (R-1, R-1-8, R3, etc.). This endpoint joins the two on
-    (apn) and copies the zoning_code + zone_class across. Scoped to the
-    county's own parcels (`p.jurisdiction_id = county.id`) and only
-    fills NULL slots, so it's idempotent and never overwrites real data.
+    Strategies (query param ``?strategy=``):
 
-    Returns rows_updated per city + a total.
+    - ``apn`` (default): join on parcels.apn. Fast and unambiguous when
+      both jurisdictions use the same APN namespace (UGRC ↔ UGRC).
+    - ``spatial``: spatial-join the county parcel's centroid to the
+      sibling parcel's polygon. Needed when the sibling jurisdiction
+      uses a different ArcGIS endpoint with its own APN namespace
+      (Draper City via services2.arcgis.com).
+    - ``both``: APN match first, then spatial pass over remaining NULLs.
+
+    Idempotent and NULL-only: never overwrites a parcel that already
+    has a zoning_code.
     """
     from app.services.zone_matrix_crosswalk import _normalize_for_match
     from app.models.jurisdiction import ParcelSource
@@ -411,40 +416,83 @@ async def backfill_zoning_from_siblings(
         if _normalize_for_match(j.name) in parcel_city_lookup
     ]
 
-    per_city: dict[str, int] = {}
-    total = 0
-    for sibling, parcel_city in siblings:
-        # Per-city UPDATE. Constrain by parcels.city on the destination
-        # side so we never copy from an APN that lives in a different
-        # county's namespace (UGRC APNs are unique within a county, but
-        # we still want explicit safety).
-        result = await db.execute(
-            text(
-                """
-                UPDATE parcels p
-                   SET zoning_code = s.zoning_code,
-                       zone_class  = COALESCE(s.zone_class, p.zone_class)
-                  FROM parcels s
-                 WHERE p.jurisdiction_id = :cid
-                   AND p.zoning_code IS NULL
-                   AND p.city = :city
-                   AND p.apn IS NOT NULL
-                   AND s.jurisdiction_id = :sid
-                   AND s.apn = p.apn
-                   AND s.zoning_code IS NOT NULL
-                """
-            ).bindparams(cid=county.id, sid=sibling.id, city=parcel_city)
+    if strategy not in ("apn", "spatial", "both"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"strategy must be apn|spatial|both, got {strategy!r}",
         )
-        per_city[parcel_city] = result.rowcount or 0
-        total += per_city[parcel_city]
+
+    per_city_apn: dict[str, int] = {}
+    per_city_spatial: dict[str, int] = {}
+    total = 0
+
+    for sibling, parcel_city in siblings:
+        # APN pass — fast, unambiguous, only fires when both jurisdictions
+        # share an APN namespace (UGRC ↔ UGRC).
+        if strategy in ("apn", "both"):
+            result = await db.execute(
+                text(
+                    """
+                    UPDATE parcels p
+                       SET zoning_code = s.zoning_code,
+                           zone_class  = COALESCE(s.zone_class, p.zone_class)
+                      FROM parcels s
+                     WHERE p.jurisdiction_id = :cid
+                       AND p.zoning_code IS NULL
+                       AND p.city = :city
+                       AND p.apn IS NOT NULL
+                       AND s.jurisdiction_id = :sid
+                       AND s.apn = p.apn
+                       AND s.zoning_code IS NOT NULL
+                    """
+                ).bindparams(cid=county.id, sid=sibling.id, city=parcel_city)
+            )
+            per_city_apn[parcel_city] = result.rowcount or 0
+            total += per_city_apn[parcel_city]
+
+        # Spatial pass — centroid-in-polygon. Slower but works across
+        # APN namespaces (Draper City uses services2.arcgis.com, not
+        # UGRC). DISTINCT ON resolves the rare case where one centroid
+        # falls inside multiple sibling polygons (overlap / boundary).
+        if strategy in ("spatial", "both"):
+            result = await db.execute(
+                text(
+                    """
+                    WITH matches AS (
+                      SELECT DISTINCT ON (p.id)
+                             p.id AS pid, s.zoning_code, s.zone_class
+                        FROM parcels p
+                        JOIN parcels s
+                          ON ST_Within(p.centroid, s.geom)
+                       WHERE p.jurisdiction_id = :cid
+                         AND p.zoning_code IS NULL
+                         AND p.city = :city
+                         AND p.centroid IS NOT NULL
+                         AND s.jurisdiction_id = :sid
+                         AND s.geom IS NOT NULL
+                         AND s.zoning_code IS NOT NULL
+                       ORDER BY p.id, s.id
+                    )
+                    UPDATE parcels p
+                       SET zoning_code = m.zoning_code,
+                           zone_class  = COALESCE(m.zone_class, p.zone_class)
+                      FROM matches m
+                     WHERE p.id = m.pid
+                    """
+                ).bindparams(cid=county.id, sid=sibling.id, city=parcel_city)
+            )
+            per_city_spatial[parcel_city] = result.rowcount or 0
+            total += per_city_spatial[parcel_city]
 
     await db.flush()
 
     return {
         "county_jurisdiction_id": str(county.id),
         "siblings_seen": len(siblings),
+        "strategy": strategy,
         "rows_updated": total,
-        "per_city": per_city,
+        "per_city_apn": per_city_apn,
+        "per_city_spatial": per_city_spatial,
     }
 
 
