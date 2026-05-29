@@ -1494,6 +1494,26 @@ async def _run(db: AsyncSession, job: Job) -> None:
             except Exception:
                 pass
 
+    # Fire-and-forget ring-metrics precompute. Runs in a separate Dramatiq
+    # worker so the pipeline doesn't block the next ~5-10 min populating
+    # parcel_ring_metrics. By the time the operator opens the dashboard,
+    # the cache is warm and `loadServerRingMetrics()` returns the entire
+    # jurisdiction in one call — no client-side Mapbox+Census loop.
+    # Non-fatal: if Mapbox is down or the actor errors, the dashboard just
+    # falls back to the original client-side compute (slow but working).
+    try:
+        from app.services.job_queue import enqueue_ring_metrics_precompute
+        enqueue_ring_metrics_precompute(jurisdiction.id)
+        logger.info(
+            "ring_metrics_precompute: enqueued for jurisdiction %s",
+            jurisdiction.id,
+        )
+    except Exception as exc:
+        logger.warning(
+            "ring_metrics_precompute enqueue failed (non-fatal) for %s: %s",
+            jurisdiction.id, exc,
+        )
+
     # zoning_overlays/zoning_rules/enrichment_cache are not read by any API endpoint —
     # they were scaffolded for a future authoritative zoning service. Skip the step
     # entirely; it was the sole source of every pipeline hang.

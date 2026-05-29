@@ -88,6 +88,24 @@ class Settings(BaseSettings):
     def google_places_enabled(self) -> bool:
         return bool(self.google_places_api_key)
 
+    # Mapbox — used server-side by the ring-metrics precompute to fetch
+    # drive-time isochrones per census-tract centroid. Distinct from the
+    # frontend's NEXT_PUBLIC_MAPBOX_TOKEN (which is public-scoped and used
+    # for inline client-side fetches as a fallback when the server cache is
+    # cold). Get one at https://account.mapbox.com/access-tokens/ —
+    # only the default `styles:read` + isochrone scopes are needed.
+    mapbox_token: str = ""
+
+    # Rate limit for the server-side Mapbox isochrone client (requests
+    # per minute). Free tier defaults to 300/min; bump higher if you're
+    # on a paid plan. The client enforces this via a sliding window so
+    # we never exceed Mapbox's quota even with concurrent county precomputes.
+    mapbox_isochrone_rpm: int = 300
+
+    @property
+    def mapbox_enabled(self) -> bool:
+        return bool(self.mapbox_token)
+
     # CORS — comma-separated string; split into list at usage time
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
