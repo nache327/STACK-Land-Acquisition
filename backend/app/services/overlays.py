@@ -171,12 +171,23 @@ async def _bulk_flag_by_geometry(
     column: str,
     db: AsyncSession,
 ) -> int:
-    """
-    Update parcels.{column} = TRUE for all parcels whose geometry intersects
+    """Update parcels.{column} = TRUE for all parcels whose geometry intersects
     the union of the provided GeoDataFrame geometries.
 
-    Builds a single unary_union in Python then issues ONE UPDATE — avoids the
-    N/250 round-trips the old batched approach required.
+    Performance note (why this isn't the obvious one-liner):
+
+    The naive `WHERE ST_Intersects(parcels.geom, <huge union>)` can't
+    effectively use the GiST index on parcels.geom because PostGIS's index
+    bound is the union's overall bbox — which for a county-wide flood-zone
+    union covers nearly every parcel in the bbox. The planner falls back to
+    a sequential scan and ST_Intersects per row. On SLCo (397k parcels) that
+    took several minutes per overlay.
+
+    Fix: ST_Subdivide the union into ≤256-vertex pieces, materialize them
+    into a temp table with a GiST index, then EXISTS-join. Now each parcel
+    only checks the few subpieces whose bbox overlaps its own bbox — both
+    sides indexed, fast nested-loop spatial join. Standard PostGIS pattern
+    for big-polygon vs many-small-polygon intersections.
     """
     valid_geoms = [
         g.simplify(0.00001, preserve_topology=True)
@@ -190,19 +201,59 @@ async def _bulk_flag_by_geometry(
     if union is None or union.is_empty:
         return 0
 
-    result = await db.execute(
-        text(f"""
-            UPDATE parcels
-            SET {column} = TRUE
-            WHERE jurisdiction_id = :jid
-              AND geom IS NOT NULL
-              AND COALESCE({column}, FALSE) IS DISTINCT FROM TRUE
-              AND ST_Intersects(geom, ST_GeomFromText(:geom, 4326))
-        """),
-        {"jid": str(jurisdiction_id), "geom": union.wkt},
-    )
-    await db.flush()
-    return result.rowcount or 0
+    # Unique per-call name so concurrent overlays (flood + wetland running
+    # in parallel) don't collide on the temp table.
+    pieces_tbl = f"_overlay_pieces_{uuid.uuid4().hex[:12]}"
+
+    try:
+        # ON COMMIT PRESERVE ROWS: keep the temp table alive across the
+        # SQLAlchemy session's auto-commits so the UPDATE below sees it.
+        # The explicit DROP at the end cleans up. ON COMMIT DROP would
+        # vanish the table before we get to the UPDATE if commit lands
+        # between statements.
+        await db.execute(text(
+            f"CREATE TEMP TABLE {pieces_tbl} "
+            f"(geom geometry(Geometry, 4326)) ON COMMIT PRESERVE ROWS"
+        ))
+        await db.execute(
+            text(
+                f"INSERT INTO {pieces_tbl} (geom) "
+                f"SELECT (ST_Dump(ST_Subdivide("
+                f"  ST_GeomFromText(:geom, 4326), 256))).geom"
+            ),
+            {"geom": union.wkt},
+        )
+        await db.execute(text(
+            f"CREATE INDEX ON {pieces_tbl} USING GIST (geom)"
+        ))
+        # ANALYZE so the planner knows the temp table's row count + selectivity.
+        await db.execute(text(f"ANALYZE {pieces_tbl}"))
+
+        result = await db.execute(
+            text(
+                f"""
+                UPDATE parcels p
+                SET {column} = TRUE
+                WHERE p.jurisdiction_id = :jid
+                  AND p.geom IS NOT NULL
+                  AND COALESCE(p.{column}, FALSE) IS DISTINCT FROM TRUE
+                  AND EXISTS (
+                    SELECT 1 FROM {pieces_tbl} op
+                    WHERE ST_Intersects(p.geom, op.geom)
+                  )
+                """
+            ),
+            {"jid": str(jurisdiction_id)},
+        )
+        await db.flush()
+        return result.rowcount or 0
+    finally:
+        # Drop the temp table even if the UPDATE blew up, so the session's
+        # connection (which goes back to the pool) doesn't carry stray state.
+        try:
+            await db.execute(text(f"DROP TABLE IF EXISTS {pieces_tbl}"))
+        except Exception:  # noqa: BLE001 — cleanup best-effort
+            pass
 
 
 async def _persist_overlay_polygons(
