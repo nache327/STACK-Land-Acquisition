@@ -127,22 +127,23 @@
       "updated_at": "2026-05-29T17:13:03Z"
     },
     "lane-e-matrix": {
-      "branch": "feat/matrix-norfolk-ma-pattern-batch",
-      "status": "dispatched_middlesex_ma_batch_2",
-      "task": "Master Planning 2026-05-28 KPI-growth dispatch rank 1: Middlesex County MA pattern batch 2. Author next pattern adjudication script targeting the 172 remaining unclear rows / 67,386 unclear-bound parcels using additional Middlesex MA municipal code citations (next municipalities after Lowell). Dry-run → prod apply via session-mode DB endpoint → coverage refresh. Sequential follow-on (rank 3): Norfolk County MA pattern batch 2 (88 unclear / 14,638 parcels).",
+      "branch": "adarench/matrix-throughput-batch",
+      "status": "middlesex_ma_batch_2_pr_open",
+      "task": "Middlesex County MA pattern batch 2 completed through prod apply, coverage refresh, and PR opening (#143). Next: proceed to sequential Norfolk County MA pattern batch 2 if review bandwidth remains available.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Run immediately on Middlesex MA batch 2. Report dry-run delta, prod apply outcome, and refresh result. Then continue to Norfolk MA batch 2.",
+      "wake_condition": "PR #143 review/merge. Lane E can continue to Norfolk MA pattern batch 2 per dispatch rank 3 if review bandwidth remains available.",
       "latest_kpi_delta": {
         "somerset_nj": "operational after 10,567 parcels unclear to classified",
         "loudoun_va_howard_md_cleanup": "applied; Loudoun remains partial by design, Howard remains operational",
         "norfolk_ma_batch_1": "PR #100 merged after prod apply/refresh; 16,489 parcels moved unclear to classified; remains partial with 88 unclear rows / 14,638 unclear-bound parcels",
         "middlesex_ma_batch_1": "PR #100 merged after prod apply/refresh; 18,401 parcels moved unclear to classified; remains partial with 172 unclear rows / 67,386 unclear-bound parcels",
         "highland_ut": "PR #100 merged after prod apply/refresh; PD-1 reviewed and left unclear; 0 parcel delta; no further path",
-        "current_dispatch_target": "Middlesex County MA pattern batch 2 (largest available unclear-bound parcel pool)",
+        "middlesex_ma_batch_2": "Prod applied/refreshed 2026-05-29: 9 rows (Somerville NR/UR; Melrose URA/URB/URC/URD; Reading S15/S20/S40) moved 25,706 parcels unclear→classified. Audit after refresh: partial, 163 unclear rows, 41,680 unclear-bound parcels, 89.3% classified parcel coverage.",
+        "current_dispatch_target": "Middlesex County MA pattern batch 2 PR #143 open",
         "sequential_follow_on": "Norfolk County MA pattern batch 2"
       },
-      "updated_at": "2026-05-28T20:55:00Z"
+      "updated_at": "2026-05-29T17:26:00Z"
     }
   }
 }

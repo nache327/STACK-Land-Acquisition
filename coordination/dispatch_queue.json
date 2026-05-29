@@ -7,10 +7,10 @@
     {
       "rank": 1,
       "lane": "lane-e-matrix",
-      "action": "Matrix throughput restart: Middlesex County MA pattern batch 2. Author next pattern adjudication script targeting the remaining 172 unclear rows / 67,386 unclear-bound parcels using citations from additional Middlesex MA municipal codes (next municipalities after Lowell). Dry-run → prod apply via session-mode DB endpoint → coverage refresh.",
-      "wake_condition": "Immediate. Master Planning 2026-05-28 KPI-growth reset.",
+      "action": "Completed through prod apply/refresh and PR opening (#143): Middlesex County MA pattern batch 2 moved 25,706 parcels unclear→classified across 9 rows.",
+      "wake_condition": "PR #143 merge review for Lane E Middlesex MA batch 2.",
       "dependency_order": "Independent of Lane B Wake retry; can run in parallel.",
-      "expected_kpi": "largest available trustworthy_parcel_verdict_count delta; Middlesex MA likely remains partial after a single batch but moves the largest unclear-bound parcel pool"
+      "expected_kpi": "Applied delta: +25,706 trustworthy parcel verdicts; Middlesex MA remains partial with 163 unclear rows / 41,680 unclear-bound parcels."
     },
     {
       "rank": 2,
@@ -24,7 +24,7 @@
       "rank": 3,
       "lane": "lane-e-matrix",
       "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2. Extend the residential short-code pattern batch from the prior Norwood/Needham/Brookline pass to additional Norfolk municipalities; target the remaining 88 unclear rows / 14,638 unclear-bound parcels. Same dry-run → prod apply → refresh sequence.",
-      "wake_condition": "Lane E completes Middlesex MA batch 2 prod apply/refresh.",
+      "wake_condition": "Lane E completes Middlesex MA batch 2 PR #143 merge-hygiene step.",
       "dependency_order": "Sequential after rank 1 (same Lane E owner).",
       "expected_kpi": "additional trustworthy_parcel_verdict_count growth; possible Norfolk MA flip to operational if coverage threshold met"
     },
