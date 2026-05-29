@@ -10,7 +10,7 @@ POST /api/jurisdictions/_cleanup-empty          — admin: dedupe empty jurisdic
 import uuid
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
 
@@ -319,6 +319,126 @@ async def crosswalk_cities_into_county(
         return await crosswalk_county_from_cities(jurisdiction_id, db, seed_stubs=seed_stubs)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_precompute-ring-metrics",
+    status_code=202,
+)
+async def precompute_ring_metrics(
+    jurisdiction_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Pre-warm parcel_ring_metrics for every parcel in this jurisdiction.
+
+    Returns 202 + job_id immediately; runs in a BackgroundTask so the
+    HTTP request doesn't time out on county-sized jurisdictions
+    (SLCo: ~10 min to populate 1.6M cache rows). Poll
+    ``GET /jurisdictions/_precompute-ring-metrics-status/{job_id}`` for
+    progress, backed by Redis (survives Railway restarts, 24h TTL).
+
+    Mirrors the _score-all pattern in buybox.py. The pipeline's
+    post-ingest hook also enqueues this (via the Dramatiq actor in
+    job_queue.py) so a fresh county ingest auto-warms the cache
+    without an operator click; this endpoint is for manual re-warm or
+    initial bootstrap on existing jurisdictions.
+
+    Idempotent: the underlying UPSERT refreshes demographic columns
+    only, preserving any concurrent value-density write.
+    """
+    from datetime import datetime as _dt, timezone as _tz
+    from app.config import settings as _settings
+    from app.services.job_state_store import set_job_state
+
+    if not _settings.mapbox_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "MAPBOX_TOKEN not configured. Set it in the backend env to "
+                "enable server-side ring-metric precompute."
+            ),
+        )
+
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    job_id = str(uuid.uuid4())
+    state: dict = {
+        "job_id": job_id,
+        "kind": "ring_metrics_precompute",
+        "status": "queued",
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "started_at": _dt.now(_tz.utc).isoformat(),
+        "finished_at": None,
+        "tracts_computed": 0,
+        "tracts_total": None,
+        "parcels_written": 0,
+        "mapbox_calls": 0,
+        "error": None,
+    }
+    await set_job_state(job_id, state)
+
+    async def _bg() -> None:
+        import logging as _logging
+        _log = _logging.getLogger(__name__)
+        from app.db import async_session_maker
+        from app.services.job_state_store import set_job_state as _save
+        from app.services.ring_metrics_precompute import (
+            precompute_ring_metrics_for_jurisdiction,
+        )
+
+        state["status"] = "running"
+        await _save(job_id, state)
+
+        async def _on_progress(event: str, done: int, total: int) -> None:
+            state["tracts_computed"] = done
+            state["tracts_total"] = total
+            await _save(job_id, state)
+
+        try:
+            async with async_session_maker() as bg_db:
+                summary = await precompute_ring_metrics_for_jurisdiction(
+                    jurisdiction_id, bg_db, on_progress=_on_progress,
+                )
+            state["tracts_computed"] = summary["tracts_computed"]
+            state["tracts_total"] = summary["tracts_computed"]  # final total
+            state["parcels_written"] = summary["parcels_written"]
+            state["mapbox_calls"] = summary["mapbox_calls"]
+            state["elapsed_seconds"] = summary["elapsed_seconds"]
+            state["status"] = "completed"
+            _log.info(
+                "precompute-ring-metrics job=%s complete: jurisdiction=%s "
+                "tracts=%d parcels=%d elapsed=%.1fs",
+                job_id, j.name, summary["tracts_computed"],
+                summary["parcels_written"], summary["elapsed_seconds"],
+            )
+        except Exception as exc:  # noqa: BLE001
+            _log.exception("precompute-ring-metrics job=%s failed: %s", job_id, exc)
+            state["status"] = "failed"
+            state["error"] = str(exc)
+        finally:
+            state["finished_at"] = _dt.now(_tz.utc).isoformat()
+            await _save(job_id, state)
+
+    background_tasks.add_task(_bg)
+    return {"job_id": job_id, "status": "queued"}
+
+
+@router.get("/jurisdictions/_precompute-ring-metrics-status/{job_id}")
+async def precompute_ring_metrics_status(job_id: str) -> dict:
+    """Return the current state of an in-flight or completed precompute job.
+    404 when the job_id is unknown or its 24h TTL has expired."""
+    from app.services.job_state_store import get_job_state
+    state = await get_job_state(job_id)
+    if state is None:
+        raise HTTPException(
+            status_code=404,
+            detail="precompute job not found (may have expired)",
+        )
+    return state
 
 
 @router.post("/_admin/optimize-parcels")

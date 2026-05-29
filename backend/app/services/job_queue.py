@@ -74,3 +74,45 @@ def process_zoning_ingest(parcel_id: int) -> None:
 
 def enqueue_zoning_ingest(parcel_id: int) -> None:
     process_zoning_ingest.send(parcel_id)
+
+
+@dramatiq.actor(
+    # Tract-clustered precompute on a 1500-tract county is ~5-10 min;
+    # 30-min ceiling gives headroom for slow days and biggest counties.
+    max_retries=1,
+    min_backoff=30_000,
+    max_backoff=120_000,
+    time_limit=30 * 60 * 1000,
+)
+def process_ring_metrics_precompute(jurisdiction_id: str) -> None:
+    """Worker actor that fills parcel_ring_metrics for a jurisdiction.
+
+    Used by the pipeline's post-ingest hook so the dashboard's ring data is
+    ready before the operator opens the page. The admin endpoint runs the
+    same service directly via BackgroundTasks (so it can write Redis-backed
+    job state for polling); this actor is fire-and-forget."""
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+    from app.db import make_engine
+    from app.services.ring_metrics_precompute import (
+        precompute_ring_metrics_for_jurisdiction,
+    )
+
+    async def _run() -> None:
+        # Fresh engine per asyncio.run() — see process_zoning_ingest for the
+        # explanation of why the shared engine doesn't work from a Dramatiq
+        # worker thread.
+        engine = make_engine()
+        sessionmaker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        try:
+            async with sessionmaker() as db:
+                await precompute_ring_metrics_for_jurisdiction(
+                    uuid.UUID(jurisdiction_id), db,
+                )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_run())
+
+
+def enqueue_ring_metrics_precompute(jurisdiction_id: uuid.UUID) -> None:
+    process_ring_metrics_precompute.send(str(jurisdiction_id))
