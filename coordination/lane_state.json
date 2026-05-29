@@ -1,28 +1,33 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:32:23Z",
+  "updated_at": "2026-05-28T20:55:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
-    "origin_main_at_snapshot": "6eb9eaf"
+    "origin_main_at_snapshot": "9cd7034"
   },
+  "mode": "kpi_growth",
   "current_known_state": {
-    "lane_b": "paused_after_westchester_ready",
+    "mode": "kpi_growth_entered_2026_05_28",
+    "lane_b": "dispatched_wake_nc_retry",
+    "lane_e": "dispatched_middlesex_ma_batch_2_then_norfolk_ma_batch_2",
+    "lane_c": "asleep_until_new_parcel_geometry_or_route_need",
+    "lane_d": "opportunistic_railway_auth_or_new_stale_job",
     "pr_94_deploy_blocker": "cleared",
-    "pr_95": "next_merge_apply_item",
+    "pr_95": "merged_and_applied",
+    "pr_100_ma_highland_batch_1": "merged_and_applied",
+    "pr_139_c1_disposition": "merged_no_code",
     "railway_auth_blocker": "active",
-    "burlington": "structural_coverage_blocker",
+    "burlington": "deferred_pending_per_town_source_path",
     "nassau": "parked_b8_recurring_mapping_stale",
     "nassau_stale_job": "3b4582c5-e47e-4bc7-8d38-7853e0173a89_cancelled",
-    "b8": "reopened_recurring_large_county_mapping_stale_lock",
-    "b6": "fatal_terminal_cleared_by_westchester_ready",
-    "b7": "cleared_for_monomouth",
+    "b6": "fatal_terminal_cleared_warning_log_only",
+    "b7": "cleared",
+    "b8": "active_nassau_middlesex_fairfield_parked",
+    "c1": "no_code_parked_not_current_kpi_blocker",
     "monmouth": "validated_ready_no_retest",
     "westchester": "validated_ready_no_retest",
     "middlesex_fairfield": "parked_b8_family",
-    "lane_e": "paused",
-    "lane_c": "completed_bbox_noop",
-    "refresh_bbox_route": "no_code_parked_not_current_kpi_blocker",
     "run_overlays_warning": "recurring_operator_log_only"
   },
   "kpi_focus": [
@@ -36,10 +41,10 @@
     "master": {
       "branch": "main",
       "status": "running",
-      "task": "Maintain repo-shared orchestration state; Lane C bbox sweep completed with 0 updates and refresh-bbox route gap is queued for Lane A triage.",
+      "task": "KPI-growth mode entered 2026-05-28 after reliability triage exit (B6/B7 cleared, C1 no-code parked via PR #139). Sequencing: Lane E Middlesex MA batch 2 (rank 1) || Lane B Wake NC retry (rank 2) → Lane E Norfolk MA batch 2 (rank 3).",
       "blocked": false,
       "blocker": null,
-      "wake_condition": null,
+      "wake_condition": "Wake on terminal status of Lane E Middlesex MA batch 2, Lane B Wake NC retry, or any new fatal terminal class.",
       "latest_kpi_delta": {
         "honest_operational_jurisdictions": 45,
         "audit_operational_jurisdictions": 45,
@@ -47,9 +52,10 @@
         "avg_unclear_share_partials": "18.3%",
         "failed_jobs_14d": 42,
         "fake_operationals": 0,
-        "decision": "Lane C bbox sweep attempted all 7 bbox-null jurisdictions and updated 0 because parcel_count=0 and geom_count=0 for all targets; missing prod refresh-bbox route is a narrow operator/API gap for Lane A triage, not a spatial data blocker."
+        "kpi_growth_mode_entered_at": "2026-05-28T20:55:00Z",
+        "decision": "Reliability triage exited; sequencing pivots to KPI-growth. Lane E matrix throughput restart picks largest available unclear-bound parcel pool (Middlesex MA, 67,386 parcels). Lane B Wake NC runs in parallel as a non-B8 ingest probe."
       },
-      "updated_at": "2026-05-28T20:16:00Z"
+      "updated_at": "2026-05-28T20:55:00Z"
     },
     "lane-a-integrator": {
       "status": "completed",
@@ -70,20 +76,23 @@
     },
     "lane-b-retry-sweep": {
       "branch": null,
-      "status": "paused_after_westchester_ready",
-      "task": "Westchester County NY isolated B6 validation completed ready; no further retry authorized.",
+      "status": "dispatched_wake_nc_retry",
+      "task": "Master Planning 2026-05-28 KPI-growth dispatch: retry Wake County NC ingest against current deployed substrate. Wake's prior failure class (parcel-ingest at pipeline.py:1417/1401) is separate from B6/B7/B8 family — probe whether substrate matures past it.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake only if Master explicitly authorizes another retry wave.",
+      "wake_condition": "Run immediately. Report terminal status (ready / failed) with classified signature.",
       "latest_kpi_delta": {
-        "monmouth": "ready job a9515ff6; download_parcels 251486; ingest_parcels 251486; complete_feasibility completed",
-        "westchester": "ready job 9f8ecb57; download_parcels 258145; ingest_parcels 257914; dedupe_count 231; B6 fatal failure did not recur",
-        "next_retry": "none",
-        "nassau": "parked; do not retry until B8 mitigation or deliberate large-county scaling experiment",
-        "middlesex_fairfield": "parked under B8 large-county family",
-        "burlington_status": "ready parcels but Cat-B structural coverage blocker remains"
+        "monmouth": "ready job a9515ff6 (Cat-B coverage still 5.7%; flip requires per-town zoning source acquisition)",
+        "westchester": "ready job 9f8ecb57 (Cat-B coverage still 0%; flip requires per-town source acquisition)",
+        "current_dispatch": "Wake County NC retry only",
+        "parked_b8_family": [
+          "Nassau County, NY",
+          "Middlesex County, NJ",
+          "Fairfield County, CT"
+        ],
+        "burlington_pilot": "deferred pending Lane B per-town source path"
       },
-      "updated_at": "2026-05-28T19:43:45Z"
+      "updated_at": "2026-05-28T20:55:00Z"
     },
     "lane-c-spatial-cleanup": {
       "branch": null,
@@ -118,20 +127,21 @@
     },
     "lane-e-matrix": {
       "branch": "feat/matrix-norfolk-ma-pattern-batch",
-      "status": "paused_after_merge",
-      "task": "MA/Highland matrix batch commit hygiene complete: PR #100 merged; no new matrix scope started.",
+      "status": "dispatched_middlesex_ma_batch_2",
+      "task": "Master Planning 2026-05-28 KPI-growth dispatch rank 1: Middlesex County MA pattern batch 2. Author next pattern adjudication script targeting the 172 remaining unclear rows / 67,386 unclear-bound parcels using additional Middlesex MA municipal code citations (next municipalities after Lowell). Dry-run → prod apply via session-mode DB endpoint → coverage refresh. Sequential follow-on (rank 3): Norfolk County MA pattern batch 2 (88 unclear / 14,638 parcels).",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake only if review bandwidth explicitly requests next Matrix Operationalization Queue item after Lane B B7 validation state is clear.",
+      "wake_condition": "Run immediately on Middlesex MA batch 2. Report dry-run delta, prod apply outcome, and refresh result. Then continue to Norfolk MA batch 2.",
       "latest_kpi_delta": {
         "somerset_nj": "operational after 10,567 parcels unclear to classified",
         "loudoun_va_howard_md_cleanup": "applied; Loudoun remains partial by design, Howard remains operational",
-        "norfolk_ma": "PR #100 merged after prod apply/refresh; 16,489 parcels moved unclear to classified; remains partial",
-        "middlesex_ma": "PR #100 merged after prod apply/refresh; 18,401 parcels moved unclear to classified; remains partial",
-        "highland_ut": "PR #100 merged after prod apply/refresh; PD-1 reviewed and left unclear; 0 parcel delta",
-        "expected_trustworthy_parcel_verdict_delta": 34890
+        "norfolk_ma_batch_1": "PR #100 merged after prod apply/refresh; 16,489 parcels moved unclear to classified; remains partial with 88 unclear rows / 14,638 unclear-bound parcels",
+        "middlesex_ma_batch_1": "PR #100 merged after prod apply/refresh; 18,401 parcels moved unclear to classified; remains partial with 172 unclear rows / 67,386 unclear-bound parcels",
+        "highland_ut": "PR #100 merged after prod apply/refresh; PD-1 reviewed and left unclear; 0 parcel delta; no further path",
+        "current_dispatch_target": "Middlesex County MA pattern batch 2 (largest available unclear-bound parcel pool)",
+        "sequential_follow_on": "Norfolk County MA pattern batch 2"
       },
-      "updated_at": "2026-05-26T22:41:44Z"
+      "updated_at": "2026-05-28T20:55:00Z"
     }
   }
 }

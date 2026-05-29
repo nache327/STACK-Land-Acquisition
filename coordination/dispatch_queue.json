@@ -1,38 +1,39 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:32:23Z",
+  "updated_at": "2026-05-28T20:55:00Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
+  "mode": "kpi_growth",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "master",
-      "action": "Run Master Planning roadmap reset after Lane A no-code refresh-bbox route disposition.",
-      "wake_condition": "Immediate: C1 is no-code parked and Lane C bbox no-op is recorded.",
-      "dependency_order": "Choose next KPI-growth lane: Lane E matrix throughput, Lane B structural coverage, or deliberate B8 scaling experiment.",
-      "expected_kpi": "return from reliability triage to KPI growth sequencing"
+      "lane": "lane-e-matrix",
+      "action": "Matrix throughput restart: Middlesex County MA pattern batch 2. Author next pattern adjudication script targeting the remaining 172 unclear rows / 67,386 unclear-bound parcels using citations from additional Middlesex MA municipal codes (next municipalities after Lowell). Dry-run → prod apply via session-mode DB endpoint → coverage refresh.",
+      "wake_condition": "Immediate. Master Planning 2026-05-28 KPI-growth reset.",
+      "dependency_order": "Independent of Lane B Wake retry; can run in parallel.",
+      "expected_kpi": "largest available trustworthy_parcel_verdict_count delta; Middlesex MA likely remains partial after a single batch but moves the largest unclear-bound parcel pool"
     },
     {
       "rank": 2,
-      "lane": "lane-e-matrix",
-      "action": "No immediate matrix action: PR #95 and PR #100 are merged; keep paused until Master Planning explicitly restarts matrix throughput.",
-      "wake_condition": "Explicit matrix-throughput dispatch after Master Planning roadmap reset.",
-      "dependency_order": "Pause Lane E throughput; do not add scope beyond the merged MA/Highland batch.",
-      "expected_kpi": "commit hygiene complete for 34,890 applied trustworthy parcel verdicts"
+      "lane": "lane-b-retry-sweep",
+      "action": "Retry Wake County NC ingest against deployed substrate (current `/health.pipeline_version`). Wake historical failure class is parcel-ingest at `pipeline.py:1417/1401`, separate from B6/B7/B8 family. Probe whether substrate matures past the prior failure.",
+      "wake_condition": "Immediate. Master Planning 2026-05-28 KPI-growth reset.",
+      "dependency_order": "Independent of Lane E matrix; can run in parallel. Hot-file scope is ingest pipeline, not matrix scripts.",
+      "expected_kpi": "either failed_jobs_14d reduction + a Cat-B ingest success on Wake, or a classified terminal signature that hands Wake follow-up to Lane A"
     },
     {
       "rank": 3,
-      "lane": "lane-b-retry-sweep",
-      "action": "No immediate retry action after Westchester ready result.",
-      "wake_condition": "Explicit Master dispatch only.",
-      "dependency_order": "Sleep behind Master Planning; Nassau/Middlesex/Fairfield remain parked under B8.",
-      "expected_kpi": "none until next retry wave is explicitly authorized"
+      "lane": "lane-e-matrix",
+      "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2. Extend the residential short-code pattern batch from the prior Norwood/Needham/Brookline pass to additional Norfolk municipalities; target the remaining 88 unclear rows / 14,638 unclear-bound parcels. Same dry-run → prod apply → refresh sequence.",
+      "wake_condition": "Lane E completes Middlesex MA batch 2 prod apply/refresh.",
+      "dependency_order": "Sequential after rank 1 (same Lane E owner).",
+      "expected_kpi": "additional trustworthy_parcel_verdict_count growth; possible Norfolk MA flip to operational if coverage threshold met"
     },
     {
       "rank": 4,
       "lane": "lane-d-watchdog",
-      "action": "Verify Railway cron logs for PR #97 watchdog.",
-      "wake_condition": "Railway CLI auth is refreshed or alternate cron-log access is available.",
-      "dependency_order": "External auth unblock required.",
+      "action": "Opportunistic: verify Railway cron logs for PR #97 watchdog when auth is available.",
+      "wake_condition": "Railway CLI auth refreshed or alternate cron-log source provided.",
+      "dependency_order": "External auth unblock required; non-gating for KPI-growth mode.",
       "expected_kpi": "operator workflow confidence for stuck-job prevention"
     }
   ],
@@ -104,7 +105,30 @@
       "wake_lanes": [
         "master"
       ],
-      "action": "Completed: Lane A classified refresh-bbox route as no-code parked; Master Planning resumes roadmap sequencing."
+      "action": "Completed: Lane A classified refresh-bbox route as no-code parked; Master Planning 2026-05-28 reset entered kpi_growth mode."
+    },
+    {
+      "condition": "Lane E Middlesex MA batch 2 prod apply + refresh complete",
+      "wake_lanes": [
+        "lane-e-matrix",
+        "master"
+      ],
+      "action": "Dispatch Lane E rank 3 (Norfolk MA pattern batch 2). Master refreshes KPI delta in section 1 from sourced apply/refresh evidence."
+    },
+    {
+      "condition": "Lane B Wake County NC retry reaches a terminal status",
+      "wake_lanes": [
+        "lane-a-integrator",
+        "master"
+      ],
+      "action": "If ready: refresh failed-job KPI and reclassify Wake under Cat-A or Cat-B based on zoning coverage. If failed: Lane A classifies terminal signature; Wake further work gated on that triage."
+    },
+    {
+      "condition": "Lane E Norfolk MA batch 2 prod apply + refresh complete",
+      "wake_lanes": [
+        "master"
+      ],
+      "action": "Refresh KPI snapshot. If Norfolk flipped to operational, log in section 10/11 and reconcile with section 16 May-31 checklist."
     },
     {
       "condition": "Westchester County NY fails with a new or recurring reliability class",
@@ -140,13 +164,14 @@
     }
   ],
   "duplicate_work_guards": [
-    "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into the B7 bootstrap containment PR.",
+    "Mode: kpi_growth. Reliability triage exited 2026-05-28 after B6/B7 cleared and C1 no-code parked.",
+    "Lane E and Lane B (Wake NC retry) can run in parallel — separate hot-file scopes (matrix scripts vs ingest pipeline).",
+    "Do not dispatch Nassau / Middlesex NJ / Fairfield CT until B8 has code-level mitigation or Master explicitly authorizes a large-county scaling experiment.",
     "Do not dispatch another Monmouth retry; job a9515ff6 reached ready and needs no retest.",
     "Do not dispatch another Westchester retry; job 9f8ecb57 reached ready and fatal B6 did not recur.",
-    "Do not dispatch Nassau until B8 has code-level mitigation or Master deliberately authorizes a large-county scaling experiment.",
-    "Do not dispatch new ingest retries until Master Planning reset selects the next KPI lane.",
-    "Do not dispatch Middlesex or Fairfield while B8 remains parked.",
-    "Do not start a second Monmouth retry unless Master explicitly authorizes it from terminal evidence.",
+    "Do not restart Burlington per-town pilot until Lane B reports a clear per-town source path; structural Cat-B work is deferred.",
+    "Do not wake Lane C unless new parcel geometry or operator-route need appears.",
+    "Do not bundle B6 post-overlay commit failure or B8 mapping plateau into any new PR; both are closed-out classes.",
     "Do not open another overlay-fatal pipeline PR until Lane B retries validate or disprove PR #94 in production.",
     "Do not start another Loudoun or Howard cleanup branch while PR #95 remains open.",
     "Do not treat Burlington County as a matrix problem; it is tracked as Cat-B structural coverage.",
