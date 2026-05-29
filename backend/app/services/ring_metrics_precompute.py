@@ -253,17 +253,20 @@ async def _load_acs_for_counties(
     with no demographics, contributing zeros to ring aggregates.
     """
     out: dict[str, TractData] = {}
-    # Reuse the proxy's underlying fetcher so we benefit from its retry +
-    # in-memory caching across runs in the same process.
-    from app.api.census_proxy import acs5_tract  # local import to avoid circular
+    # Call the lower-level fetcher directly. Calling the route function
+    # acs5_tract(...) from Python doesn't materialize FastAPI Query()
+    # defaults — `vintage` arrives as a FieldInfo object, the URL ends up
+    # malformed, and Census returns 404. Going one layer deeper avoids
+    # the dependency-injection plumbing entirely.
+    from app.api.census_proxy import _fetch_acs  # local import to avoid circular
     from fastapi import HTTPException  # noqa: E402
+
+    variables = "B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E"
+    vintage = "2022"
 
     for state, county in sorted(state_county_pairs):
         try:
-            rows = await acs5_tract(
-                state=state, county=county,
-                variables="B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E",
-            )
+            rows = await _fetch_acs(vintage, state, county, variables)
         except HTTPException as exc:
             logger.warning(
                 "Precompute: ACS fetch failed for state=%s county=%s "
