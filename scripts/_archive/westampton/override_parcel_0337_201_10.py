@@ -1,4 +1,6 @@
-"""One-shot manual override: parcel 0337_201_10 (Rancocas Bypass,
+"""ARCHIVED 2026-05-29 — see scripts/_archive/westampton/README.md.
+
+One-shot manual override: parcel 0337_201_10 (Rancocas Bypass,
 Westampton, NJ) — unblock deal evaluation by setting zoning_code='B-1'
 and city='Westampton township' so the Burlington-jurisdiction matrix
 row (municipality='Westampton township', zone_code='B-1',
@@ -17,8 +19,23 @@ prefers explicit zoning_code over the MOD-IV fallback).
 
 Idempotent: WHERE clause is parcel-specific. Re-run is a no-op once
 the row has the target values.
+
+Of the two columns this script wrote, parcels.city is now also
+produced systemically by the _backfill-nj-parcel-city admin job
+(TIGER MCD spatial join → 'Westampton township' for the same row).
+parcels.zoning_code = 'B-1' is NOT reproducible by any current
+automation — Westampton's zoning is PDF-only — which is why this file
+is preserved as a replay artifact rather than deleted. If the DB is
+ever rebuilt from scratch, delete the `raise SystemExit` below and
+re-run.
 """
-import asyncio, asyncpg, sys
+raise SystemExit(
+    "Archived — see scripts/_archive/westampton/README.md. "
+    "Remove this guard only if you've read the README and confirmed "
+    "a replay is what you actually want."
+)
+
+import asyncio, asyncpg, sys  # noqa: E402,F401
 
 DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
 APN = "0337_201_10"

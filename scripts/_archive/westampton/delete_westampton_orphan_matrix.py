@@ -1,4 +1,7 @@
-"""Soft-delete the 16 Westampton matrix rows from the orphan jurisdiction
+"""ARCHIVED 2026-05-29 — one-shot cleanup, already applied.
+See scripts/_archive/westampton/README.md.
+
+Soft-delete the 16 Westampton matrix rows from the orphan jurisdiction
 (fd74c349-1f6d-4941-9ce6-8b2002102303). They were applied here by
 apply_westampton_zoning.py (v1) before we realised the real Westampton
 parcels live inside Burlington County (d316fb43...). v2 re-applied
@@ -8,11 +11,18 @@ township'; the v1 rows are now harmless dead weight.
 DELETE here is the soft-delete tombstone path (deleted_at = now())
 so matrix_bootstrap can't auto-resurrect the rows. Per the v1 script
 we have 16 rows: R-1..R-9 + B-1 + C + MCD + OR-1 + OR-2 + OR-3 + I.
-"""
-import sys
-from urllib.parse import quote
 
-import requests
+The tombstones are durable; this script is not meant to be re-run.
+"""
+raise SystemExit(
+    "Archived — one-shot cleanup already applied. "
+    "See scripts/_archive/westampton/README.md."
+)
+
+import sys  # noqa: E402
+from urllib.parse import quote  # noqa: E402
+
+import requests  # noqa: E402
 
 BASE = "https://capable-serenity-production-0d1a.up.railway.app/api"
 ORPHAN_ID = "fd74c349-1f6d-4941-9ce6-8b2002102303"
