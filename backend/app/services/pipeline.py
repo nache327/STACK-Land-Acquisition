@@ -636,7 +636,21 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         parcel_endpoint=f"{_UGRC}/Parcels_SaltLake/FeatureServer/0",
         where_clause=None,
     ),
-    # ── Utah County (Parcels_Utah) ────────────────────────────────────────────
+    # ── Utah County as ONE jurisdiction (county-wide pull, like Salt Lake) ───
+    # Brings every Utah County parcel under a single jurisdiction with
+    # parcels.city populated per row from PARCEL_CITY. The 14 per-city
+    # Utah County jurisdictions below act as crosswalk siblings for
+    # zoning, so a fresh ingest auto-routes each parcel to its city's
+    # zone matrix via the same pattern that worked for Salt Lake County.
+    "utah county": JurisdictionConfig(
+        name="Utah County, UT",
+        state="UT",
+        county="Utah",
+        parcel_source=ParcelSource.county_gis,
+        parcel_endpoint=f"{_UGRC}/Parcels_Utah/FeatureServer/0",
+        where_clause=None,
+    ),
+    # ── Utah County (Parcels_Utah) — per-city sibling jurisdictions ──────────
     "provo":         _ugrc("Parcels_Utah", "Provo",         "Provo, UT",         "Utah"),
     "orem":          _ugrc("Parcels_Utah", "Orem",          "Orem, UT",          "Utah"),
     "lehi": JurisdictionConfig(

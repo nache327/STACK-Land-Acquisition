@@ -24,6 +24,8 @@ from app.services.job_tracking import (
     now_utc,
 )
 
+from app.services.jurisdiction_match import strip_state_suffix_lower
+
 router = APIRouter(tags=["jobs"])
 
 
@@ -34,10 +36,20 @@ async def create_job(
 ) -> Job:
     # If the jurisdiction name matches an already-indexed city, return the most
     # recent ready job for it rather than re-running the full pipeline.
-    name_query = payload.jurisdiction.strip().split(",")[0].strip().lower()
+    #
+    # Match is state-suffix-aware on both sides: a user typing "Salt Lake
+    # County, UT" must hit a Jurisdiction.name of "Salt Lake County, UT" or
+    # the bare "Salt Lake County" (we store the former, but old data + some
+    # discovery paths may produce either). Previous version split on comma
+    # and dropped the suffix from the input ONLY — so "salt lake county"
+    # compared against LOWER(name)="salt lake county, ut" never matched
+    # and every repeat search spawned a brand-new ingest of an
+    # already-cached jurisdiction. Now we strip ", XX" from both sides
+    # before comparing.
+    name_query = strip_state_suffix_lower(payload.jurisdiction)
     existing_jur = await db.execute(
         select(Jurisdiction).where(
-            text("LOWER(name) = :n")
+            text("LOWER(regexp_replace(name, ',\\s*[A-Za-z]{2}$', '')) = :n")
         ).params(n=name_query)
     )
     jurisdiction = existing_jur.scalar_one_or_none()
