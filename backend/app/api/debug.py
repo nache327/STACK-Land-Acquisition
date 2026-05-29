@@ -21,53 +21,6 @@ from app.version import get_pipeline_version
 router = APIRouter(prefix="/debug", tags=["debug"])
 
 
-@router.get("/ring_precompute_inspect")
-async def debug_ring_precompute_inspect(
-    state: str = Query(..., min_length=2, max_length=2),
-    county: str = Query(..., min_length=3, max_length=3),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    """Compare census_tracts geoids vs ACS response geoids for a (state, county).
-
-    If most precompute rings come back with zero population, the most
-    likely cause is a geoid format mismatch between the DB and the ACS
-    proxy response. This dumps both sets so we can see at a glance.
-    """
-    db_rows = (await db.execute(text(
-        "SELECT geoid FROM census_tracts WHERE state_fips=:s AND county_fips=:c ORDER BY geoid"
-    ).bindparams(s=state, c=county))).all()
-    db_geoids = [r.geoid for r in db_rows]
-
-    from app.api.census_proxy import acs5_tract
-    acs_rows = await acs5_tract(
-        state=state, county=county,
-        variables="B01003_001E,B11001_001E",
-    )
-    headers = acs_rows[0] if acs_rows else []
-    try:
-        i_st = headers.index("state")
-        i_co = headers.index("county")
-        i_tr = headers.index("tract")
-    except ValueError:
-        i_st = i_co = i_tr = -1
-    acs_geoids = []
-    if i_st >= 0:
-        for r in acs_rows[1:]:
-            acs_geoids.append(f"{r[i_st]}{r[i_co]}{r[i_tr]}")
-
-    db_set = set(db_geoids)
-    acs_set = set(acs_geoids)
-    return {
-        "db_count": len(db_geoids),
-        "acs_count": len(acs_geoids),
-        "in_both": len(db_set & acs_set),
-        "in_db_only": sorted(db_set - acs_set)[:10],
-        "in_acs_only": sorted(acs_set - db_set)[:10],
-        "sample_db": db_geoids[:5],
-        "sample_acs": acs_geoids[:5],
-    }
-
-
 @router.get("/env")
 async def debug_env() -> dict:
     return {
