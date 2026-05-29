@@ -29,6 +29,7 @@ import {
   evaluateAll,
   isFilterActive,
   isHomeDensityActive,
+  needsRingMetrics,
   type BuyBoxFilter,
   type EvaluationStatus,
 } from "@/lib/buy-box-filter";
@@ -531,7 +532,15 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       // server had nothing either. Drop the meta and run fresh.
       if (saved === 0 && meta !== null) {
         try { localStorage.removeItem(`parcellogic_precompute_meta_v7_${jurisdictionId}`); } catch { /* ignore */ }
-        startPrecompute(jurisdictionId);
+        if (needsRingMetrics(buyBoxFilter)) {
+          startPrecompute(jurisdictionId);
+        } else {
+          // No ring-needing filter is active — skip the precompute
+          // entirely. The wakeup effect below picks it up the moment a
+          // user turns one on. Saves a multi-minute Mapbox+Census run
+          // on county-sized jurisdictions (SLCo: 397k parcels).
+          setPrecomputeStatus({ progress: 0, total: 0, complete: true });
+        }
         return;
       }
 
@@ -562,9 +571,21 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           complete: false,
           lastComputed: meta?.lastComputed,
         });
-        startPrecompute(jurisdictionId, merged);
+        if (needsRingMetrics(buyBoxFilter)) {
+          startPrecompute(jurisdictionId, merged);
+        } else {
+          // Partial cache exists but no ring-needing filter is on — leave the
+          // partial in place (so any drawer interaction can use what we have)
+          // and skip the heavy resume pass until the user actually needs more.
+          setPrecomputeData(merged);
+          setPrecomputeStatus({ progress: saved, total: saved, complete: true });
+        }
       } else {
-        startPrecompute(jurisdictionId);
+        if (needsRingMetrics(buyBoxFilter)) {
+          startPrecompute(jurisdictionId);
+        } else {
+          setPrecomputeStatus({ progress: 0, total: 0, complete: true });
+        }
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -737,6 +758,36 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     buyBoxFilter.minHomesOver2M,
     buyBoxFilter.minHomesOver5M,
     buyBoxFilter.driveTimeMinutes,
+  ]);
+
+  // Generalized version of the wealth-density wakeup: when a user
+  // turns ON any ring-needing slider (population/HHI/home value/HNW/
+  // AADT/wealth-density) and the dashboard skipped the initial
+  // precompute, kick it off now. Without this, the user sets a
+  // population threshold and sees zero matches because precomputeData
+  // is empty — the bar would never appear because skipping marked
+  // status complete:true. precomputeData.size===0 distinguishes "we
+  // skipped" from "we already finished a real run."
+  const ringFilterActiveRef = useRef(false);
+  useEffect(() => {
+    const ringActive = needsRingMetrics(buyBoxFilter);
+    const wasActive = ringFilterActiveRef.current;
+    ringFilterActiveRef.current = ringActive;
+    if (!ringActive || wasActive) return;
+    if (!jurisdictionId) return;
+    if (precomputeData.size > 0) return;
+    console.log("[precompute] ring-needing filter enabled — kicking off precompute");
+    startPrecompute(jurisdictionId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    buyBoxFilter.minPopulation,
+    buyBoxFilter.minMedianHHI,
+    buyBoxFilter.minMedianHomeValue,
+    buyBoxFilter.minHnwHouseholds,
+    buyBoxFilter.minAADT,
+    buyBoxFilter.minHomesOver1M,
+    buyBoxFilter.minHomesOver2M,
+    buyBoxFilter.minHomesOver5M,
   ]);
 
   // ─── Shortlist save ─────────────────────────────────────────────────────
