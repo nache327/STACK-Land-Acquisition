@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:55:00Z",
+  "updated_at": "2026-05-29T17:13:03Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-26 post PR #98, backend/tmp/audit_post_truthfulness.json",
@@ -111,8 +111,8 @@
     },
     "lane-d-watchdog": {
       "branch": null,
-      "status": "completed_operator_verification",
-      "task": "Verified Monmouth job a9515ff6-41e3-4440-9609-8fef93e75a82 is terminal ready and queues are empty; Salt Lake job 896e2dde-01cf-4338-8db0-befec01f82cb is also ready/not stale. No retry or cleanup started.",
+      "status": "completed_pre_wake_queue_check",
+      "task": "Verified clean active/stale queues before Lane B Wake County NC retry. No retry or cleanup started.",
       "blocked": false,
       "blocker": null,
       "wake_condition": "Immediate for queue/log verification; otherwise wake only if another active/stale job needs cleanup or Railway cron-log access is restored.",
@@ -121,9 +121,10 @@
         "nassau_3b4582c5": "cancelled at 2026-05-28T17:38:22.115015Z; final active_only=0; final stale_only=0; Monmouth released by Master Planning decision",
         "monmouth_a9515ff6": "ready; finished_at=2026-05-28T18:09:21.737917Z; locked_at=null; active_only=0; stale_only=0; run_overlays warning captured from job step error",
         "salt_lake_896e2dde": "ready; finished_at=2026-05-28T18:15:43.112952Z; locked_at=null; not active/stale and not blocking Monmouth/B6 sequencing",
-        "queue_state": "GET /api/admin/jobs?active_only=true&limit=500 returned count=0; GET /api/admin/jobs?stale_only=true&limit=500 returned count=0 at operator check"
+        "pre_wake_queue_check": "2026-05-29T17:13:03Z: GET /api/admin/jobs?active_only=true&limit=500 returned count=0 ids=[]; GET /api/admin/jobs?stale_only=true&limit=500 returned count=0 ids=[]; Lane B Wake retry can start",
+        "railway_auth": "still blocked locally: railway logs --lines 1 returns invalid_grant and no linked project"
       },
-      "updated_at": "2026-05-28T19:07:56Z"
+      "updated_at": "2026-05-29T17:13:03Z"
     },
     "lane-e-matrix": {
       "branch": "feat/matrix-norfolk-ma-pattern-batch",

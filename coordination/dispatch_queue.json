@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:55:00Z",
+  "updated_at": "2026-05-29T17:13:03Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "mode": "kpi_growth",
   "recommended_next_actions": [
@@ -16,7 +16,7 @@
       "rank": 2,
       "lane": "lane-b-retry-sweep",
       "action": "Retry Wake County NC ingest against deployed substrate (current `/health.pipeline_version`). Wake historical failure class is parcel-ingest at `pipeline.py:1417/1401`, separate from B6/B7/B8 family. Probe whether substrate matures past the prior failure.",
-      "wake_condition": "Immediate. Master Planning 2026-05-28 KPI-growth reset.",
+      "wake_condition": "Immediate. Master Planning 2026-05-28 KPI-growth reset; Lane D pre-Wake queue check at 2026-05-29T17:13:03Z returned active_only=0 and stale_only=0.",
       "dependency_order": "Independent of Lane E matrix; can run in parallel. Hot-file scope is ingest pipeline, not matrix scripts.",
       "expected_kpi": "either failed_jobs_14d reduction + a Cat-B ingest success on Wake, or a classified terminal signature that hands Wake follow-up to Lane A"
     },

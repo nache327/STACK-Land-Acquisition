@@ -209,7 +209,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | A — Integrator | classified missing prod refresh-bbox operator route; no-code parked | none | B8 reopened with Nassau parked; B7/B6 cleared; C1 not blocking | 2026-05-28 20:32 UTC (route gap no-code disposition) |
 | B — Discovery + Coverage | paused after Westchester ready validation; Burlington per-town pilot remains separate | — | Nassau/Middlesex/Fairfield parked under B8; no Monmouth/Westchester retest | 2026-05-28 19:43 UTC (Westchester ready) |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
-| D — Operator + Workflow | Monmouth/Salt Lake operator queue verification | — | none for Monmouth/Salt Lake cleanup; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-28 19:07 UTC (Monmouth `a9515ff6` ready; Salt Lake `896e2dde` ready; final `active_only=0`, `stale_only=0`) |
+| D — Operator + Workflow | pre-Wake clean queue check | — | none for Wake dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-29 17:13 UTC (`active_only=0`, `stale_only=0`; Lane B Wake can start) |
 | E — Matrix Intelligence | MA/Highland matrix batch commit hygiene complete; PR #100 merged; no new matrix scope started | PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-26 22:41 UTC |
 
 ---
@@ -294,6 +294,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ## 15. Daily Changelog
 
 **Owner:** any lane appends (reverse chronological).
+
+### 2026-05-29
+
+- **VERIFY** clean queue state before Lane B Wake County NC retry. Lane D. No retry or cleanup was started. `GET /api/admin/jobs?stale_only=true&limit=500` returned `count=0`, `ids=[]`; `GET /api/admin/jobs?active_only=true&limit=500` returned `count=0`, `ids=[]` at `2026-05-29T17:13:03Z`. No stale or active job blocks Wake dispatch, so Lane B can start the Wake County NC retry. Railway log access remains blocked locally: `railway logs --lines 1` returns `invalid_grant` and `No linked project found`.
 
 ### 2026-05-28
 
