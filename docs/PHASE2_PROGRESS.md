@@ -1,6 +1,6 @@
 # Phase 2 Progress — STACK Land Acquisition
 
-**Last audit refresh:** 2026-05-26 (post PR #98, verified via `backend/tmp/audit_post_truthfulness.json`)
+**Last audit refresh:** 2026-05-29 (post PR #143, verified via `backend/tmp/audit_post_middlesex_ma_batch2.json`)
 **Phase 2 sprint:** 1 of 6 (each sprint = 14 days; sprint window 2026-05-22 → 2026-06-05)
 **Plan reference:** `/Users/arench/.claude/plans/virtual-herding-iverson.md`
 
@@ -22,20 +22,20 @@ Operational coordination has moved from workspace-local `.context/*.json` files 
 ## 1. Current KPI Snapshot
 
 **Owner:** master thread (refresh after every audit)
-**Source:** `backend/tmp/audit_post_truthfulness.json` (2026-05-26 18:45 UTC, post-PR-#98 verification by Lane A)
+**Source:** `backend/tmp/audit_post_middlesex_ma_batch2.json` (2026-05-29 post-PR-#143 Lane A audit refresh: last complete full audit plus live recompute of Middlesex County, MA using `audit_zoning_coverage` readiness logic; canonical full CLI attempt did not return from live DB)
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **45** | audit_post_truthfulness.json `.summary.operational_count` | -4 vs same-audit old readiness logic (49) |
-| 1 #1 | Audit-operational jurisdictions | **45** | audit_post_truthfulness.json `.summary.operational_count` | -3 vs 2026-05-21 audit baseline (48) |
-| 1 #2 | Trustworthy parcel verdict count | **3,292,352** | audit_post_truthfulness.json operational classified parcel sum | now exact |
-| 1 #3 | Avg unclear share (partials) | **18.3%** | audit_post_truthfulness.json weighted partial unclear/matrix parcel share (`141,459 / 773,627`) | +0.3pp vs prior rounded estimate |
-| 1 #4 | Fake-operationals | **0** | audit_post_truthfulness.json query: operational + zoning-code coverage `<70` | -4 |
+| 1 #1 | Honest operational jurisdictions | **45** | audit_post_middlesex_ma_batch2.json `.summary.operational_count` | unchanged vs post-PR-#98 |
+| 1 #1 | Audit-operational jurisdictions | **45** | audit_post_middlesex_ma_batch2.json `.summary.operational_count` | -3 vs 2026-05-21 audit baseline (48) |
+| 1 #2 | Trustworthy parcel verdict count | **3,292,352** | audit_post_middlesex_ma_batch2.json operational classified parcel sum | unchanged; Middlesex MA remains partial |
+| 1 #3 | Avg unclear share (partials) | **12.6%** | audit_post_middlesex_ma_batch2.json weighted partial unclear/matrix parcel share (`97,352 / 773,627`) | -5.7pp vs post-PR-#98 |
+| 1 #4 | Fake-operationals | **0** | audit_post_middlesex_ma_batch2.json query: operational + zoning-code coverage `<70` | unchanged |
 | 2 #5 | Failed jobs / 14d | **42** | live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-12 | -5 vs prior 47 |
 | 2 #5 | Stuck jobs (>10min, non-terminal) | **0** | live `/api/admin/jobs?stale_only=true&limit=500` | unchanged |
 | 2 #6 | Snapshot table latest capture | 2026-05-19 21:56 UTC | live `coverage_snapshots` max `captured_at` | stale |
 | 2 #7 | Ingest success last 14d | **91 ready / 42 failed / 5 cancelled** | live jobs endpoints, filtered since 2026-05-12 | refreshed window |
-| 2 #8 | Jurisdictions with `bbox IS NULL` | **7** | audit_post_truthfulness.json `has_bbox=false` | unchanged |
+| 2 #8 | Jurisdictions with `bbox IS NULL` | **7** | audit_post_middlesex_ma_batch2.json `has_bbox=false` | unchanged |
 
 ---
 
@@ -44,13 +44,13 @@ Operational coordination has moved from workspace-local `.context/*.json` files 
 **Owner:** master thread
 **Definition:** `operational_readiness = "operational"` AND `parcel_zoning_code_coverage_pct ≥ 70` AND no fake-op flags.
 
-**Current value:** **45** (verified post-truthfulness merge)
-**Audit-operational value:** **45** (post-PR-#98; truthfulness rule is now part of audit readiness)
+**Current value:** **45** (verified post-PR-#143 audit refresh)
+**Audit-operational value:** **45** (truthfulness rule is part of audit readiness)
 
 **Phase-1 close delta:** -3 vs 2026-05-21 audit baseline (48); -4 vs same-audit old readiness logic (49).
-**Confidence:** verified by `backend/tmp/audit_post_truthfulness.json` generated after PR #98 merged.
+**Confidence:** verified by `backend/tmp/audit_post_middlesex_ma_batch2.json` generated after PR #143 merged.
 
-Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="operational") | select(.parcel_zoning_code_coverage_pct < 70) | .name]' backend/tmp/audit_post_truthfulness.json` returns `[]`.
+Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="operational") | select(.parcel_zoning_code_coverage_pct < 70) | .name]' backend/tmp/audit_post_middlesex_ma_batch2.json` returns `[]`.
 
 ---
 
@@ -59,7 +59,7 @@ Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="
 **Owner:** master thread
 **Current value:** **45**
 
-Source: `backend/tmp/audit_post_truthfulness.json` summary block, 2026-05-26 18:45 UTC.
+Source: `backend/tmp/audit_post_middlesex_ma_batch2.json` summary block, 2026-05-29 post-PR-#143 Lane A audit refresh.
 
 **Fake-operational check:** none remain after PR #98.
 
@@ -77,7 +77,7 @@ Source: `backend/tmp/audit_post_truthfulness.json` summary block, 2026-05-26 18:
 ## 4. Partial Jurisdictions
 
 **Owner:** master thread
-**Count:** **29** (per `backend/tmp/audit_post_truthfulness.json`)
+**Count:** **29** (per `backend/tmp/audit_post_middlesex_ma_batch2.json`)
 
 **Category split (Plan §"Major Strategic Realization"):**
 
@@ -89,7 +89,7 @@ Parcels exist, zoning binds, matrix exists, semantics incomplete.
 |---|---:|---:|---:|---:|---|
 | Somerset County, NJ | 117,387 | 100.0 | 296 | 79 | Lane E PR pending merge (Task #14) |
 | Norfolk County, MA | 206,365 | 74.9 | 312 | ~100 | not started |
-| Middlesex County, MA | 423,634 | 92.3 | 633 | ~181 | not started |
+| Middlesex County, MA | 423,634 | 92.3 | 633 | 163 | batch 2 applied; remains partial |
 | Highland, UT | 7,292 | 99.8 | 24 | 4 | not started |
 | Morris County, NJ | 177,532 | 0.0 | 30 | 6 | matrix done; Cat-B blocker dominates |
 | Hunterdon County, NJ | 52,902 | 0.0 | 14 | 0 | matrix done; Cat-B blocker dominates |
@@ -207,7 +207,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | classified missing prod refresh-bbox operator route; no-code parked | none | B8 reopened with Nassau parked; B7/B6 cleared; C1 not blocking | 2026-05-28 20:32 UTC (route gap no-code disposition) |
+| A — Integrator | refreshed post-Middlesex MA batch 2 KPI audit snapshot | none | B8 reopened with Nassau parked; B7/B6 cleared; C1 not blocking | 2026-05-29 post-PR-#143 audit refresh |
 | B — Discovery + Coverage | paused after Westchester ready validation; Burlington per-town pilot remains separate | — | Nassau/Middlesex/Fairfield parked under B8; no Monmouth/Westchester retest | 2026-05-28 19:43 UTC (Westchester ready) |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
 | D — Operator + Workflow | pre-Wake clean queue check | — | none for Wake dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-29 17:13 UTC (`active_only=0`, `stale_only=0`; Lane B Wake can start) |
@@ -254,6 +254,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #97 | feat(ops): queued-job watchdog cron | D | **MERGED** (`2e8d9e0`) 2026-05-26 | done |
 | #98 | fix(audit): require 70% parcel zoning coverage for operational | A | **MERGED** (`a29b86e`) 2026-05-26 | done; post-merge audit refreshed |
 | #100 | feat(matrix): apply MA pattern batches and Highland review | E | **MERGED** (`6eb9eaf`) 2026-05-26 | done; CI passed; prod apply/refresh already completed |
+| #143 | feat(matrix): apply Middlesex MA batch 2 | E | **MERGED** (`2cdd874`) 2026-05-29 | done; post-merge audit snapshot refreshed by Lane A |
 
 ---
 
@@ -298,6 +299,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-05-29
 
+- **AUDIT** `backend/tmp/audit_post_middlesex_ma_batch2.json` refreshed after PR #143. Lane A. Canonical `cd backend && .venv/bin/python scripts/audit_zoning_coverage.py --json > tmp/audit_post_middlesex_ma_batch2.json` was started but did not return from the live DB; final artifact uses the last complete full audit plus a live recompute of Middlesex County MA with the same `audit_zoning_coverage` readiness logic because PR #143 only changed Middlesex MA. Verified 45 operational / 29 partial / 7 not_loaded / 81 total; operational trustworthy parcel verdict count remains 3,292,352 because Middlesex remains partial. Partial unclear share improved to 12.6% (`97,352 / 773,627`) from 18.3%; fake-operationals remain 0 and bbox-null remains 7. Middlesex MA current row: 163 unclear rows, 41,680 unclear-bound parcels, 89.3% classified parcel coverage. Lane E batch 2 confirmed movement remains 25,706 parcels unclear→classified.
 - **MERGE+VERIFY** PR #143 `feat(matrix): apply Middlesex MA batch 2` merged as `2cdd8742004daa59204a611fcd61a27236e5508c`. Lane E. Scope was one matrix script plus coordination/docs updates; GitHub Backend Tests and Frontend Tests passed, Supabase Preview skipped. Confirmed KPI delta remains 25,706 parcels unclear→classified; post-refresh audit remains partial with 163 unclear rows, 41,680 unclear-bound parcels, and 89.3% classified parcel coverage. Lane E pauses; Norfolk County MA batch 2 remains queued, not started.
 - **APPLY+REFRESH** Middlesex County MA pattern batch 2. Lane E. `pattern_middlesex_ma_batch2_adjudication.py` dry-ran and applied 9 ordinance-cited rows (`NR`, `UR`, `URA`, `URB`, `URC`, `URD`, `S15`, `S20`, `S40`) using Somerville, Melrose, and Reading sources. Parcel delta: 25,706 unclear→classified. Audit after refresh: partial, 163 remaining unclear rows, 41,680 unclear-bound parcels, 89.3% classified parcel coverage. PR #143 was opened for merge hygiene. Exact next Lane E recommendation after PR review: Norfolk County MA pattern batch 2.
 - **VERIFY** clean queue state before Lane B Wake County NC retry. Lane D. No retry or cleanup was started. `GET /api/admin/jobs?stale_only=true&limit=500` returned `count=0`, `ids=[]`; `GET /api/admin/jobs?active_only=true&limit=500` returned `count=0`, `ids=[]` at `2026-05-29T17:13:03Z`. No stale or active job blocks Wake dispatch, so Lane B can start the Wake County NC retry. Railway log access remains blocked locally: `railway logs --lines 1` returns `invalid_grant` and `No linked project found`.
