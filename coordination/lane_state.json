@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-31T00:24:52Z",
+  "updated_at": "2026-05-31T00:40:25Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-29 post PR #143, backend/tmp/audit_post_middlesex_ma_batch2.json",
@@ -122,8 +122,8 @@
     },
     "lane-d-watchdog": {
       "branch": null,
-      "status": "completed_pre_wake_queue_check",
-      "task": "Verified clean active/stale queues before Lane B Wake County NC retry. No retry or cleanup started.",
+      "status": "completed_pre_marlboro_queue_check",
+      "task": "Verified clean active/stale queues before any Marlboro NJ probe. No retry or cleanup started; Lane B is authorized for exactly one Marlboro NJ probe.",
       "blocked": false,
       "blocker": null,
       "wake_condition": "Immediate for queue/log verification; otherwise wake only if another active/stale job needs cleanup or Railway cron-log access is restored.",
@@ -133,9 +133,10 @@
         "monmouth_a9515ff6": "ready; finished_at=2026-05-28T18:09:21.737917Z; locked_at=null; active_only=0; stale_only=0; run_overlays warning captured from job step error",
         "salt_lake_896e2dde": "ready; finished_at=2026-05-28T18:15:43.112952Z; locked_at=null; not active/stale and not blocking Monmouth/B6 sequencing",
         "pre_wake_queue_check": "2026-05-29T17:13:03Z: GET /api/admin/jobs?active_only=true&limit=500 returned count=0 ids=[]; GET /api/admin/jobs?stale_only=true&limit=500 returned count=0 ids=[]; Lane B Wake retry can start",
+        "pre_marlboro_queue_check": "2026-05-31T00:40:25Z: GET /api/admin/jobs?active_only=true&limit=500 returned count=0 ids=[]; GET /api/admin/jobs?stale_only=true&limit=500 returned count=0 ids=[]; Lane B may run exactly one Marlboro NJ probe",
         "railway_auth": "still blocked locally: railway logs --lines 1 returns invalid_grant and no linked project"
       },
-      "updated_at": "2026-05-29T17:13:03Z"
+      "updated_at": "2026-05-31T00:40:25Z"
     },
     "lane-e-matrix": {
       "branch": "adarench/middlesex-batch2-merge-hygiene",

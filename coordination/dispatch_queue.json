@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-31T00:24:52Z",
+  "updated_at": "2026-05-31T00:40:25Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "mode": "kpi_growth",
   "recommended_next_actions": [
@@ -32,7 +32,7 @@
       "rank": 4,
       "lane": "lane-b-retry-sweep",
       "action": "Marlboro NJ probe only if Lane D pre-Marlboro queue check is clean. Run exactly one probe; no broad retry batch.",
-      "wake_condition": "Lane D reports active_only=0 and stale_only=0 and explicitly authorizes Marlboro.",
+      "wake_condition": "Satisfied by Lane D at 2026-05-31T00:40:25Z: active_only=0 and stale_only=0. Lane B may run exactly one Marlboro NJ probe.",
       "dependency_order": "Blocked on Lane D rank 3 queue check. Do not run Nassau, Middlesex NJ, Fairfield, Wake, Monmouth, or Westchester.",
       "expected_kpi": "classification of Marlboro broken-state retry path; possible failed-job reduction if ready"
     },
@@ -167,7 +167,7 @@
       "wake_lanes": [
         "lane-b-retry-sweep"
       ],
-      "action": "Run exactly one Marlboro NJ probe. No broad retry batch."
+      "action": "Triggered at 2026-05-31T00:40:25Z: active_only=0 and stale_only=0. Run exactly one Marlboro NJ probe. No broad retry batch."
     },
     {
       "condition": "Lane E Norfolk MA batch 2 prod apply + refresh complete",
