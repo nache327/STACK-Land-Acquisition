@@ -10,7 +10,7 @@
   "current_known_state": {
     "mode": "kpi_growth_entered_2026_05_28",
     "lane_b": "wake_nc_ready_all_dedupe_completed",
-    "lane_e": "norfolk_ma_batch_2_applied_refreshed_pr_pending",
+    "lane_e": "norfolk_ma_batch_2_pr_155_open",
     "lane_c": "asleep_until_new_parcel_geometry_or_route_need",
     "lane_d": "opportunistic_railway_auth_or_new_stale_job",
     "pr_94_deploy_blocker": "cleared",
@@ -142,8 +142,8 @@
     },
     "lane-e-matrix": {
       "branch": "adarench/norfolk-ma-batch-2",
-      "status": "norfolk_ma_batch_2_applied_refreshed_pr_pending",
-      "task": "Norfolk County MA pattern batch 2 applied to prod and refreshed; PR pending. Batch 2 updated 11 Bellingham/Brookline rows and moved 1,210 parcels unclear→classified; audit remains partial with 77 unclear rows and 13,428 unclear-bound parcels.",
+      "status": "norfolk_ma_batch_2_pr_155_open",
+      "task": "Norfolk County MA pattern batch 2 applied to prod, refreshed, and opened as PR #155. Batch 2 updated 11 Bellingham/Brookline rows and moved 1,210 parcels unclear→classified; audit remains partial with 77 unclear rows and 13,428 unclear-bound parcels.",
       "blocked": false,
       "blocker": null,
       "wake_condition": "Open/merge Norfolk County MA batch 2 PR, then pause Lane E until Master assigns the next matrix batch.",
@@ -154,8 +154,8 @@
         "middlesex_ma_batch_1": "PR #100 merged after prod apply/refresh; 18,401 parcels moved unclear to classified; remains partial with 172 unclear rows / 67,386 unclear-bound parcels",
         "highland_ut": "PR #100 merged after prod apply/refresh; PD-1 reviewed and left unclear; 0 parcel delta; no further path",
         "middlesex_ma_batch_2": "PR #143 merged 2026-05-29 as 2cdd8742004daa59204a611fcd61a27236e5508c after prod apply/refresh. 9 rows (Somerville NR/UR; Melrose URA/URB/URC/URD; Reading S15/S20/S40) moved 25,706 parcels unclear→classified. Audit after refresh: partial, 163 unclear rows, 41,680 unclear-bound parcels, 89.3% classified parcel coverage.",
-        "norfolk_ma_batch_2": "Prod applied/refreshed 2026-05-31T02:12Z via pattern_norfolk_ma_batch2_adjudication.py. 11 rows (G10, G175(CC), G175(WS), G20, G20(CA), L05, L05(CL), L10, O10, O20(CH), SUBN) moved 1,210 parcels unclear→classified. Audit after refresh: partial, 77 unclear rows, 13,428 unclear-bound parcels, 91.3% classified parcel coverage; no operational flip.",
-        "current_dispatch_target": "norfolk_county_ma_batch_2_pr_hygiene",
+        "norfolk_ma_batch_2": "PR #155 open after prod apply/refresh 2026-05-31T02:12Z via pattern_norfolk_ma_batch2_adjudication.py. 11 rows (G10, G175(CC), G175(WS), G20, G20(CA), L05, L05(CL), L10, O10, O20(CH), SUBN) moved 1,210 parcels unclear→classified. Audit after refresh: partial, 77 unclear rows, 13,428 unclear-bound parcels, 91.3% classified parcel coverage; no operational flip.",
+        "current_dispatch_target": "pr_155_merge_hygiene",
         "sequential_follow_on": "Pause after Norfolk batch 2 PR unless Master assigns next matrix batch"
       },
       "updated_at": "2026-05-31T02:12:04Z"

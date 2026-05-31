@@ -7,8 +7,8 @@
     {
       "rank": 1,
       "lane": "lane-e-matrix",
-      "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2 PR hygiene. Batch applied/refreshed 2026-05-31T02:12Z: 11 rows, 1,210 parcels unclear→classified, Norfolk remains partial with 77 unclear rows / 13,428 unclear-bound parcels.",
-      "wake_condition": "Immediate PR open/merge hygiene for the applied Norfolk batch 2 script/docs/coordination diff.",
+      "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2 PR #155 merge hygiene. Batch applied/refreshed 2026-05-31T02:12Z: 11 rows, 1,210 parcels unclear→classified, Norfolk remains partial with 77 unclear rows / 13,428 unclear-bound parcels.",
+      "wake_condition": "PR #155 is open; monitor checks and merge when green/mergeable.",
       "dependency_order": "First Day 2 lane. Independent of Lane A docs cleanup and Lane D queue check.",
       "expected_kpi": "additional trustworthy parcel verdict growth within a partial jurisdiction; no Norfolk operational flip in post-refresh audit"
     },
@@ -70,7 +70,7 @@
       "rank": 3,
       "item": "Lane E Norfolk County MA batch 2",
       "lane": "lane-e-matrix",
-      "state": "prod applied/refreshed; PR pending for script/docs/coordination hygiene"
+      "state": "PR #155 open after prod apply/refresh; merge when checks are green/mergeable"
     },
     {
       "rank": 4,
@@ -174,7 +174,7 @@
       "wake_lanes": [
         "master"
       ],
-      "action": "Norfolk batch 2 applied/refreshed and did not flip operational; Master may refresh KPI snapshot after the PR merges."
+      "action": "Norfolk batch 2 applied/refreshed and PR #155 opened; did not flip operational. Master may refresh KPI snapshot after the PR merges."
     },
     {
       "condition": "Westchester County NY fails with a new or recurring reliability class",
