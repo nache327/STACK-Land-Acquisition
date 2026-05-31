@@ -109,7 +109,7 @@ Parcels exist but county-wide zoning layer absent. NOT matrix problems.
 | Union County, NJ | 147,627 | 0.0 | per-town ingest |
 | Ocean County, NJ | 422,330 | 0.0 | per-town ingest |
 | Monmouth County, NJ | 251,486 | 5.7 | per-town ingest (matrix ~mostly done) |
-| Wake County, NC | 435,434 | 0.0 | county-level ingest retry pending |
+| Wake County, NC | 435,597 downloaded / 435,597 deduped | 0.0 | 2026-05-29 retry reached `ready` all-dedupe; structural coverage/source path remains |
 | Westchester County, NY | 257,914 | 0.0 | Phase 2 ingest retry pending |
 | Nassau County, NY | 420,577 | 0.0 | Phase 2 ingest retry pending |
 | Fairfield County, CT | 261,652 | 0.0 | Phase 2 ingest retry pending |
@@ -126,7 +126,7 @@ Parcels exist but county-wide zoning layer absent. NOT matrix problems.
 | Burlington County, NJ | yes (174,852 via PR #85) | Westampton only (16 rows scoped) | 2026-05-21 | pilot in progress |
 | Bergen County, NJ | yes (281,646) | Paramus only (~3.1% coverage) | per BERGEN_SCALE_UP.md | hub-exhausted |
 | Essex / Hudson / Passaic / Union / Ocean / Middlesex / Monmouth NJ | various | unknown | — | needs Lane B probe |
-| Wake County, NC | partial | needs probe | 2026-05-19 (failed, line 1417) | retry queued |
+| Wake County, NC | yes (all-dedupe ready on 2026-05-29) | needs source/coverage probe | job `c2344f4d` | retry clean; old line 1417/1401 failure did not recur |
 | Westchester / Nassau NY, Fairfield CT | partial | needs probe | Phase 2 incomplete | retry queued |
 
 _Lane B: append updates here as you probe sources and stage per-town ingests._
@@ -142,7 +142,7 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
-| done | Norfolk County, MA | 88 remaining | 14,638 remaining unclear-bound | applied; partial (residential short-code batch only) | PR #100 merged (`6eb9eaf`) | Lane E |
+| queued | Norfolk County, MA | 88 remaining | 14,638 remaining unclear-bound | Day 2 batch 2 authorized after Middlesex MA batch 2 merge/audit | PR #100 merged (`6eb9eaf`); batch 2 next | Lane E |
 | done | Middlesex County, MA | 163 remaining | 41,680 remaining unclear-bound | applied; partial (Lowell batch 1 + Somerville/Melrose/Reading batch 2) | PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Highland, UT | 4 remaining | 937 remaining unclear-bound | reviewed; partial (PD-1 unsupported without adopted PD narrative) | PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Somerset County, NJ | 66 remaining | 2,194 remaining unclear-bound | applied; operational | #91 merged + prod applied 2026-05-26 | Lane E |
@@ -170,7 +170,7 @@ _Lane E: append progress notes here (script written / PR opened / merged / refre
 
 | jurisdiction | parcels | prior failure line | retry status | outcome |
 |---|---:|---|---|---|
-| Wake County, NC | 435,434 | pipeline.py:1417/1401 (parcel ingest) | not yet retried | TBD |
+| Wake County, NC | 435,597 downloaded | pipeline.py:1417/1401 (parcel ingest) | retried 2026-05-29 | `ready` all-dedupe; job `c2344f4d`; old failure did not recur |
 | Middlesex County, NJ | 245,616 | pipeline.py:1410/1688 (boundary) | not yet retried | TBD |
 | Westchester County, NY | 257,914 | Phase 2 incomplete | not yet retried | TBD |
 | Nassau County, NY | 420,577 | Phase 2 incomplete | not yet retried | TBD |
@@ -207,11 +207,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | refreshed post-Middlesex MA batch 2 KPI audit snapshot | none | B8 reopened with Nassau parked; B7/B6 cleared; C1 not blocking | 2026-05-29 post-PR-#143 audit refresh |
-| B — Discovery + Coverage | paused after Westchester ready validation; Burlington per-town pilot remains separate | — | Nassau/Middlesex/Fairfield parked under B8; no Monmouth/Westchester retest | 2026-05-28 19:43 UTC (Westchester ready) |
+| A — Integrator | Day 2 section 8 failure-cluster cleanup authorized; audit refresh complete | none | B8 reopened with Nassau parked; B7/B6 cleared; C1 not blocking | 2026-05-30 Day 1 reconciliation |
+| B — Discovery + Coverage | Wake County NC retry completed ready/all-dedupe; paused until Lane D cleanly authorizes Marlboro NJ probe | — | Nassau/Middlesex/Fairfield parked under B8; no Wake/Monmouth/Westchester retest | 2026-05-29 22:54 UTC (Wake ready) |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
-| D — Operator + Workflow | pre-Wake clean queue check | — | none for Wake dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-29 17:13 UTC (`active_only=0`, `stale_only=0`; Lane B Wake can start) |
-| E — Matrix Intelligence | Middlesex County MA batch 2 merge hygiene complete; paused before Norfolk batch 2 | PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-29 23:25 UTC |
+| D — Operator + Workflow | Day 2 pre-Marlboro queue check authorized | — | Railway cron-log verification still blocked by expired local CLI auth | 2026-05-30 Day 1 reconciliation |
+| E — Matrix Intelligence | Norfolk County MA batch 2 authorized | PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-30 Day 1 reconciliation |
 
 ---
 
@@ -255,6 +255,8 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #98 | fix(audit): require 70% parcel zoning coverage for operational | A | **MERGED** (`a29b86e`) 2026-05-26 | done; post-merge audit refreshed |
 | #100 | feat(matrix): apply MA pattern batches and Highland review | E | **MERGED** (`6eb9eaf`) 2026-05-26 | done; CI passed; prod apply/refresh already completed |
 | #143 | feat(matrix): apply Middlesex MA batch 2 | E | **MERGED** (`2cdd874`) 2026-05-29 | done; post-merge audit snapshot refreshed by Lane A |
+| #151 | docs(coordination): record Middlesex batch 2 merge | E | **MERGED** (`420216a`) 2026-05-29 | done |
+| #152 | docs: refresh KPI snapshot after Middlesex batch 2 | A | **MERGED** (`18159fc`) 2026-05-29 | done |
 
 ---
 
@@ -263,13 +265,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 **Owner:** master thread
 **Ordered sequencing for next merges:**
 
-1. ~~PR #89 (audit CLI timeout)~~ ✅ merged
-2. **Lane E Somerset NJ** — already verified, citations real, 10,567 parcels move. Open PR + merge.
-3. ~~Lane A truthfulness patch PR #98~~ ✅ merged; post-truthfulness audit refreshed.
-4. ~~Lane D watchdog PR #97~~ ✅ merged; Railway web deploy serves `2e8d9e0`, cron-log OK run still pending Railway CLI login.
-5. **Lane B Burlington-pattern retries** — no PRs; operational sweep.
-6. **Lane C bbox sweep** — no PRs unless bug surfaces.
-7. ~~Lane E Norfolk/Middlesex/Highland matrix batch PR #100~~ ✅ merged; prod apply/refresh completed before merge.
+1. **Lane E Norfolk County MA batch 2** — authorized Day 2 matrix throughput work after PR #143/#151/#152.
+2. **Lane A section 8 failure-cluster cleanup** — docs/coordination cleanup after B6/B7/Wake cleared evidence.
+3. **Lane D pre-Marlboro queue check** — no retry; authorize Lane B only if `active_only=0` and `stale_only=0`.
+4. **Lane B Marlboro NJ probe** — exactly one probe, only after Lane D clean queue check.
+5. **Lane A run_overlays containment review** — stretch only if Day 2 scope holds; warning remains log-only/non-fatal.
 
 ---
 
@@ -296,6 +296,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ## 15. Daily Changelog
 
 **Owner:** any lane appends (reverse chronological).
+
+### 2026-05-30
+
+- **RECONCILE** Day 1 May-31 close plan. Master. Middlesex County MA batch 2 is merged/applied/refreshed via PR #143 (`2cdd8742004daa59204a611fcd61a27236e5508c`) and PR #151 (`420216a52ce40c4420d80e9e31cf5aac970615b8`); Lane A refreshed section 1 via PR #152 (`18159fcc24c7818b2cb01d64ed32d09300d2cdd6`) using `backend/tmp/audit_post_middlesex_ma_batch2.json`. Confirmed Middlesex movement is 25,706 parcels unclear→classified, but Middlesex remains partial, so trustworthy operational parcel verdict count remains 3,292,352. Wake County NC job `c2344f4d-00fb-4d18-a20e-59b6bc5b9c36` reached `ready` on `/health.pipeline_version=a6602902a925`; `downloaded=435597`, `newly_ingested=0`, `dedupe_count=435597`, no traceback/warning, and the old `pipeline.py:1417/1401` failure did not recur. Final Wake queues: `active_only=[]`, `stale_only=[]`. Day 2 authorized order: Lane E Norfolk MA batch 2; Lane A section 8 failure-cluster cleanup; Lane D pre-Marlboro queue check; Lane B Marlboro NJ probe only if Lane D reports clean queues; Lane A run_overlays containment review remains stretch-only.
 
 ### 2026-05-29
 
