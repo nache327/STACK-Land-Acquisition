@@ -7,10 +7,10 @@
     {
       "rank": 1,
       "lane": "lane-e-matrix",
-      "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2. Extend the residential short-code pattern batch from the prior Norwood/Needham/Brookline pass to additional Norfolk municipalities; target the remaining 88 unclear rows / 14,638 unclear-bound parcels. Same dry-run → prod apply → refresh sequence.",
-      "wake_condition": "Immediate. Day 1 complete: PR #143 merged, PR #151 recorded merge hygiene, and PR #152 refreshed the post-Middlesex audit snapshot.",
+      "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2 PR hygiene. Batch applied/refreshed 2026-05-31T02:12Z: 11 rows, 1,210 parcels unclear→classified, Norfolk remains partial with 77 unclear rows / 13,428 unclear-bound parcels.",
+      "wake_condition": "Immediate PR open/merge hygiene for the applied Norfolk batch 2 script/docs/coordination diff.",
       "dependency_order": "First Day 2 lane. Independent of Lane A docs cleanup and Lane D queue check.",
-      "expected_kpi": "additional trustworthy_parcel_verdict_count growth; possible Norfolk MA flip to operational if coverage threshold met"
+      "expected_kpi": "additional trustworthy parcel verdict growth within a partial jurisdiction; no Norfolk operational flip in post-refresh audit"
     },
     {
       "rank": 2,
@@ -70,7 +70,7 @@
       "rank": 3,
       "item": "Lane E Norfolk County MA batch 2",
       "lane": "lane-e-matrix",
-      "state": "next PR expected if batch applies"
+      "state": "prod applied/refreshed; PR pending for script/docs/coordination hygiene"
     },
     {
       "rank": 4,
@@ -174,7 +174,7 @@
       "wake_lanes": [
         "master"
       ],
-      "action": "Refresh KPI snapshot. If Norfolk flipped to operational, log in section 10/11 and reconcile with section 16 May-31 checklist."
+      "action": "Norfolk batch 2 applied/refreshed and did not flip operational; Master may refresh KPI snapshot after the PR merges."
     },
     {
       "condition": "Westchester County NY fails with a new or recurring reliability class",
