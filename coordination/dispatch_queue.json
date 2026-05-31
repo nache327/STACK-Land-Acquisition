@@ -8,7 +8,7 @@
       "rank": 1,
       "lane": "lane-e-matrix",
       "action": "Matrix throughput follow-on: Norfolk County MA pattern batch 2 PR #155 merge hygiene. Batch applied/refreshed 2026-05-31T02:12Z: 11 rows, 1,210 parcels unclear→classified, Norfolk remains partial with 77 unclear rows / 13,428 unclear-bound parcels.",
-      "wake_condition": "PR #155 is open; monitor checks and merge when green/mergeable.",
+      "wake_condition": "PR #155 is open, green, and mergeable; merge when authorized.",
       "dependency_order": "First Day 2 lane. Independent of Lane A docs cleanup and Lane D queue check.",
       "expected_kpi": "additional trustworthy parcel verdict growth within a partial jurisdiction; no Norfolk operational flip in post-refresh audit"
     },
@@ -70,7 +70,7 @@
       "rank": 3,
       "item": "Lane E Norfolk County MA batch 2",
       "lane": "lane-e-matrix",
-      "state": "PR #155 open after prod apply/refresh; merge when checks are green/mergeable"
+      "state": "PR #155 open, green, and mergeable after prod apply/refresh"
     },
     {
       "rank": 4,
