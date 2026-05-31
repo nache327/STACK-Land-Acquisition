@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-28T20:32:23Z",
+  "updated_at": "2026-05-31T00:24:52Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -146,6 +146,26 @@
       "cleared_by": "PR #100 merged; MA/Highland matrix branch contained only intended scripts/docs and CI passed",
       "cleared_at": "2026-05-26",
       "status": "cleared"
+    },
+    {
+      "id": "W1",
+      "owner_lane": "lane-b-retry-sweep",
+      "cleared_by": "Wake County NC job c2344f4d-00fb-4d18-a20e-59b6bc5b9c36 reached ready/all-dedupe on deploy a6602902a925; old pipeline.py:1417/1401 parcel-ingest failure did not recur",
+      "cleared_at": "2026-05-29",
+      "status": "cleared_all_dedupe_ready",
+      "evidence": {
+        "job_id": "c2344f4d-00fb-4d18-a20e-59b6bc5b9c36",
+        "deployed_pipeline_version": "a6602902a925",
+        "terminal_state": "ready",
+        "queued_at": "2026-05-29T22:42:32.925031Z",
+        "started_at": "2026-05-29T22:42:36.228796Z",
+        "finished_at": "2026-05-29T22:54:32.145418Z",
+        "downloaded": 435597,
+        "newly_ingested": 0,
+        "dedupe_count": 435597,
+        "traceback_warning": "none",
+        "final_queues": "active_only=[]; stale_only=[]"
+      }
     }
   ]
 }
