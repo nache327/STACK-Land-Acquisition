@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-31T00:40:25Z",
+  "updated_at": "2026-05-31T00:40:31Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-29 post PR #143, backend/tmp/audit_post_middlesex_ma_batch2.json",
@@ -68,21 +68,23 @@
     },
     "lane-a-integrator": {
       "status": "completed",
-      "branch": "docs/bbox-route-disposition",
-      "task": "Completed post-Middlesex MA batch 2 KPI audit/docs integration via PR #152; section 1 now cites backend/tmp/audit_post_middlesex_ma_batch2.json. Next authorized Lane A task is section 8 failure-cluster cleanup.",
+      "branch": "docs/section8-failure-cluster-cleanup",
+      "task": "Completed Day 2 section 8 failure-cluster cleanup: active failure framing now keeps only B8 large-county mapping plateau; cleared Wake, B6, B7, B9, B10, C1, and PR #94 evidence preserved in blocker history/changelog.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake for Day 2 section 8 failure-cluster cleanup; after that, run_overlays containment is stretch-only if scope holds.",
+      "wake_condition": "Wake only for new fatal terminal class, explicit Master request, or stretch run_overlays containment review; Lane D pre-Marlboro queue check can proceed from Lane A sequencing.",
       "latest_kpi_delta": {
         "b7": "cleared for Monmouth: job a9515ff6 reached run_overlays and ready; bootstrap_zone_use_matrix hard failure did not recur",
         "b8": "reopened: Nassau job 3b4582c5 recurred as ingest mapping stale; Lane D cancelled it with active_only=0/stale_only=0",
         "b9": "cleared: forced-run cache preflight failure did not recur",
         "b10": "Nassau validation cleared B10 on job d98324cc: coverage_refresh passed because job reached run_overlays",
         "b6": "cleared fatal class: Westchester job 9f8ecb57 reached ready; old terminal post-overlay/run_overlays commit failure did not recur; warning recurred but stayed non-fatal/log-only",
+        "wake_nc": "cleared: job c2344f4d reached ready/all-dedupe; old pipeline.py:1417/1401 failure did not recur",
+        "section8_cleanup": "active table reduced to B8 only; run_overlays invalid-transaction warning remains log-only/operator evidence",
         "c1": "no-code disposition: refresh-bbox route is absent/missing, but Lane C updated 0 because all 7 bbox-null targets have parcel_count=0 and geom_count=0; route restoration would not move KPI now",
         "audit_refresh": "PR #152 merged 18159fcc24c7818b2cb01d64ed32d09300d2cdd6; operational=45, trustworthy operational classified sum=3,292,352, partial unclear rows=312, partial unclear-bound parcels=97,352, partial unclear share=12.6%"
       },
-      "updated_at": "2026-05-29T23:59:00Z"
+      "updated_at": "2026-05-31T00:40:31Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
