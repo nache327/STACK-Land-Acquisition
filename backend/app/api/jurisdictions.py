@@ -441,6 +441,38 @@ async def precompute_ring_metrics_status(job_id: str) -> dict:
     return state
 
 
+@router.post("/jurisdictions/{jurisdiction_id}/_backfill-has-structure-from-lir")
+async def backfill_has_structure_from_lir(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Populate `parcels.has_structure` from AGRC LIR PROP_CLASS.
+
+    For UT county jurisdictions where the UGRC parcel ingest left
+    has_structure NULL on most rows (LAND_USE/PROP_TYPE sparse), the
+    LIR FeatureServer publishes a separate PROP_CLASS field whose
+    "Vacant" / "Residential" / "Industrial" / etc. values map cleanly
+    to True / False / ambiguous. Without this signal every parcel
+    fails the dashboard's `vacancy_unknown` viability check, so Hot
+    Deals and Worth a Look surface zero matches even when ~400k parcels
+    have real demographics and zoning.
+
+    Spatial-joins LIR PROP_CLASS polygons → parcel centroids via the
+    existing ST_Subdivide + temp-GiST pattern. Idempotent (only fills
+    NULL slots, never overwrites an existing has_structure value).
+
+    Currently registered LIR layers: Salt Lake / Davis / Weber / Utah
+    counties (see _LIR_URLS in lir_has_structure_backfill.py).
+    """
+    from app.services.lir_has_structure_backfill import (
+        backfill_has_structure_for_jurisdiction,
+    )
+    try:
+        return await backfill_has_structure_for_jurisdiction(jurisdiction_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/_admin/optimize-parcels")
 async def admin_optimize_parcels(db: AsyncSession = Depends(get_db)) -> dict:
     """One-shot: add the (jurisdiction_id, city) composite index parcels was
