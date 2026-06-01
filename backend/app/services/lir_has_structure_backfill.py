@@ -36,10 +36,13 @@ import time
 import uuid
 from typing import Any
 
+import geopandas as gpd
+import httpx
+from shapely.geometry import shape as shapely_shape
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.arcgis_bbox import download_bbox_features, get_parcel_bbox
+from app.services.arcgis_bbox import get_parcel_bbox
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +134,13 @@ async def backfill_has_structure_for_jurisdiction(
         "LIR has_structure backfill: %s bbox=%s url=%s",
         j.name, bbox, lir_url,
     )
-    gdf = await download_bbox_features(
+    # Call the LIR layer directly with `outFields=PROP_CLASS` only — the
+    # generic download_bbox_features helper uses `outFields=*` which on
+    # this 30-field, 400k-row layer times out at the server side and
+    # returns zero features after ~60s. Pulling just the one field +
+    # geometry keeps each page small and fast (verified <1s per 1000
+    # rows in manual probes).
+    gdf = await _fetch_lir_features(
         lir_url, bbox, where="PROP_CLASS IS NOT NULL"
     )
     if gdf is None or gdf.empty:
@@ -202,6 +211,67 @@ async def backfill_has_structure_for_jurisdiction(
 
 
 # ── Internals ────────────────────────────────────────────────────────────
+
+
+async def _fetch_lir_features(
+    url: str,
+    bbox: tuple[float, float, float, float],
+    *,
+    where: str,
+    page_size: int = 1000,
+) -> gpd.GeoDataFrame | None:
+    """Fetch LIR features in chunks, asking for `PROP_CLASS` + geometry only.
+
+    The generic ArcGIS bbox helper passes `outFields=*` which on the
+    400k-row LIR layer with 30 fields times out at the server side and
+    returns empty after ~60s. Scoping outFields to the one column we
+    actually need keeps each page sub-second.
+    """
+    minx, miny, maxx, maxy = bbox
+    # 10% buffer mirrors download_bbox_features so edge parcels aren't lost.
+    dx = (maxx - minx) * 0.1
+    dy = (maxy - miny) * 0.1
+    geom_filter = f"{minx - dx},{miny - dy},{maxx + dx},{maxy + dy}"
+    query_url = url.rstrip("/") + "/query"
+
+    all_features: list[dict] = []
+    offset = 0
+    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        while True:
+            params = {
+                "geometry": geom_filter,
+                "geometryType": "esriGeometryEnvelope",
+                "spatialRel": "esriSpatialRelIntersects",
+                "inSR": "4326",
+                "outSR": "4326",
+                "outFields": "PROP_CLASS",
+                "where": where,
+                "f": "geojson",
+                "resultRecordCount": page_size,
+                "resultOffset": offset,
+            }
+            resp = await client.get(query_url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            batch = data.get("features", []) or []
+            if not batch:
+                break
+            all_features.extend(batch)
+            if len(all_features) % 10_000 < page_size:
+                logger.info(
+                    "LIR fetch %s: %d features so far (offset=%d)",
+                    url.rsplit("/", 3)[-3], len(all_features), offset,
+                )
+            if len(batch) < page_size:
+                break
+            offset += page_size
+            if offset > 500_000:
+                logger.warning("LIR fetch safety cap hit at offset %d", offset)
+                break
+
+    if not all_features:
+        return None
+    return gpd.GeoDataFrame.from_features(all_features, crs="EPSG:4326")
 
 
 async def _update_parcels_in_polygons(
