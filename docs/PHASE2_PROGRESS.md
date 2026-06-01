@@ -142,7 +142,7 @@ _Lane B: append updates here as you probe sources and stage per-town ingests._
 
 | rank | jurisdiction | unclear rows | parcels at stake | ease | PR | owner |
 |---:|---|---:|---:|---|---|---|
-| PR open | Norfolk County, MA | 77 remaining | 13,428 remaining unclear-bound | batch 2 applied/refreshed; partial, no operational flip | PR #155 open/green/mergeable; PR #100 merged (`6eb9eaf`) | Lane E |
+| done | Norfolk County, MA | 77 remaining | 13,428 remaining unclear-bound | batch 2 applied/refreshed; partial, no operational flip | PR #155 merged (`b94361a`); PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Middlesex County, MA | 163 remaining | 41,680 remaining unclear-bound | applied; partial (Lowell batch 1 + Somerville/Melrose/Reading batch 2) | PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Highland, UT | 4 remaining | 937 remaining unclear-bound | reviewed; partial (PD-1 unsupported without adopted PD narrative) | PR #100 merged (`6eb9eaf`) | Lane E |
 | done | Somerset County, NJ | 66 remaining | 2,194 remaining unclear-bound | applied; operational | #91 merged + prod applied 2026-05-26 | Lane E |
@@ -156,7 +156,7 @@ _Lane E: append progress notes here (script written / PR opened / merged / refre
 - 2026-05-26 19:19 UTC — Norfolk County MA pattern batch applied to prod via `pattern_norfolk_ma_adjudication.py`. Updated 12 rows (`G`, `GR`, `S`, `S-7`, `S1`, `S10`, `S15`, `S2`, `S25`, `S40`, `T-5`, `T-6`) using Norwood, Needham, and Brookline ordinance citations. Parcel delta: 16,489 unclear→classified. Refresh: partial, 88 remaining unclear rows, 14,638 remaining unclear-bound parcels, 90.5% classified parcel coverage.
 - 2026-05-26 19:57 UTC — Middlesex County MA Lowell batch 1 applied to prod via `pattern_middlesex_ma_adjudication.py`. Updated 9 rows (`NB`, `SMF`, `SMU`, `SSF`, `TSF`, `TTF`, `UMF`, `UMU`, `USF`) using Lowell Zoning Ordinance Article XII / Section 12.9 citations. Parcel delta: 18,401 unclear→classified. Refresh: partial, 172 remaining unclear rows, 67,386 remaining unclear-bound parcels, 82.8% classified parcel coverage.
 - 2026-05-29 17:24 UTC — Middlesex County MA pattern batch 2 applied to prod via `pattern_middlesex_ma_batch2_adjudication.py`; PR #143 merged as `2cdd8742004daa59204a611fcd61a27236e5508c`. Updated 9 rows (`NR`, `UR`, `URA`, `URB`, `URC`, `URD`, `S15`, `S20`, `S40`) using Somerville, Melrose, and Reading ordinance citations. Dry-run and apply parcel delta: 25,706 unclear→classified. Refresh/audit: partial, 163 remaining unclear rows, 41,680 remaining unclear-bound parcels, 89.3% classified parcel coverage. Note: `recover_operational_coverage.py --jurisdiction "Middlesex County, MA" --phase bbox` also matched Middlesex County NJ by normalized name and recomputed bbox/coverage only; no NJ ingest/matrix update was run.
-- 2026-05-31 02:12 UTC — Norfolk County MA pattern batch 2 applied to prod via `pattern_norfolk_ma_batch2_adjudication.py`; PR #155 opened. Updated 11 rows (`G10`, `G175(CC)`, `G175(WS)`, `G20`, `G20(CA)`, `L05`, `L05(CL)`, `L10`, `O10`, `O20(CH)`, `SUBN`) using Bellingham and Brookline ordinance citations. Dry-run and apply parcel delta: 1,210 unclear→classified. Refresh/audit: partial, 77 remaining unclear rows, 13,428 remaining unclear-bound parcels, 91.3% classified parcel coverage. No operational flip; blocking gaps remain `high_unclear_self_storage_share` and `no_zoning_polygons`.
+- 2026-05-31 02:12 UTC — Norfolk County MA pattern batch 2 applied to prod via `pattern_norfolk_ma_batch2_adjudication.py`; PR #155 merged as `b94361a`. Updated 11 rows (`G10`, `G175(CC)`, `G175(WS)`, `G20`, `G20(CA)`, `L05`, `L05(CL)`, `L10`, `O10`, `O20(CH)`, `SUBN`) using Bellingham and Brookline ordinance citations. Dry-run and apply parcel delta: 1,210 unclear→classified. Refresh/audit: partial, 77 remaining unclear rows, 13,428 remaining unclear-bound parcels, 91.3% classified parcel coverage. No operational flip; blocking gaps remain `high_unclear_self_storage_share` and `no_zoning_polygons`.
 - 2026-05-26 20:19 UTC — Highland UT cleanup applied to prod via `highland_ut_matrix_adjudication.py`. `PD-1` reviewed against Highland City Development Code Article 5 and left unclear because the adopted PD narrative governs uses; zero-bind unsupported rows left unclear. Parcel delta: 0. Refresh: partial, 4 remaining unclear rows, 937 remaining unclear-bound parcels, 87.1% classified parcel coverage.
 - 2026-05-26 22:41 UTC — PR #100 merged as `6eb9eaf` for the Norfolk/Middlesex/Highland matrix batch. Merge diff contains only `backend/scripts/highland_ut_matrix_adjudication.py`, `backend/scripts/pattern_middlesex_ma_adjudication.py`, `backend/scripts/pattern_norfolk_ma_adjudication.py`, and Lane E updates to this file. Validation: GitHub Backend Tests passed, Frontend Tests passed, Supabase Preview skipped; local `py_compile` passed for all three scripts.
 
@@ -208,10 +208,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
 | A — Integrator | Day 2 section 8 failure-cluster cleanup complete | none | B8 remains the only active reliability failure family; B6/B7/B9/B10/Wake cleared; run_overlays warning log-only | 2026-05-31 00:40 UTC |
-| B — Discovery + Coverage | Wake County NC retry completed ready/all-dedupe; paused until Lane D cleanly authorizes Marlboro NJ probe | — | Nassau/Middlesex/Fairfield parked under B8; no Wake/Monmouth/Westchester retest | 2026-05-29 22:54 UTC (Wake ready) |
+| B — Discovery + Coverage | Marlboro NJ probe authorized by Lane D clean queue check; output missing from shared state | — | Nassau/Middlesex/Fairfield parked under B8; no Wake/Monmouth/Westchester retest | 2026-06-01 Master reconciliation |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
 | D — Operator + Workflow | pre-Marlboro clean queue check complete | — | none for Marlboro dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-31 00:40 UTC (`active_only=0`, `stale_only=0`; Lane B may run exactly one Marlboro NJ probe) |
-| E — Matrix Intelligence | Norfolk County MA batch 2 applied/refreshed; PR #155 green/mergeable | PR #155 open; PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-05-31 02:21 UTC |
+| E — Matrix Intelligence | Norfolk County MA batch 2 applied/refreshed/merged; paused | PR #155 merged (`b94361a`); PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-06-01 Master reconciliation |
 
 ---
 
@@ -257,7 +257,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #143 | feat(matrix): apply Middlesex MA batch 2 | E | **MERGED** (`2cdd874`) 2026-05-29 | done; post-merge audit snapshot refreshed by Lane A |
 | #151 | docs(coordination): record Middlesex batch 2 merge | E | **MERGED** (`420216a`) 2026-05-29 | done |
 | #152 | docs: refresh KPI snapshot after Middlesex batch 2 | A | **MERGED** (`18159fc`) 2026-05-29 | done |
-| #155 | feat(matrix): apply Norfolk MA batch 2 | E | **OPEN**; Backend Tests passed, Frontend Tests passed, Supabase Preview skipped; mergeable | next; prod apply/refresh already completed |
+| #155 | feat(matrix): apply Norfolk MA batch 2 | E | **MERGED** (`b94361a`) 2026-05-31 | done; prod apply/refresh already completed |
 
 ---
 
@@ -266,11 +266,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 **Owner:** master thread
 **Ordered sequencing for next merges:**
 
-1. **Lane E Norfolk County MA batch 2** — PR #155 open/green/mergeable.
-2. **Lane A section 8 failure-cluster cleanup** — docs/coordination cleanup after B6/B7/Wake cleared evidence.
-3. **Lane D pre-Marlboro queue check** — no retry; authorize Lane B only if `active_only=0` and `stale_only=0`.
-4. **Lane B Marlboro NJ probe** — exactly one probe, only after Lane D clean queue check.
-5. **Lane A run_overlays containment review** — stretch only if Day 2 scope holds; warning remains log-only/non-fatal.
+1. ~~Lane E Norfolk County MA batch 2~~ ✅ merged as PR #155 (`b94361a`); no operational flip.
+2. ~~Lane A section 8 failure-cluster cleanup~~ ✅ merged as PR #154 (`5783689`).
+3. ~~Lane D pre-Marlboro queue check~~ ✅ clean at `2026-05-31T00:40:25Z`.
+4. **Lane B Marlboro NJ probe** — exactly one probe remains the final missing Day 2 output.
+5. ~~Lane A run_overlays containment review~~ skipped for May-31 close; warning remains log-only/non-fatal.
 
 ---
 
@@ -297,6 +297,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ## 15. Daily Changelog
 
 **Owner:** any lane appends (reverse chronological).
+
+### 2026-06-01
+
+- **RECONCILE** Day 2 May-31 close state through available evidence. Master. PR #155 `feat(matrix): apply Norfolk MA batch 2` is merged as `b94361a` after prod apply/refresh; Norfolk moved 1,210 parcels unclear→classified and remains partial with 77 unclear rows, 13,428 unclear-bound parcels, and 91.3% classified parcel coverage. PR #154 section 8 cleanup is merged as `5783689`, leaving B8 as the only active reliability failure family while B4, D1, and G1 remain tracked. Lane D clean pre-Marlboro queue check is complete (`active_only=0`, `stale_only=0` at `2026-05-31T00:40:25Z`) and authorizes exactly one Marlboro NJ probe. No Marlboro result is present in shared state yet; final KPI snapshot and close report remain blocked on that output. The run_overlays containment stretch is skipped for May-31 close because the warning remains log-only/non-fatal.
 
 ### 2026-05-30
 
