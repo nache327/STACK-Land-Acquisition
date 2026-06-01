@@ -17,6 +17,33 @@
 
 Operational coordination has moved from workspace-local `.context/*.json` files to repo-shared `coordination/` JSON files. Lanes should use `coordination/lane_state.json`, `coordination/blockers.json`, and `coordination/dispatch_queue.json` for shared machine-readable state across Conductor workspaces.
 
+## May-31 Phase 2 Close
+
+**Owner:** master thread
+**Status:** **COMPLETE** as of 2026-06-01 close reconciliation.
+
+Final KPI source is `backend/tmp/audit_may31_close.json`. The canonical full audit was attempted but did not return within the Lane A window; the close artifact uses the latest complete audit with current Middlesex County MA and targeted Norfolk County MA live aggregate counts after PR #155.
+
+Closed work:
+
+- Middlesex County MA batch 2 merged/applied/refreshed via PR #143; +25,706 unclear→classified, no operational flip.
+- Norfolk County MA batch 2 merged/applied/refreshed via PR #155; +1,210 unclear→classified, no operational flip.
+- Wake County NC retry reached `ready` all-dedupe; old `pipeline.py:1417/1401` failure did not recur.
+- Marlboro NJ probe reached `ready`; old `pipeline.py:1298` broken-state failure did not recur.
+- Section 8 active failure cleanup completed via PR #154.
+- B6 fatal post-overlay/run_overlays terminal class cleared; recurring warning remains log-only/non-blocking.
+- B7 bootstrap hard failure cleared.
+
+Parked/open handoff:
+
+- B8 remains parked for Nassau County NY / Middlesex County NJ / Fairfield County CT large-county mapping/stale-lock.
+- B4 Burlington structural coverage/source acquisition remains open.
+- D1 Railway auth/log access remains open.
+- The 7 bbox-null rows remain non-refreshable from parcel geometry because their parcel/geometry counts are zero.
+- `run_overlays` invalid-transaction warning remains log-only/operator evidence and does not block close.
+
+June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequence. No retries are authorized by this close reconciliation.
+
 ---
 
 ## 1. Current KPI Snapshot
@@ -259,7 +286,9 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | #143 | feat(matrix): apply Middlesex MA batch 2 | E | **MERGED** (`2cdd874`) 2026-05-29 | done; post-merge audit snapshot refreshed by Lane A |
 | #151 | docs(coordination): record Middlesex batch 2 merge | E | **MERGED** (`420216a`) 2026-05-29 | done |
 | #152 | docs: refresh KPI snapshot after Middlesex batch 2 | A | **MERGED** (`18159fc`) 2026-05-29 | done |
+| #154 | docs: clean up active failure clusters | A | **MERGED** (`5783689`) 2026-05-30 | done; §8 active failure framing reduced to B8 only |
 | #155 | feat(matrix): apply Norfolk MA batch 2 | E | **MERGED** (`b94361a`) 2026-05-31 | done; prod apply/refresh already completed |
+| #157 | docs(ops): reconcile Marlboro ready probe | B / Master | **MERGED** (`fa78325`) 2026-06-01 | done; final KPI snapshot unblocked |
 
 ---
 
@@ -273,6 +302,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 3. ~~Lane D pre-Marlboro queue check~~ ✅ clean at `2026-05-31T00:40:25Z`.
 4. ~~Lane B Marlboro NJ probe~~ ✅ job `a9471bf2` reached `ready`; no follow-up retry authorized.
 5. ~~Lane A run_overlays containment review~~ skipped for May-31 close; warning remains log-only/non-fatal.
+6. ~~Final May-31 KPI snapshot + close reconciliation~~ ✅ complete; June/Sprint-2 Master Planning is next.
 
 ---
 
@@ -303,6 +333,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-01
 
+- **CLOSE** May-31 Phase 2 close reconciliation complete. Master. Final KPI snapshot source is `backend/tmp/audit_may31_close.json`: 45 operational jurisdictions, 3,292,352 trustworthy operational parcel verdicts, 3,986,326 all classified parcel verdicts across audit rows, 289 partial unclear rows, 79,653 partial unclear-bound parcels, 10.3% partial unclear share, fake-operationals 0, bbox-null 7. Completed close work: PR #143 Middlesex MA batch 2 (+25,706 unclear→classified), PR #155 Norfolk MA batch 2 (+1,210 unclear→classified), Wake County NC `ready` all-dedupe, Marlboro NJ `ready`, PR #154 section 8 cleanup, B6 fatal class cleared, and B7 cleared. No jurisdiction flipped operational during May-31 matrix work. Parked/open handoff: B8 Nassau/Middlesex NJ/Fairfield, B4 Burlington structural coverage, D1 Railway auth, bbox-null rows without geometry, and log-only `run_overlays` warning. No retries authorized; next action is June/Sprint-2 Master Planning.
 - **AUDIT+CLOSE** `backend/tmp/audit_may31_close.json` generated for final May-31 KPI snapshot. Lane A. Canonical `cd backend && .venv/bin/python scripts/audit_zoning_coverage.py --json > tmp/audit_may31_close.json` was attempted and stopped after 4m38s with a zero-byte output; Norfolk-scoped canonical audit also did not return promptly. Final artifact uses the latest complete audit artifact with current Middlesex County MA and targeted live aggregate counts for Norfolk County MA after PR #155. Final KPI snapshot: 45 operational / 29 partial / 7 not_loaded / 81 total; trustworthy operational parcel verdict count 3,292,352; all classified parcel verdicts across audit rows 3,986,326; partial unclear rows 289; partial unclear-bound parcels 79,653; partial unclear share 10.3% (`79,653 / 773,627`); fake-operationals 0; bbox-null 7. May-31 matrix movement from PR #143 + PR #155 is 26,916 parcels unclear→classified; no jurisdiction flipped operational.
 - **RECONCILE** Marlboro NJ probe. Master. Lane B evidence shows exactly one Marlboro NJ probe already existed in production and reached `ready`: job `a9471bf2-25ec-4c58-b45e-730016ed0ea0`, `/health.pipeline_version=b94361a50e15` at run time and `c9a306a3bf32` after pull/check, queued `2026-05-31T02:35:32.065255Z`, started `2026-05-31T02:35:34.845565Z`, finished `2026-05-31T02:47:43.710986Z`. Counts: 251,486 downloaded, 251,486 ingested, `dedupe_count=0`, overlays `flood_parcels=32988`, `aadt_parcels=0`, `wetland_parcels=0`. No traceback/warning; old `pipeline.py:1298` broken-state failure did not recur. Final queues: `active_only=[]`, `stale_only=[]`. No follow-up retry is authorized. Final KPI snapshot can run.
 - **RECONCILE** Day 2 May-31 close state through available evidence. Master. PR #155 `feat(matrix): apply Norfolk MA batch 2` is merged as `b94361a` after prod apply/refresh; Norfolk moved 1,210 parcels unclear→classified and remains partial with 77 unclear rows, 13,428 unclear-bound parcels, and 91.3% classified parcel coverage. PR #154 section 8 cleanup is merged as `5783689`, leaving B8 as the only active reliability failure family while B4, D1, and G1 remain tracked. Lane D clean pre-Marlboro queue check is complete (`active_only=0`, `stale_only=0` at `2026-05-31T00:40:25Z`) and authorizes exactly one Marlboro NJ probe. No Marlboro result is present in shared state yet; final KPI snapshot and close report remain blocked on that output. The run_overlays containment stretch is skipped for May-31 close because the warning remains log-only/non-fatal.
