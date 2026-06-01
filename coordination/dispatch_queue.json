@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T15:47:19Z",
+  "updated_at": "2026-06-01T16:05:00Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "mode": "kpi_growth",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "lane-b-retry-sweep",
-      "action": "Run exactly one Marlboro NJ probe. Lane D pre-Marlboro queue check was clean at 2026-05-31T00:40:25Z; no Marlboro result is present in shared state yet.",
-      "wake_condition": "Immediate. Do not report Wake again; Wake is already complete. Do not run any broad retry batch.",
-      "dependency_order": "Final missing Day 2 evidence before final KPI snapshot / May-31 close report.",
-      "expected_kpi": "classification of Marlboro broken-state retry path; possible failed-job reduction if ready"
+      "lane": "master",
+      "action": "Run final May-31 KPI snapshot and close report. Marlboro NJ job a9471bf2 reached ready; PR #155 is merged; run_overlays stretch is skipped unless new evidence appears.",
+      "wake_condition": "Immediate. Day 2 retry/matrix evidence is complete.",
+      "dependency_order": "Next step after Marlboro ready reconciliation.",
+      "expected_kpi": "final close accounting for Middlesex +25,706, Norfolk +1,210, Wake cleared, Marlboro cleared, and Sprint-2 carryover"
     },
     {
       "rank": 2,
-      "lane": "master",
-      "action": "Final KPI snapshot and May-31 close report after Marlboro result arrives. Include PR #155 merged state and skip run_overlays stretch unless new evidence appears.",
-      "wake_condition": "Lane B Marlboro output available.",
-      "dependency_order": "Blocked on rank 1 Marlboro result.",
-      "expected_kpi": "final close accounting for Middlesex +25,706, Norfolk +1,210, Wake cleared, and Marlboro disposition"
+      "lane": "lane-a-integrator",
+      "action": "Final KPI snapshot support if Master delegates audit refresh. Use established evidence-backed audit process; do not start retries.",
+      "wake_condition": "Master requests final KPI snapshot support.",
+      "dependency_order": "Can run before final close report if Master does not refresh directly.",
+      "expected_kpi": "final KPI snapshot after PR #155 and Marlboro ready"
     },
     {
       "rank": 3,
-      "lane": "lane-a-integrator",
-      "action": "Completed: Section 8 failure-cluster cleanup moved cleared Wake, B6, B7, B9, B10, C1, and PR #94 evidence out of active framing while preserving audit trail; B8 remains active/parked and D1 remains open.",
-      "wake_condition": "Complete as of 2026-05-31T00:40:31Z. No backend code work recommended from current evidence.",
-      "dependency_order": "Can run in parallel with Lane E Norfolk MA batch 2.",
-      "expected_kpi": "cleaner failed-job and blocker framing for May-31 close report"
+      "lane": "lane-b-retry-sweep",
+      "action": "Completed: Marlboro NJ probe job a9471bf2 reached ready with 251,486 downloaded/ingested and no traceback/warning. No second Marlboro retry authorized.",
+      "wake_condition": "Complete; pause Lane B.",
+      "dependency_order": "Complete before final KPI snapshot.",
+      "expected_kpi": "old pipeline.py:1298 broken-state failure cleared"
     },
     {
       "rank": 4,
@@ -118,7 +118,7 @@
       "jurisdictions": [
         "Marlboro, NJ"
       ],
-      "purpose": "Day 2 small broken-state probe, gated by Lane D clean pre-Marlboro queue check."
+      "purpose": "Completed: job a9471bf2 reached ready and old pipeline.py:1298 broken-state failure did not recur. No second retry authorized."
     }
   ],
   "lane_wakeups": [
@@ -175,7 +175,15 @@
       "wake_lanes": [
         "lane-b-retry-sweep"
       ],
-      "action": "Triggered at 2026-05-31T00:40:25Z: active_only=0 and stale_only=0. Run exactly one Marlboro NJ probe. No broad retry batch."
+      "action": "Completed by Marlboro job a9471bf2 reaching ready. No broad retry batch and no second Marlboro retry."
+    },
+    {
+      "condition": "Lane B Marlboro NJ probe reaches terminal state",
+      "wake_lanes": [
+        "master",
+        "lane-a-integrator"
+      ],
+      "action": "Completed: Marlboro job a9471bf2 reached ready. Final KPI snapshot and May-31 close report can run."
     },
     {
       "condition": "Lane E Norfolk MA batch 2 prod apply + refresh complete",
@@ -229,7 +237,7 @@
     "Mode: kpi_growth. Reliability triage exited 2026-05-28 after B6/B7 cleared and C1 no-code parked.",
     "Wake County NC retry is complete: job c2344f4d reached ready/all-dedupe; do not run another Wake retry.",
     "Day 2 primary lane is Lane E Norfolk MA batch 2; Lane A section 8 cleanup can run in parallel.",
-    "Marlboro NJ is gated on a fresh Lane D clean queue check and must be exactly one probe.",
+    "Marlboro NJ probe is complete: job a9471bf2 reached ready; do not run a second Marlboro retry.",
     "PR #155 is already merged as b94361a; do not run more Norfolk MA batch 2 work for May-31 close.",
     "Run_overlays containment review is skipped for May-31 close unless the warning becomes terminal.",
     "Do not dispatch Nassau / Middlesex NJ / Fairfield CT until B8 has code-level mitigation or Master explicitly authorizes a large-county scaling experiment.",

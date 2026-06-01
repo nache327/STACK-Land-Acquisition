@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-05-31T00:24:52Z",
+  "updated_at": "2026-06-01T16:05:00Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
   "active_blockers": [
     {
@@ -165,6 +165,33 @@
         "dedupe_count": 435597,
         "traceback_warning": "none",
         "final_queues": "active_only=[]; stale_only=[]"
+      }
+    },
+    {
+      "id": "M1",
+      "owner_lane": "lane-b-retry-sweep",
+      "cleared_by": "Marlboro NJ job a9471bf2-25ec-4c58-b45e-730016ed0ea0 reached ready; old pipeline.py:1298 broken-state failure did not recur",
+      "cleared_at": "2026-05-31",
+      "status": "cleared_ready_no_retry",
+      "evidence": {
+        "job_id": "a9471bf2-25ec-4c58-b45e-730016ed0ea0",
+        "deployed_pipeline_version_at_run": "b94361a50e15",
+        "current_pipeline_version_after_check": "c9a306a3bf32",
+        "terminal_state": "ready",
+        "queued_at": "2026-05-31T02:35:32.065255Z",
+        "started_at": "2026-05-31T02:35:34.845565Z",
+        "finished_at": "2026-05-31T02:47:43.710986Z",
+        "downloaded": 251486,
+        "ingested": 251486,
+        "dedupe_count": 0,
+        "overlays": {
+          "flood_parcels": 32988,
+          "aadt_parcels": 0,
+          "wetland_parcels": 0
+        },
+        "traceback_warning": "none",
+        "final_queues": "active_only=[]; stale_only=[]",
+        "follow_up_retry_allowed": false
       }
     }
   ]

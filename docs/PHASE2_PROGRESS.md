@@ -176,7 +176,7 @@ _Lane E: append progress notes here (script written / PR opened / merged / refre
 | Westchester County, NY | 257,914 | Phase 2 incomplete | not yet retried | TBD |
 | Nassau County, NY | 420,577 | Phase 2 incomplete | not yet retried | TBD |
 | Fairfield County, CT | 261,652 | Phase 2 incomplete | not yet retried | TBD |
-| Marlboro, NJ | 0 (broken state) | pipeline.py:1298 | not yet retried | TBD |
+| Marlboro, NJ | 251,486 downloaded / 251,486 ingested | pipeline.py:1298 | retried 2026-05-31 | `ready`; job `a9471bf2`; old broken-state failure did not recur |
 
 _Lane B: log each retry result here. Reassess once you see outcomes — most Cat-B jurisdictions will need source acquisition even if pipeline retry succeeds._
 
@@ -208,7 +208,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
 | A — Integrator | Day 2 section 8 failure-cluster cleanup complete | none | B8 remains the only active reliability failure family; B6/B7/B9/B10/Wake cleared; run_overlays warning log-only | 2026-05-31 00:40 UTC |
-| B — Discovery + Coverage | Marlboro NJ probe authorized by Lane D clean queue check; output missing from shared state | — | Nassau/Middlesex/Fairfield parked under B8; no Wake/Monmouth/Westchester retest | 2026-06-01 Master reconciliation |
+| B — Discovery + Coverage | Marlboro NJ probe completed ready; paused | — | Nassau/Middlesex/Fairfield parked under B8; no Wake/Marlboro/Monmouth/Westchester retest | 2026-05-31 02:47 UTC (Marlboro ready) |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
 | D — Operator + Workflow | pre-Marlboro clean queue check complete | — | none for Marlboro dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-31 00:40 UTC (`active_only=0`, `stale_only=0`; Lane B may run exactly one Marlboro NJ probe) |
 | E — Matrix Intelligence | Norfolk County MA batch 2 applied/refreshed/merged; paused | PR #155 merged (`b94361a`); PR #143 merged (`2cdd874`); PR #100 merged (`6eb9eaf`) | none for Lane E; Railway CLI auth remains unavailable globally | 2026-06-01 Master reconciliation |
@@ -269,7 +269,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 1. ~~Lane E Norfolk County MA batch 2~~ ✅ merged as PR #155 (`b94361a`); no operational flip.
 2. ~~Lane A section 8 failure-cluster cleanup~~ ✅ merged as PR #154 (`5783689`).
 3. ~~Lane D pre-Marlboro queue check~~ ✅ clean at `2026-05-31T00:40:25Z`.
-4. **Lane B Marlboro NJ probe** — exactly one probe remains the final missing Day 2 output.
+4. ~~Lane B Marlboro NJ probe~~ ✅ job `a9471bf2` reached `ready`; no follow-up retry authorized.
 5. ~~Lane A run_overlays containment review~~ skipped for May-31 close; warning remains log-only/non-fatal.
 
 ---
@@ -288,6 +288,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 | ~~B6~~ | ~~Westchester post-overlay `db.commit()` failure at `pipeline.py:1752`; Nassau `d98324cc-6c78-4e2f-a6ab-d6fb15f92835` `run_overlays` fatal `db.commit()` failure at `pipeline.py:1785`; Monmouth and Westchester non-fatal `run_overlays` transaction warnings~~ | ~~Lane A~~ | ~~retry sequencing~~ | **RESOLVED FATAL CLASS via PR #119 + Westchester validation** — Westchester job `9f8ecb57` reached `ready`; fatal post-overlay/run_overlays terminal failure did not recur. Recurring invalid-transaction warning remains log-only/operator evidence and does not block Lane C |
 | ~~B7~~ | ~~Nassau + Monmouth `bootstrap_zone_use_matrix` terminal failure at `pipeline.py:1680` / `matrix_bootstrap.py:70` after parcel download; Monmouth evidence shows `download_parcels` 251,486 and `ingest_parcels` 251,486 completed, no overlay step ran~~ | ~~Lane A~~ | ~~Lane B retry dispatch paused for same-signature jobs~~ | **RESOLVED via PR #106 and Monmouth validation** — Monmouth job `a9515ff6` reached `run_overlays` and `ready`; bootstrap hard failure did not recur |
 | B8 | Nassau large-county ingest mapping plateau/stale-lock recurrence (`3b4582c5` stalled at `210000 / 420594` in user-provided retry evidence and was cancelled by Lane D after mapping reached `266000 / 420594`, no terminal traceback) plus Middlesex/Fairfield plateau history | Lane A / Lane B | retry sequencing; large-county scaling | **REOPENED / PARKED** — single happy-path Nassau job `d98324cc` is insufficient evidence; Lane D cancelled `3b4582c5` at `2026-05-28T17:38:22.115015Z`; final `active_only=0`, `stale_only=0`; Nassau/Middlesex/Fairfield parked until mitigation or deliberate scaling experiment |
+| ~~M1~~ | ~~Marlboro NJ old broken-state failure at `pipeline.py:1298`~~ | ~~Lane B~~ | ~~May-31 close probe~~ | **RESOLVED** — job `a9471bf2-25ec-4c58-b45e-730016ed0ea0` reached `ready` on 2026-05-31 with 251,486 downloaded / 251,486 ingested and no traceback/warning; no second retry authorized |
 | ~~B9~~ | ~~Nassau forced validation retry `3c7ce534-ce81-461e-bab5-76eb64e0105f` failed during `download_parcels` before parcel counters at `pipeline.py:1229 existing_count = await db.scalar(...)`; job `force=true` made the cache count unnecessary~~ | ~~Lane A~~ | ~~Nassau cannot validate B7 until forced-run cache preflight is bypassed~~ | **RESOLVED via PR #109** — merged `0afa78a07579bd9d7c78b2f529d0519b8b2b893e`; Railway `/health.pipeline_version` reports `0afa78a07579` |
 | ~~B10~~ | ~~Nassau validation retry `7cda9f3e-eff5-403f-b345-ba083e359e9d` completed `download_parcels` 420,594 and `ingest_parcels` 420,577, then failed at `pipeline.py:1737` / `spatial_backfill.py:152` during `coverage_refresh` DB execute~~ | ~~Lane A~~ | ~~Nassau cannot validate B7/continue to overlays until coverage refresh uses a reliable session boundary~~ | **RESOLVED via PR #111** — merged `7411a2fa934e6fea8e80efcf1fa333ece0c8b4a5`; Railway `/health.pipeline_version` reports `7411a2fa934e` |
 | B5 | alias_mappings framework abstraction (PR #86) + vocabulary_aliases table (PR #90) | logged | governance | **LOG ONLY** (Section 7 #3 in plan); not rolled back |
@@ -300,6 +301,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-01
 
+- **RECONCILE** Marlboro NJ probe. Master. Lane B evidence shows exactly one Marlboro NJ probe already existed in production and reached `ready`: job `a9471bf2-25ec-4c58-b45e-730016ed0ea0`, `/health.pipeline_version=b94361a50e15` at run time and `c9a306a3bf32` after pull/check, queued `2026-05-31T02:35:32.065255Z`, started `2026-05-31T02:35:34.845565Z`, finished `2026-05-31T02:47:43.710986Z`. Counts: 251,486 downloaded, 251,486 ingested, `dedupe_count=0`, overlays `flood_parcels=32988`, `aadt_parcels=0`, `wetland_parcels=0`. No traceback/warning; old `pipeline.py:1298` broken-state failure did not recur. Final queues: `active_only=[]`, `stale_only=[]`. No follow-up retry is authorized. Final KPI snapshot can run.
 - **RECONCILE** Day 2 May-31 close state through available evidence. Master. PR #155 `feat(matrix): apply Norfolk MA batch 2` is merged as `b94361a` after prod apply/refresh; Norfolk moved 1,210 parcels unclear→classified and remains partial with 77 unclear rows, 13,428 unclear-bound parcels, and 91.3% classified parcel coverage. PR #154 section 8 cleanup is merged as `5783689`, leaving B8 as the only active reliability failure family while B4, D1, and G1 remain tracked. Lane D clean pre-Marlboro queue check is complete (`active_only=0`, `stale_only=0` at `2026-05-31T00:40:25Z`) and authorizes exactly one Marlboro NJ probe. No Marlboro result is present in shared state yet; final KPI snapshot and close report remain blocked on that output. The run_overlays containment stretch is skipped for May-31 close because the warning remains log-only/non-fatal.
 
 ### 2026-05-30
