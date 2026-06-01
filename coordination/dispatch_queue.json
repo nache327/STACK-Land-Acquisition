@@ -1,64 +1,48 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T16:32:04Z",
+  "updated_at": "2026-06-01T16:40:00Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "mode": "kpi_growth",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "master",
-      "action": "Completed: final May-31 KPI snapshot is recorded in backend/tmp/audit_may31_close.json and docs/PHASE2_PROGRESS.md section 1. Master can write final close report.",
-      "wake_condition": "Complete as of 2026-06-01T16:32:04Z.",
-      "dependency_order": "Next step after Marlboro ready reconciliation.",
-      "expected_kpi": "final close accounting complete for Middlesex +25,706, Norfolk +1,210, Wake cleared, Marlboro cleared, and Sprint-2 carryover"
+      "lane": "master-planning",
+      "action": "Plan June/Sprint-2 roadmap from committed May-31 close state. Do not authorize retries inside this close reconciliation.",
+      "wake_condition": "Immediate after May-31 close PR is merged.",
+      "dependency_order": "Next step after final close reconciliation.",
+      "expected_kpi": "choose the next KPI-growth lane among structural coverage, matrix throughput, B8 scaling mitigation, and Railway auth/log verification"
     },
     {
       "rank": 2,
-      "lane": "lane-a-integrator",
-      "action": "Completed: Lane A final KPI snapshot support. Canonical audit hung; fallback artifact uses latest complete audit with targeted Norfolk live aggregate counts after PR #155.",
-      "wake_condition": "Complete; wake only if Master requests edits to final close report or new audit evidence appears.",
-      "dependency_order": "Can run before final close report if Master does not refresh directly.",
-      "expected_kpi": "final KPI snapshot after PR #155 and Marlboro ready"
+      "lane": "lane-b-retry-sweep",
+      "action": "Paused. Wake only if Master Planning assigns structural coverage/source acquisition or explicitly authorizes a retry.",
+      "wake_condition": "June/Sprint-2 Master Planning dispatch.",
+      "dependency_order": "No active May-31 retry authorization.",
+      "expected_kpi": "likely structural coverage movement if Burlington/Bergen/NJ per-town source path is selected"
     },
     {
       "rank": 3,
-      "lane": "lane-b-retry-sweep",
-      "action": "Completed: Marlboro NJ probe job a9471bf2 reached ready with 251,486 downloaded/ingested and no traceback/warning. No second Marlboro retry authorized.",
-      "wake_condition": "Complete; pause Lane B.",
-      "dependency_order": "Complete before final KPI snapshot.",
-      "expected_kpi": "old pipeline.py:1298 broken-state failure cleared"
+      "lane": "lane-e-matrix",
+      "action": "Paused. Wake only if Master Planning assigns the next matrix throughput batch.",
+      "wake_condition": "June/Sprint-2 Master Planning dispatch.",
+      "dependency_order": "Norfolk MA batch 2 and Middlesex MA batch 2 are complete for May-31 close.",
+      "expected_kpi": "additional unclear-to-classified parcel movement inside partial jurisdictions"
     },
     {
       "rank": 4,
-      "lane": "lane-d-watchdog",
-      "action": "Completed: pre-Marlboro queue check verified active_only=0 and stale_only=0; no cleanup needed; Railway auth remains blocked.",
-      "wake_condition": "Complete as of 2026-05-31T00:40:25Z.",
-      "dependency_order": "Must complete before Lane B Marlboro NJ probe.",
-      "expected_kpi": "operator safety gate before small broken-state retry"
+      "lane": "lane-a-integrator",
+      "action": "Paused. Wake for B8 mitigation/scaling design, new fatal terminal class, or Master-requested audit/docs work.",
+      "wake_condition": "June/Sprint-2 Master Planning dispatch or new evidence.",
+      "dependency_order": "B6/B7/B9/B10/Wake/Marlboro reliability classes are closed for May-31.",
+      "expected_kpi": "restore safe large-county retry path only if B8 is selected"
     },
     {
       "rank": 5,
-      "lane": "lane-e-matrix",
-      "action": "Completed: Norfolk County MA batch 2 merged as PR #155 / b94361a after prod apply/refresh. Moved 1,210 parcels unclear→classified; no operational flip.",
-      "wake_condition": "Complete; pause Lane E until Sprint-2 matrix dispatch or final audit evidence request.",
-      "dependency_order": "Complete before final KPI snapshot.",
-      "expected_kpi": "additional trustworthy parcel verdict growth within a partial jurisdiction; no Norfolk operational flip"
-    },
-    {
-      "rank": 6,
-      "lane": "lane-a-integrator",
-      "action": "Skipped for May-31 close: run_overlays invalid-transaction containment review. Warning is currently non-fatal/log-only.",
-      "wake_condition": "Do not wake unless new evidence shows terminal impact.",
-      "dependency_order": "Skipped to protect final close path.",
-      "expected_kpi": "operator-log hygiene; no current retry blocker"
-    },
-    {
-      "rank": 7,
       "lane": "lane-d-watchdog",
-      "action": "Opportunistic: verify Railway cron logs for PR #97 watchdog when auth is available.",
-      "wake_condition": "Railway CLI auth refreshed or alternate cron-log source provided.",
-      "dependency_order": "External auth unblock required; non-gating for KPI-growth mode.",
-      "expected_kpi": "operator workflow confidence for stuck-job prevention"
+      "action": "Paused except Railway auth/log verification or stale-job cleanup.",
+      "wake_condition": "Railway CLI auth refreshed, alternate cron-log source provided, or new stale/active job appears.",
+      "dependency_order": "D1 remains open but non-gating for May-31 close.",
+      "expected_kpi": "operator workflow confidence"
     }
   ],
   "merge_sequence": [
@@ -90,7 +74,13 @@
       "rank": 5,
       "item": "Lane B Marlboro NJ probe",
       "lane": "lane-b-retry-sweep",
-      "state": "authorized by Lane D clean queue check; output missing from shared state"
+      "state": "completed: job a9471bf2 reached ready; no second Marlboro retry authorized"
+    },
+    {
+      "rank": 6,
+      "item": "May-31 final KPI snapshot and close reconciliation",
+      "lane": "master",
+      "state": "complete: backend/tmp/audit_may31_close.json recorded final KPI snapshot; close report ready for June/Sprint-2 handoff"
     }
   ],
   "retry_sequence": [

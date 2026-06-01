@@ -1,7 +1,26 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T16:05:00Z",
+  "updated_at": "2026-06-01T16:40:00Z",
   "source": "docs/PHASE2_PROGRESS.md sections 8, 9, 12, 14, and 15",
+  "may31_close_disposition": {
+    "status": "complete",
+    "cleared_reliability_classes": [
+      "B6 fatal post-overlay/run_overlays terminal failure",
+      "B7 bootstrap_zone_use_matrix hard failure",
+      "B9 forced-run cache preflight failure",
+      "B10 coverage-refresh DB execute failure",
+      "Wake County NC old pipeline.py:1417/1401 failure",
+      "Marlboro NJ old pipeline.py:1298 broken-state failure"
+    ],
+    "parked_or_open": [
+      "B4 Burlington structural coverage/source acquisition",
+      "B8 Nassau/Middlesex NJ/Fairfield large-county mapping/stale-lock class",
+      "D1 Railway auth/log access",
+      "G1 governance drift log",
+      "C1 refresh-bbox route gap parked because current bbox-null rows have no geometry"
+    ],
+    "retry_authorization": "none; June/Sprint-2 planning must explicitly authorize any next retry"
+  },
   "active_blockers": [
     {
       "id": "B4",

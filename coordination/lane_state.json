@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T16:32:04Z",
+  "updated_at": "2026-06-01T16:40:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-06-01 May-31 close, backend/tmp/audit_may31_close.json",
@@ -37,7 +37,8 @@
     "run_overlays_stretch": "skipped_for_may31_close_no_blocking_evidence",
     "wake_nc": "ready_all_dedupe_old_pipeline_1417_1401_did_not_recur",
     "marlboro_nj": "ready_old_pipeline_1298_broken_state_did_not_recur",
-    "day2_sequence": "complete_ready_for_final_kpi_snapshot"
+    "day2_sequence": "complete",
+    "may31_close": "complete_ready_for_june_sprint2_planning"
   },
   "kpi_focus": [
     "honest operational jurisdictions",
@@ -49,11 +50,11 @@
   "lanes": {
     "master": {
       "branch": "main",
-      "status": "completed_may31_final_kpi_snapshot",
-      "task": "May-31 final KPI snapshot complete: canonical full audit hung, fallback artifact backend/tmp/audit_may31_close.json uses latest complete audit with current Middlesex MA plus targeted Norfolk MA live aggregate counts after PR #155. Master can write final close report.",
+      "status": "may31_close_complete",
+      "task": "May-31 Phase 2 close reconciliation complete: final KPI snapshot recorded from backend/tmp/audit_may31_close.json; Middlesex MA batch 2, Norfolk MA batch 2, Wake ready/all-dedupe, Marlboro ready, section 8 cleanup, B6 fatal clear, and B7 clear are all recorded. No retries authorized; next action is June/Sprint-2 Master Planning.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake for final May-31 KPI snapshot and close report, or if a new fatal terminal class appears.",
+      "wake_condition": "Wake for June/Sprint-2 roadmap planning, or if a new fatal terminal class appears.",
       "latest_kpi_delta": {
         "honest_operational_jurisdictions": 45,
         "audit_operational_jurisdictions": 45,
@@ -69,9 +70,10 @@
         "day1_close": "Middlesex MA batch 2 confirmed +25,706 unclear→classified but remains partial, so trustworthy operational parcel verdict count is unchanged. Wake County NC job c2344f4d reached ready/all-dedupe with no traceback. Audit refreshed by PR #152.",
         "day2_close": "Norfolk MA batch 2 PR #155 merged as b94361a after prod apply/refresh; +1,210 unclear→classified, no operational flip. Section 8 cleanup PR #154 merged as 5783689. Lane D pre-Marlboro queue check was clean. Marlboro NJ job a9471bf2 reached ready with 251,486 downloaded/ingested and no warning.",
         "may31_final_snapshot": "backend/tmp/audit_may31_close.json; operational=45; trustworthy_operational_classified=3,292,352; all_classified=3,986,326; partial_unclear_rows=289; partial_unclear_bound=79,653; fake_operationals=0; bbox_null=7; PR #143 + PR #155 net May-31 matrix movement=26,916; no operational flips",
+        "may31_close": "complete; June/Sprint-2 handoff should choose among Lane B structural coverage/source acquisition, Lane E next matrix throughput, Lane A/D B8 scaling mitigation, and Lane D Railway auth",
         "run_overlays_stretch": "skipped for May-31 close; warning remains log-only and non-blocking"
       },
-      "updated_at": "2026-06-01T16:32:04Z"
+      "updated_at": "2026-06-01T16:40:00Z"
     },
     "lane-a-integrator": {
       "status": "completed",
