@@ -1,6 +1,6 @@
 # Phase 2 Progress — STACK Land Acquisition
 
-**Last audit refresh:** 2026-05-29 (post PR #143, verified via `backend/tmp/audit_post_middlesex_ma_batch2.json`)
+**Last audit refresh:** 2026-06-01 (May-31 close fallback artifact, verified via `backend/tmp/audit_may31_close.json`)
 **Phase 2 sprint:** 1 of 6 (each sprint = 14 days; sprint window 2026-05-22 → 2026-06-05)
 **Plan reference:** `/Users/arench/.claude/plans/virtual-herding-iverson.md`
 
@@ -22,20 +22,22 @@ Operational coordination has moved from workspace-local `.context/*.json` files 
 ## 1. Current KPI Snapshot
 
 **Owner:** master thread (refresh after every audit)
-**Source:** `backend/tmp/audit_post_middlesex_ma_batch2.json` (2026-05-29 post-PR-#143 Lane A audit refresh: last complete full audit plus live recompute of Middlesex County, MA using `audit_zoning_coverage` readiness logic; canonical full CLI attempt did not return from live DB)
+**Source:** `backend/tmp/audit_may31_close.json` (2026-06-01 Lane A May-31 close snapshot. Canonical full CLI attempt did not return after 4m38s; artifact starts from the latest complete audit, keeps current Middlesex County MA, and replaces Norfolk County MA with targeted live aggregate counts after PR #155.)
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **45** | audit_post_middlesex_ma_batch2.json `.summary.operational_count` | unchanged vs post-PR-#98 |
-| 1 #1 | Audit-operational jurisdictions | **45** | audit_post_middlesex_ma_batch2.json `.summary.operational_count` | -3 vs 2026-05-21 audit baseline (48) |
-| 1 #2 | Trustworthy parcel verdict count | **3,292,352** | audit_post_middlesex_ma_batch2.json operational classified parcel sum | unchanged; Middlesex MA remains partial |
-| 1 #3 | Avg unclear share (partials) | **12.6%** | audit_post_middlesex_ma_batch2.json weighted partial unclear/matrix parcel share (`97,352 / 773,627`) | -5.7pp vs post-PR-#98 |
-| 1 #4 | Fake-operationals | **0** | audit_post_middlesex_ma_batch2.json query: operational + zoning-code coverage `<70` | unchanged |
+| 1 #1 | Honest operational jurisdictions | **45** | audit_may31_close.json `.summary.operational_count` | unchanged vs post-PR-#98 |
+| 1 #1 | Audit-operational jurisdictions | **45** | audit_may31_close.json `.summary.operational_count` | -3 vs 2026-05-21 audit baseline (48) |
+| 1 #2 | Trustworthy parcel verdict count | **3,292,352** | audit_may31_close.json operational classified parcel sum | unchanged; Middlesex MA and Norfolk MA remain partial |
+| 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
+| 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
+| 1 #3 | Partial unclear rows / unclear-bound parcels | **289 / 79,653** | audit_may31_close.json partial sums | -23 rows / -17,699 parcels vs post-PR-#143 artifact |
+| 1 #4 | Fake-operationals | **0** | audit_may31_close.json query: operational + zoning-code coverage `<70` | unchanged |
 | 2 #5 | Failed jobs / 14d | **42** | live `/api/admin/jobs?status=failed&limit=500`, filtered since 2026-05-12 | -5 vs prior 47 |
 | 2 #5 | Stuck jobs (>10min, non-terminal) | **0** | live `/api/admin/jobs?stale_only=true&limit=500` | unchanged |
 | 2 #6 | Snapshot table latest capture | 2026-05-19 21:56 UTC | live `coverage_snapshots` max `captured_at` | stale |
 | 2 #7 | Ingest success last 14d | **91 ready / 42 failed / 5 cancelled** | live jobs endpoints, filtered since 2026-05-12 | refreshed window |
-| 2 #8 | Jurisdictions with `bbox IS NULL` | **7** | audit_post_middlesex_ma_batch2.json `has_bbox=false` | unchanged |
+| 2 #8 | Jurisdictions with `bbox IS NULL` | **7** | audit_may31_close.json `has_bbox=false` | unchanged |
 
 ---
 
@@ -44,13 +46,13 @@ Operational coordination has moved from workspace-local `.context/*.json` files 
 **Owner:** master thread
 **Definition:** `operational_readiness = "operational"` AND `parcel_zoning_code_coverage_pct ≥ 70` AND no fake-op flags.
 
-**Current value:** **45** (verified post-PR-#143 audit refresh)
+**Current value:** **45** (verified May-31 close snapshot)
 **Audit-operational value:** **45** (truthfulness rule is part of audit readiness)
 
 **Phase-1 close delta:** -3 vs 2026-05-21 audit baseline (48); -4 vs same-audit old readiness logic (49).
-**Confidence:** verified by `backend/tmp/audit_post_middlesex_ma_batch2.json` generated after PR #143 merged.
+**Confidence:** verified by `backend/tmp/audit_may31_close.json` generated for May-31 close.
 
-Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="operational") | select(.parcel_zoning_code_coverage_pct < 70) | .name]' backend/tmp/audit_post_middlesex_ma_batch2.json` returns `[]`.
+Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="operational") | select(.parcel_zoning_code_coverage_pct < 70) | .name]' backend/tmp/audit_may31_close.json` returns `[]`.
 
 ---
 
@@ -59,7 +61,7 @@ Post-merge validation: `jq '[.jurisdictions[] | select(.operational_readiness=="
 **Owner:** master thread
 **Current value:** **45**
 
-Source: `backend/tmp/audit_post_middlesex_ma_batch2.json` summary block, 2026-05-29 post-PR-#143 Lane A audit refresh.
+Source: `backend/tmp/audit_may31_close.json` summary block, 2026-06-01 Lane A May-31 close snapshot.
 
 **Fake-operational check:** none remain after PR #98.
 
@@ -77,7 +79,7 @@ Source: `backend/tmp/audit_post_middlesex_ma_batch2.json` summary block, 2026-05
 ## 4. Partial Jurisdictions
 
 **Owner:** master thread
-**Count:** **29** (per `backend/tmp/audit_post_middlesex_ma_batch2.json`)
+**Count:** **29** (per `backend/tmp/audit_may31_close.json`)
 
 **Category split (Plan §"Major Strategic Realization"):**
 
@@ -207,7 +209,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 | Lane | Current task | Open PRs | Blockers | Last update |
 |---|---|---|---|---|
-| A — Integrator | Day 2 section 8 failure-cluster cleanup complete | none | B8 remains the only active reliability failure family; B6/B7/B9/B10/Wake cleared; run_overlays warning log-only | 2026-05-31 00:40 UTC |
+| A — Integrator | May-31 final KPI snapshot complete | none | B8 remains parked; B4/D1/G1 remain open; run_overlays warning log-only | 2026-06-01 16:32 UTC |
 | B — Discovery + Coverage | Marlboro NJ probe completed ready; paused | — | Nassau/Middlesex/Fairfield parked under B8; no Wake/Marlboro/Monmouth/Westchester retest | 2026-05-31 02:47 UTC (Marlboro ready) |
 | C — Spatial + CRS | bbox refresh sweep completed; 0 updates because all 7 targets have no parcel geometry | — | refresh-bbox route gap moved to Lane A; no spatial data blocker | 2026-05-28 20:16 UTC (bbox null total remains 7) |
 | D — Operator + Workflow | pre-Marlboro clean queue check complete | — | none for Marlboro dispatch; Railway cron-log verification still blocked by expired local CLI auth | 2026-05-31 00:40 UTC (`active_only=0`, `stale_only=0`; Lane B may run exactly one Marlboro NJ probe) |
@@ -301,6 +303,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-01
 
+- **AUDIT+CLOSE** `backend/tmp/audit_may31_close.json` generated for final May-31 KPI snapshot. Lane A. Canonical `cd backend && .venv/bin/python scripts/audit_zoning_coverage.py --json > tmp/audit_may31_close.json` was attempted and stopped after 4m38s with a zero-byte output; Norfolk-scoped canonical audit also did not return promptly. Final artifact uses the latest complete audit artifact with current Middlesex County MA and targeted live aggregate counts for Norfolk County MA after PR #155. Final KPI snapshot: 45 operational / 29 partial / 7 not_loaded / 81 total; trustworthy operational parcel verdict count 3,292,352; all classified parcel verdicts across audit rows 3,986,326; partial unclear rows 289; partial unclear-bound parcels 79,653; partial unclear share 10.3% (`79,653 / 773,627`); fake-operationals 0; bbox-null 7. May-31 matrix movement from PR #143 + PR #155 is 26,916 parcels unclear→classified; no jurisdiction flipped operational.
 - **RECONCILE** Marlboro NJ probe. Master. Lane B evidence shows exactly one Marlboro NJ probe already existed in production and reached `ready`: job `a9471bf2-25ec-4c58-b45e-730016ed0ea0`, `/health.pipeline_version=b94361a50e15` at run time and `c9a306a3bf32` after pull/check, queued `2026-05-31T02:35:32.065255Z`, started `2026-05-31T02:35:34.845565Z`, finished `2026-05-31T02:47:43.710986Z`. Counts: 251,486 downloaded, 251,486 ingested, `dedupe_count=0`, overlays `flood_parcels=32988`, `aadt_parcels=0`, `wetland_parcels=0`. No traceback/warning; old `pipeline.py:1298` broken-state failure did not recur. Final queues: `active_only=[]`, `stale_only=[]`. No follow-up retry is authorized. Final KPI snapshot can run.
 - **RECONCILE** Day 2 May-31 close state through available evidence. Master. PR #155 `feat(matrix): apply Norfolk MA batch 2` is merged as `b94361a` after prod apply/refresh; Norfolk moved 1,210 parcels unclear→classified and remains partial with 77 unclear rows, 13,428 unclear-bound parcels, and 91.3% classified parcel coverage. PR #154 section 8 cleanup is merged as `5783689`, leaving B8 as the only active reliability failure family while B4, D1, and G1 remain tracked. Lane D clean pre-Marlboro queue check is complete (`active_only=0`, `stale_only=0` at `2026-05-31T00:40:25Z`) and authorizes exactly one Marlboro NJ probe. No Marlboro result is present in shared state yet; final KPI snapshot and close report remain blocked on that output. The run_overlays containment stretch is skipped for May-31 close because the warning remains log-only/non-fatal.
 
