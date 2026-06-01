@@ -34,6 +34,8 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+import asyncio
+import re
 from typing import Any
 
 import geopandas as gpd
@@ -45,6 +47,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.arcgis_bbox import get_parcel_bbox
 
 logger = logging.getLogger(__name__)
+
+
+# AGRC's published rate limit: 6000 request units per minute. A LIR
+# feature-chunk call at 500 features with geometry consumes ~10-15
+# request units (varies by polygon vertex count), so ~400-600 calls/min
+# is the safe envelope. A 100ms sleep between calls = ~600 calls/min
+# which leaves headroom for the variable cost.
+_LIR_INTER_CALL_SLEEP_S = 0.15
+_LIR_MAX_429_RETRIES = 3
 
 
 # AGRC LIR FeatureServers — same source as scripts/lir_fallback_zoning.py.
@@ -320,10 +331,15 @@ async def _fetch_lir_features(
             len(object_ids), oid_field, page_size,
         )
 
-        # Phase 2: fetch features by OBJECTID chunk. POST instead of GET
-        # because at chunk_size=500 the where clause hits ~10KB URL-encoded
-        # which exceeds AGRC's IIS URL length limit (404 HTML page back).
-        # Same query semantics, just submitted as form body.
+        # Phase 2: fetch features by OBJECTID chunk. POST (not GET) because
+        # at chunk_size=500 the WHERE clause URL-encodes to ~10KB which
+        # exceeds AGRC's IIS URL length limit (404 HTML page back).
+        #
+        # Rate-limit handling: AGRC enforces a per-minute request-unit
+        # cap and returns code 429 with a Retry-After hint when exceeded.
+        # Sleeping `_LIR_INTER_CALL_SLEEP_S` between calls keeps the
+        # steady-state under the cap; the 429 branch handles the
+        # occasional burst overflow.
         for start in range(0, len(object_ids), page_size):
             chunk = object_ids[start : start + page_size]
             id_list = ",".join(str(i) for i in chunk)
@@ -334,36 +350,66 @@ async def _fetch_lir_features(
                 "returnGeometry": "true",
                 "f": "geojson",
             }
-            try:
-                fresp = await client.post(query_url, data=feat_params)
-            except httpx.HTTPError as e:
-                raise LirFetchDiagnostic(
-                    f"LIR feature-chunk HTTP error at start={start}: "
-                    f"{type(e).__name__}: {e}"
-                ) from e
-            if fresp.status_code != 200:
-                raise LirFetchDiagnostic(
-                    f"LIR feature-chunk HTTP {fresp.status_code} at start={start}: "
-                    f"{fresp.text[:300]}"
-                )
-            try:
-                fdata = fresp.json()
-            except Exception as e:
-                raise LirFetchDiagnostic(
-                    f"LIR feature-chunk non-JSON at start={start}: {e}; "
-                    f"first 200: {fresp.text[:200]!r}"
-                ) from e
-            if fdata.get("error"):
-                raise LirFetchDiagnostic(
-                    f"LIR feature-chunk server error at start={start}: {fdata['error']}"
-                )
-            batch = fdata.get("features", []) or []
-            all_features.extend(batch)
+
+            attempts = 0
+            while True:
+                try:
+                    fresp = await client.post(query_url, data=feat_params)
+                except httpx.HTTPError as e:
+                    raise LirFetchDiagnostic(
+                        f"LIR feature-chunk HTTP error at start={start}: "
+                        f"{type(e).__name__}: {e}"
+                    ) from e
+                if fresp.status_code != 200:
+                    raise LirFetchDiagnostic(
+                        f"LIR feature-chunk HTTP {fresp.status_code} at start={start}: "
+                        f"{fresp.text[:300]}"
+                    )
+                try:
+                    fdata = fresp.json()
+                except Exception as e:
+                    raise LirFetchDiagnostic(
+                        f"LIR feature-chunk non-JSON at start={start}: {e}; "
+                        f"first 200: {fresp.text[:200]!r}"
+                    ) from e
+                err = fdata.get("error") or {}
+                if err.get("code") == 429:
+                    # Parse "Retry after 60 sec" out of details, default to 60s.
+                    wait_s = 60
+                    for detail in err.get("details") or []:
+                        m = re.search(r"after\s+(\d+)\s*sec", str(detail), re.I)
+                        if m:
+                            wait_s = int(m.group(1)) + 2
+                            break
+                    attempts += 1
+                    if attempts > _LIR_MAX_429_RETRIES:
+                        raise LirFetchDiagnostic(
+                            f"LIR feature-chunk exhausted 429 retries at "
+                            f"start={start}: {err}"
+                        )
+                    logger.warning(
+                        "LIR 429 at start=%d — sleeping %ds (attempt %d/%d)",
+                        start, wait_s, attempts, _LIR_MAX_429_RETRIES,
+                    )
+                    await asyncio.sleep(wait_s)
+                    continue
+                if err:
+                    raise LirFetchDiagnostic(
+                        f"LIR feature-chunk server error at start={start}: {err}"
+                    )
+                batch = fdata.get("features", []) or []
+                all_features.extend(batch)
+                break  # success — leave the retry loop
+
             if (start // page_size) % 25 == 0:
                 logger.info(
                     "LIR fetch: %d / %d OBJECTIDs done (%d features in hand)",
                     start + len(chunk), len(object_ids), len(all_features),
                 )
+            # Steady-state throttle. Spread calls so the per-minute unit
+            # quota is never approached in the first place — 429 retry is
+            # the fallback, not the main path.
+            await asyncio.sleep(_LIR_INTER_CALL_SLEEP_S)
 
     if not all_features:
         return None
