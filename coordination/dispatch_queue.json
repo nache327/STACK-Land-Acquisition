@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T16:05:00Z",
+  "updated_at": "2026-06-01T16:32:04Z",
   "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
   "mode": "kpi_growth",
   "recommended_next_actions": [
     {
       "rank": 1,
       "lane": "master",
-      "action": "Run final May-31 KPI snapshot and close report. Marlboro NJ job a9471bf2 reached ready; PR #155 is merged; run_overlays stretch is skipped unless new evidence appears.",
-      "wake_condition": "Immediate. Day 2 retry/matrix evidence is complete.",
+      "action": "Completed: final May-31 KPI snapshot is recorded in backend/tmp/audit_may31_close.json and docs/PHASE2_PROGRESS.md section 1. Master can write final close report.",
+      "wake_condition": "Complete as of 2026-06-01T16:32:04Z.",
       "dependency_order": "Next step after Marlboro ready reconciliation.",
-      "expected_kpi": "final close accounting for Middlesex +25,706, Norfolk +1,210, Wake cleared, Marlboro cleared, and Sprint-2 carryover"
+      "expected_kpi": "final close accounting complete for Middlesex +25,706, Norfolk +1,210, Wake cleared, Marlboro cleared, and Sprint-2 carryover"
     },
     {
       "rank": 2,
       "lane": "lane-a-integrator",
-      "action": "Final KPI snapshot support if Master delegates audit refresh. Use established evidence-backed audit process; do not start retries.",
-      "wake_condition": "Master requests final KPI snapshot support.",
+      "action": "Completed: Lane A final KPI snapshot support. Canonical audit hung; fallback artifact uses latest complete audit with targeted Norfolk live aggregate counts after PR #155.",
+      "wake_condition": "Complete; wake only if Master requests edits to final close report or new audit evidence appears.",
       "dependency_order": "Can run before final close report if Master does not refresh directly.",
       "expected_kpi": "final KPI snapshot after PR #155 and Marlboro ready"
     },
