@@ -1,24 +1,24 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T16:40:00Z",
-  "source": "docs/PHASE2_PROGRESS.md sections 6, 7, 8, 9, 12, and 13",
-  "mode": "kpi_growth",
+  "updated_at": "2026-06-01T18:30:00Z",
+  "source": "docs/PHASE2_PROGRESS.md + docs/OP5_PROOF_PLAN.md",
+  "mode": "kpi_growth_op5_proof_dispatched",
   "recommended_next_actions": [
     {
       "rank": 1,
-      "lane": "master-planning",
-      "action": "Plan June/Sprint-2 roadmap from committed May-31 close state. Do not authorize retries inside this close reconciliation.",
-      "wake_condition": "Immediate after May-31 close PR is merged.",
-      "dependency_order": "Next step after final close reconciliation.",
-      "expected_kpi": "choose the next KPI-growth lane among structural coverage, matrix throughput, B8 scaling mitigation, and Railway auth/log verification"
+      "lane": "op5-proof-orchestrator",
+      "action": "Execute Op-5 pre-flight proof per docs/OP5_PROOF_PLAN.md. Three Bergen towns (Hackensack raster, Fort Lee vector, Fair Lawn vector). Validate against S1-S7 success criteria. Target wall-clock 48h. Do NOT proceed to factory build before CP3 GO decision.",
+      "wake_condition": "Immediate. Op-5 proof authorized 2026-06-01 by Master Planning.",
+      "dependency_order": "Blocks Lane B Sprint-2 dispatch. No factory build until proof returns GO.",
+      "expected_kpi": "falsifiable proof of factory thesis on hardest PDF classes; GO/NO-GO decision for 25-agent factory build"
     },
     {
       "rank": 2,
-      "lane": "lane-b-retry-sweep",
-      "action": "Paused. Wake only if Master Planning assigns structural coverage/source acquisition or explicitly authorizes a retry.",
-      "wake_condition": "June/Sprint-2 Master Planning dispatch.",
-      "dependency_order": "No active May-31 retry authorization.",
-      "expected_kpi": "likely structural coverage movement if Burlington/Bergen/NJ per-town source path is selected"
+      "lane": "lane-b-structural-coverage",
+      "action": "Paused pending Op-5 proof outcome. If proof GO: dispatched into 72h factory plan. If proof NO-GO: redesign per OP5_PROOF_PLAN.md decision tree.",
+      "wake_condition": "Op-5 proof CP3 decision.",
+      "dependency_order": "Cannot start until proof completes.",
+      "expected_kpi": "structural coverage flips for NJ Tier-S counties — magnitude depends on proof outcome"
     },
     {
       "rank": 3,
