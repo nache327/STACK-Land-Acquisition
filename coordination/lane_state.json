@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T15:47:19Z",
+  "updated_at": "2026-06-01T16:05:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-05-29 post PR #143, backend/tmp/audit_post_middlesex_ma_batch2.json",
@@ -9,7 +9,7 @@
   "mode": "kpi_growth",
   "current_known_state": {
     "mode": "kpi_growth_entered_2026_05_28",
-    "lane_b": "marlboro_probe_authorized_pending_output",
+    "lane_b": "marlboro_nj_ready_probe_complete",
     "lane_e": "norfolk_ma_batch_2_merged_no_operational_flip",
     "lane_c": "asleep_until_new_parcel_geometry_or_route_need",
     "lane_d": "opportunistic_railway_auth_or_new_stale_job",
@@ -36,7 +36,8 @@
     "run_overlays_warning": "recurring_operator_log_only",
     "run_overlays_stretch": "skipped_for_may31_close_no_blocking_evidence",
     "wake_nc": "ready_all_dedupe_old_pipeline_1417_1401_did_not_recur",
-    "day2_sequence": "norfolk_batch2_section8_cleanup_pre_marlboro_check_complete_marlboro_output_missing"
+    "marlboro_nj": "ready_old_pipeline_1298_broken_state_did_not_recur",
+    "day2_sequence": "complete_ready_for_final_kpi_snapshot"
   },
   "kpi_focus": [
     "honest operational jurisdictions",
@@ -49,10 +50,10 @@
     "master": {
       "branch": "main",
       "status": "running",
-      "task": "Day 2 reconciliation is complete through PR #155 Norfolk MA batch 2 merge, PR #154 section 8 cleanup, and Lane D pre-Marlboro clean queue check. Marlboro output is not present in shared state, so final close remains pending exactly one Lane B Marlboro NJ probe result.",
+      "task": "Day 2 reconciliation complete: PR #155 Norfolk MA batch 2 merged, PR #154 section 8 cleanup complete, Lane D pre-Marlboro queue check clean, and Marlboro NJ probe job a9471bf2 reached ready with no traceback/warning. Final KPI snapshot can run.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake when Lane B Marlboro NJ probe result is available, or if a new fatal terminal class appears.",
+      "wake_condition": "Wake for final May-31 KPI snapshot and close report, or if a new fatal terminal class appears.",
       "latest_kpi_delta": {
         "honest_operational_jurisdictions": 45,
         "audit_operational_jurisdictions": 45,
@@ -66,10 +67,10 @@
         "bbox_null": 7,
         "kpi_growth_mode_entered_at": "2026-05-28T20:55:00Z",
         "day1_close": "Middlesex MA batch 2 confirmed +25,706 unclear→classified but remains partial, so trustworthy operational parcel verdict count is unchanged. Wake County NC job c2344f4d reached ready/all-dedupe with no traceback. Audit refreshed by PR #152.",
-        "day2_partial": "Norfolk MA batch 2 PR #155 merged as b94361a after prod apply/refresh; +1,210 unclear→classified, no operational flip. Section 8 cleanup PR #154 merged as 5783689. Lane D pre-Marlboro queue check is clean. Marlboro output missing.",
+        "day2_close": "Norfolk MA batch 2 PR #155 merged as b94361a after prod apply/refresh; +1,210 unclear→classified, no operational flip. Section 8 cleanup PR #154 merged as 5783689. Lane D pre-Marlboro queue check was clean. Marlboro NJ job a9471bf2 reached ready with 251,486 downloaded/ingested and no warning.",
         "run_overlays_stretch": "skipped for May-31 close; warning remains log-only and non-blocking"
       },
-      "updated_at": "2026-06-01T15:47:19Z"
+      "updated_at": "2026-06-01T16:05:00Z"
     },
     "lane-a-integrator": {
       "status": "completed",
@@ -93,18 +94,18 @@
     },
     "lane-b-retry-sweep": {
       "branch": null,
-      "status": "marlboro_probe_authorized_pending_output",
-      "task": "Wake County NC retry completed; Lane D pre-Marlboro queue check is clean and authorizes exactly one Marlboro NJ probe. No Marlboro result is present in shared state yet.",
+      "status": "marlboro_nj_ready_probe_complete",
+      "task": "Marlboro NJ probe completed: job a9471bf2-25ec-4c58-b45e-730016ed0ea0 reached ready on deploy b94361a50e15; old pipeline.py:1298 broken-state failure did not recur. No follow-up retry authorized.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Run exactly one Marlboro NJ probe now; do not repeat Wake and do not run a broad retry batch.",
+      "wake_condition": "Pause Lane B until Sprint-2 structural coverage or new retry dispatch; no second Marlboro retry.",
       "latest_kpi_delta": {
         "monmouth": "ready job a9515ff6 (Cat-B coverage still 5.7%; flip requires per-town zoning source acquisition)",
         "westchester": "ready job 9f8ecb57 (Cat-B coverage still 0%; flip requires per-town source acquisition)",
         "wake_nc": "ready job c2344f4d; deploy a6602902a925; downloaded=435,597; newly_ingested=0; dedupe_count=435,597; no traceback/warning; final active_only=[] and stale_only=[]",
-        "current_dispatch": "marlboro_nj_probe_only",
+        "current_dispatch": "paused_after_marlboro_ready",
         "pre_marlboro_queue_check": "Lane D clean at 2026-05-31T00:40:25Z active_only=0 stale_only=0",
-        "marlboro": "authorized_pending_output",
+        "marlboro": "ready job a9471bf2; deploy b94361a50e15 at run and c9a306a3bf32 at later check; queued=2026-05-31T02:35:32.065255Z; started=2026-05-31T02:35:34.845565Z; finished=2026-05-31T02:47:43.710986Z; downloaded=251,486; ingested=251,486; dedupe_count=0; flood_parcels=32,988; aadt_parcels=0; wetland_parcels=0; no traceback/warning; final active_only=[] stale_only=[]",
         "parked_b8_family": [
           "Nassau County, NY",
           "Middlesex County, NJ",
@@ -112,7 +113,7 @@
         ],
         "burlington_pilot": "deferred pending Lane B per-town source path"
       },
-      "updated_at": "2026-06-01T15:47:19Z"
+      "updated_at": "2026-06-01T16:05:00Z"
     },
     "lane-c-spatial-cleanup": {
       "branch": null,
