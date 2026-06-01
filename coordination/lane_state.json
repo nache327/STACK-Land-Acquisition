@@ -1,12 +1,21 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T16:40:00Z",
+  "updated_at": "2026-06-01T18:30:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-06-01 May-31 close, backend/tmp/audit_may31_close.json",
-    "origin_main_at_snapshot": "18159fc"
+    "origin_main_at_snapshot": "1e89144",
+    "op5_proof_plan": "docs/OP5_PROOF_PLAN.md"
   },
-  "mode": "kpi_growth",
+  "mode": "kpi_growth_op5_proof_dispatched",
+  "op5_proof": {
+    "status": "authorized_2026_06_01",
+    "target_towns": ["Hackensack (raster)", "Fort Lee (vector rot 270)", "Fair Lawn (vector)"],
+    "calibration_town": "Garfield (vector baseline 38.6% auto-pair)",
+    "success_threshold": "3/3 towns operational + auto-pair >=80% + spot-check >=90%",
+    "wall_clock_target_hours": 48,
+    "go_blocks_factory_build_until_cp3": true
+  },
   "current_known_state": {
     "mode": "kpi_growth_entered_2026_05_28",
     "lane_b": "marlboro_nj_ready_probe_complete",
@@ -49,12 +58,12 @@
   ],
   "lanes": {
     "master": {
-      "branch": "main",
-      "status": "may31_close_complete",
-      "task": "May-31 Phase 2 close reconciliation complete: final KPI snapshot recorded from backend/tmp/audit_may31_close.json; Middlesex MA batch 2, Norfolk MA batch 2, Wake ready/all-dedupe, Marlboro ready, section 8 cleanup, B6 fatal clear, and B7 clear are all recorded. No retries authorized; next action is June/Sprint-2 Master Planning.",
+      "branch": "adarench/op5-proof-dispatch",
+      "status": "op5_proof_dispatched",
+      "task": "Sprint-2 opening move: Op-5 pre-flight proof dispatched per docs/OP5_PROOF_PLAN.md. Falsifiable test of AI-assisted PDF zoning pipeline on 3 Bergen towns (Hackensack raster, Fort Lee vector, Fair Lawn vector). 48h wall-clock; 3 human review checkpoints (~60 min total). Lane B Sprint-2 dispatch is blocked until CP3 GO/NO-GO.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake for June/Sprint-2 roadmap planning, or if a new fatal terminal class appears.",
+      "wake_condition": "Wake at CP3 for GO/NO-GO decision; otherwise wake on new fatal terminal class or operator request.",
       "latest_kpi_delta": {
         "honest_operational_jurisdictions": 45,
         "audit_operational_jurisdictions": 45,
