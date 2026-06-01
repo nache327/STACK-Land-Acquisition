@@ -466,11 +466,17 @@ async def backfill_has_structure_from_lir(
     """
     from app.services.lir_has_structure_backfill import (
         backfill_has_structure_for_jurisdiction,
+        LirFetchDiagnostic,
     )
     try:
         return await backfill_has_structure_for_jurisdiction(jurisdiction_id, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except LirFetchDiagnostic as e:
+        # Surface the fetcher's structured diagnostic in the response so
+        # operators can see *why* the LIR call returned nothing instead of
+        # the silent empty result we hit on first run.
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.post("/_admin/optimize-parcels")

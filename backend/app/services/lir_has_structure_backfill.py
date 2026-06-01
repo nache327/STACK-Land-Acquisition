@@ -213,22 +213,33 @@ async def backfill_has_structure_for_jurisdiction(
 # ── Internals ────────────────────────────────────────────────────────────
 
 
+class LirFetchDiagnostic(RuntimeError):
+    """Carries structured info from a failed LIR fetch so the admin endpoint
+    can surface what actually happened instead of returning a silent empty
+    GDF that looks like 'no data'."""
+
+
 async def _fetch_lir_features(
     url: str,
     bbox: tuple[float, float, float, float],
     *,
     where: str,
-    page_size: int = 1000,
+    page_size: int = 200,
 ) -> gpd.GeoDataFrame | None:
     """Fetch LIR features in chunks, asking for `PROP_CLASS` + geometry only.
 
-    The generic ArcGIS bbox helper passes `outFields=*` which on the
-    400k-row LIR layer with 30 fields times out at the server side and
-    returns empty after ~60s. Scoping outFields to the one column we
-    actually need keeps each page sub-second.
+    Dropped page_size to 200 (down from 1000) — AGRC's services1.arcgis.com
+    appears to silently truncate / hang on larger pages of the 400k-row LIR
+    layer when fielded from Railway's outbound IP. Smaller pages = each
+    request finishes well under the 60s timeout.
+
+    Raises LirFetchDiagnostic with the HTTP status / response excerpt
+    when something goes wrong so the admin endpoint can surface it.
+    Returning an empty GeoDataFrame silently is the trap we hit on the
+    first attempt — caller now distinguishes "fetched 0" from "fetcher
+    blew up."
     """
     minx, miny, maxx, maxy = bbox
-    # 10% buffer mirrors download_bbox_features so edge parcels aren't lost.
     dx = (maxx - minx) * 0.1
     dy = (maxy - miny) * 0.1
     geom_filter = f"{minx - dx},{miny - dy},{maxx + dx},{maxy + dy}"
@@ -236,6 +247,7 @@ async def _fetch_lir_features(
 
     all_features: list[dict] = []
     offset = 0
+    first_page_info: dict = {}
     async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
         while True:
             params = {
@@ -250,17 +262,55 @@ async def _fetch_lir_features(
                 "resultRecordCount": page_size,
                 "resultOffset": offset,
             }
-            resp = await client.get(query_url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
+            try:
+                resp = await client.get(query_url, params=params)
+            except httpx.HTTPError as e:
+                raise LirFetchDiagnostic(
+                    f"LIR HTTP error at offset={offset}: {type(e).__name__}: {e}"
+                ) from e
+
+            if resp.status_code != 200:
+                raise LirFetchDiagnostic(
+                    f"LIR HTTP {resp.status_code} at offset={offset}: "
+                    f"{resp.text[:300]}"
+                )
+
+            try:
+                data = resp.json()
+            except Exception as e:
+                raise LirFetchDiagnostic(
+                    f"LIR non-JSON body at offset={offset}: {e}; "
+                    f"first 200 chars: {resp.text[:200]!r}"
+                ) from e
+
+            if offset == 0:
+                first_page_info = {
+                    "type": data.get("type"),
+                    "has_features": "features" in data,
+                    "error": data.get("error"),
+                    "exceededTransferLimit": data.get("exceededTransferLimit"),
+                    "keys": list(data.keys())[:8],
+                }
+                if data.get("error"):
+                    raise LirFetchDiagnostic(
+                        f"LIR server error: {data['error']}"
+                    )
+
             batch = data.get("features", []) or []
             if not batch:
+                if offset == 0:
+                    # Surface the diagnostic so we know WHY the first page is empty.
+                    raise LirFetchDiagnostic(
+                        f"LIR first page returned 0 features. "
+                        f"response keys={first_page_info}. "
+                        f"params: where={where!r} geom={geom_filter} page_size={page_size}"
+                    )
                 break
             all_features.extend(batch)
-            if len(all_features) % 10_000 < page_size:
+            if len(all_features) % 5_000 < page_size:
                 logger.info(
-                    "LIR fetch %s: %d features so far (offset=%d)",
-                    url.rsplit("/", 3)[-3], len(all_features), offset,
+                    "LIR fetch: %d features so far (offset=%d)",
+                    len(all_features), offset,
                 )
             if len(batch) < page_size:
                 break
