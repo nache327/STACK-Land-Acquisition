@@ -77,11 +77,11 @@
     },
     "lane-a-integrator": {
       "status": "completed",
-      "branch": "docs/may31-final-kpi-snapshot",
-      "task": "Completed final May-31 KPI snapshot docs/coordination update. No backend code or retries. Canonical audit hung; fallback artifact backend/tmp/audit_may31_close.json records evidence-backed final KPI state.",
+      "branch": "docs/sprint2-lane-a-planning",
+      "task": "Completed Sprint-2 Lane A planning deliverables: B8 large-county mapping plateau scoping memo plus Norfolk MA operational-gate diagnosis. No backend code and no retries.",
       "blocked": false,
       "blocker": null,
-      "wake_condition": "Wake only for new fatal terminal class, explicit Master request, or stretch run_overlays containment review; Lane D pre-Marlboro queue check can proceed from Lane A sequencing.",
+      "wake_condition": "Wake for explicit Master authorization of the B8 scaling experiment, new fatal terminal class, or Sprint-2 docs/audit integration request.",
       "latest_kpi_delta": {
         "b7": "cleared for Monmouth: job a9515ff6 reached run_overlays and ready; bootstrap_zone_use_matrix hard failure did not recur",
         "b8": "reopened: Nassau job 3b4582c5 recurred as ingest mapping stale; Lane D cancelled it with active_only=0/stale_only=0",
@@ -91,9 +91,11 @@
         "wake_nc": "cleared: job c2344f4d reached ready/all-dedupe; old pipeline.py:1417/1401 failure did not recur",
         "section8_cleanup": "active table reduced to B8 only; run_overlays invalid-transaction warning remains log-only/operator evidence",
         "c1": "no-code disposition: refresh-bbox route is absent/missing, but Lane C updated 0 because all 7 bbox-null targets have parcel_count=0 and geom_count=0; route restoration would not move KPI now",
-        "audit_refresh": "May-31 close artifact backend/tmp/audit_may31_close.json; operational=45, trustworthy operational classified sum=3,292,352, all classified=3,986,326, partial unclear rows=289, partial unclear-bound parcels=79,653, partial unclear share=10.3%; PR #143 + PR #155 net movement=26,916; no operational flips"
+        "audit_refresh": "May-31 close artifact backend/tmp/audit_may31_close.json; operational=45, trustworthy operational classified sum=3,292,352, all classified=3,986,326, partial unclear rows=289, partial unclear-bound parcels=79,653, partial unclear share=10.3%; PR #143 + PR #155 net movement=26,916; no operational flips",
+        "b8_scoping": "docs/B8_SCOPING.md: chosen hypothesis is all-at-once parcel mapping/dedupe before COPY/upsert for Nassau/Middlesex NJ/Fairfield; no-code disposition with deliberate Nassau scaling experiment plan and cancellation criteria",
+        "norfolk_gate": "docs/OPERATIONAL_GATE_DIAGNOSIS.md: Norfolk MA passes 70% truthfulness floor at 74.9% but remains partial due to high_unclear_self_storage_share and no_zoning_polygons; matrix match is 100%; flip path requires <=~7,730 unclear-bound parcels and >=80% parcel zoning coverage or zoning polygons"
       },
-      "updated_at": "2026-06-01T16:32:04Z"
+      "updated_at": "2026-06-01T17:01:31Z"
     },
     "lane-b-retry-sweep": {
       "branch": null,
