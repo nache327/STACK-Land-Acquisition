@@ -245,10 +245,28 @@ async def _fetch_lir_features(
     geom_filter = f"{minx - dx},{miny - dy},{maxx + dx},{maxy + dy}"
     query_url = url.rstrip("/") + "/query"
 
+    # AGRC services1.arcgis.com appears to throttle / WAF cloud IPs
+    # presenting the default `python-httpx/x.y.z` User-Agent — the same
+    # query from a laptop succeeds, the same query from Railway returns
+    # either a silent 60s timeout (page_size=1000) or a generic HTTP 400
+    # "Unable to perform query" (page_size=200). Presenting a normal
+    # browser UA + an Accept hint clears the gate. Mirrors what
+    # scripts/lir_fallback_zoning.py does implicitly via `requests`.
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json, application/geo+json, */*",
+    }
+
     all_features: list[dict] = []
     offset = 0
     first_page_info: dict = {}
-    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(
+        timeout=60.0, follow_redirects=True, headers=headers,
+    ) as client:
         while True:
             params = {
                 "geometry": geom_filter,
