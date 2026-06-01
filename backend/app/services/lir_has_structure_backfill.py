@@ -320,9 +320,10 @@ async def _fetch_lir_features(
             len(object_ids), oid_field, page_size,
         )
 
-        # Phase 2: fetch features by OBJECTID range. AGRC's `IN` clause has
-        # a ~1000-token limit per where; 200 per chunk keeps us well under
-        # and matches the response-size sweet spot from earlier probes.
+        # Phase 2: fetch features by OBJECTID chunk. POST instead of GET
+        # because at chunk_size=500 the where clause hits ~10KB URL-encoded
+        # which exceeds AGRC's IIS URL length limit (404 HTML page back).
+        # Same query semantics, just submitted as form body.
         for start in range(0, len(object_ids), page_size):
             chunk = object_ids[start : start + page_size]
             id_list = ",".join(str(i) for i in chunk)
@@ -334,7 +335,7 @@ async def _fetch_lir_features(
                 "f": "geojson",
             }
             try:
-                fresp = await client.get(query_url, params=feat_params)
+                fresp = await client.post(query_url, data=feat_params)
             except httpx.HTTPError as e:
                 raise LirFetchDiagnostic(
                     f"LIR feature-chunk HTTP error at start={start}: "
@@ -349,7 +350,8 @@ async def _fetch_lir_features(
                 fdata = fresp.json()
             except Exception as e:
                 raise LirFetchDiagnostic(
-                    f"LIR feature-chunk non-JSON at start={start}: {e}"
+                    f"LIR feature-chunk non-JSON at start={start}: {e}; "
+                    f"first 200: {fresp.text[:200]!r}"
                 ) from e
             if fdata.get("error"):
                 raise LirFetchDiagnostic(
