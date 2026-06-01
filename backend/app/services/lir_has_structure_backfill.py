@@ -221,28 +221,35 @@ class LirFetchDiagnostic(RuntimeError):
 
 async def _fetch_lir_features(
     url: str,
-    bbox: tuple[float, float, float, float],
+    bbox: tuple[float, float, float, float],  # noqa: ARG001 — kept for API parity; LIR layers are already county-scoped
     *,
     where: str,
-    page_size: int = 200,
+    page_size: int = 500,
 ) -> gpd.GeoDataFrame | None:
-    """Fetch LIR features in chunks, asking for `PROP_CLASS` + geometry only.
+    """Fetch LIR features via objectId-range chunking (NOT offset pagination).
 
-    Dropped page_size to 200 (down from 1000) — AGRC's services1.arcgis.com
-    appears to silently truncate / hang on larger pages of the 400k-row LIR
-    layer when fielded from Railway's outbound IP. Smaller pages = each
-    request finishes well under the 60s timeout.
+    The naive offset-paginated approach capped at ~3,200 features per
+    request even though the layer has 391k features. AGRC silently
+    truncates deep offsets without setting exceededTransferLimit or
+    returning an error. AGRC also rejects `returnIdsOnly=true` when
+    combined with a geometry filter (HTTP 400 "Unable to perform query"),
+    so we can't even ask for the IDs in a bbox.
 
-    Raises LirFetchDiagnostic with the HTTP status / response excerpt
-    when something goes wrong so the admin endpoint can surface it.
-    Returning an empty GeoDataFrame silently is the trap we hit on the
-    first attempt — caller now distinguishes "fetched 0" from "fetcher
-    blew up."
+    But we don't need to — the LIR layer (Parcels_SaltLake_LIR /
+    Parcels_Davis_LIR / etc.) is already county-scoped by construction.
+    So the right strategy is:
+
+      Phase 1: `where + returnIdsOnly=true` (no geometry filter) → every
+               OBJECTID in the layer matching PROP_CLASS IS NOT NULL.
+               One call, returns ~395k ints, ~3 MB payload.
+
+      Phase 2: chunk OBJECTIDs in groups of 500 → `where=OBJECTID IN (...)
+               outFields=OBJECTID,PROP_CLASS, returnGeometry=true`. About
+               780 calls total at ~0.5s each, ~6 min.
+
+    Raises LirFetchDiagnostic if either phase returns a server error so
+    the operator sees what AGRC actually said instead of a silent empty.
     """
-    minx, miny, maxx, maxy = bbox
-    dx = (maxx - minx) * 0.1
-    dy = (maxy - miny) * 0.1
-    geom_filter = f"{minx - dx},{miny - dy},{maxx + dx},{maxy + dy}"
     query_url = url.rstrip("/") + "/query"
 
     # AGRC services1.arcgis.com appears to throttle / WAF cloud IPs
@@ -262,80 +269,99 @@ async def _fetch_lir_features(
     }
 
     all_features: list[dict] = []
-    offset = 0
-    first_page_info: dict = {}
     async with httpx.AsyncClient(
         timeout=60.0, follow_redirects=True, headers=headers,
     ) as client:
-        while True:
-            params = {
-                "geometry": geom_filter,
-                "geometryType": "esriGeometryEnvelope",
-                "spatialRel": "esriSpatialRelIntersects",
-                "inSR": "4326",
+        # Phase 1: get every matching OBJECTID in a single call. AGRC honors
+        # returnIdsOnly without an offset cap, where features+offsets are
+        # silently truncated past ~3k.
+        # No geometry filter — AGRC rejects returnIdsOnly+geometry combos
+        # with HTTP 400, AND the LIR layer is already county-scoped (e.g.
+        # Parcels_SaltLake_LIR contains only SLCo parcels) so a bbox would
+        # filter to a near-100% subset anyway. We spatial-join against
+        # parcels.jurisdiction_id in the DB later.
+        ids_params = {
+            "where": where,
+            "returnIdsOnly": "true",
+            "f": "json",
+        }
+        try:
+            resp = await client.get(query_url, params=ids_params)
+        except httpx.HTTPError as e:
+            raise LirFetchDiagnostic(
+                f"LIR ID-list HTTP error: {type(e).__name__}: {e}"
+            ) from e
+        if resp.status_code != 200:
+            raise LirFetchDiagnostic(
+                f"LIR ID-list HTTP {resp.status_code}: {resp.text[:300]}"
+            )
+        try:
+            data = resp.json()
+        except Exception as e:
+            raise LirFetchDiagnostic(
+                f"LIR ID-list non-JSON body: {e}; first 200: {resp.text[:200]!r}"
+            ) from e
+        if data.get("error"):
+            raise LirFetchDiagnostic(
+                f"LIR ID-list server error: {data['error']}"
+            )
+
+        object_ids = data.get("objectIds") or []
+        oid_field = data.get("objectIdFieldName", "OBJECTID")
+        if not object_ids:
+            logger.warning(
+                "LIR ID-list returned no matching OBJECTIDs for where=%r",
+                where,
+            )
+            return None
+
+        logger.info(
+            "LIR: %d matching OBJECTIDs (field=%s); fetching features in chunks of %d",
+            len(object_ids), oid_field, page_size,
+        )
+
+        # Phase 2: fetch features by OBJECTID range. AGRC's `IN` clause has
+        # a ~1000-token limit per where; 200 per chunk keeps us well under
+        # and matches the response-size sweet spot from earlier probes.
+        for start in range(0, len(object_ids), page_size):
+            chunk = object_ids[start : start + page_size]
+            id_list = ",".join(str(i) for i in chunk)
+            feat_params = {
+                "where": f"{oid_field} IN ({id_list})",
                 "outSR": "4326",
-                "outFields": "PROP_CLASS",
-                "where": where,
+                "outFields": f"{oid_field},PROP_CLASS",
+                "returnGeometry": "true",
                 "f": "geojson",
-                "resultRecordCount": page_size,
-                "resultOffset": offset,
             }
             try:
-                resp = await client.get(query_url, params=params)
+                fresp = await client.get(query_url, params=feat_params)
             except httpx.HTTPError as e:
                 raise LirFetchDiagnostic(
-                    f"LIR HTTP error at offset={offset}: {type(e).__name__}: {e}"
+                    f"LIR feature-chunk HTTP error at start={start}: "
+                    f"{type(e).__name__}: {e}"
                 ) from e
-
-            if resp.status_code != 200:
+            if fresp.status_code != 200:
                 raise LirFetchDiagnostic(
-                    f"LIR HTTP {resp.status_code} at offset={offset}: "
-                    f"{resp.text[:300]}"
+                    f"LIR feature-chunk HTTP {fresp.status_code} at start={start}: "
+                    f"{fresp.text[:300]}"
                 )
-
             try:
-                data = resp.json()
+                fdata = fresp.json()
             except Exception as e:
                 raise LirFetchDiagnostic(
-                    f"LIR non-JSON body at offset={offset}: {e}; "
-                    f"first 200 chars: {resp.text[:200]!r}"
+                    f"LIR feature-chunk non-JSON at start={start}: {e}"
                 ) from e
-
-            if offset == 0:
-                first_page_info = {
-                    "type": data.get("type"),
-                    "has_features": "features" in data,
-                    "error": data.get("error"),
-                    "exceededTransferLimit": data.get("exceededTransferLimit"),
-                    "keys": list(data.keys())[:8],
-                }
-                if data.get("error"):
-                    raise LirFetchDiagnostic(
-                        f"LIR server error: {data['error']}"
-                    )
-
-            batch = data.get("features", []) or []
-            if not batch:
-                if offset == 0:
-                    # Surface the diagnostic so we know WHY the first page is empty.
-                    raise LirFetchDiagnostic(
-                        f"LIR first page returned 0 features. "
-                        f"response keys={first_page_info}. "
-                        f"params: where={where!r} geom={geom_filter} page_size={page_size}"
-                    )
-                break
-            all_features.extend(batch)
-            if len(all_features) % 5_000 < page_size:
-                logger.info(
-                    "LIR fetch: %d features so far (offset=%d)",
-                    len(all_features), offset,
+            if fdata.get("error"):
+                raise LirFetchDiagnostic(
+                    f"LIR feature-chunk server error at start={start}: {fdata['error']}"
                 )
-            if len(batch) < page_size:
-                break
-            offset += page_size
-            if offset > 500_000:
-                logger.warning("LIR fetch safety cap hit at offset %d", offset)
-                break
+            batch = fdata.get("features", []) or []
+            all_features.extend(batch)
+            if (start // page_size) % 25 == 0:
+                logger.info(
+                    "LIR fetch: %d / %d OBJECTIDs done (%d features in hand)",
+                    start + len(chunk), len(object_ids), len(all_features),
+                )
 
     if not all_features:
         return None
