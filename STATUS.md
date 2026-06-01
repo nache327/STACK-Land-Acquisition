@@ -1,6 +1,8 @@
-# Project Status — Last updated 2026-05-11 (session close)
+# Project Status — Last updated 2026-06-01
 
-**TL;DR.** Production is healthy after a two-day worker outage was root-caused and fixed. Backend on Railway (`pipeline_version=9c59baa6317c`, deployment `52f7c5bb`, port 5432 session-mode pooler). Frontend on Vercel at `https://zoning-finder.vercel.app`. Worker (dramatiq) is alive and processing jobs end-to-end. Philadelphia overlays — the standing P1 from the prior session — are populated (546,889 zoning_overlays). NJ priority cities (Hoboken / Elizabeth / New Brunswick) all reach `ready`. NYC ingestion still fails on a connection-resilience bug whose fix lives on an unmerged branch.
+**TL;DR.** Active work is the **LIR `has_structure` backfill** on branch `feat/county-city-drilldown` (7 commits ahead of `origin/main`, **not yet merged**). Its goal: unblock `vacancy_unknown` parcels in Salt Lake County so Hot Deals / Worth a Look stop returning zero matches in SLCo. The last 6 commits are iteratively hardening the AGRC LIR fetcher (WAF user-agent, dropped bbox, POSTed chunks, 429 rate-limit handling) — converging but **not yet confirmed working end-to-end**. `origin/main` is at `c9a306a` (PR #156, ops day-2 reconcile). Production runs on Railway (service renamed **ParcelLogic**) + Supabase pooler (session mode, port 5432) + Vercel frontend.
+
+> ⚠️ **This file was reconstructed from git history + auto-memory on 2026-06-01.** The prior snapshot (`9c59baa`, 2026-05-11) was ~338 commits stale. Items marked _(verify)_ below were inferred from commits/memory and should be confirmed against the live Railway `/health` and the DB before relying on them.
 
 ---
 
@@ -8,195 +10,120 @@
 
 | Item | Value |
 |---|---|
-| Local `main` SHA | `9c59baa6317c8977f459002e453e6f4239314540` |
-| `origin/main` SHA | `9c59baa6317c8977f459002e453e6f4239314540` |
-| Deployed Railway SHA | `9c59baa6317c` (matches main) |
-| Railway deployment id | `52f7c5bb-2b39-4a35-a054-bd488f184109` SUCCESS @ 2026-05-11 11:58 MDT |
-| Railway service | `capable-serenity` (project `outstanding-rebirth`, env `production`) |
-| Backend URL | https://capable-serenity-production-0d1a.up.railway.app |
+| Current working branch | `feat/county-city-drilldown` |
+| Working-branch HEAD | `503181e` fix(lir): respect AGRC rate limit |
+| `origin/main` HEAD | `c9a306a` Merge PR #156 (docs day-2 reconcile), 2026-06-01 |
+| Branch vs main | **+7 ahead, 0 behind** — the LIR backfill series is unmerged |
+| Commits since prior STATUS (`9c59baa`) | ~338 |
+| Deployed Railway SHA | _(verify via `/health` → `pipeline_version`)_ — should track `origin/main` `c9a306a` |
+| Railway service | **ParcelLogic** (renamed 2026-05-13; was `capable-serenity`) |
+| Backend URL | `https://capable-serenity-production-0d1a.up.railway.app` _(verify — URL may have changed with rename)_ |
 | Frontend URL | https://zoning-finder.vercel.app |
-| DATABASE_URL mode | Supabase pooler `aws-1-us-east-2.pooler.supabase.com:5432` (**session mode**) |
+| Production DB | **Supabase** pooler `aws-1-us-east-2.pooler.supabase.com:5432` (session mode). Railway's own Postgres tile is a **stale, unused** instance — ignore it. |
 | Redis | Railway internal `redis.railway.internal:6379` |
-| Alembic head on disk | `0017_parcel_flood_wetland_nullable.py` |
-| Alembic revision applied to prod DB | `0017` (matches disk) |
-| Working tree | Clean except untracked `STATUS.md` and `ORPHAN_BRANCH_AUDIT.md` (this commit) |
 
 ---
 
-## Deployed services
+## In-flight work — LIR `has_structure` backfill (this branch, unmerged)
 
-| Service | URL / SHA | Status |
-|---|---|---|
-| API + worker (Railway, single service `capable-serenity`) | https://capable-serenity-production-0d1a.up.railway.app | healthy |
-| `pipeline_version` | `9c59baa6317c` | live |
-| Frontend (Vercel) | https://zoning-finder.vercel.app | HTTP 200 — auto-deploy disabled |
-| Postgres | Supabase prod pooler `aws-1-us-east-2.pooler.supabase.com:5432` | session-mode pooler |
-| Redis | Railway internal | ok |
+**Branch:** `feat/county-city-drilldown` · **Files:** `backend/app/services/lir_has_structure_backfill.py` (new), endpoint in `backend/app/api/jurisdictions.py`, `backend/tests/test_lir_has_structure_mapping.py`.
 
-Health-check + version are exposed at `GET /health` and `GET /api/debug/env`.
+**Problem it solves.** County-wide UGRC parcel ingests (SLCo et al.) leave `parcels.has_structure` NULL on most rows because the non-LIR parcel layer is sparse on `LAND_USE`/`PROP_TYPE`. Every NULL row fails the dashboard's `vacancy_unknown` viability check → Hot Deals / Worth a Look surface **zero** matches in SLCo despite ~400k parcels with real demographics.
 
----
+**Approach.** AGRC publishes a per-county LIR layer with a `PROP_CLASS` string. The backfill mines `PROP_CLASS` for a vacancy signal (Vacant/Undeveloped → `False`; Residential/Commercial/Industrial/Mixed → `True`; Tax-Exempt/Greenbelt/unknown → leave NULL). Idempotent — only fills `has_structure IS NULL`.
 
-## Operational data (this session)
+**Commit progression (368af52 → 503181e), all AGRC-fetcher hardening:**
+1. `368af52` feat — initial backfill service + endpoint + tests
+2. `1cf58ed` focused `outFields` fetch
+3. `1a5e792` surface fetcher diagnostics + drop `page_size`
+4. `2761fa4` browser `User-Agent` + `Accept` header to clear AGRC WAF
+5. `11b005b` drop bbox filter (layer is already county-scoped)
+6. `5a82e2d` POST feature-chunk queries to dodge AGRC URL-length limit
+7. `503181e` respect AGRC rate limit (429 retry + per-call throttle, ~600 calls/min envelope)
 
-### Jurisdictions verified or newly indexed today
-
-| Jurisdiction | Job id | Parcels | Notes |
-|---|---|---:|---|
-| Philadelphia, PA | `6ac464a7-17fc-4b32-bbbd-c6e882e04add` (post_ingest) | 547,299 | **546,889 zoning_overlays inserted** (raw asyncpg path, commit 9c59baa). P1 from prior STATUS resolved. |
-| Hoboken, NJ | `7998dfae-e3a0-4ea2-9ede-a4de60e987eb` (ready) | 143,305 | Full pipeline (parcels + zoning + AADT + overlays) ran end-to-end via pipeline.py |
-| Elizabeth, NJ | `85cffbc6-461e-4c8e-9df5-ca3b23e031d9` (ready) | 147,627 | Same |
-| New Brunswick, NJ | `35265425-7a35-4fcc-9b9b-1ca3be4e6900` (ready) | 245,616 | Mapped to Middlesex County, NJ (`9c039328-…`). 237,890 AADT parcels. |
-| New York, NY / NYC | `f0b77b56-…` (FAILED) | 0 ingested | Downloaded 856,670 MapPLUTO features, then `ConnectionDoesNotExistError` while updating job progress. See known issues. |
-
-Exact `zoning_overlays` counts for the NJ cities were not captured in this session's log buffer (rolled off), but each of the three reaches the pipeline's `complete_feasibility` stage which only runs after `bulk_ingest_zoning_for_jurisdiction` succeeds.
+**Next on this branch:** confirm a full SLCo backfill run completes against AGRC without 429/WAF/timeout, verify Hot Deals returns non-zero in SLCo, then merge to `main`.
 
 ---
 
-## Critical deployment drift incident — multi-day worker stall
+## Major themes landed since 2026-05-11 (on `main`)
 
-This is the single most important thing to read before the next session.
+Reconstructed from git log — these are the work clusters, not an exhaustive list.
 
-### What happened
-
-From `2026-05-09 ~06:00 UTC` to `2026-05-11 ~16:24 UTC` (≈ 58 hours), **every job submitted to production sat in the `queued` state and never advanced.** Five jobs accumulated (Hoboken / Elizabeth / New Brunswick / NYC × 2) before the cause was diagnosed.
-
-### Root cause
-
-Migration `0017_parcel_flood_wetland_nullable.py` (added in commit `e184052` on local branch `claude/agitated-khayyam-58c0d9`) was applied to the production Supabase DB — most likely via someone running `railway up` or `alembic upgrade head` from a local checkout of that branch — but the migration file was **never merged into `origin/main`**.
-
-After that, every subsequent Railway redeploy from main built the image from a source tree that lacked the `0017` file. The container start command is:
-
-```sh
-alembic upgrade head && dramatiq app.worker --processes 2 --threads 2 & uvicorn app.main:app ...
-```
-
-On boot, `alembic upgrade head` failed with:
-
-```
-ERROR [alembic.util.messaging] Can't locate revision identified by '0017'
-FAILED: Can't locate revision identified by '0017'
-```
-
-The `&&` short-circuited, so `dramatiq app.worker` never executed. The shell then proceeded past the `&` to launch `uvicorn`, which booted normally. The Railway container looked completely healthy:
-
-- `/health` returned `200 OK`
-- API responded to every HTTP request
-- `pipeline_version` was reported correctly
-
-…because the failure mode was a missing background process, not a crashed foreground one.
-
-### Fix
-
-`05d4102 fix(alembic): restore 0017 migration so alembic upgrade head succeeds` — the migration file was copied verbatim from `e184052` onto main. Production schema already had the change applied, so `alembic upgrade head` recognised `0017` and moved past it. dramatiq launched on the next redeploy. The 5 queued jobs were picked up within seconds of the fresh worker booting.
-
-### Defensive follow-ups (not yet implemented)
-
-- The Dockerfile CMD should be restructured so a dramatiq exit is fatal to the container (e.g. drop `&` and run uvicorn+dramatiq under `honcho`/`supervisord`/`tini` so any process death tears down the container). Today a single backgrounded process can die and Railway will never notice.
-- A scheduled `audit_zoning_coverage.py` or simpler "jobs queued >5 min" check would have alerted within the hour rather than two days.
-- Procedural: nothing should reach production except via merged commits on `origin/main`. The `railway up`-from-local pattern that applied `0017` to prod without committing it is the actual cultural root cause.
+- **Salt Lake County county-model** — county = one jurisdiction + city filter. Zoning backfill from sibling jurisdictions (`1f5dc0f`, `9e28b76`), sibling discovery driven off `parcels.city` not the unreliable `county` field (`7b22c4d`), zone-matrix `municipality` text + partial-index fix (`9f0008e`), cross-namespace spatial-join zoning fallback (`8e200ca`). See memory: `project_slco_county_model`, `project_sibling_discovery`, `project_ugrc_zoning_attribute`.
+- **Ring-metrics server-side precompute** — Python port of the frontend `computeRingMetrics` + parity tests, Parts A+B+C backend, ACS 404-skip, dashboard gating then revert once server cache warm (`abd8cb3`, `c2c182d`, `e480229`, `9c885b1`).
+- **Overlay performance** — subdivide + index overlay polygons for fast spatial join (`69dcb65`); index `parcels(jurisdiction_id, city)` + ANALYZE after big UPDATEs (`00e65ae`).
+- **Duplicate-ingest prevention + Utah County config** (`28b3b96`).
+- **Daily digest** — runs via `queued_job_watchdog.py` (Railway ignored the cron `startCommand`); send hour = `DIGEST_SEND_HOUR_UTC` (default 12). Many `fix/digest-*` branches: cooldown poison, cron-hour gate, skip recently-alerted, factor-breakdown truncation. See memory: `project_digest_runs_via_watchdog`.
+- **Listings layer** — smart matching, manual reassign, rematch-all, map pin toggle, surface polish.
+- **Buybox / Hot Deals** — server-side buybox + ring server cache, Hot Deals v2 spec/preset, saved filters.
+- **Zoning matrix sprints** — Norfolk MA, Middlesex MA, Howard MD, Loudoun VA, Allentown PA batches.
+- **NJ statewide** — MODIV backfill, NJ county registry, NJDCA Municipal Zoning Directory now drives per-parcel matrix (memory: `project_nj_njdca_unlock_2026-05-29`).
 
 ---
 
-## Remaining known issues
+## How work + state is tracked now
 
-### 1. NYC ingestion fails after MapPLUTO download
+The project moved to a **multi-lane coordination model**. State lives in three places — check all three at session start:
 
-Job `f0b77b56` failed with:
+1. **`STATUS.md`** (this file) — narrative project state + change summary. Refresh when it goes stale.
+2. **`coordination/`** — machine-readable orchestration state (per `coordination/README.md`):
+   - `lane_state.json` — per-lane status/task/branch/blocker/KPI delta _(last updated 2026-05-27 — also stale; verify)_
+   - `blockers.json` — active + recently-cleared blockers
+   - `dispatch_queue.json` — merge/retry sequencing + dependency order
+3. **`docs/PHASE2_PROGRESS.md`** — phase progress + audit truthfulness (the lane-state `progress_doc` source).
 
-```
-asyncpg.exceptions.ConnectionDoesNotExistError: connection was closed in the middle of operation
-[SQL: UPDATE jobs SET progress=$1::JSONB, updated_at=now() WHERE jobs.id = $2::UUID]
-```
-
-The MapPLUTO download takes ~6.4 min for 856,670 features; the Supabase pgbouncer is dropping the SQLAlchemy session's underlying server connection during that window. The fix exists on orphan branch `claude/agitated-khayyam-58c0d9` in commit `e184052` — `_set_status` was extended with a raw-asyncpg fallback path for exactly this case (see commit message: *"_set_status now falls back to a raw asyncpg UPDATE when the SQLAlchemy session goes stale during ingest"*). See `ORPHAN_BRANCH_AUDIT.md` for the recommended cherry-pick.
-
-### 2. `POST /api/jobs/{job_id}/cancel` returns HTTP 500
-
-The cancel **executes correctly** — `status=cancelled`, `locked_by=NULL` — but FastAPI then fails to serialize the response with `fastapi.exceptions.ResponseValidationError: <exception str() failed>`. Callers see 500 but should treat it as success and verify state with `GET /api/debug/jobs`. Likely a pydantic v2 vs SQLAlchemy `JobRead` shape mismatch in the cancelled path. Pre-existing bug, not introduced this session.
-
-### 3. Orphan branch contains prod-relevant code outside main
-
-See `ORPHAN_BRANCH_AUDIT.md` for the full classification. Highlights:
-
-- Phase 2/3 county handlers (Westchester / Nassau / Fairfield / Fairfax / Loudoun / Mont. PA / Mont. MD / Howard MD) — **only on orphan**
-- `_send_with_retry` exponential backoff in `arcgis_query.py` — **only on orphan**
-- `_set_status` raw-asyncpg fallback in `pipeline.py` — **only on orphan**
-- New APN / address / zoning field candidates for NY / CT / VA / MD / PA layers — **only on orphan**
-- Phase 2/3 bootstrap scripts and `rerun_flood_overlay.py` — **only on orphan**
-
-The orphan branch also pre-dates several main commits (it's missing the recent jurisdictions admin endpoints I/we added) — a naive merge will produce conflicts in `debug.py`, `jurisdictions.py`, `spatial_backfill.py`, `zoning_system.py`.
-
-### 4. Pre-existing items carried over from prior STATUS
-
-These were on the previous STATUS and were not addressed this session:
-
-- **P2** — `zoning_rules.city='unknown'` leak: partially mitigated by `7aef614` (jurisdiction-first city resolution cherry-pick) for the per-parcel lookup path, but `bulk_ingest_zoning_for_jurisdiction` still uses `COALESCE(NULLIF(TRIM(p.city), ''), 'unknown')` directly. Philly parcels have `city=NULL` so Philly's 546,889 overlays were all written under `city='unknown'`. Tracking separately.
-- **P3** — AADT skipped on Essex / Passaic (90s timeout on large jurisdictions).
-- **P4** — `state='NE'` orphan jurisdiction rows.
-- **P5** — Vercel auto-deploy disabled (`vercel.json` git.deploymentEnabled: false).
-- **P6** — `audit_zoning_coverage.py` overstates `partial`.
+Recent `origin/main` history is dominated by `docs(ops):` reconcile commits (PRs #143–#156) that close lane days and authorize the next — that cadence is the source of truth for what's been applied/merged.
 
 ---
 
-## Commits added to `origin/main` this session
+## KPI snapshot _(from `coordination/lane_state.json`, 2026-05-26 — verify)_
 
-| SHA | Subject |
-|---|---|
-| `9c59baa` | fix(zoning_system): bulk_ingest_zoning on raw asyncpg, 7200s timeout |
-| `6a24850` | feat(jurisdictions): admin endpoint to upload zoning shapefile/GeoJSON *(your commit)* |
-| `7d8249d` | feat(debug): /run-bulk-zoning-overlays/{id} — overlays-only admin endpoint |
-| `05d4102` | fix(alembic): restore 0017 migration so alembic upgrade head succeeds |
-| `5ffa039` | fix(spatial_backfill): raw asyncpg + 7200s timeout for parcel zone UPDATE |
-| `7aef614` | fix: jurisdiction-first city/state resolution in zoning lookup *(cherry-pick of 307e3ab)* |
-
----
-
-## What "done" looks like vs prior STATUS
-
-- [x] Production deploys cleanly without manual intervention
-- [x] NJ ingestion produces `ready` jobs end-to-end for the 4 priority cities
-- [x] AADT works (or skips cleanly on huge jurisdictions)
-- [x] `pipeline_version` reported on `/health`
-- [x] **Philadelphia `zoning_overlays` populated (P1)** — 546,889 rows
-- [x] **Remaining NJ priority cities (Hoboken / Elizabeth / New Brunswick) ingested**
-- [ ] NYC ingestion validated end-to-end — **failing on connection-drop bug, fix exists on orphan branch**
-- [ ] `city='unknown'` rules leak resolved — partial (lookup path fixed; bulk path still leaks)
+| Metric | Value |
+|---|---:|
+| Honest operational jurisdictions | 45 |
+| Trustworthy parcel verdicts | 3,292,352 |
+| Avg unclear share (partials) | 18.3% |
+| Failed jobs (14d) | 42 |
+| Fake operationals | 0 |
 
 ---
 
-## Recommended next-session priority
+## Known issues / open threads
 
-1. **Cherry-pick the `_set_status` raw-asyncpg fallback from orphan `e184052`** (NYC unblock). Smallest surgical change; the rest of the orphan branch can be triaged later.
-2. **Reconcile the orphan branch** — see `ORPHAN_BRANCH_AUDIT.md` for the per-file decision matrix.
-3. **Harden the container start command** so dramatiq death is fatal to the container — defends against another silent worker stall.
-4. **Patch `/api/jobs/{job_id}/cancel`** to return a clean response (avoid surfacing ORM/SQLAlchemy state through `response_model=JobRead` on the cancellation path).
+1. **SLCo Hot Deals returns zero** — the reason the LIR backfill exists (above). Not resolved until that branch merges and a full SLCo run completes.
+2. **Utah County ingest stalls** — mapping phase chews 24+ min; needs a `make_valid` short-circuit on already-valid geoms before retry. (memory: `project_utah_county_ingest_stuck`)
+3. **UGRC county pulls leave `zoning_code` NULL** — run `_backfill-zoning-from-siblings` after every county ingest. (memory: `project_ugrc_zoning_attribute`)
+4. **`zone_matrix` quirks** — `uq_zone_matrix` is a partial INDEX not a constraint; `municipality` is text; `pipeline.py:2087` has a latent `ON CONFLICT` bug. (memory: `project_zone_matrix_quirks`)
+5. **Carried over from old STATUS _(verify still apply)_:** `city='unknown'` bulk-ingest leak; AADT timeouts on large jurisdictions; `POST /api/jobs/{id}/cancel` returns 500 despite succeeding.
+
+---
+
+## Deferred / strategy calls
+
+- **Acres floor vs urban infill** — keep Hot Deals at a 1.5-ac floor (suburban thesis) vs lowering it for urban infill. Revisit when a blocked urban deal lands. (memory: `project_acres_floor_urban_infill`)
+- **County breadth > perf polish** — when the pipeline is healthy, prefer pulling another county over polishing ring-precompute / geocoder fallback. (memory: `feedback_county_breadth_priority`)
 
 ---
 
 ## Quick reference
 
-### URLs
-
-- Frontend: https://zoning-finder.vercel.app
-- API: https://capable-serenity-production-0d1a.up.railway.app
-- Health: `/health` and `/api/debug/env`
-- Admin: `/api/admin/jobs?stale_only=true&limit=50`, `/api/debug/jobs?limit=20`
-- Backfill-only endpoint (new this session): `POST /api/debug/run-bulk-zoning-overlays/{jurisdiction_id}` *(works in worker context; for HTTP use, expect Railway proxy to kill the request at ~60-90s on big jurisdictions — submit a job instead)*
-- Stuck-job repair: `POST /api/debug/fix-zoning/{jurisdiction_id}` and `/fix-zoning-all`
-
 ### Critical files
-
-- `backend/app/services/pipeline.py` — orchestration
-- `backend/app/services/spatial_backfill.py` — now uses raw asyncpg (5ffa039)
-- `backend/app/services/zoning_system.py` — `bulk_ingest_zoning_for_jurisdiction` now uses raw asyncpg (9c59baa)
-- `backend/app/services/overlays.py` — flood/wetland/AADT
+- `backend/app/services/pipeline.py` — ingest orchestration
+- `backend/app/services/lir_has_structure_backfill.py` — **new**, vacancy backfill from AGRC LIR
+- `backend/app/services/zoning_system.py` — `bulk_ingest_zoning_for_jurisdiction` (raw asyncpg)
+- `backend/app/services/spatial_backfill.py` — centroid-based parcel→zone backfill (raw asyncpg, session-mode 5432, no timeout — memory: `feedback_spatial_backfill`)
+- `backend/app/services/overlays.py` — flood / wetland / AADT
 - `backend/app/api/debug.py` — operational endpoints
-- `backend/alembic/versions/0017_parcel_flood_wetland_nullable.py` — restored to main (05d4102)
+- `backend/app/api/jurisdictions.py` — admin + LIR backfill endpoint
 - `frontend/app/dashboard/[jobId]/page.tsx` — main user-facing page
 
-### Common SQL
+### URLs / endpoints
+- Frontend: https://zoning-finder.vercel.app
+- Health / version: `GET /health`, `GET /api/debug/env`
+- Admin jobs: `/api/admin/jobs?stale_only=true&limit=50`, `/api/debug/jobs?limit=20`
+- Stuck-job repair: `POST /api/debug/fix-zoning/{jurisdiction_id}`, `/fix-zoning-all`
 
+### Common SQL
 ```sql
 -- Latest jobs
 SELECT id, jurisdiction_input, status, finished_at, LEFT(error_message,80)
@@ -207,8 +134,8 @@ SELECT id, jurisdiction_input, status,
        ROUND(EXTRACT(EPOCH FROM (now()-locked_at))/60) AS min_locked
 FROM jobs WHERE finished_at IS NULL ORDER BY locked_at NULLS LAST;
 
--- Overlay coverage for a jurisdiction
-SELECT COUNT(*) FROM zoning_overlays o
-JOIN parcels p ON p.id = o.parcel_id
-WHERE p.jurisdiction_id = '821d1007-9dec-4fad-868a-104385d5ef43';  -- Philly
+-- SLCo vacancy coverage (the LIR-backfill target)
+SELECT has_structure, COUNT(*) FROM parcels
+WHERE jurisdiction_id = '<slco_jurisdiction_id>'
+GROUP BY has_structure;
 ```

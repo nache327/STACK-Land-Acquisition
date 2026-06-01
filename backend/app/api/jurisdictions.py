@@ -441,42 +441,115 @@ async def precompute_ring_metrics_status(job_id: str) -> dict:
     return state
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_backfill-has-structure-from-lir")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_backfill-has-structure-from-lir",
+    status_code=202,
+)
 async def backfill_has_structure_from_lir(
     jurisdiction_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Populate `parcels.has_structure` from AGRC LIR PROP_CLASS.
 
-    For UT county jurisdictions where the UGRC parcel ingest left
-    has_structure NULL on most rows (LAND_USE/PROP_TYPE sparse), the
-    LIR FeatureServer publishes a separate PROP_CLASS field whose
-    "Vacant" / "Residential" / "Industrial" / etc. values map cleanly
-    to True / False / ambiguous. Without this signal every parcel
-    fails the dashboard's `vacancy_unknown` viability check, so Hot
-    Deals and Worth a Look surface zero matches even when ~400k parcels
-    have real demographics and zoning.
+    Returns 202 + job_id immediately; runs in a BackgroundTask because
+    the full SLCo fetch takes ~17 min with AGRC's 6000-units/minute
+    rate limit and exceeds Railway's 15-min HTTP proxy timeout. Poll
+    `GET /jurisdictions/_backfill-has-structure-from-lir-status/{job_id}`
+    for progress, backed by Redis (24h TTL, survives Railway restarts).
 
-    Spatial-joins LIR PROP_CLASS polygons → parcel centroids via the
-    existing ST_Subdivide + temp-GiST pattern. Idempotent (only fills
-    NULL slots, never overwrites an existing has_structure value).
+    Mirrors the _precompute-ring-metrics async pattern. Spatial-joins
+    LIR PROP_CLASS polygons → parcel centroids via the ST_Subdivide +
+    temp-GiST pattern. Idempotent (only fills NULL slots, never
+    overwrites an existing has_structure value).
 
     Currently registered LIR layers: Salt Lake / Davis / Weber / Utah
     counties (see _LIR_URLS in lir_has_structure_backfill.py).
     """
-    from app.services.lir_has_structure_backfill import (
-        backfill_has_structure_for_jurisdiction,
-        LirFetchDiagnostic,
-    )
-    try:
-        return await backfill_has_structure_for_jurisdiction(jurisdiction_id, db)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except LirFetchDiagnostic as e:
-        # Surface the fetcher's structured diagnostic in the response so
-        # operators can see *why* the LIR call returned nothing instead of
-        # the silent empty result we hit on first run.
-        raise HTTPException(status_code=502, detail=str(e))
+    from datetime import datetime as _dt, timezone as _tz
+    from app.services.job_state_store import set_job_state
+
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    job_id = str(uuid.uuid4())
+    state: dict = {
+        "job_id": job_id,
+        "kind": "lir_has_structure_backfill",
+        "status": "queued",
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "started_at": _dt.now(_tz.utc).isoformat(),
+        "finished_at": None,
+        "error": None,
+    }
+    await set_job_state(job_id, state)
+
+    async def _bg() -> None:
+        import logging as _logging
+        _log = _logging.getLogger(__name__)
+        from app.db import async_session_maker
+        from app.services.job_state_store import set_job_state as _save
+        from app.services.lir_has_structure_backfill import (
+            backfill_has_structure_for_jurisdiction,
+            LirFetchDiagnostic,
+        )
+
+        state["status"] = "running"
+        await _save(job_id, state)
+
+        try:
+            async with async_session_maker() as bg_db:
+                summary = await backfill_has_structure_for_jurisdiction(
+                    jurisdiction_id, bg_db,
+                )
+            # Copy summary fields into the polling state so progress is visible.
+            for k in (
+                "lir_features_fetched", "lir_features_built",
+                "lir_features_vacant", "lir_features_ambiguous",
+                "parcels_updated_built", "parcels_updated_vacant",
+                "prop_class_breakdown", "elapsed_seconds",
+            ):
+                if k in summary:
+                    state[k] = summary[k]
+            state["status"] = "completed"
+            _log.info(
+                "lir-backfill job=%s complete: jurisdiction=%s "
+                "built=%d vacant=%d elapsed=%.1fs",
+                job_id, j.name,
+                summary.get("parcels_updated_built", 0),
+                summary.get("parcels_updated_vacant", 0),
+                summary.get("elapsed_seconds", 0),
+            )
+        except LirFetchDiagnostic as e:
+            state["status"] = "failed"
+            state["error"] = f"LirFetchDiagnostic: {e}"
+            _log.warning("lir-backfill job=%s LIR fetch failed: %s", job_id, e)
+        except Exception as exc:  # noqa: BLE001
+            _log.exception("lir-backfill job=%s failed: %s", job_id, exc)
+            state["status"] = "failed"
+            state["error"] = f"{type(exc).__name__}: {exc}"
+        finally:
+            state["finished_at"] = _dt.now(_tz.utc).isoformat()
+            await _save(job_id, state)
+
+    background_tasks.add_task(_bg)
+    return {"job_id": job_id, "status": "queued"}
+
+
+@router.get("/jurisdictions/_backfill-has-structure-from-lir-status/{job_id}")
+async def backfill_has_structure_status(job_id: str) -> dict:
+    """Return the current state of an in-flight or completed LIR backfill.
+    404 when the job_id is unknown or its 24h TTL has expired."""
+    from app.services.job_state_store import get_job_state
+    state = await get_job_state(job_id)
+    if state is None:
+        raise HTTPException(
+            status_code=404,
+            detail="LIR backfill job not found (may have expired)",
+        )
+    return state
 
 
 @router.post("/_admin/optimize-parcels")
