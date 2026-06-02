@@ -3,6 +3,7 @@ Spatial backfills used by the ingestion pipeline and operational recovery.
 """
 from __future__ import annotations
 
+import logging
 import uuid
 
 import asyncpg
@@ -45,6 +46,7 @@ async def backfill_parcel_zoning_from_districts(
     db: AsyncSession,
     *,
     fill_missing_zone_code: bool = True,
+    nearest_within_meters: float | None = None,
 ) -> int:
     """
     Backfill `parcels.zone_class` using parcel centroid containment.
@@ -59,7 +61,21 @@ async def backfill_parcel_zoning_from_districts(
     query mid-flight on jurisdictions with hundreds of thousands of parcels.
     SQLAlchemy's asyncpg dialect imposes a much shorter per-statement timeout
     that has killed this UPDATE on Philadelphia (547k parcels × 29k districts).
+
+    nearest_within_meters: when set, parcels not contained by any district
+    after the ST_Within pass are bound to the *nearest* district within N
+    meters via a second ST_DWithin pass. Off by default — the contained-only
+    behavior is fully preserved. Op-5 needs this fallback because vendor
+    zoning PDFs digitized to polygons typically leave 20-40% of parcels just
+    outside any single polygon (street-frontage gaps, gutters between
+    overlay districts) even when the human reader can unambiguously assign
+    them to the visually-adjacent zone.
+
+    Every write from this service stamps `parcels.zone_binding_method`
+    ('contained' or 'nearest_<N>m') so the audit can split contained-vs-
+    inferred coverage without changing the ≥70% operational gate.
     """
+    logger = logging.getLogger(__name__)
     # Skip the heavy UPDATE entirely when virtually every parcel already
     # has zoning_code populated. NYC hit this: 13 unzoned parcels of 856,670
     # caused a 49-min UPDATE that rewrote all 856k rows for ~0 useful work.
@@ -76,8 +92,7 @@ async def backfill_parcel_zoning_from_districts(
     if total > 0 and unzoned / total < 0.01:
         # >99% already zoned — bail. Logged so the operator can tell the
         # difference between "skipped because already done" and "failed".
-        import logging
-        logging.getLogger(__name__).info(
+        logger.info(
             "backfill_parcel_zoning_from_districts skipping %s — "
             "%d/%d parcels (%.2f%%) already have zoning_code",
             jurisdiction_id, total - unzoned, total,
@@ -96,8 +111,11 @@ async def backfill_parcel_zoning_from_districts(
     conn = await asyncpg.connect(
         session_url, statement_cache_size=0, command_timeout=7200
     )
+    contained_updated = 0
+    nearest_updated = 0
     try:
         await conn.execute("SET statement_timeout = 0")
+        # ── Pass 1: ST_Within (centroid contained in district) ──────────────
         # LATERAL + LIMIT 1 instead of CTE + ROW_NUMBER. The earlier
         # ROW_NUMBER OVER (PARTITION BY p.id ORDER BY zd.id) query
         # materialised every parcel/district overlap (≈ N_parcels × 6 on
@@ -110,10 +128,11 @@ async def backfill_parcel_zoning_from_districts(
         # entry for table p"). Pulling parcels into the inner FROM lets
         # the lateral see p.geom while UPDATE joins target.id =
         # sub.parcel_id at the outer level.
-        status = await conn.execute(
+        contained_status = await conn.execute(
             f"""
             UPDATE parcels target
-            SET zone_class = sub.zone_class
+            SET zone_class = sub.zone_class,
+                zone_binding_method = 'contained'
                 {zone_code_set}
             FROM (
                 SELECT p.id AS parcel_id, m.zone_class, m.zone_code
@@ -134,12 +153,66 @@ async def backfill_parcel_zoning_from_districts(
             """,
             jurisdiction_id,
         )
+        try:
+            contained_updated = int(contained_status.split()[-1])
+        except (ValueError, IndexError):
+            contained_updated = 0
+
+        # ── Pass 2: ST_DWithin fallback (optional) ──────────────────────────
+        # Snap parcels not contained by any district to their *nearest*
+        # district within N meters. Uses geography casts so $N is meters
+        # (not degrees) and ORDER BY ST_Distance for tie-breaking on the
+        # short list returned by the GIST index probe.
+        if nearest_within_meters is not None and nearest_within_meters > 0:
+            radius = float(nearest_within_meters)
+            binding_label = f"nearest_{int(round(radius))}m"
+            nearest_status = await conn.execute(
+                f"""
+                UPDATE parcels target
+                SET zone_class = sub.zone_class,
+                    zone_binding_method = $2
+                    {zone_code_set}
+                FROM (
+                    SELECT p.id AS parcel_id, m.zone_class, m.zone_code
+                    FROM parcels p,
+                    LATERAL (
+                        SELECT zd.zone_class, zd.zone_code
+                        FROM zoning_districts zd
+                        WHERE zd.jurisdiction_id = $1
+                          AND zd.geom IS NOT NULL
+                          AND ST_DWithin(
+                              zd.geom::geography,
+                              ST_Centroid(p.geom)::geography,
+                              $3
+                          )
+                        ORDER BY ST_Distance(
+                            zd.geom::geography,
+                            ST_Centroid(p.geom)::geography
+                        )
+                        LIMIT 1
+                    ) m
+                    WHERE p.jurisdiction_id = $1
+                      AND p.geom IS NOT NULL
+                      AND p.zone_binding_method IS NULL
+                ) sub
+                WHERE target.id = sub.parcel_id
+                """,
+                jurisdiction_id,
+                binding_label,
+                radius,
+            )
+            try:
+                nearest_updated = int(nearest_status.split()[-1])
+            except (ValueError, IndexError):
+                nearest_updated = 0
+            logger.info(
+                "backfill_parcel_zoning_from_districts %s: contained=%d, "
+                "nearest_within_%.1fm=%d",
+                jurisdiction_id, contained_updated, radius, nearest_updated,
+            )
     finally:
         await conn.close()
-    try:
-        return int(status.split()[-1])
-    except (ValueError, IndexError):
-        return 0
+    return contained_updated + nearest_updated
 
 
 async def refresh_jurisdiction_coverage_level(

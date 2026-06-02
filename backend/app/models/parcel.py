@@ -52,6 +52,14 @@ class Parcel(Base):
         Enum(ZoneClass, name="zone_class_enum", create_constraint=False),
         nullable=True,
     )
+    # How spatial_backfill bound this parcel to its zoning district:
+    # NULL = never bound by spatial_backfill (zoning_code came from another
+    # source, e.g. the source assessor roll), 'contained' = parcel centroid
+    # falls inside a district polygon, 'nearest_<N>m' = snapped to the
+    # nearest district within N meters via the ST_DWithin fallback.
+    zone_binding_method: Mapped[str | None] = mapped_column(
+        String(32), nullable=True
+    )
     land_use_code: Mapped[str | None] = mapped_column(String(512), nullable=True)
     improvement_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     # Total assessed value (land + improvements) from the source assessor roll.
