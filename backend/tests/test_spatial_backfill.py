@@ -68,11 +68,20 @@ async def _three_parcels_one_district(db_session):
         ("P-NEAR", "POINT(-73.9989 40.8500)"),
         ("P-FAR", "POINT(-73.9940 40.8500)"),
     ):
+        # in_flood_zone / in_wetland are NOT NULL with Python-side
+        # (column-level) defaults, so a raw INSERT must supply them
+        # explicitly — the server-side DEFAULT is absent.
         result = await db_session.execute(
             text(
                 """
-                INSERT INTO parcels (jurisdiction_id, apn, geom)
-                VALUES (:jid, :apn, ST_GeomFromText(:wkt, 4326))
+                INSERT INTO parcels (
+                    jurisdiction_id, apn, geom,
+                    in_flood_zone, in_wetland
+                )
+                VALUES (
+                    :jid, :apn, ST_GeomFromText(:wkt, 4326),
+                    FALSE, FALSE
+                )
                 RETURNING id
                 """
             ),
