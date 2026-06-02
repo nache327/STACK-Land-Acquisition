@@ -22,15 +22,20 @@ Schema:
     until aliases are seeded (auto-proposed by the crosswalk, or added by
     a human in the verifier).
 
-Revision ID: 0038
-Revises: 0037
+Revision ID: 0039
+Revises: 0038
 Create Date: 2026-06-02 00:00:00.000000
+
+Note: renumbered 0038 -> 0039 to resolve a duplicate-revision collision.
+Adam's 0038_parcels_zone_binding_method.py also claimed revision "0038" off
+0037 (merged to main independently of PR #174), so this migration now chains
+AFTER it: 0037 -> 0038 (parcels_zone_binding_method) -> 0039.
 """
 from typing import Sequence, Union
 from alembic import op
 
-revision: str = "0038"
-down_revision: Union[str, None] = "0037"
+revision: str = "0039"
+down_revision: Union[str, None] = "0038"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
