@@ -599,6 +599,54 @@ async def admin_optimize_parcels(db: AsyncSession = Depends(get_db)) -> dict:
     return out
 
 
+@router.get("/jurisdictions/{jurisdiction_id}/_municipalities-health")
+async def get_municipalities_health(
+    jurisdiction_id: uuid.UUID,
+    municipality: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Per-municipality coverage/health for a (county) jurisdiction.
+
+    Returns each municipality's trustworthiness band + parcel/zoning/district
+    stats, plus a rollup band-count summary. Pass ?municipality=Sandy to
+    drill into one city. The service logic already existed
+    (municipality_health.jurisdiction_municipalities_health) but had no
+    route; this surfaces the per-city coverage the dashboard needs to show
+    which cities of a county are operational vs. need work.
+    """
+    from app.services.municipality_health import jurisdiction_municipalities_health
+
+    result = await jurisdiction_municipalities_health(
+        jurisdiction_id, db, municipality=municipality
+    )
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.get("/jurisdictions/{jurisdiction_id}/_municipalities-remediation")
+async def get_municipalities_remediation(
+    jurisdiction_id: uuid.UUID,
+    municipality: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Per-municipality health joined with an actionable remediation plan
+    (what each below-bar city needs to reach operational). Delegates to
+    municipality_remediation.jurisdiction_municipalities_remediation, which
+    was likewise unrouted.
+    """
+    from app.services.municipality_remediation import (
+        jurisdiction_municipalities_remediation,
+    )
+
+    result = await jurisdiction_municipalities_remediation(
+        jurisdiction_id, db, municipality=municipality
+    )
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
 @router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning-from-siblings")
 async def backfill_zoning_from_siblings(
     jurisdiction_id: uuid.UUID,
