@@ -17,6 +17,7 @@ it: **claim the number here before authoring the alembic file.**
 
 | # | Reserved by (branch) | Description | Claimed (UTC) | Notes |
 |---|---|---|---|---|
+| 0038 | adarench/nearest-district-fallback | parcels.zone_binding_method varchar + index for Op-5 spatial_backfill nearest-fallback | 2026-06-04T18:00 | Dispatch J |
 | (open) | | | | next available number for new claims |
 
 ## Rules
