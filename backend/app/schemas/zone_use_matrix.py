@@ -8,8 +8,21 @@ from app.models.zone_use_matrix import ClassificationSource, UsePermission
 
 
 class CitationSchema(BaseModel):
+    """Write/parse-time citation contract — the LLM parser must keep quotes
+    short (max 200 chars). Used by ParserZoneResult before persisting."""
     section: str
     quote: str = Field(..., max_length=200)
+
+
+class CitationRead(BaseModel):
+    """Read-side citation — intentionally tolerant. The DB may hold rows
+    written before the 200-char guard (or via crosswalk/import paths that
+    didn't enforce it), and a stored quote longer than the write limit must
+    NOT 500 the whole zone-matrix read (this is the Bergen /zones bug). Both
+    fields are optional so a malformed/partial stored citation degrades to a
+    best-effort render rather than a ResponseValidationError."""
+    section: str | None = None
+    quote: str | None = None
 
 
 class ZoneUseMatrixRead(BaseModel):
@@ -24,7 +37,7 @@ class ZoneUseMatrixRead(BaseModel):
     mini_warehouse: UsePermission
     light_industrial: UsePermission
     luxury_garage_condo: UsePermission
-    citations: list[CitationSchema] | None
+    citations: list[CitationRead] | None
     confidence: float | None
     human_reviewed: bool
     notes: str | None
