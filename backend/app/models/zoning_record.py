@@ -40,11 +40,15 @@ class ZoningOverlay(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # No inline index=True here — the explicit Index("ix_zoning_overlays_parcel_id")
+    # in __table_args__ above already covers this column. Declaring both causes
+    # Base.metadata.create_all to emit the same CREATE INDEX twice (duplicate
+    # default name) and fail with DuplicateTableError, which broke every test
+    # that consumed the db_engine fixture.
     parcel_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("parcels.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     zoning_rule_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
