@@ -527,6 +527,29 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       ).length;
       const expected = Math.max(meta?.expected ?? 0, eligibleCount);
 
+      // Large-jurisdiction guard (Phase 2B — progressive load): never launch
+      // the per-parcel client precompute loop for a big eligible set. On a
+      // county (thousands of eligible parcels) that loop hits Mapbox + the
+      // value-density endpoint per parcel and can freeze the buy-box for many
+      // minutes. The server-side precompute actor (process_ring_metrics_precompute)
+      // fills parcel_ring_metrics + re-scores after ingest, so we defer to it:
+      // render whatever server data we already have and leave demographic/
+      // wealth features gated (complete:false) until a later reload picks up
+      // the warm cache. Only applies when we don't already have a full set.
+      const CLIENT_PRECOMPUTE_MAX_ELIGIBLE = 1500;
+      const haveFullSet = saved > 0 && expected > 0 && saved >= expected;
+      if (!haveFullSet && expected > CLIENT_PRECOMPUTE_MAX_ELIGIBLE) {
+        if (merged) setPrecomputeData(merged);
+        setPrecomputeStatus({
+          progress: saved,
+          total: expected,
+          complete: false,
+          deferred: true,
+          lastComputed: meta?.lastComputed,
+        });
+        return;
+      }
+
       // Orphan meta defense: meta exists but nothing was loadable AND the
       // server had nothing either. Drop the meta and run fresh.
       if (saved === 0 && meta !== null) {

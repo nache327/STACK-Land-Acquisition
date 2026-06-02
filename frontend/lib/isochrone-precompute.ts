@@ -38,6 +38,14 @@ export interface PrecomputeStatus {
   total: number;
   complete: boolean;
   lastComputed?: string;
+  /**
+   * True when the per-parcel client precompute loop was intentionally NOT
+   * run because the jurisdiction's eligible-parcel set is too large (the
+   * server-side precompute actor handles it instead). Demographic/wealth
+   * features stay gated on `complete` while deferred; a later reload picks
+   * up the warm server cache. See Phase 2B / progressive dashboard load.
+   */
+  deferred?: boolean;
 }
 
 export interface CacheMeta {
