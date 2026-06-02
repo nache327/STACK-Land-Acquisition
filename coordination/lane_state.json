@@ -1,29 +1,29 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-04T17:00:00Z",
+  "updated_at": "2026-06-04T19:30:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-06-01 May-31 close, backend/tmp/audit_may31_close.json",
-    "origin_main_at_snapshot": "527d395",
+    "origin_main_at_snapshot": "84d8263",
     "op5_proof_plan": "docs/OP5_PROOF_PLAN.md",
-    "op5_final_gate": "docs/OP5_DISPATCH_J_AND_O.md"
+    "op5_final_gate": "docs/OP5_DISPATCH_J_AND_O.md",
+    "dispatch_j_pr": "PR #172 merged 2026-06-02 (84d8263) — spatial_backfill nearest_within_meters fallback live on main",
+    "dispatch_o_result": "FAILED — vision-LLM cannot localize landmarks to pixel coordinates with sufficient precision; RMS 162m vs <30m target; spot-check 0/10; preview rolled back to CP3 v1 baseline (50 polygons, 50.7%); see /tmp/op5_proof/hackensack/cp3_v3_summary.md"
   },
-  "mode": "op5_proof_final_gate_dispatched",
+  "mode": "op5_dispatch_p_pending",
   "op5_proof": {
-    "status": "final_gate_in_flight_2026_06_04",
+    "status": "dispatch_p_pending_2026_06_04",
     "cp3_results_so_far": {
-      "fort_lee": {"coverage_pct": 57.6, "spot_check": "9/10", "verdict": "accuracy_pass_coverage_fail_pending_J"},
-      "garfield": {"coverage_pct": 40.9, "spot_check": "10/10", "verdict": "accuracy_pass_coverage_fail_pending_J"},
-      "hackensack": {"coverage_pct": 50.7, "spot_check": "4/10_mixed", "verdict": "accuracy_fail_pending_O_georef_refit"},
+      "fort_lee": {"coverage_pct": 57.6, "spot_check": "9/10", "verdict": "accuracy_pass_coverage_fail_pending_p_with_j_applied"},
+      "garfield": {"coverage_pct": 40.9, "spot_check": "10/10", "verdict": "accuracy_pass_coverage_fail_pending_p_with_j_applied"},
+      "hackensack": {"coverage_pct": 50.7, "spot_check": "4/10_mixed", "verdict": "accuracy_fail_o_failed_vision_llm_cannot_localize_landmarks_raster_carve_out_class"},
       "fair_lawn": {"verdict": "failing_class_text_only_legend_carve_out"}
     },
-    "blockers_identified": [
-      "platform: spatial_backfill centroid-only containment (Dispatch J)",
-      "op5_raster: Hackensack georef precision (Dispatch O — Mapbox)"
-    ],
-    "dispatches_in_flight": ["J (Lane A platform PR)", "O (Op-5 Hackensack georef refit)"],
-    "next_gate": "Dispatch P final 3x3 validation",
-    "factory_authorization_status": "BLOCKED until P returns"
+    "blockers_resolved": ["Dispatch J merged (PR #172, 84d8263) — spatial_backfill nearest_within_meters fallback live on main"],
+    "blockers_remaining": ["Hackensack raster georef: vision-LLM cannot localize landmarks to pixel coords — Dispatch O failed; carve out raster-class munis to operator-assisted Op-5"],
+    "dispatches_in_flight": ["P (Op-5 orchestrator: final 3x3 re-validation with J applied)"],
+    "expected_final_outcome": "GO_WITH_RASTER_CARVE_OUT — vector-class munis (Fort Lee, Garfield, ~70-85% of NJ Tier-S) qualify for 25-agent factory; raster-class munis (Hackensack, ~15% of munis) route to operator-assisted Op-5",
+    "factory_authorization_status": "BLOCKED until P returns Fort Lee + Garfield ≥70% coverage with J applied"
   },
   "current_known_state": {
     "mode": "kpi_growth_entered_2026_05_28",
