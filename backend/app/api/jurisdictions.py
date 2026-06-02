@@ -554,27 +554,44 @@ async def backfill_has_structure_status(job_id: str) -> dict:
 
 @router.post("/_admin/optimize-parcels")
 async def admin_optimize_parcels(db: AsyncSession = Depends(get_db)) -> dict:
-    """One-shot: add the (jurisdiction_id, city) composite index parcels was
-    missing and ANALYZE the table. Both are necessary for the dashboard's
-    /cities and /zone-class-summary endpoints to return in reasonable time
-    on county-sized jurisdictions (SLCo has 397k parcels and the GROUP BY
-    queries were timing out without the composite index + fresh stats).
+    """One-shot: add the composite indexes the dashboard's jurisdiction-entry
+    GROUP BY queries need, and ANALYZE the table. On county-sized
+    jurisdictions (SLCo has 397k parcels) the /cities, /zone-summary, and
+    /zone-class-summary endpoints sequential-scan + hash-aggregate without
+    these, blowing the 30s request timeout. The composite indexes let the
+    planner do index-only aggregates; the partial index makes the
+    feature-flags assessed_value check an index-only existence probe.
 
-    Idempotent — IF NOT EXISTS on the index, ANALYZE is always safe.
+    Indexes created (mirrors migrations 0037 + 0040):
+      - ix_parcels_jurisdiction_city  (jurisdiction_id, city)
+      - ix_parcels_jur_zoning_code    (jurisdiction_id, zoning_code)
+      - ix_parcels_jur_zone_class     (jurisdiction_id, zone_class)
+      - ix_parcels_jur_assessed       (jurisdiction_id) WHERE assessed_value IS NOT NULL
+
+    Idempotent — IF NOT EXISTS on every index, ANALYZE is always safe.
     CREATE INDEX uses CONCURRENTLY so it doesn't lock writes; that requires
     AUTOCOMMIT, so we grab a raw connection from the engine and set
     isolation_level explicitly. ANALYZE then runs inline.
     """
     from app.db import engine
-    out = {}
+    _indexes = [
+        ("ix_parcels_jurisdiction_city", "parcels (jurisdiction_id, city)"),
+        ("ix_parcels_jur_zoning_code", "parcels (jurisdiction_id, zoning_code)"),
+        ("ix_parcels_jur_zone_class", "parcels (jurisdiction_id, zone_class)"),
+        (
+            "ix_parcels_jur_assessed",
+            "parcels (jurisdiction_id) WHERE assessed_value IS NOT NULL",
+        ),
+    ]
+    out: dict = {"indexes_created": []}
     raw = await engine.connect()
     try:
         await raw.execution_options(isolation_level="AUTOCOMMIT")
-        await raw.execute(text(
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS "
-            "ix_parcels_jurisdiction_city ON parcels (jurisdiction_id, city)"
-        ))
-        out["index_created"] = True
+        for name, definition in _indexes:
+            await raw.execute(text(
+                f"CREATE INDEX CONCURRENTLY IF NOT EXISTS {name} ON {definition}"
+            ))
+            out["indexes_created"].append(name)
         await raw.execute(text("ANALYZE parcels"))
         out["analyzed"] = True
     finally:
