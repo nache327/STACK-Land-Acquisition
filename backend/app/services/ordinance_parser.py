@@ -182,8 +182,10 @@ def _build_user_message(
             if code:
                 base_codes.add(code)
     codes_str = ", ".join(sorted(base_codes)) if base_codes else "unknown"
-    # Truncate text to avoid excessive token usage
-    text = sections_text[:100_000]
+    # Truncate text to avoid excessive token usage. 200k chars (~50k tokens) is
+    # well within context and stops large chapters (residential first, then
+    # commercial/industrial) from losing their B-*/L-I districts to truncation.
+    text = sections_text[:200_000]
     return (
         f"Jurisdiction: {jurisdiction_name}\n"
         f"Known zone codes to classify: {codes_str}\n\n"

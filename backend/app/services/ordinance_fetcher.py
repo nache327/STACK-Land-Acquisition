@@ -90,7 +90,7 @@ _SECTION_NUM_RE = re.compile(
 )
 
 # Maximum characters to send per ordinance (keep Claude context reasonable)
-_MAX_ORDINANCE_CHARS = 80_000
+_MAX_ORDINANCE_CHARS = 200_000  # was 80_000 — too low: chopped the commercial/
 _MAX_SECTION_CHARS = 12_000
 
 
@@ -212,6 +212,14 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             html = await page.content()
             soup = BeautifulSoup(html, "lxml")
 
+            # For eCode360: the landed URL is a Chapter node whose body only
+            # renders the preamble + a list of child Article/Section links
+            # (the actual use regulations live in those children). Crawl them.
+            if "ecode360.com" in url:
+                sections = await _crawl_ecode360_chapter(page, soup, url)
+                if sections:
+                    return sections
+
             # For municipal.codes: detect TOC page → crawl sub-pages.
             if ".municipal.codes" in url and _is_listing_page(soup, url):
                 sections = await _crawl_chapter_links(page, soup, url)
@@ -322,6 +330,73 @@ def _find_appendix_links(soup: BeautifulSoup, base_url: str) -> list[str]:
             found.append(full)
 
     return found
+
+
+async def _crawl_ecode360_chapter(page, chapter_soup: "BeautifulSoup", base_url: str) -> list[OrdinanceSection]:
+    """eCode360 renders a Chapter node's body as a preamble + a list of links to
+    its child Article/Section nodes (each ``ecode360.com/<guid>``); the actual
+    permitted/prohibited use regulations live in those children, not the chapter
+    page. Collect the chapter's own child-node links and crawl each, combining
+    the use-bearing sections.
+
+    Scoped to the chapter's content: we drop the global left-sidebar TOC tree
+    (``#code-page-controls-enhanced-toc``) so we don't crawl every chapter of the
+    whole municipal code — only this chapter's articles/sections.
+    """
+    from urllib.parse import urljoin, urlparse
+
+    content = BeautifulSoup(str(chapter_soup), "lxml")
+    for sel in (
+        "#code-page-controls-enhanced-toc", "nav", "header", "footer",
+        "[class*='cookie']", "[class*='sidebar']", "[id*='toc']",
+    ):
+        for el in content.select(sel):
+            el.decompose()
+
+    base_host = urlparse(base_url).netloc
+    base_guid_m = re.search(r"/(\d{5,})", urlparse(base_url).path)
+    base_guid = base_guid_m.group(1) if base_guid_m else None
+
+    child_guids: list[str] = []
+    seen: set[str] = set()
+    for a in content.find_all("a", href=True):
+        href = a["href"].split("#")[0].strip()
+        if not href:
+            continue
+        full = urljoin(base_url, href)
+        p = urlparse(full)
+        if p.netloc and p.netloc != base_host:
+            continue
+        m = re.search(r"/(\d{5,})$", p.path)
+        if not m:
+            continue
+        guid = m.group(1)
+        if guid == base_guid or guid in seen:
+            continue
+        seen.add(guid)
+        child_guids.append(guid)
+
+    if not child_guids:
+        return []
+
+    # Bound the crawl. eCode360 chapters rarely exceed ~80 sections; the
+    # _fetch_page_sections filter returns [] for non-use sections so noise
+    # links cost only a navigation, not output.
+    out: list[OrdinanceSection] = []
+    total_chars = 0
+    for guid in child_guids[:80]:
+        child_url = f"https://{base_host}/{guid}"
+        try:
+            secs = await _fetch_page_sections(page, child_url)
+        except Exception:
+            continue
+        for s in secs:
+            out.append(s)
+            total_chars += len(s.text)
+        if total_chars >= _MAX_ORDINANCE_CHARS:
+            break
+
+    return out
 
 
 async def _fetch_page_sections(page, url: str) -> list[OrdinanceSection]:
