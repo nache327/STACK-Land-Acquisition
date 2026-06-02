@@ -96,6 +96,7 @@ def process_ring_metrics_precompute(jurisdiction_id: str) -> None:
     from app.services.ring_metrics_precompute import (
         precompute_ring_metrics_for_jurisdiction,
     )
+    from app.services.buybox_scoring import auto_score_jurisdiction
 
     async def _run() -> None:
         # Fresh engine per asyncio.run() — see process_zoning_ingest for the
@@ -103,13 +104,34 @@ def process_ring_metrics_precompute(jurisdiction_id: str) -> None:
         # worker thread.
         engine = make_engine()
         sessionmaker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        jid = uuid.UUID(jurisdiction_id)
         try:
             async with sessionmaker() as db:
-                await precompute_ring_metrics_for_jurisdiction(
-                    uuid.UUID(jurisdiction_id), db,
-                )
+                await precompute_ring_metrics_for_jurisdiction(jid, db)
         finally:
             await engine.dispose()
+
+        # Re-score AFTER ring-metrics are populated. The pipeline's own
+        # auto_score runs near the end of ingest, but this precompute actor
+        # runs in a separate process and frequently finishes its Mapbox pass
+        # AFTER that scoring already read parcel_ring_metrics — so the buy-box
+        # scores were computed against NULL demographics/wealth-density. A
+        # re-score here guarantees the persisted scores reflect the warm ring
+        # cache regardless of which process won the race. Non-fatal: a scoring
+        # gap (e.g. no default filter) shouldn't fail the precompute. Uses its
+        # own raw-asyncpg connection (auto_score_jurisdiction self-manages).
+        try:
+            rescored = await auto_score_jurisdiction(jid)
+            logger.info(
+                "ring_metrics_precompute: re-scored %d parcels for %s after precompute",
+                rescored, jurisdiction_id,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "ring_metrics_precompute: post-precompute re-score failed "
+                "(non-fatal) for %s: %s",
+                jurisdiction_id, exc,
+            )
 
     asyncio.run(_run())
 
