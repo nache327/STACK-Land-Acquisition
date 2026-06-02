@@ -42,6 +42,7 @@ class SchemaProfile:
     has_zoning_districts_table: bool
     has_overlays_table: bool
     has_parcel_zone_class_column: bool
+    has_parcel_zone_binding_method_column: bool
     has_jurisdiction_coverage_level_column: bool
     has_jurisdiction_bbox_column: bool
 
@@ -59,6 +60,8 @@ class JurisdictionAudit:
     parcel_with_geom_count: int
     parcel_with_zoning_code_count: int
     parcel_with_zone_class_count: int
+    parcel_zoning_code_contained_count: int
+    parcel_zoning_code_nearest_count: int
     vacant_parcel_count: int
     flood_parcel_count: int
     wetland_parcel_count: int
@@ -81,6 +84,8 @@ class JurisdictionAudit:
     unmatched_zone_samples: list[str]
     parcel_geom_coverage_pct: float
     parcel_zoning_code_coverage_pct: float
+    parcel_zoning_code_coverage_pct_contained: float
+    parcel_zoning_code_coverage_pct_nearest: float
     parcel_zone_class_coverage_pct: float
     zoning_polygon_coverage_flag: bool
     matrix_zone_match_pct: float
@@ -122,6 +127,10 @@ async def _load_schema_profile(conn) -> SchemaProfile:
         has_zoning_districts_table="zoning_districts" in tables,
         has_overlays_table="overlays" in tables,
         has_parcel_zone_class_column=("parcels", "zone_class") in columns,
+        has_parcel_zone_binding_method_column=(
+            "parcels",
+            "zone_binding_method",
+        ) in columns,
         has_jurisdiction_coverage_level_column=("jurisdictions", "coverage_level") in columns,
         has_jurisdiction_bbox_column=("jurisdictions", "bbox") in columns,
     )
@@ -143,6 +152,28 @@ def _build_audit_sql(schema: SchemaProfile):
         if schema.has_parcel_zone_class_column
         else "0::bigint AS parcel_with_zone_class_count"
     )
+    # Binding-method split: contained vs nearest-fallback. Only counts parcels
+    # that have zoning_code populated (i.e. show up in the numerator of the
+    # operational ≥70% gate). If the column is absent, both counts are zero
+    # and parcel_zoning_code_coverage_pct_contained collapses to the existing
+    # total — preserves the operational gate semantics on un-migrated DBs.
+    if schema.has_parcel_zone_binding_method_column:
+        zone_binding_method_count_exprs = (
+            "COUNT(*) FILTER ("
+            "  WHERE p.zoning_code IS NOT NULL AND btrim(p.zoning_code) <> ''"
+            "    AND p.zone_binding_method = 'contained'"
+            ")::bigint AS parcel_zoning_code_contained_count,\n"
+            "                COUNT(*) FILTER ("
+            "  WHERE p.zoning_code IS NOT NULL AND btrim(p.zoning_code) <> ''"
+            "    AND p.zone_binding_method IS NOT NULL"
+            "    AND p.zone_binding_method LIKE 'nearest_%'"
+            ")::bigint AS parcel_zoning_code_nearest_count"
+        )
+    else:
+        zone_binding_method_count_exprs = (
+            "0::bigint AS parcel_zoning_code_contained_count,\n"
+            "                0::bigint AS parcel_zoning_code_nearest_count"
+        )
     zoning_stats_cte = (
         """
         zoning_stats AS (
@@ -174,6 +205,7 @@ def _build_audit_sql(schema: SchemaProfile):
                 COUNT(*) FILTER (WHERE p.geom IS NOT NULL)::bigint AS parcel_with_geom_count,
                 COUNT(*) FILTER (WHERE p.zoning_code IS NOT NULL AND btrim(p.zoning_code) <> '')::bigint AS parcel_with_zoning_code_count,
                 {zone_class_count_expr},
+                {zone_binding_method_count_exprs},
                 COUNT(*) FILTER (WHERE p.has_structure IS FALSE)::bigint AS vacant_parcel_count,
                 COUNT(*) FILTER (WHERE p.in_flood_zone IS TRUE)::bigint AS flood_parcel_count,
                 COUNT(*) FILTER (WHERE p.in_wetland IS TRUE)::bigint AS wetland_parcel_count
@@ -286,6 +318,8 @@ def _build_audit_sql(schema: SchemaProfile):
             COALESCE(ps.parcel_with_geom_count, 0) AS parcel_with_geom_count,
             COALESCE(ps.parcel_with_zoning_code_count, 0) AS parcel_with_zoning_code_count,
             COALESCE(ps.parcel_with_zone_class_count, 0) AS parcel_with_zone_class_count,
+            COALESCE(ps.parcel_zoning_code_contained_count, 0) AS parcel_zoning_code_contained_count,
+            COALESCE(ps.parcel_zoning_code_nearest_count, 0) AS parcel_zoning_code_nearest_count,
             COALESCE(ps.vacant_parcel_count, 0) AS vacant_parcel_count,
             COALESCE(ps.flood_parcel_count, 0) AS flood_parcel_count,
             COALESCE(ps.wetland_parcel_count, 0) AS wetland_parcel_count,
@@ -346,6 +380,12 @@ def _build_audit(row: Any, schema: SchemaProfile) -> JurisdictionAudit:
     parcel_geom_coverage_pct = _pct(row.parcel_with_geom_count, row.parcel_count)
     parcel_zoning_code_coverage_pct = _pct(
         row.parcel_with_zoning_code_count, row.parcel_count
+    )
+    parcel_zoning_code_coverage_pct_contained = _pct(
+        row.parcel_zoning_code_contained_count, row.parcel_count
+    )
+    parcel_zoning_code_coverage_pct_nearest = _pct(
+        row.parcel_zoning_code_nearest_count, row.parcel_count
     )
     parcel_zone_class_coverage_pct = _pct(
         row.parcel_with_zone_class_count, row.parcel_count
@@ -422,6 +462,8 @@ def _build_audit(row: Any, schema: SchemaProfile) -> JurisdictionAudit:
         parcel_with_geom_count=int(row.parcel_with_geom_count),
         parcel_with_zoning_code_count=int(row.parcel_with_zoning_code_count),
         parcel_with_zone_class_count=int(row.parcel_with_zone_class_count),
+        parcel_zoning_code_contained_count=int(row.parcel_zoning_code_contained_count),
+        parcel_zoning_code_nearest_count=int(row.parcel_zoning_code_nearest_count),
         vacant_parcel_count=int(row.vacant_parcel_count),
         flood_parcel_count=int(row.flood_parcel_count),
         wetland_parcel_count=int(row.wetland_parcel_count),
@@ -446,6 +488,8 @@ def _build_audit(row: Any, schema: SchemaProfile) -> JurisdictionAudit:
         unmatched_zone_samples=list(row.unmatched_zone_samples or []),
         parcel_geom_coverage_pct=parcel_geom_coverage_pct,
         parcel_zoning_code_coverage_pct=parcel_zoning_code_coverage_pct,
+        parcel_zoning_code_coverage_pct_contained=parcel_zoning_code_coverage_pct_contained,
+        parcel_zoning_code_coverage_pct_nearest=parcel_zoning_code_coverage_pct_nearest,
         parcel_zone_class_coverage_pct=parcel_zone_class_coverage_pct,
         zoning_polygon_coverage_flag=int(row.zoning_district_count) > 0,
         matrix_zone_match_pct=matrix_zone_match_pct,
