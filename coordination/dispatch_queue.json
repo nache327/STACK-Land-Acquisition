@@ -1,16 +1,40 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-01T18:30:00Z",
-  "source": "docs/PHASE2_PROGRESS.md + docs/OP5_PROOF_PLAN.md",
-  "mode": "kpi_growth_op5_proof_dispatched",
+  "updated_at": "2026-06-04T17:00:00Z",
+  "source": "docs/PHASE2_PROGRESS.md + docs/OP5_PROOF_PLAN.md + docs/OP5_DISPATCH_J_AND_O.md",
+  "mode": "op5_proof_final_gate_dispatched",
   "recommended_next_actions": [
     {
       "rank": 1,
+      "lane": "lane-a-integrator",
+      "action": "Dispatch J — spatial_backfill nearest-district fallback per docs/OP5_DISPATCH_J_AND_O.md. Spin up new Lane A worktree off main, paste the Dispatch J brief from the doc, open PR against main with nearest_within_meters kwarg + binding_method tracking + Fort Lee preview validation. Do NOT merge without Master review.",
+      "wake_condition": "Immediate. Master Planning 2026-06-04 final gate dispatch.",
+      "dependency_order": "Blocks all 3 Op-5 town coverage gates. Hackensack also needs Dispatch O (parallel).",
+      "expected_kpi": "lift Fort Lee preview coverage from 57.6% to ≥70%; same for Garfield; provide platform-side coverage substrate"
+    },
+    {
+      "rank": 2,
       "lane": "op5-proof-orchestrator",
-      "action": "Execute Op-5 pre-flight proof per docs/OP5_PROOF_PLAN.md. Three Bergen towns (Hackensack raster, Fort Lee vector, Fair Lawn vector). Validate against S1-S7 success criteria. Target wall-clock 48h. Do NOT proceed to factory build before CP3 GO decision.",
-      "wake_condition": "Immediate. Op-5 proof authorized 2026-06-01 by Master Planning.",
-      "dependency_order": "Blocks Lane B Sprint-2 dispatch. No factory build until proof returns GO.",
-      "expected_kpi": "falsifiable proof of factory thesis on hardest PDF classes; GO/NO-GO decision for 25-agent factory build"
+      "action": "Dispatch O — Hackensack georef refit via Mapbox geocoder per docs/OP5_DISPATCH_J_AND_O.md. Replaces failed Nominatim attempt. Reuses existing Mapbox integration from PR #142. Target RMS <30m and spot-check ≥9/10 on honest mixed sample. Stop at CP3.",
+      "wake_condition": "Immediate. Master Planning 2026-06-04 final gate dispatch.",
+      "dependency_order": "Parallel to Dispatch J. Hackensack accuracy fix is independent of platform coverage fix.",
+      "expected_kpi": "lift Hackensack spot-check from 4/10 mixed to ≥9/10; close the third town's accuracy gate"
+    },
+    {
+      "rank": 3,
+      "lane": "op5-proof-orchestrator",
+      "action": "Dispatch P — final re-validation gate after J PR opens AND O completes. Apply J's branch to preview, re-run spatial backfill with nearest_within_meters=50.0 for all 3 towns, re-spot-check with fresh seeds, report 3×3 gate state (coverage, spot-check, binding-method) per town.",
+      "wake_condition": "Dispatch J PR opened on preview AND Dispatch O CP3 v3 summary written.",
+      "dependency_order": "Sequential after J + O.",
+      "expected_kpi": "final 3×3 gate state that determines factory go/no-go"
+    },
+    {
+      "rank": 4,
+      "lane": "master-planning",
+      "action": "Factory go/no-go decision after Dispatch P returns. Per OP5_DISPATCH_J_AND_O.md decision tree: 3/3 PASS → factory; 2/3 → carve-out; <2/3 → operator-assisted. Publish docs/OP5_PROOF_DECISION.md.",
+      "wake_condition": "Dispatch P returns final 3×3 gate state.",
+      "dependency_order": "Sequential after P.",
+      "expected_kpi": "definitive factory authorization or pivot to operator-assisted at scale"
     },
     {
       "rank": 2,
