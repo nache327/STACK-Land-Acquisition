@@ -60,23 +60,12 @@ def _normalize_for_match(name: str) -> str:
     """Normalize a jurisdiction name or parcels.city value into the canonical
     form used for sibling matching.
 
-    - strip a trailing ', XX' state suffix (e.g. 'Sandy, UT' → 'Sandy')
-    - strip a trailing ' City' (e.g. 'Draper City' → 'Draper') because the
-      UGRC PARCEL_CITY layer drops 'City' and county-jurisdiction parcels
-      under it carry the bare form.
-    - case-fold so 'Salt Lake City' and 'salt lake city' match.
-
-    Note: keeps 'Salt Lake City' as 'Salt Lake' would be wrong — only the
-    *trailing* ' City' is stripped, never an internal occurrence.
+    Delegates to ``municipality_normalize.canonical_city`` — the single
+    authoritative normalizer (see that module). Kept as a thin alias so the
+    existing call sites and tests in this module continue to work.
     """
-    s = _strip_state_suffix(name).strip()
-    # Don't strip 'City' from 'Salt Lake City' — only when ' City' is a true
-    # trailing word and removing it leaves a non-empty stem distinct from
-    # 'Salt Lake City'. We check: stripping leaves something AND the
-    # something doesn't itself end in ' City' (so we don't recurse).
-    if s.lower().endswith(" city") and s[:-5].strip().lower() != "salt lake":
-        s = s[:-5].strip()
-    return s.casefold()
+    from app.services.municipality_normalize import canonical_city
+    return canonical_city(name)
 
 
 @dataclass(frozen=True)
