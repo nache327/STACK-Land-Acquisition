@@ -610,121 +610,25 @@ async def backfill_zoning_from_siblings(
 
     Idempotent and NULL-only: never overwrites a parcel that already
     has a zoning_code.
+
+    The implementation lives in ``app.services.sibling_backfill`` so the
+    ingest pipeline can run the same logic automatically as a county-only
+    post-ingest stage.
     """
-    from app.services.zone_matrix_crosswalk import _normalize_for_match
-    from app.models.jurisdiction import ParcelSource
+    from app.services.sibling_backfill import (
+        backfill_zoning_from_siblings as _backfill,
+        NotACountyError,
+    )
 
-    county = await db.get(Jurisdiction, jurisdiction_id)
-    if county is None:
-        raise HTTPException(status_code=404, detail="Jurisdiction not found")
-    if county.parcel_source != ParcelSource.county_gis:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{county.name} is not a county (parcel_source={county.parcel_source})",
-        )
-
-    # Sibling discovery — same approach as the crosswalk: parcels.city is
-    # the authoritative city list; look up UT jurisdictions whose
-    # normalized name matches one of those values.
-    parcel_cities = set((await db.execute(
-        text(
-            "SELECT DISTINCT city FROM parcels "
-            "WHERE jurisdiction_id = :jid AND city IS NOT NULL"
-        ).bindparams(jid=county.id)
-    )).scalars().all())
-    parcel_city_lookup = {_normalize_for_match(c): c for c in parcel_cities}
-
-    all_state_jurs = (await db.execute(
-        select(Jurisdiction).where(
-            Jurisdiction.state == county.state,
-            Jurisdiction.id != county.id,
-            Jurisdiction.parcel_source.is_distinct_from(ParcelSource.county_gis),
-        )
-    )).scalars().all()
-    siblings = [
-        (j, parcel_city_lookup[_normalize_for_match(j.name)])
-        for j in all_state_jurs
-        if _normalize_for_match(j.name) in parcel_city_lookup
-    ]
-
-    if strategy not in ("apn", "spatial", "both"):
-        raise HTTPException(
-            status_code=400,
-            detail=f"strategy must be apn|spatial|both, got {strategy!r}",
-        )
-
-    per_city_apn: dict[str, int] = {}
-    per_city_spatial: dict[str, int] = {}
-    total = 0
-
-    for sibling, parcel_city in siblings:
-        # APN pass — fast, unambiguous, only fires when both jurisdictions
-        # share an APN namespace (UGRC ↔ UGRC).
-        if strategy in ("apn", "both"):
-            result = await db.execute(
-                text(
-                    """
-                    UPDATE parcels p
-                       SET zoning_code = s.zoning_code,
-                           zone_class  = COALESCE(s.zone_class, p.zone_class)
-                      FROM parcels s
-                     WHERE p.jurisdiction_id = :cid
-                       AND p.zoning_code IS NULL
-                       AND p.city = :city
-                       AND p.apn IS NOT NULL
-                       AND s.jurisdiction_id = :sid
-                       AND s.apn = p.apn
-                       AND s.zoning_code IS NOT NULL
-                    """
-                ).bindparams(cid=county.id, sid=sibling.id, city=parcel_city)
-            )
-            per_city_apn[parcel_city] = result.rowcount or 0
-            total += per_city_apn[parcel_city]
-
-        # Spatial pass — centroid-in-polygon. Slower but works across
-        # APN namespaces (Draper City uses services2.arcgis.com, not
-        # UGRC). DISTINCT ON resolves the rare case where one centroid
-        # falls inside multiple sibling polygons (overlap / boundary).
-        if strategy in ("spatial", "both"):
-            result = await db.execute(
-                text(
-                    """
-                    WITH matches AS (
-                      SELECT DISTINCT ON (p.id)
-                             p.id AS pid, s.zoning_code, s.zone_class
-                        FROM parcels p
-                        JOIN parcels s
-                          ON ST_Within(p.centroid, s.geom)
-                       WHERE p.jurisdiction_id = :cid
-                         AND p.zoning_code IS NULL
-                         AND p.city = :city
-                         AND p.centroid IS NOT NULL
-                         AND s.jurisdiction_id = :sid
-                         AND s.geom IS NOT NULL
-                         AND s.zoning_code IS NOT NULL
-                       ORDER BY p.id, s.id
-                    )
-                    UPDATE parcels p
-                       SET zoning_code = m.zoning_code,
-                           zone_class  = COALESCE(m.zone_class, p.zone_class)
-                      FROM matches m
-                     WHERE p.id = m.pid
-                    """
-                ).bindparams(cid=county.id, sid=sibling.id, city=parcel_city)
-            )
-            per_city_spatial[parcel_city] = result.rowcount or 0
-            total += per_city_spatial[parcel_city]
-
-    await db.flush()
-
-    return {
-        "county_jurisdiction_id": str(county.id),
-        "siblings_seen": len(siblings),
-        "strategy": strategy,
-        "rows_updated": total,
-        "per_city_apn": per_city_apn,
-        "per_city_spatial": per_city_spatial,
-    }
+    try:
+        return await _backfill(jurisdiction_id, db, strategy=strategy)
+    except NotACountyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except ValueError as exc:
+        # Unknown strategy or jurisdiction-not-found.
+        detail = str(exc)
+        status = 404 if "not found" in detail.lower() else 400
+        raise HTTPException(status_code=status, detail=detail)
 
 
 class _CityCount(BaseModel):

@@ -1731,6 +1731,105 @@ async def _run(db: AsyncSession, job: Job) -> None:
             except Exception:
                 pass
 
+    # ── County-only: pair municipality zoning to county parcels ──────────
+    # A county-wide parcel ingest leaves most parcels.zoning_code NULL and
+    # the county jurisdiction with no per-city zone_use_matrix rows, so the
+    # buybox LATERAL join fires no verdict (Hot Deals / Worth a Look return
+    # zero in SLCo). The sibling-zoning backfill + city→county crosswalk fix
+    # this, but historically they were manual endpoints an operator had to
+    # remember to hit. Run them here automatically, county-only, BEFORE the
+    # matrix bootstrap so the bootstrap sees the freshly-paired codes.
+    # Both are idempotent (NULL-only backfill + ON CONFLICT crosswalk).
+    if jurisdiction.parcel_source == ParcelSource.county_gis:
+        # Skip the (expensive) sibling backfill when no parcel is unzoned.
+        unzoned_count = await db.scalar(
+            text(
+                "SELECT COUNT(*) FROM parcels "
+                "WHERE jurisdiction_id = :jid AND zoning_code IS NULL"
+            ).bindparams(jid=jurisdiction.id)
+        )
+        if unzoned_count and unzoned_count > 0:
+            from app.services.sibling_backfill import (
+                backfill_zoning_from_siblings,
+                NotACountyError,
+            )
+            sibling_started = _stage_started(
+                job, "sibling_zoning_backfill", jurisdiction_id=str(jurisdiction.id)
+            )
+            try:
+                # APN match first, spatial pass on the residual. The spatial
+                # join can run for minutes on a large county; a single
+                # statement keeps the connection active (no idle drop).
+                async with asyncio.timeout(1800):
+                    sib_result = await backfill_zoning_from_siblings(
+                        jurisdiction.id, db, strategy="both"
+                    )
+                await db.commit()
+                _stage_completed(
+                    job,
+                    "sibling_zoning_backfill",
+                    sibling_started,
+                    rows_updated=sib_result.get("rows_updated", 0),
+                    siblings_seen=sib_result.get("siblings_seen", 0),
+                )
+            except NotACountyError:
+                pass
+            except Exception as exc:
+                logger.warning("sibling_zoning_backfill failed (non-fatal): %s", exc)
+                try:
+                    async with asyncio.timeout(5):
+                        await db.rollback()
+                        await db.refresh(job)
+                        await db.refresh(jurisdiction)
+                except Exception:
+                    pass
+                _stage_completed(
+                    job,
+                    "sibling_zoning_backfill",
+                    sibling_started,
+                    rows_updated=0,
+                    backfill_error=type(exc).__name__,
+                )
+
+        # Crosswalk sibling city matrices into the county (tagged with the
+        # parcel's verbatim city), seeding inherited_pending stubs for cities
+        # that have parcels but no sibling matrix so they surface in the
+        # verifier instead of silently scoring nothing.
+        from app.services.zone_matrix_crosswalk import crosswalk_county_from_cities
+        crosswalk_started = _stage_started(
+            job, "crosswalk_cities", jurisdiction_id=str(jurisdiction.id)
+        )
+        try:
+            async with asyncio.timeout(300):
+                xwalk_result = await crosswalk_county_from_cities(
+                    jurisdiction.id, db, seed_stubs=True
+                )
+            await db.commit()
+            _stage_completed(
+                job,
+                "crosswalk_cities",
+                crosswalk_started,
+                rows_written=xwalk_result.get("rows_written", 0),
+                siblings_seen=xwalk_result.get("siblings_seen", 0),
+                unmatched_cities=len(xwalk_result.get("unmatched_cities", [])),
+            )
+        except Exception as exc:
+            logger.warning("crosswalk_cities failed (non-fatal): %s", exc)
+            try:
+                async with asyncio.timeout(5):
+                    await db.rollback()
+                    await db.refresh(job)
+                    await db.refresh(jurisdiction)
+            except Exception:
+                pass
+            _stage_completed(
+                job,
+                "crosswalk_cities",
+                crosswalk_started,
+                rows_written=0,
+                crosswalk_error=type(exc).__name__,
+            )
+
     matrix_started = _stage_started(job, "zone_matrix_bootstrap", jurisdiction_id=str(jurisdiction.id))
     try:
         async with asyncio.timeout(30):
