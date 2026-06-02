@@ -76,6 +76,12 @@ class ZoneUseMatrixCreate(BaseModel):
     luxury_garage_condo: UsePermission = UsePermission.unclear
     classification_source: ClassificationSource = ClassificationSource.unclear
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    # Optional provenance fields so a reviewed sprint verdict can be promoted
+    # in one POST (e.g. scripts/pattern_bergen_nj_parse.py --apply). Defaults
+    # preserve prior behavior: a plain Apply-Correction ADD stays
+    # human_reviewed=False with no note.
+    notes: str | None = Field(default=None, max_length=2048)
+    human_reviewed: bool = False
 
 
 class ZoneMatrixResponse(BaseModel):
