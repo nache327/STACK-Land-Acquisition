@@ -298,7 +298,7 @@ def _extract_vector(
     )
 
 
-_MAX_RENDER_PIXELS = 24_000_000  # ~72 MB RGB; OpenCV color-seg comfortable, OOM-safe
+_MAX_RENDER_PIXELS = 80_000_000  # ~240 MB RGB; needed so 48x66" municipal maps stay legible to vision-LLM at >= ~120 DPI effective
 
 
 def _render_pdf_to_png(pdf_bytes: bytes, dpi: int) -> Optional[bytes]:
@@ -544,6 +544,45 @@ def _extract_raster(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+_ANTHROPIC_VISION_MAX_BYTES = 7_500_000  # safety margin under the API's ~10 MB cap
+
+
+def _shrink_for_vision(png_bytes: bytes) -> bytes:
+    """Downscale a PNG iteratively until it fits the Anthropic vision cap.
+
+    The Anthropic vision endpoint rejects images > 10 MB; municipal zoning
+    maps rendered for label detection can easily land at 16+ MB. This loop
+    halves the longest side until the encoded PNG is under the safety
+    margin. Returns the original bytes when no resize is needed.
+    """
+    if len(png_bytes) <= _ANTHROPIC_VISION_MAX_BYTES:
+        return png_bytes
+    try:
+        from PIL import Image as _PILImage
+        import io as _io
+    except Exception:
+        return png_bytes
+    try:
+        img = _PILImage.open(_io.BytesIO(png_bytes))
+        img.load()
+    except Exception:
+        return png_bytes
+    current = png_bytes
+    scale = 0.85
+    for _ in range(8):
+        if len(current) <= _ANTHROPIC_VISION_MAX_BYTES:
+            return current
+        new_w = max(1, int(img.size[0] * scale))
+        new_h = max(1, int(img.size[1] * scale))
+        resized = img.resize((new_w, new_h), _PILImage.LANCZOS)
+        buf = _io.BytesIO()
+        resized.save(buf, format="PNG", optimize=True)
+        current = buf.getvalue()
+        img = resized
+        scale *= 0.85
+    return current
+
+
 def _call_anthropic_vision(png_bytes: bytes, prompt: str, api_key: str) -> dict[str, Any]:
     """Single Anthropic vision call returning parsed JSON dict."""
     import base64
@@ -552,6 +591,7 @@ def _call_anthropic_vision(png_bytes: bytes, prompt: str, api_key: str) -> dict[
     except Exception as exc:  # noqa: BLE001
         raise RuntimeError(f"anthropic SDK missing: {exc}") from exc
     client = anthropic.Anthropic(api_key=api_key)
+    png_bytes = _shrink_for_vision(png_bytes)
     b64 = base64.standard_b64encode(png_bytes).decode()
     msg = client.messages.create(
         model="claude-opus-4-7",
