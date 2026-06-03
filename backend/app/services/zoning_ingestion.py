@@ -58,9 +58,11 @@ _ZONE_CODE_FIELDS = [
     "ZoningDist",
     "ZoningDistrict",
     # NJTPA regional zoning aggregate (gis.njtpa.org LandUse/NJTPA_Zoning) —
-    # per-county layers (Zoning_Monmouth, Zoning_Hunterdon, ...) carry the
-    # short district code in `ZON_ID` (e.g. "R-80", "C-1", "LBC") + `ZoneDesc`.
-    "ZON_ID",
+    # each per-county layer has its OWN schema for the short district code:
+    "ZON_ID",       # Monmouth (layer 3)  e.g. "R-80", "C-1", "LBC"
+    "MUNZonCode",   # Bergen (layer 0)    e.g. "A", "ML-5", "D-1"
+    "MUN_SYMBOL",   # Hunterdon (layer 1) e.g. "B-2", "R-3" (MUN_ZONE is the long name)
+    "Zone_",        # Morris (layer 4)    e.g. "TH", "R-MF3" (ZoneID is "1430_TH" prefixed)
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
@@ -75,8 +77,11 @@ _ZONE_NAME_FIELDS = [
     # Paramus Zoning publishes the long human label as `Text`
     # (e.g. "Residential One Family", "Conservation / Recreation").
     "Text",
-    # NJTPA regional zoning aggregate — district description.
-    "ZoneDesc",
+    # NJTPA regional zoning aggregate — per-county district description fields.
+    "ZoneDesc",    # Monmouth
+    "MUNZonDef",   # Bergen   e.g. "Single Family Residential"
+    "MUN_ZONE",    # Hunterdon e.g. "Highway Business" (long name; MUN_SYMBOL is code)
+    "ZoneLabel",   # Morris    e.g. "TH - Townhouse Residence Zone"
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",

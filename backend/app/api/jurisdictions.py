@@ -1547,27 +1547,27 @@ async def ingest_municipal_zoning(
 
 # ─── Admin: backfill zoning districts for an existing jurisdiction ───────────
 
-@router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")
-async def backfill_zoning(
+async def _run_backfill_zoning(
     jurisdiction_id: uuid.UUID,
-    zoning_url: str = Query(..., description="ArcGIS FeatureServer/MapServer layer URL"),
-    where: str = Query(default="1=1"),
-    replace: bool = Query(default=True),
-    spatial_join: bool = Query(default=True),
-    db: AsyncSession = Depends(get_db),
+    zoning_url: str,
+    where: str,
+    replace: bool,
+    spatial_join: bool,
+    db: AsyncSession,
+    on_stage=None,
 ) -> dict:
-    """Download a zoning FeatureServer + ingest into zoning_districts +
-    spatial-join parcels.
-
-    Useful for backfilling counties whose initial pipeline ingest didn't
-    have a zoning endpoint configured. Idempotent when ``replace=true``
-    (default): existing zoning_districts rows for the jurisdiction are
-    deleted and re-inserted from the source.
-
-    Returns counts so the caller can verify the backfill landed.
+    """Core backfill: download a zoning FeatureServer -> ingest into
+    zoning_districts -> spatial-join parcels.zoning_code. Shared by the sync
+    `_backfill-zoning` endpoint and the async `_backfill-zoning-async`
+    background task (which survives the 300s edge-proxy cap on county-sized
+    ingests). `on_stage(name)` is an optional async progress callback.
     """
     from app.services.arcgis_query import download_all_features
     from app.services.zoning_ingestion import ingest_zoning_districts
+
+    async def _stage(name: str) -> None:
+        if on_stage is not None:
+            await on_stage(name)
 
     j = await db.get(Jurisdiction, jurisdiction_id)
     if j is None:
@@ -1582,6 +1582,7 @@ async def backfill_zoning(
         )
     )
 
+    await _stage("downloading")
     gdf = await download_all_features(zoning_url, where=where)
     if gdf.empty:
         return {
@@ -1594,11 +1595,13 @@ async def backfill_zoning(
             "note": "downloaded 0 features — nothing to ingest",
         }
 
+    await _stage("ingesting")
     ingested = await ingest_zoning_districts(gdf, jurisdiction_id, db, replace=replace)
     await db.commit()
 
     spatial_updated = 0
     if spatial_join and parcel_count and parcel_count > 0:
+        await _stage("spatial_join")
         # Mirror the philly prefetch pattern: raw asyncpg + session-mode
         # 5432 + statement_timeout=0 so Supabase doesn't kill the join.
         import asyncpg
@@ -1673,6 +1676,118 @@ async def backfill_zoning(
         "ingested": ingested,
         "spatial_updated": spatial_updated,
     }
+
+
+@router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")
+async def backfill_zoning(
+    jurisdiction_id: uuid.UUID,
+    zoning_url: str = Query(..., description="ArcGIS FeatureServer/MapServer layer URL"),
+    where: str = Query(default="1=1"),
+    replace: bool = Query(default=True),
+    spatial_join: bool = Query(default=True),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Synchronous backfill (download + ingest + spatial-join). Fine for small
+    layers; for county-sized ingests that exceed the ~300s edge-proxy cap use
+    `_backfill-zoning-async`. Kept synchronous because `_ingest-municipal-zoning`
+    drives it per-source. Idempotent when ``replace=true`` (default)."""
+    return await _run_backfill_zoning(
+        jurisdiction_id, zoning_url, where, replace, spatial_join, db,
+    )
+
+
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_backfill-zoning-async",
+    status_code=202,
+)
+async def backfill_zoning_async(
+    jurisdiction_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    zoning_url: str = Query(..., description="ArcGIS FeatureServer/MapServer layer URL"),
+    where: str = Query(default="1=1"),
+    replace: bool = Query(default=False),
+    spatial_join: bool = Query(default=True),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Async backfill: returns 202 + job_id immediately and runs the
+    download->ingest->spatial-join in a BackgroundTask so it survives the ~300s
+    edge-proxy cap that 502s/fails county-sized synchronous ingests (the NJTPA
+    per-county layers). Poll
+    ``GET /jurisdictions/_backfill-zoning-status/{job_id}`` — the status carries
+    `stage`, the final `result` counts, and on failure `error` + `traceback`
+    (so server-side exceptions surface without Railway log access).
+
+    Defaults to ``replace=false`` (aggregate, don't delete existing districts).
+    """
+    from datetime import datetime as _dt, timezone as _tz
+    from app.services.job_state_store import set_job_state
+
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    job_id = str(uuid.uuid4())
+    state: dict = {
+        "job_id": job_id,
+        "kind": "backfill_zoning",
+        "status": "queued",
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "zoning_url": zoning_url,
+        "replace": replace,
+        "stage": None,
+        "started_at": _dt.now(_tz.utc).isoformat(),
+        "finished_at": None,
+        "result": None,
+        "error": None,
+        "traceback": None,
+    }
+    await set_job_state(job_id, state)
+
+    async def _bg() -> None:
+        import logging as _logging
+        import traceback as _tb
+        from app.db import async_session_maker
+        from app.services.job_state_store import set_job_state as _save
+        _log = _logging.getLogger(__name__)
+
+        state["status"] = "running"
+        await _save(job_id, state)
+
+        async def _on_stage(name: str) -> None:
+            state["stage"] = name
+            await _save(job_id, state)
+
+        try:
+            async with async_session_maker() as bg_db:
+                result = await _run_backfill_zoning(
+                    jurisdiction_id, zoning_url, where, replace, spatial_join,
+                    bg_db, on_stage=_on_stage,
+                )
+            state["result"] = result
+            state["status"] = "completed"
+            _log.info("backfill-zoning-async job=%s complete: %s", job_id, result)
+        except Exception as exc:  # noqa: BLE001
+            state["status"] = "failed"
+            state["error"] = str(exc)
+            state["traceback"] = _tb.format_exc()
+            _log.exception("backfill-zoning-async job=%s failed: %s", job_id, exc)
+        finally:
+            state["finished_at"] = _dt.now(_tz.utc).isoformat()
+            await _save(job_id, state)
+
+    background_tasks.add_task(_bg)
+    return {"job_id": job_id, "status": "queued"}
+
+
+@router.get("/jurisdictions/_backfill-zoning-status/{job_id}")
+async def backfill_zoning_status(job_id: str) -> dict:
+    """State of an in-flight/completed async backfill. 404 if unknown/expired."""
+    from app.services.job_state_store import get_job_state
+    state = await get_job_state(job_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="backfill job not found (may have expired)")
+    return state
 
 
 # ─── Admin: upload zoning shapefile/GeoJSON ──────────────────────────────────
