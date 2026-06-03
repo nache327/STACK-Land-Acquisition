@@ -53,11 +53,36 @@ VECTOR_LINE_THRESHOLD = 50  # pdfplumber.pages[0].lines len > 50 -> vector
 # falling back to ``absent``.
 DISCOVERY_TIMEOUT_S = 30.0          # total wall-clock budget per muni
 DISCOVERY_FETCH_TIMEOUT_S = 12.0    # per-HTTP-request timeout
-DISCOVERY_USER_AGENT = "ParcelLogic/1.0 Op5MapURLDiscovery"
+# Use a real browser UA — several muni CMSes (Maplewood etc.) return
+# HTTP 403 to unfamiliar bots.
+DISCOVERY_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 DISCOVERY_HIGH_CONFIDENCE = 0.7     # >= triggers immediate return
 
+# Generic paths to try if the homepage offers no candidate. CivicPlus
+# (DocumentCenter), Granicus, eCode360 are the common NJ muni CMSes.
+COMMON_PROBE_PATHS = [
+    "/zoning", "/planning",
+    "/government/departments/planning",
+    "/government/departments/planning-zoning",
+    "/government/departments/zoning",
+    "/departments/planning",
+    "/departments/planning-zoning",
+    "/departments/zoning",
+    "/Planning", "/Zoning",
+    "/sitemap", "/site-map", "/maps",
+]
+
+# Reject any candidate href matching these patterns — they are calendar,
+# events, news, alerts, board agendas, NOT zoning maps.
+_REJECT_HREF_RE = re.compile(
+    r"(Calendar\.aspx|CivicAlerts|NewsFlash|AgendaCenter|/news/|/events?/|/m/newsflash)",
+    re.I,
+)
+
 # Score table — matches highest-priority pattern wins.
-# Each entry: (regex against href+text lowercased, file ext class, score).
 _MAP_EXT_RE = re.compile(r"\.(pdf|jpg|jpeg|png|tif|tiff)(?:[?#]|$)", re.I)
 _PDF_EXT_RE = re.compile(r"\.pdf(?:[?#]|$)", re.I)
 _IMG_EXT_RE = re.compile(r"\.(jpg|jpeg|png|tif|tiff)(?:[?#]|$)", re.I)
@@ -65,6 +90,18 @@ _ZONING_MAP_RE = re.compile(r"zoning[\s_-]*map|zoning%20map", re.I)
 _ZONING_RE = re.compile(r"\bzoning\b", re.I)
 _MASTER_PLAN_RE = re.compile(r"master[\s_-]*plan", re.I)
 _PLANNING_RE = re.compile(r"\b(planning|planning[\s_-]board)\b", re.I)
+
+# Reject obvious non-map PDFs even when they contain "zoning"
+# (applications, checklists, ordinances-as-text, faqs, fees, letters,
+#  meeting cancellations, board bulletins, hours/contacts).
+_NON_MAP_KEYWORDS = (
+    "application", "checklist", "worksheet", "calc", "ordinance",
+    "faq", "fee schedule", "permit application", "report", "minutes",
+    "agenda", "notice", "newsletter", "letter", "cancellation",
+    "bulletin", "meeting", "hours", "contact", "board ", "_meeting",
+    "schedule", "appeal", "variance", "submission", "instruction",
+    "guide", "info ", "information",
+)
 
 
 @dataclass
@@ -90,14 +127,23 @@ class ClassificationRecord:
 def _score_candidate(href: str, text: str) -> float:
     """Score a candidate link 0..1.0 for being a zoning map.
 
-    Scoring rules (per CP-Pre Finding 3/C1 spec):
-      * PDF link whose href contains "zoning map" -> 1.0
-      * PDF link whose href/text contains "zoning" -> 0.7
-      * Image link (jpg/png/etc.) whose href/text contains "zoning" -> 0.6
-      * Master plan PDF -> 0.5
-      * /planning directory HTML link -> 0.3
+    Scoring rules (per CP-Pre Finding 3/C1 spec, conservatively tuned
+    to reject obvious non-map PDFs):
+      * Reject calendar/news/event/agenda hrefs outright.
+      * Reject PDFs matching application/checklist/ordinance/meeting/etc.
+      * PDF whose href/text contains "zoning map" -> 1.0
+      * Image whose href/text contains "zoning map" -> 0.85
+      * PDF whose href/text contains "zoning" AND "map" -> 0.75
+      * Image whose href/text contains "zoning" AND "map" -> 0.65
+      * Master plan PDF with "map" -> 0.5
+      * Bare /zoning HTML page -> 0.3
+      * Planning page -> 0.3
     """
+    if _REJECT_HREF_RE.search(href):
+        return 0.0
     haystack = f"{href} {text}".lower()
+    if any(k in haystack for k in _NON_MAP_KEYWORDS):
+        return 0.0
     is_pdf = bool(_PDF_EXT_RE.search(href))
     is_img = bool(_IMG_EXT_RE.search(href))
 
@@ -106,19 +152,21 @@ def _score_candidate(href: str, text: str) -> float:
             return 1.0
         if is_img:
             return 0.85
-        # HTML link that itself names "zoning map" — still worth following
         return 0.5
-    if _ZONING_RE.search(haystack):
+    if _ZONING_RE.search(haystack) and "map" in haystack:
         if is_pdf:
-            return 0.7
+            return 0.75
         if is_img:
-            return 0.6
-        # bare /zoning HTML page -> mid-low priority follow
+            return 0.65
+        return 0.35
+    if _ZONING_RE.search(haystack):
+        # Bare "zoning" hit — mid-low priority follow only.
         return 0.3
-    if _MASTER_PLAN_RE.search(haystack):
+    if _MASTER_PLAN_RE.search(haystack) and "map" in haystack:
         if is_pdf:
             return 0.5
-        return 0.2
+        if is_img:
+            return 0.4
     if _PLANNING_RE.search(haystack):
         return 0.3
     return 0.0
@@ -218,53 +266,89 @@ async def discover_map_url_from_website(
     def time_left() -> float:
         return total_budget_s - (time.time() - started)
 
+    visited: set[str] = set()
+    best_so_far: list = [0.0, ""]  # mutable [score, href]
+
+    async def _scan_page(client, page_url: str) -> Optional[str]:
+        """Return a >=0.7 hit or None; record best mid-confidence in best_so_far."""
+        if page_url in visited:
+            return None
+        visited.add(page_url)
+        html = await asyncio.wait_for(
+            _fetch(client, page_url),
+            timeout=min(DISCOVERY_FETCH_TIMEOUT_S, max(1.0, time_left())),
+        )
+        if not html:
+            return None
+        links = _extract_links_bs4(html, page_url)
+        scored = [(score, href, text) for (href, text) in links
+                  if (score := _score_candidate(href, text)) > 0.0]
+        scored.sort(key=lambda t: t[0], reverse=True)
+        for score, href, _ in scored:
+            if score >= DISCOVERY_HIGH_CONFIDENCE:
+                return href
+            if score > best_so_far[0]:
+                best_so_far[0] = score
+                best_so_far[1] = href
+        return None
+
     try:
         async with httpx.AsyncClient(
             follow_redirects=True,
             timeout=DISCOVERY_FETCH_TIMEOUT_S,
         ) as client:
-            html = await asyncio.wait_for(
-                _fetch(client, website_url),
-                timeout=min(DISCOVERY_FETCH_TIMEOUT_S, max(1.0, time_left())),
-            )
-            if not html:
-                return None
+            # 1. Scan homepage.
+            hit = await _scan_page(client, website_url)
+            if hit:
+                return hit
 
-            links = _extract_links_bs4(html, website_url)
-            scored = [(score, href, text) for (href, text) in links if (score := _score_candidate(href, text)) > 0.0]
-            scored.sort(key=lambda t: t[0], reverse=True)
-            if not scored:
-                return None
+            # 2. If homepage had no direct hit, try a small set of common
+            #    deep paths (planning / zoning pages) on the same origin.
+            #    Also follow the highest-scoring mid-confidence link from
+            #    the homepage one level deeper.
+            parsed = urlparse(website_url)
+            origin = f"{parsed.scheme}://{parsed.netloc}"
+            probe_urls = [urljoin(origin + "/", p.lstrip("/")) for p in COMMON_PROBE_PATHS]
+            if best_so_far[1] and not _MAP_EXT_RE.search(best_so_far[1]):
+                probe_urls.insert(0, best_so_far[1])
 
-            top_score, top_href, _ = scored[0]
-            if top_score >= DISCOVERY_HIGH_CONFIDENCE:
-                return top_href
+            for url in probe_urls:
+                if time_left() <= 2.0:
+                    break
+                if url in visited:
+                    continue
+                hit = await _scan_page(client, url)
+                if hit:
+                    return hit
 
-            # Mid-confidence: follow the top candidate one level deeper IF
-            # it's HTML (not a direct PDF — those we'd have already kept).
-            if time_left() <= 1.0:
-                return None
-            if _MAP_EXT_RE.search(top_href):
-                # It's a PDF/img link, just below threshold — accept it.
-                return top_href
+            # 3. Try sitemap.xml — many CivicPlus / Granicus sites expose
+            #    every PDF in the document center via the sitemap.
+            if time_left() > 3.0:
+                sitemap_url = urljoin(origin + "/", "sitemap.xml")
+                if sitemap_url not in visited:
+                    try:
+                        r = await asyncio.wait_for(
+                            client.get(sitemap_url, headers={"User-Agent": DISCOVERY_USER_AGENT}),
+                            timeout=min(DISCOVERY_FETCH_TIMEOUT_S, max(1.0, time_left())),
+                        )
+                        if r.status_code < 400 and r.text:
+                            visited.add(sitemap_url)
+                            url_pattern = re.compile(r'https?://[^\s<>"\'`]+', re.I)
+                            for u in url_pattern.findall(r.text):
+                                u_low = u.lower()
+                                if "zoning" in u_low and "map" in u_low and _MAP_EXT_RE.search(u):
+                                    return u
+                    except Exception:  # noqa: BLE001
+                        pass
 
-            html2 = await asyncio.wait_for(
-                _fetch(client, top_href),
-                timeout=min(DISCOVERY_FETCH_TIMEOUT_S, max(1.0, time_left())),
-            )
-            if not html2:
-                return None
-            links2 = _extract_links_bs4(html2, top_href)
-            scored2 = [(score, href, text) for (href, text) in links2 if (score := _score_candidate(href, text)) > 0.0]
-            scored2.sort(key=lambda t: t[0], reverse=True)
-            if scored2 and scored2[0][0] >= DISCOVERY_HIGH_CONFIDENCE:
-                return scored2[0][1]
-            # If a moderate PDF/img sits on the second page, accept it.
-            if scored2 and _MAP_EXT_RE.search(scored2[0][1]) and scored2[0][0] >= 0.5:
-                return scored2[0][1]
+            # 4. Accept the strongest mid-confidence PDF/image hit if any.
+            if best_so_far[0] >= 0.5 and _MAP_EXT_RE.search(best_so_far[1]):
+                return best_so_far[1]
             return None
     except asyncio.TimeoutError:
         LOGGER.info("discovery timed out for %s (%s)", muni_name, website_url)
+        if best_so_far[0] >= 0.5 and _MAP_EXT_RE.search(best_so_far[1]):
+            return best_so_far[1]
         return None
     except Exception as exc:  # noqa: BLE001
         LOGGER.debug("discovery error for %s: %s", muni_name, exc)

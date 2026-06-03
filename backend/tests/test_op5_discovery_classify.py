@@ -26,9 +26,31 @@ def test_score_pdf_zoning_map_is_top_priority():
     assert s == 1.0
 
 
-def test_score_pdf_zoning_only_is_secondary():
+def test_score_pdf_zoning_map_with_extra_qualifier():
+    # "Township Zoning Map" -> 1.0 (contains "zoning map" phrase)
+    s = _score_candidate("https://x.gov/Township_Zoning_Map.pdf", "Township Zoning Map")
+    assert s == 1.0
+
+
+def test_score_zoning_pdf_with_map_in_text():
+    # href has "zoning" + text has "Map" -> 0.75
+    s = _score_candidate("https://x.gov/zoning_2024.pdf", "Zoning Districts Map")
+    assert s == 0.75
+
+
+def test_score_zoning_ordinance_pdf_is_rejected():
+    # "ordinance" is a NON_MAP_KEYWORD -> reject
     s = _score_candidate("https://x.gov/zoning_ordinance.pdf", "Zoning Ordinance")
-    assert s == 0.7
+    assert s == 0.0
+
+
+def test_score_zoning_application_pdf_is_rejected():
+    # "application" rejection guards against false positives like Verona
+    s = _score_candidate(
+        "https://x.gov/Residential_Zoning_Application_Checklist.pdf",
+        "Residential Zoning Application",
+    )
+    assert s == 0.0
 
 
 def test_score_image_zoning_map():
@@ -46,8 +68,18 @@ def test_score_unrelated_link_is_zero():
     assert _score_candidate("https://x.gov/news", "Latest News") == 0.0
 
 
+def test_score_calendar_event_link_is_rejected():
+    # CivicPlus Calendar.aspx is a hard reject even with "Planning Board" text
+    s = _score_candidate(
+        "https://muni.gov/Calendar.aspx?EID=42",
+        "Planning Board Regular Meeting",
+    )
+    assert s == 0.0
+
+
 def test_score_master_plan_pdf():
-    s = _score_candidate("https://x.gov/master_plan_2018.pdf", "Master Plan")
+    # Master Plan PDF with "map" but without "zoning" word -> 0.5
+    s = _score_candidate("https://x.gov/master_plan_land_use_map_2018.pdf", "Master Plan Map")
     assert s == 0.5
 
 
