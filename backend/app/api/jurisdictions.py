@@ -216,17 +216,17 @@ async def get_zone(
     return zone
 
 
-@router.patch(
-    "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
-    response_model=ZoneUseMatrixRead,
-)
-async def update_zone(
+async def _apply_zone_update(
     jurisdiction_id: uuid.UUID,
     zone_code: str,
+    municipality: str | None,
     payload: ZoneUseMatrixUpdate,
-    municipality: str | None = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession,
 ) -> ZoneUseMatrix:
+    """Shared PATCH logic: locate the (jur, zone_code, municipality) active row
+    and apply the human override. Used by both the path-param route and the
+    query-param route (the latter handles zone codes containing '/', e.g.
+    'B/R', 'SC/HD', which can't ride in a path segment)."""
     result = await db.execute(
         select(ZoneUseMatrix).where(
             *_zone_select_where(jurisdiction_id, zone_code, municipality)
@@ -243,6 +243,38 @@ async def update_zone(
     await db.flush()
     await db.refresh(zone)
     return zone
+
+
+@router.patch(
+    "/jurisdictions/{jurisdiction_id}/zones/{zone_code}",
+    response_model=ZoneUseMatrixRead,
+)
+async def update_zone(
+    jurisdiction_id: uuid.UUID,
+    zone_code: str,
+    payload: ZoneUseMatrixUpdate,
+    municipality: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> ZoneUseMatrix:
+    return await _apply_zone_update(jurisdiction_id, zone_code, municipality, payload, db)
+
+
+@router.patch(
+    "/jurisdictions/{jurisdiction_id}/zone",
+    response_model=ZoneUseMatrixRead,
+)
+async def update_zone_by_query(
+    jurisdiction_id: uuid.UUID,
+    payload: ZoneUseMatrixUpdate,
+    zone_code: str,
+    municipality: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> ZoneUseMatrix:
+    """Query-param variant of PATCH update_zone. zone_code rides as a query
+    parameter instead of a path segment, so codes containing '/' (B/R, SC/HD,
+    APT/TH) can be updated — the path route 404s on those because the slash is
+    parsed as a path separator."""
+    return await _apply_zone_update(jurisdiction_id, zone_code, municipality, payload, db)
 
 
 @router.delete(
