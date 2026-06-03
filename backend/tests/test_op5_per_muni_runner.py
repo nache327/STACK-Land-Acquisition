@@ -73,17 +73,17 @@ def test_compute_coverage_pct(parcel_count: int, zoned: int, expected: float) ->
 
 
 def _operational_hooks(extraction: runner.ExtractionResult) -> runner.RunnerHooks:
-    async def _ingest(m, e, *, preview_branch):
+    async def _ingest(m, e, *, preview_branch, **_kw):
         return runner.IngestResult(
             jurisdiction_id="jid-test",
             polygons_written=len(e.polygons),
             nearest_within_meters=runner.DEFAULT_NEAREST_WITHIN_METERS,
         )
 
-    async def _backfill(jid, *, nearest_within_meters):
+    async def _backfill(jid, *, nearest_within_meters, **_kw):
         return None
 
-    async def _audit(jid, m, seed=8819):
+    async def _audit(jid, m, seed=8819, **_kw):
         return runner.AuditMetrics(
             parcel_count=100,
             zoned_parcel_count=88,
@@ -305,18 +305,18 @@ async def test_coverage_math_in_summary_matches_spec(
     spec_coverage = runner.compute_coverage_pct(100, 70)
     assert spec_coverage == 70.0
 
-    async def _ingest(m, e, *, preview_branch):
+    async def _ingest(m, e, *, preview_branch, **_kw):
         return runner.IngestResult(
             jurisdiction_id="jid-spec",
             polygons_written=len(e.polygons),
             nearest_within_meters=100.0,
         )
 
-    async def _backfill(jid, *, nearest_within_meters):
+    async def _backfill(jid, *, nearest_within_meters, **_kw):
         assert nearest_within_meters == 100.0
         return None
 
-    async def _audit(jid, m, seed=8819):
+    async def _audit(jid, m, seed=8819, **_kw):
         return runner.AuditMetrics(
             parcel_count=100,
             zoned_parcel_count=70,
@@ -359,13 +359,13 @@ async def test_below_operational_gate_returns_exit_1(
         vision_label_count=1,
     )
 
-    async def _ingest(m, e, *, preview_branch):
+    async def _ingest(m, e, *, preview_branch, **_kw):
         return runner.IngestResult("jid-low", len(e.polygons), 100.0)
 
-    async def _backfill(jid, *, nearest_within_meters):
+    async def _backfill(jid, *, nearest_within_meters, **_kw):
         return None
 
-    async def _audit(jid, m, seed=8819):
+    async def _audit(jid, m, seed=8819, **_kw):
         return runner.AuditMetrics(
             parcel_count=100,
             zoned_parcel_count=50,
@@ -481,3 +481,141 @@ def test_defaults_match_op5_decision_doc() -> None:
     assert runner.EXIT_COMPLETE_NOT_OPERATIONAL == 1
     assert runner.EXIT_CARVE_OUT == 2
     assert runner.EXIT_TRANSIENT_ERROR == 3
+
+
+# ── boundary tests for the real defaults (CP-Pre Finding 2 / A2) ───────────
+
+
+def test_default_extract_vector_classification(monkeypatch, muni: runner.MuniRecord) -> None:
+    """Vector-class PDF + mocked extractor returns source_class=vector with
+    a non-empty polygon list."""
+    from op5_lib import extraction as ext
+
+    sample = ext.ExtractionResult(
+        polygons=[{
+            "zone_code": "R-1",
+            "confidence": 0.92,
+            "geometry": {"type": "Polygon", "coordinates": [[[-74.0, 40.8], [-74.0, 40.81], [-73.99, 40.81], [-73.99, 40.8], [-74.0, 40.8]]]},
+        }],
+        color_to_zone={"raster:R-1": "R-1"},
+        source_class="vector",
+        vision_label_count=1,
+    )
+    monkeypatch.setattr(ext, "extract_polygons", lambda *_a, **_kw: sample)
+    # default_extract... loads op5_lib.extraction lazily — patch on the
+    # module before invocation.
+    out = runner.default_extract_polygons_from_map(muni)
+    assert out.source_class == "vector"
+    assert out.polygons and out.polygons[0]["zone_code"] == "R-1"
+    assert out.vision_label_count == 1
+
+
+def test_default_extract_returns_absent_when_no_map_url() -> None:
+    m = runner.MuniRecord(
+        muni_code="0000",
+        muni_name="Nowhere Borough",
+        map_url=None,
+        ordinance_url=None,
+    )
+    out = runner.default_extract_polygons_from_map(m)
+    assert out.source_class == "absent"
+    assert out.polygons == []
+
+
+def test_default_extract_raster_routes_to_vision(monkeypatch, muni: runner.MuniRecord) -> None:
+    from op5_lib import extraction as ext
+
+    sample = ext.ExtractionResult(
+        polygons=[{
+            "zone_code": "B-2",
+            "confidence": 0.85,
+            "geometry": {"type": "Polygon", "coordinates": [[[-74, 40.8], [-74, 40.81], [-73.99, 40.81], [-73.99, 40.8], [-74, 40.8]]]},
+        }],
+        color_to_zone={"raster:B-2": "B-2"},
+        source_class="raster",
+        vision_label_count=1,
+    )
+    calls: list[dict] = []
+
+    def _fake(map_url, *, place_name, state="NJ", anthropic_api_key=None):
+        calls.append({"map_url": map_url, "place_name": place_name, "state": state})
+        return sample
+
+    monkeypatch.setattr(ext, "extract_polygons", _fake)
+    out = runner.default_extract_polygons_from_map(muni)
+    assert out.source_class == "raster"
+    assert calls and calls[0]["place_name"] == "Westwood"
+
+
+@pytest.mark.asyncio
+async def test_default_ingest_refuses_nonpreview_url(monkeypatch, muni: runner.MuniRecord) -> None:
+    """When DATABASE_URL doesn't contain the preview ref, the default ingest
+    refuses to run."""
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:x@aws-1-us-east-2.pooler.supabase.com:6543/postgres",
+    )
+    extraction = runner.ExtractionResult(
+        polygons=[{"zone_code": "R-1", "geometry": {"type": "Polygon", "coordinates": [[]]}}],
+        color_to_zone={"raster:R-1": "R-1"},
+        source_class="vector",
+        vision_label_count=1,
+    )
+    with pytest.raises(RuntimeError, match="preview"):
+        await runner.default_ingest_polygons(
+            muni, extraction,
+            preview_branch=runner.DEFAULT_PREVIEW_BRANCH,
+            county="bergen",
+        )
+
+
+@pytest.mark.asyncio
+async def test_default_run_backfill_calls_spatial_backfill_with_100m(monkeypatch) -> None:
+    """default_run_backfill should call backfill_parcel_zoning_from_districts
+    with nearest_within_meters=100.0 (proof default)."""
+    from unittest.mock import AsyncMock, patch
+
+    captured: dict = {}
+
+    async def _fake_backfill(jurisdiction_id, db, *, nearest_within_meters=None, **_kw):
+        captured["jid"] = str(jurisdiction_id)
+        captured["nearest"] = nearest_within_meters
+        return 0
+
+    with patch(
+        "app.services.spatial_backfill.backfill_parcel_zoning_from_districts",
+        new=_fake_backfill,
+    ):
+        # Stub out engine creation so we don't actually connect to a DB.
+        fake_engine = AsyncMock()
+        fake_engine.dispose = AsyncMock(return_value=None)
+
+        class _SessionCM:
+            async def __aenter__(self_inner):
+                m = AsyncMock()
+                m.commit = AsyncMock(return_value=None)
+                return m
+
+            async def __aexit__(self_inner, exc_type, exc, tb):
+                return False
+
+        with patch(
+            "sqlalchemy.ext.asyncio.create_async_engine",
+            return_value=fake_engine,
+        ), patch(
+            "sqlalchemy.ext.asyncio.async_sessionmaker",
+            return_value=lambda: _SessionCM(),
+        ):
+            await runner.default_run_backfill(
+                "4bf00234-4455-4987-a067-b22ee6b6aa1f",
+                nearest_within_meters=100.0,
+            )
+
+    assert captured.get("nearest") == 100.0
+    assert captured.get("jid") == "4bf00234-4455-4987-a067-b22ee6b6aa1f"
+
+
+def test_orchestrator_default_max_parallel_is_14() -> None:
+    """CP-Pre Finding 1 (master decision): default cap is 14, not 5 or 20."""
+    import op5_factory_orchestrator as orch  # noqa: WPS433
+    assert orch.DEFAULT_MAX_PARALLEL == 14

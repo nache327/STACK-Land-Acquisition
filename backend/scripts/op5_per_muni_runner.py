@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -256,29 +257,33 @@ def matrix_rows_path(county: str, muni: str, root: Path = ARTIFACT_ROOT) -> Path
 
 
 def default_extract_polygons_from_map(muni: MuniRecord) -> ExtractionResult:
-    """Production extraction path.
+    """Production extraction path (CP-Pre Finding 2 / A2).
 
-    Steps mirror the proof's `corrected_cp1` scripts in spirit, but written
-    cleanly (no copy-paste from the proof). The runner is structured so the
-    test suite can inject a fake extractor — production resolution is gated
-    behind the ANTHROPIC_API_KEY check and per-muni timeouts in the
-    orchestrator, not in this function.
+    Routes through :mod:`op5_lib.extraction`:
+
+    * Fetch ``muni.map_url`` (httpx, follow redirects).
+    * Classify vector vs raster via ``pdfplumber`` line count (>50 -> vector).
+    * Vector path: pdftoppm render -> OpenCV k-means colour segmentation ->
+      contour extraction + Douglas-Peucker simplify -> vision-LLM label
+      points at confidence >= 0.75 -> point-in-polygon assignment ->
+      affine-bbox-fit to the Census place boundary.
+    * Raster path: vision-LLM boundary tracing (Hackensack class). Each
+      district returns a pixel polygon + zone_code + confidence; the same
+      Census-bbox affine projects to WGS84.
+
+    Carve-out preserved: vision returns 0 labels above 0.75 -> empty
+    polygons so the runner's existing carve-out path fires.
+
+    Returns an empty extraction (source_class unchanged) for any heavy
+    failure path so the carve-out flow is the single error sink.
     """
-    # Lazy imports so the runner remains importable in test environments
-    # without the heavy native deps.
     try:
-        import io
-        import subprocess
-        import tempfile
-
-        import httpx
-        import pdfplumber
+        from op5_lib.extraction import extract_polygons as _extract
     except Exception as exc:  # noqa: BLE001
+        LOGGER.warning("op5_lib.extraction import failed: %s — carving out", exc)
         return ExtractionResult(
-            polygons=[],
-            color_to_zone={},
-            source_class="absent",
-            vision_label_count=0,
+            polygons=[], color_to_zone={},
+            source_class="absent", vision_label_count=0,
         )
 
     if not muni.map_url:
@@ -287,52 +292,34 @@ def default_extract_polygons_from_map(muni: MuniRecord) -> ExtractionResult:
             source_class="absent", vision_label_count=0,
         )
 
+    # The op5_lib path uses the muni name for Census-place bbox lookup.
+    # Strip the DCA suffix so "Westwood Borough" -> "Westwood" matches
+    # what the Census Geocoder expects.
+    place_name = muni.muni_name or muni.muni_code
+    for suf in (" Borough", " Township", " Town", " City", " Village",
+                " borough", " township", " town", " city", " village"):
+        if place_name.endswith(suf):
+            place_name = place_name[: -len(suf)]
+            break
+
     try:
-        with httpx.Client(follow_redirects=True, timeout=60.0) as client:
-            resp = client.get(
-                muni.map_url,
-                headers={"User-Agent": "ParcelLogic/1.0 Op5Factory"},
-            )
-            resp.raise_for_status()
-            payload = resp.content
-    except Exception:  # noqa: BLE001
+        result = _extract(
+            muni.map_url,
+            place_name=place_name,
+            state="NJ",
+        )
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.exception("extract_polygons crashed for %s: %s", muni.muni_name, exc)
         return ExtractionResult(
             polygons=[], color_to_zone={},
             source_class="absent", vision_label_count=0,
         )
 
-    # Classify vector vs raster.
-    source_class = "raster"
-    try:
-        with pdfplumber.open(io.BytesIO(payload)) as pdf:
-            page = pdf.pages[0] if pdf.pages else None
-            lines = list(getattr(page, "lines", []) or []) if page else []
-            if len(lines) > 50:
-                source_class = "vector"
-    except Exception:  # noqa: BLE001
-        # Not a PDF / corrupted -> classify by content-type guess.
-        ctype = resp.headers.get("content-type", "").lower()
-        source_class = "raster" if ("image" in ctype or "jpeg" in ctype or "png" in ctype) else "absent"
-
-    if source_class != "vector":
-        return ExtractionResult(
-            polygons=[], color_to_zone={},
-            source_class=source_class, vision_label_count=0,
-        )
-
-    # Render + color-seg + vision-LLM is large enough that we defer to the
-    # orchestrator-side worker process. The PROOF orchestrator ran this as a
-    # subprocess that wrote /tmp artifacts; this function returns an empty
-    # extraction so the runner exits carve-out cleanly when called outside
-    # an extraction worker context. The orchestrator passes
-    # --extractor-cmd to inject a real extractor when the factory launches.
-    LOGGER.info(
-        "default_extract_polygons_from_map: vector classification only; "
-        "returning empty polygons (factory orchestrator injects extractor)"
-    )
     return ExtractionResult(
-        polygons=[], color_to_zone={},
-        source_class="vector", vision_label_count=0,
+        polygons=result.polygons,
+        color_to_zone=result.color_to_zone,
+        source_class=result.source_class,
+        vision_label_count=result.vision_label_count,
     )
 
 
@@ -378,20 +365,51 @@ async def default_ingest_polygons(
     extraction: ExtractionResult,
     *,
     preview_branch: str,
+    county: str = "bergen",
 ) -> IngestResult:
-    """Production ingest path uses the asyncpg PostGIS pattern.
+    """Production additive asyncpg ingest (CP-Pre Finding 2 / A2).
 
-    Lifted in spirit from the proof orchestrator's per-muni ingest. The
-    factory orchestrator injects a real ingestor; here we surface a stub so
-    test environments don't open DB connections by accident.
+    Tags every district with ``raw_attributes->>'op5_town'`` +
+    ``op5_factory='true'`` + ``op5_factory_stage='cp3'`` so the spatial
+    backfill (PR #172) and the audit can scope cleanly to just the muni
+    we just ingested without touching the existing Op-5 proof state for
+    Fort Lee / Garfield / Hackensack.
+
+    REFUSES to run unless DATABASE_URL points at the preview branch.
     """
-    LOGGER.warning(
-        "default_ingest_polygons: stub — real ingest is injected by the "
-        "factory orchestrator at runtime"
+    import asyncpg  # local — keeps the runner importable in pure-test mode
+    from op5_lib.ingestion_helpers import (
+        assert_preview_url,
+        ingest_polygons_additive,
+        load_db_url,
+        lookup_jurisdiction_id,
     )
+
+    url = load_db_url()
+    assert_preview_url(url)
+    if preview_branch not in url:
+        raise RuntimeError(
+            f"DATABASE_URL preview ref does not match expected {preview_branch!r}"
+        )
+    op5_town = normalize_muni_token(muni.muni_name)
+    conn = await asyncpg.connect(url, statement_cache_size=0, command_timeout=900)
+    try:
+        jurisdiction_id = await lookup_jurisdiction_id(conn, county=county)
+        if not jurisdiction_id:
+            raise RuntimeError(
+                f"No jurisdictions row found for county={county!r} state=NJ"
+            )
+        inserted = await ingest_polygons_additive(
+            conn,
+            jurisdiction_id=jurisdiction_id,
+            op5_town=op5_town,
+            polygons=extraction.polygons,
+        )
+    finally:
+        await conn.close()
     return IngestResult(
-        jurisdiction_id="stub-jurisdiction-id",
-        polygons_written=len(extraction.polygons),
+        jurisdiction_id=jurisdiction_id,
+        polygons_written=inserted,
         nearest_within_meters=DEFAULT_NEAREST_WITHIN_METERS,
     )
 
@@ -399,18 +417,40 @@ async def default_ingest_polygons(
 async def default_run_backfill(
     jurisdiction_id: str,
     *,
-    nearest_within_meters: float,
+    nearest_within_meters: float = DEFAULT_NEAREST_WITHIN_METERS,
 ) -> None:
-    """Calls `backfill_parcel_zoning_from_districts` via the public API.
+    """Calls the merged spatial backfill API (PR #172) on a fresh AsyncSession.
 
-    Stubbed in default mode — the factory orchestrator wires the asyncpg
-    session at launch time.
+    ``nearest_within_meters`` defaults to 100.0 per docs/OP5_PROOF_DECISION.md.
     """
-    LOGGER.warning(
-        "default_run_backfill: stub — orchestrator injects the real DB call "
-        "with nearest_within_meters=%s",
-        nearest_within_meters,
+    import uuid as _uuid
+
+    from app.config import settings  # noqa: WPS433 — public API
+    from app.services.spatial_backfill import (  # noqa: WPS433 — public API
+        backfill_parcel_zoning_from_districts,
     )
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    if nearest_within_meters is None:
+        nearest_within_meters = DEFAULT_NEAREST_WITHIN_METERS
+
+    engine = create_async_engine(
+        settings.database_url,
+        echo=False,
+        pool_pre_ping=True,
+        connect_args={"statement_cache_size": 0},
+    )
+    sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with sessionmaker() as session:
+            await backfill_parcel_zoning_from_districts(
+                _uuid.UUID(jurisdiction_id) if not isinstance(jurisdiction_id, _uuid.UUID) else jurisdiction_id,
+                session,
+                nearest_within_meters=float(nearest_within_meters),
+            )
+            await session.commit()
+    finally:
+        await engine.dispose()
 
 
 # ── audit (CP3) ────────────────────────────────────────────────────────────
@@ -421,22 +461,159 @@ async def default_audit_muni(
     muni: MuniRecord,
     *,
     seed: int = 8819,
+    county: str = "bergen",
 ) -> AuditMetrics:
-    """Stubbed audit. Orchestrator injects a real audit pulling from the
-    preview DB; this returns zeros so test mode does not hit the network.
+    """Run the merged coverage audit and a per-muni spot-check.
+
+    Subprocesses ``backend/scripts/audit_zoning_coverage.py --json
+    --jurisdiction "<County> County, NJ"`` (the merged CLI doesn't accept
+    a per-muni filter; we read the per-jurisdiction roll-up). The
+    per-muni spot-check is computed inline against the preview DB,
+    seeded by ``hash(county + muni)`` for reproducibility per spec
+    section 10 / CP3 v1.
     """
-    rng = random.Random(seed)
-    _ = rng.random()  # keep determinism if real audit ever adds noise
+    import asyncpg
+
+    from op5_lib.ingestion_helpers import assert_preview_url, load_db_url
+
+    url = load_db_url()
+    assert_preview_url(url)
+
+    # Coverage audit via subprocess so we don't reach into the merged
+    # script's internals. Surface only the figures we need.
+    audit_data: dict = {}
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(REPO_ROOT / "backend" / "scripts" / "audit_zoning_coverage.py"),
+            "--json",
+            "--jurisdiction",
+            f"{county.capitalize()} County, NJ",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(REPO_ROOT / "backend"),
+        )
+        stdout, _stderr = await proc.communicate()
+        if proc.returncode == 0 and stdout:
+            audit_data = json.loads(stdout.decode("utf-8", errors="replace"))
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.warning("coverage audit subprocess failed: %s", exc)
+        audit_data = {}
+
+    matrix_match_pct = 0.0
+    for row in audit_data.get("jurisdictions", []) or []:
+        if str(row.get("id")) == str(jurisdiction_id):
+            matrix_match_pct = float(row.get("matrix_zone_match_pct") or 0.0)
+            break
+
+    # Per-muni metrics + spot-check via direct asyncpg against the same
+    # raw_attributes->>'op5_town' tag we just wrote.
+    op5_town = normalize_muni_token(muni.muni_name)
+    municipality_label = _muni_label_for_parcels(muni.muni_name)
+    parcel_count = 0
+    zoned = 0
+    binding_dist: dict = {}
+    spot_passes = 0
+    spot_total = 0
+
+    rng_seed = int(hashlib.sha1(f"{county}:{op5_town}".encode()).hexdigest()[:8], 16)
+    conn = await asyncpg.connect(url, statement_cache_size=0, command_timeout=900)
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT
+                COUNT(*)::int AS parcels,
+                COUNT(*) FILTER (
+                    WHERE zoning_code IS NOT NULL AND btrim(zoning_code) <> ''
+                )::int AS zoned
+            FROM parcels
+            WHERE jurisdiction_id = $1::uuid
+              AND city = $2
+            """,
+            jurisdiction_id, municipality_label,
+        )
+        if row:
+            parcel_count = int(row["parcels"])
+            zoned = int(row["zoned"])
+        method_rows = await conn.fetch(
+            """
+            SELECT COALESCE(zone_binding_method, 'unknown') AS method,
+                   COUNT(*)::int AS n
+            FROM parcels
+            WHERE jurisdiction_id = $1::uuid
+              AND city = $2
+              AND zoning_code IS NOT NULL
+            GROUP BY 1
+            """,
+            jurisdiction_id, municipality_label,
+        )
+        binding_dist = {r["method"]: int(r["n"]) for r in method_rows}
+
+        # Per-muni spot-check: SPOT_CHECK_SAMPLE_SIZE random parcels with
+        # a CP3 v1 verdict. Uses setseed() for reproducibility.
+        await conn.execute("SELECT setseed($1)", float((rng_seed % 1_000_000) / 1_000_000))
+        spot_rows = await conn.fetch(
+            """
+            SELECT p.id, p.zoning_code AS parcel_code,
+                   zd.zone_code AS containing_code,
+                   EXISTS (
+                     SELECT 1 FROM zone_use_matrix z
+                     WHERE z.jurisdiction_id = p.jurisdiction_id
+                       AND z.zone_code = p.zoning_code
+                       AND z.deleted_at IS NULL
+                   ) AS has_matrix
+            FROM parcels p
+            LEFT JOIN LATERAL (
+              SELECT zone_code
+              FROM zoning_districts zd
+              WHERE zd.jurisdiction_id = p.jurisdiction_id
+                AND zd.raw_attributes->>'op5_town' = $3
+                AND p.centroid IS NOT NULL
+                AND ST_Covers(zd.geom, p.centroid)
+              ORDER BY ST_Area(zd.geom::geography), zd.id
+              LIMIT 1
+            ) zd ON true
+            WHERE p.jurisdiction_id = $1::uuid
+              AND p.city = $2
+            ORDER BY random()
+            LIMIT $4
+            """,
+            jurisdiction_id, municipality_label, op5_town, SPOT_CHECK_SAMPLE_SIZE,
+        )
+        spot_total = len(spot_rows)
+        for r in spot_rows:
+            if r["parcel_code"] and r["parcel_code"] == r["containing_code"] and r["has_matrix"]:
+                spot_passes += 1
+    finally:
+        await conn.close()
+
+    coverage = compute_coverage_pct(parcel_count, zoned)
+    spot_pct = compute_coverage_pct(spot_total, spot_passes) if spot_total else 0.0
     return AuditMetrics(
-        parcel_count=0,
-        zoned_parcel_count=0,
-        coverage_pct=0.0,
-        matrix_match_pct_of_zoned=0.0,
-        spot_check_total=SPOT_CHECK_SAMPLE_SIZE,
-        spot_check_passes=0,
-        spot_check_pass_pct=0.0,
-        binding_method_distribution={},
+        parcel_count=parcel_count,
+        zoned_parcel_count=zoned,
+        coverage_pct=coverage,
+        matrix_match_pct_of_zoned=matrix_match_pct,
+        spot_check_total=spot_total,
+        spot_check_passes=spot_passes,
+        spot_check_pass_pct=spot_pct,
+        binding_method_distribution=binding_dist,
     )
+
+
+def _muni_label_for_parcels(muni_name: str) -> str:
+    """Match the ``parcels.city`` form used during the proof. The DCA
+    municipality form is e.g. ``"Garfield city"`` (lowercased suffix).
+    Fall back to the raw input when it doesn't match a known pattern.
+    """
+    if not muni_name:
+        return ""
+    name = muni_name.strip()
+    for suffix in ("Borough", "Township", "Town", "City", "Village"):
+        if name.endswith(f" {suffix}"):
+            return f"{name[: -len(suffix) - 1]} {suffix.lower()}"
+    # Some directories store the lowercased form already.
+    return name
 
 
 # ── pipeline ───────────────────────────────────────────────────────────────
@@ -529,7 +706,7 @@ async def run_per_muni(
     # CP3 — ingest + backfill + audit.
     try:
         ingest_result = await _maybe_await(
-            hooks.ingest(muni, extraction, preview_branch=preview_branch)
+            hooks.ingest(muni, extraction, preview_branch=preview_branch, county=county)
         )
         await _maybe_await(
             hooks.backfill(
@@ -537,7 +714,9 @@ async def run_per_muni(
                 nearest_within_meters=nearest_within_meters,
             )
         )
-        audit = await _maybe_await(hooks.audit(ingest_result.jurisdiction_id, muni))
+        audit = await _maybe_await(
+            hooks.audit(ingest_result.jurisdiction_id, muni, county=county)
+        )
     except Exception as exc:  # noqa: BLE001
         LOGGER.exception("transient error running CP3 for %s/%s", county, muni.muni_name)
         payload = {
