@@ -132,12 +132,20 @@ def _classify(payload: bytes, content_type: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+_STATE_FIPS = {
+    "NJ": "34", "NY": "36", "CT": "09", "PA": "42", "MA": "25",
+    "MD": "24", "DE": "10", "VA": "51", "NC": "37", "GA": "13",
+}
+
+
 def _census_place_bbox(place_name: str, state: str) -> Optional[tuple[float, float, float, float]]:
     """Return (minlon, minlat, maxlon, maxlat) of the Census-recognized place.
 
-    Uses the Census Geocoder one-line endpoint then enriches with
-    geographies to grab the polygon. Falls back to the Geocoder bbox when
-    available. Caches per-process.
+    Queries the TIGERweb REST API directly (the Census Geocoder onelineaddress
+    endpoint only resolves street addresses, not plain place names — confirmed
+    against Westwood NJ smoke test 2026-06-03). BASENAME is the bare place name
+    stripped of the "borough" / "township" / "city" suffix; that's our lookup
+    key. Returns the place polygon's envelope. Caches per-process.
     """
     cache: dict = _census_place_bbox.__dict__.setdefault("_cache", {})
     key = (place_name.strip().lower(), state.upper())
@@ -147,39 +155,61 @@ def _census_place_bbox(place_name: str, state: str) -> Optional[tuple[float, flo
         import httpx
     except Exception:
         return None
+
+    # Strip common NJ DCA suffixes so BASENAME matches.
+    bare = place_name.strip()
+    for suffix in (" borough", " township", " town", " city", " village"):
+        if bare.lower().endswith(suffix):
+            bare = bare[: -len(suffix)]
+            break
+    state_fips = _STATE_FIPS.get(state.upper())
+    if not state_fips:
+        LOGGER.warning("no FIPS code for state %s — bbox unavailable", state)
+        cache[key] = None
+        return None
+
+    url = (
+        "https://tigerweb.geo.census.gov/arcgis/rest/services/"
+        "TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/4/query"
+    )
+    params = {
+        "where": f"BASENAME='{bare}' AND STATE='{state_fips}'",
+        "outFields": "NAME,BASENAME,STATE,GEOID",
+        "returnGeometry": "true",
+        "outSR": "4326",
+        "f": "json",
+    }
     try:
-        url = "https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress"
-        params = {
-            "address": f"{place_name}, {state}",
-            "benchmark": "Public_AR_Current",
-            "vintage": "Current_Current",
-            "format": "json",
-            "layers": "Incorporated Places",
-        }
         with httpx.Client(timeout=30.0) as client:
             resp = client.get(url, params=params)
             resp.raise_for_status()
             data = resp.json()
-        # The geocoder doesn't return bbox directly; we use the matched
-        # coordinate + a generous radius as a last-resort. Real bbox comes
-        # from TIGERweb if available.
-        matches = data.get("result", {}).get("addressMatches", [])
-        if not matches:
+        feats = data.get("features") or []
+        if not feats:
+            LOGGER.warning("TIGERweb: no place match for BASENAME=%s STATE=%s", bare, state_fips)
             cache[key] = None
             return None
-        coord = matches[0].get("coordinates", {})
-        lon = float(coord.get("x"))
-        lat = float(coord.get("y"))
-        # Fall back to a ~5 km square around the geocoded centroid. This is
-        # only used to project pixel polygons; the spatial backfill ground
-        # truths against parcel centroids. The proof showed this is good
-        # enough to bind parcels at the 70%+ coverage gate.
-        d_deg = 0.045  # ~5 km in latitude
-        bbox = (lon - d_deg, lat - d_deg, lon + d_deg, lat + d_deg)
+        rings = feats[0].get("geometry", {}).get("rings") or []
+        pts: list[tuple[float, float]] = []
+
+        def _walk(node):
+            if isinstance(node, (list, tuple)) and node and isinstance(node[0], (int, float)) and len(node) == 2:
+                pts.append((float(node[0]), float(node[1])))
+            elif isinstance(node, list):
+                for child in node:
+                    _walk(child)
+
+        _walk(rings)
+        if not pts:
+            cache[key] = None
+            return None
+        lons = [p[0] for p in pts]
+        lats = [p[1] for p in pts]
+        bbox = (min(lons), min(lats), max(lons), max(lats))
         cache[key] = bbox
         return bbox
     except Exception as exc:  # noqa: BLE001
-        LOGGER.warning("Census place bbox lookup failed for %s: %s", place_name, exc)
+        LOGGER.warning("TIGERweb bbox lookup failed for %s, %s: %s", place_name, state, exc)
         cache[key] = None
         return None
 
