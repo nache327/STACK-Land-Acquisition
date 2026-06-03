@@ -15,7 +15,7 @@ marked ``complete`` in the report file.
 
 CLI:
     python backend/scripts/op5_factory_orchestrator.py \\
-        --county bergen [--max-parallel 5] [--dry-run]
+        --county bergen [--max-parallel 14] [--dry-run]
 """
 from __future__ import annotations
 
@@ -47,7 +47,10 @@ from op5_per_muni_runner import (  # noqa: E402
 LOGGER = logging.getLogger("op5_factory_orchestrator")
 
 PER_MUNI_WALL_CLOCK_S = 6 * 60 * 60  # 6 hours per OP5_FACTORY_72H_PLAN.md
-DEFAULT_MAX_PARALLEL = 5
+# Default capped at 14 per CP-Pre Finding 1 (master decision; 20 was the
+# spec ask, 14 is the DB-capacity-safe ceiling after the connection-pool
+# review in docs/OP5_PRE_BUILD_REPORT.md).
+DEFAULT_MAX_PARALLEL = 14
 
 EXIT_TO_STATUS = {
     EXIT_COMPLETE_OPERATIONAL: "complete_operational",
