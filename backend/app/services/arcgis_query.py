@@ -26,7 +26,10 @@ _MAX_CONCURRENT_PAGES = 4
 # services1.arcgis.com node return 504 within 60 s of starting a 392K download
 # while Loudoun + Mont PA + MD ran in parallel. Retry with exponential backoff
 # instead of failing the whole job.
-_RETRY_STATUSES = {502, 503, 504}
+# 500 included: self-hosted ArcGIS Servers (e.g. gis.njtpa.org) throw
+# intermittent 500s on feature-fetch queries under load — the same query
+# succeeds on retry. Queries are idempotent, so retrying with backoff is safe.
+_RETRY_STATUSES = {500, 502, 503, 504}
 _MAX_RETRIES = 4
 _BACKOFF_BASE_SECONDS = 1.5
 
