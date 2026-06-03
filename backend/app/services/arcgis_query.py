@@ -30,6 +30,18 @@ _RETRY_STATUSES = {502, 503, 504}
 _MAX_RETRIES = 4
 _BACKOFF_BASE_SECONDS = 1.5
 
+# Some ArcGIS hosts sit behind Cloudflare, which 403s the default httpx
+# User-Agent ("python-httpx/..") but lets a normal browser UA through (a
+# UA-based challenge, not JS). Sending a browser UA lets us reach those
+# self-hosted servers — notably gis.njtpa.org (NJTPA regional zoning).
+_BROWSER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json,text/plain,*/*",
+}
+
 
 async def _send_with_retry(
     client: httpx.AsyncClient | None,
@@ -50,9 +62,9 @@ async def _send_with_retry(
         try:
             if client is None:
                 async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as local_client:
-                    resp = await local_client.request(method, url, params=params, data=data)
+                    resp = await local_client.request(method, url, params=params, data=data, headers=_BROWSER_HEADERS)
             else:
-                resp = await client.request(method, url, params=params, data=data)
+                resp = await client.request(method, url, params=params, data=data, headers=_BROWSER_HEADERS)
             if resp.status_code in _RETRY_STATUSES:
                 last_exc = httpx.HTTPStatusError(
                     f"{resp.status_code} {resp.reason_phrase}",

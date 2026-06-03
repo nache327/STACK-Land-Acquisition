@@ -91,7 +91,21 @@ def _load_municipalities(state: str, county: str) -> list[str]:
         logger.warning("nj_municipalities.json parse error: %s", exc)
         return []
     county_lc = (county or "").lower().replace(" county", "").strip()
-    return list(data.get(county_lc) or [])
+    # Entries are EITHER bare strings (legacy counties: Bergen/Morris/Hunterdon)
+    # OR Op-5 record dicts {"name","type","ordinance_vendor"} (Monmouth, Essex,
+    # Middlesex, Burlington). Normalize to "<name> <type>" town strings — a raw
+    # dict passed downstream as a town name 500s the discovery sweep.
+    out: list[str] = []
+    for e in (data.get(county_lc) or []):
+        if isinstance(e, str):
+            name = e.strip()
+        elif isinstance(e, dict):
+            name = f"{e.get('name', '')} {e.get('type', '')}".strip()
+        else:
+            name = ""
+        if name:
+            out.append(name)
+    return out
 
 
 async def discover_municipal_zoning_for_county(

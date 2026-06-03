@@ -57,6 +57,10 @@ _ZONE_CODE_FIELDS = [
     # does NOT match "zoningdist". Add as distinct candidate.
     "ZoningDist",
     "ZoningDistrict",
+    # NJTPA regional zoning aggregate (gis.njtpa.org LandUse/NJTPA_Zoning) —
+    # per-county layers (Zoning_Monmouth, Zoning_Hunterdon, ...) carry the
+    # short district code in `ZON_ID` (e.g. "R-80", "C-1", "LBC") + `ZoneDesc`.
+    "ZON_ID",
 ]
 _ZONE_NAME_FIELDS = [
     "ZONE_NAME", "LONG_NAME", "DISTRICT_NAME", "LABEL",
@@ -71,6 +75,8 @@ _ZONE_NAME_FIELDS = [
     # Paramus Zoning publishes the long human label as `Text`
     # (e.g. "Residential One Family", "Conservation / Recreation").
     "Text",
+    # NJTPA regional zoning aggregate — district description.
+    "ZoneDesc",
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
