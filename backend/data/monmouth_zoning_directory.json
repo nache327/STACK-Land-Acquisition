@@ -187,7 +187,7 @@
     "muni_code": "1324",
     "muni_name": "Keyport Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.keyportonline.com/filestorage/4031/5682/7599/7603/zoning_map_new.pdf",
     "ordinance_url": "https://ecode360.com/KE3913",
     "website_url": "https://www.keyportonline.com/"
   },
@@ -227,7 +227,7 @@
     "muni_code": "1329",
     "muni_name": "Manalapan Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "http://mtnj.org/images/uploads/Zoning/manalapan_zoning_map.pdf",
     "ordinance_url": "https://ecode360.com/MA0726",
     "website_url": "https://www.mtnj.org/"
   },
@@ -275,7 +275,7 @@
     "muni_code": "1335",
     "muni_name": "Monmouth Beach Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://ecode360.com/attachment/MO3812/MO3812-030d%20Appendix%20D%20Zoning%20Map.pdf",
     "ordinance_url": "https://ecode360.com/MO3812",
     "website_url": "https://monmouthbeach.us/"
   },
@@ -331,7 +331,7 @@
     "muni_code": "1342",
     "muni_name": "Rumson Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://ecode360.com/attachment/RU4115/RU4115-022l%20Zoning%20Map.pdf",
     "ordinance_url": "https://ecode360.com/RU4115",
     "website_url": "https://rumsonnj.gov/"
   },

@@ -35,7 +35,7 @@
     "muni_code": "1205",
     "muni_name": "Edison Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.edisonnj.org/Departments/Engineering%20Department/ZONING%20MAP.pdf",
     "ordinance_url": "https://ecode360.com/ED0440",
     "website_url": "https://www.edisonnj.org/"
   },
@@ -59,7 +59,7 @@
     "muni_code": "1208",
     "muni_name": "Jamesburg Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.jamesburgborough.org/departments/document_center/Departments/Zoning Permit/ZONINGMAP.pdf",
     "ordinance_url": "https://ecode360.com/JA4104",
     "website_url": "https://www.jamesburgborough.org/"
   },
@@ -75,7 +75,7 @@
     "muni_code": "1210",
     "muni_name": "Middlesex Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.middlesexboro-nj.gov/s/MiddlesexZoningMap3-12-2014REV.pdf",
     "ordinance_url": "https://ecode360.com/MI0188",
     "website_url": "https://www.middlesexboro-nj.gov/"
   },
@@ -99,7 +99,7 @@
     "muni_code": "1213",
     "muni_name": "New Brunswick City",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.cityofnewbrunswick.org/Zoning_New_Brunswick_2025.pdf?t=202601160854550",
     "ordinance_url": "https://library.municode.com/nj/new_brunswick/codes/municipal_code",
     "website_url": "https://www.cityofnewbrunswick.org/"
   },
@@ -107,7 +107,7 @@
     "muni_code": "1214",
     "muni_name": "North Brunswick Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://northbrunswicknj.gov/wp-content/uploads/2025/09/North-Brunswick-Zoning-Map-2025.pdf",
     "ordinance_url": "https://ecode360.com/NO0467",
     "website_url": "https://www.northbrunswicknj.gov/"
   },
@@ -187,7 +187,7 @@
     "muni_code": "1224",
     "muni_name": "Spotswood Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.spotswoodboro.com/_files/ugd/8918de_58451b9fa4ec4e7c9bceb44265295380.pdf",
     "ordinance_url": "https://ecode360.com/SP1936",
     "website_url": "https://www.spotswoodboro.com/"
   },

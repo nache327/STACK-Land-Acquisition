@@ -59,7 +59,7 @@
     "muni_code": "0708",
     "muni_name": "Glen Ridge Borough",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.glenridgenj.org/wp-content/uploads/2025/06/buildingzoningmap11.28.16.pdf",
     "ordinance_url": "https://library.municode.com/nj/glen_ridge_borough/codes/code_of_ordinances",
     "website_url": "https://www.glenridgenj.org/"
   },
@@ -155,7 +155,7 @@
     "muni_code": "0720",
     "muni_name": "Verona Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.veronanj.org/media/Engineering/Zoning%20Forms/ZR-04%20Township%20of%20Verona%20Zone%20Map.pdf",
     "ordinance_url": "https://ecode360.com/VE0815",
     "website_url": "https://www.veronanj.org/"
   },

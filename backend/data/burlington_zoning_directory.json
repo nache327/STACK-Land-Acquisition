@@ -35,7 +35,7 @@
     "muni_code": "0305",
     "muni_name": "Burlington City",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.burlingtonnj.us/wp-content/uploads/2024/04/Burlington_Zoning_Map_7_1_14.pdf",
     "ordinance_url": "https://ecode360.com/BU2898",
     "website_url": "https://www.burlingtonnj.us/"
   },
@@ -75,7 +75,7 @@
     "muni_code": "0310",
     "muni_name": "Delran Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://delrantownship.org/wp-content/uploads/2024/05/Delran_Zoning_Map.pdf",
     "ordinance_url": "https://ecode360.com/DE1570",
     "website_url": "https://www.delrantownship.org/"
   },
@@ -115,7 +115,7 @@
     "muni_code": "0315",
     "muni_name": "Florence Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.florence-nj.gov/wp-content/uploads/2023/05/Zoning-Map-08.30.2022.pdf",
     "ordinance_url": "https://ecode360.com/FL0864",
     "website_url": "https://www.florence-nj.gov/"
   },
@@ -155,7 +155,7 @@
     "muni_code": "0320",
     "muni_name": "Medford Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://medfordtownship.com/wp-content/uploads/2025/02/Zoning-Map1-8-2025-ORD-2025-1.pdf",
     "ordinance_url": "https://ecode360.com/ME0295",
     "website_url": "https://medfordtownship.com/"
   },
@@ -187,7 +187,7 @@
     "muni_code": "0324",
     "muni_name": "Mount Laurel Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.mountlaurel.com/Zoning Map 2020.pdf",
     "ordinance_url": "https://ecode360.com/MO0794",
     "website_url": "https://www.mountlaurel.com/"
   },
@@ -259,7 +259,7 @@
     "muni_code": "0333",
     "muni_name": "Southampton Township",
     "in_statewide_aggregator": false,
-    "map_url": null,
+    "map_url": "https://www.southamptonnj.org/government/Document Center/Links/Southampton Twp Master Plan/Conservation, Open Space, Recreation Plan maps.pdf?t=202111121251120",
     "ordinance_url": "https://ecode360.com/SO3594",
     "website_url": "https://www.southamptonnj.org/"
   },
