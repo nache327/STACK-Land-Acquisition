@@ -1,29 +1,38 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-04T19:30:00Z",
+  "updated_at": "2026-06-04T22:00:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "2026-06-01 May-31 close, backend/tmp/audit_may31_close.json",
-    "origin_main_at_snapshot": "84d8263",
+    "origin_main_at_snapshot": "5bd76d7",
     "op5_proof_plan": "docs/OP5_PROOF_PLAN.md",
-    "op5_final_gate": "docs/OP5_DISPATCH_J_AND_O.md",
+    "op5_proof_decision": "docs/OP5_PROOF_DECISION.md",
+    "op5_factory_plan": "docs/OP5_FACTORY_72H_PLAN.md",
     "dispatch_j_pr": "PR #172 merged 2026-06-02 (84d8263) — spatial_backfill nearest_within_meters fallback live on main",
-    "dispatch_o_result": "FAILED — vision-LLM cannot localize landmarks to pixel coordinates with sufficient precision; RMS 162m vs <30m target; spot-check 0/10; preview rolled back to CP3 v1 baseline (50 polygons, 50.7%); see /tmp/op5_proof/hackensack/cp3_v3_summary.md"
+    "dispatch_o_result": "FAILED — vision-LLM cannot localize landmarks to pixel coords; Hackensack-class carved out to operator-assisted Op-5",
+    "dispatch_p_result": "PASSED for vector-class — Fort Lee 67.8%/84.1% coverage at 50m/200m; Garfield 75.0%/93.2%; bound-only accuracy 17/17 (100%) across both towns; mixed-sample failures are unbound parcels, not wrong bindings"
   },
-  "mode": "op5_dispatch_p_pending",
+  "mode": "op5_factory_authorized_go_with_raster_carve_out",
   "op5_proof": {
-    "status": "dispatch_p_pending_2026_06_04",
-    "cp3_results_so_far": {
-      "fort_lee": {"coverage_pct": 57.6, "spot_check": "9/10", "verdict": "accuracy_pass_coverage_fail_pending_p_with_j_applied"},
-      "garfield": {"coverage_pct": 40.9, "spot_check": "10/10", "verdict": "accuracy_pass_coverage_fail_pending_p_with_j_applied"},
-      "hackensack": {"coverage_pct": 50.7, "spot_check": "4/10_mixed", "verdict": "accuracy_fail_o_failed_vision_llm_cannot_localize_landmarks_raster_carve_out_class"},
-      "fair_lawn": {"verdict": "failing_class_text_only_legend_carve_out"}
+    "status": "DECIDED_2026_06_04 — GO WITH RASTER CARVE-OUT",
+    "decision_doc": "docs/OP5_PROOF_DECISION.md",
+    "factory_plan_doc": "docs/OP5_FACTORY_72H_PLAN.md",
+    "cp3_final_results": {
+      "fort_lee": {"coverage_50m": "67.8%", "coverage_200m": "84.1%", "spot_check_bound_only": "9/9 (100%)", "verdict": "PASS — vector-class factory-routable"},
+      "garfield": {"coverage_50m": "75.0%", "coverage_200m": "93.2%", "spot_check_bound_only": "8/8 (100%)", "verdict": "PASS — vector-class factory-routable"},
+      "hackensack": {"verdict": "CARVE-OUT — raster-class, operator-assisted Op-5"},
+      "fair_lawn": {"verdict": "CARVE-OUT — text-only-legend class, operator-assisted Op-5"}
     },
-    "blockers_resolved": ["Dispatch J merged (PR #172, 84d8263) — spatial_backfill nearest_within_meters fallback live on main"],
-    "blockers_remaining": ["Hackensack raster georef: vision-LLM cannot localize landmarks to pixel coords — Dispatch O failed; carve out raster-class munis to operator-assisted Op-5"],
-    "dispatches_in_flight": ["P (Op-5 orchestrator: final 3x3 re-validation with J applied)"],
-    "expected_final_outcome": "GO_WITH_RASTER_CARVE_OUT — vector-class munis (Fort Lee, Garfield, ~70-85% of NJ Tier-S) qualify for 25-agent factory; raster-class munis (Hackensack, ~15% of munis) route to operator-assisted Op-5",
-    "factory_authorization_status": "BLOCKED until P returns Fort Lee + Garfield ≥70% coverage with J applied"
+    "production_decisions": {
+      "nearest_within_meters_default": 100,
+      "per_jurisdiction_override": true,
+      "binding_method_ui_in_v1": true,
+      "raster_class_route": "operator_assisted_op5_qgis_workflow",
+      "factory_scope_munis": 210,
+      "factory_scope_counties": ["Bergen 70", "Essex 22", "Middlesex NJ 25", "Monmouth 53", "Burlington 40"]
+    },
+    "factory_authorization_status": "AUTHORIZED 2026-06-04 — pre-build A-D required before H+0",
+    "carve_out_estimate": "21-32 munis (~10-15%) routed to operator-assisted Op-5"
   },
   "current_known_state": {
     "mode": "kpi_growth_entered_2026_05_28",

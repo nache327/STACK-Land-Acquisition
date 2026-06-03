@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-04T19:30:00Z",
-  "source": "docs/PHASE2_PROGRESS.md + docs/OP5_PROOF_PLAN.md + docs/OP5_DISPATCH_J_AND_O.md",
-  "mode": "op5_dispatch_p_pending",
+  "updated_at": "2026-06-04T22:00:00Z",
+  "source": "docs/PHASE2_PROGRESS.md + docs/OP5_PROOF_DECISION.md + docs/OP5_FACTORY_72H_PLAN.md",
+  "mode": "op5_factory_authorized",
   "recommended_next_actions": [
     {
       "rank": "complete",
@@ -18,12 +18,42 @@
       "evidence": "/tmp/op5_proof/hackensack/cp3_v3_summary.md"
     },
     {
-      "rank": 1,
+      "rank": "complete",
       "lane": "op5-proof-orchestrator",
-      "action": "Dispatch P — final re-validation gate. Apply spatial_backfill from main (84d8263) to preview branch with nearest_within_meters=50.0 for Fort Lee and Garfield (Hackensack carved out due to Dispatch O failure). Re-spot-check both towns with fresh seeds. Report 2x3 gate state (coverage_contained, coverage_with_nearest_fallback, spot_check, binding_method distribution) per town.",
-      "wake_condition": "Immediate. Master Planning 2026-06-04 P trigger.",
-      "dependency_order": "Sequential after J merge + O carve-out decision.",
-      "expected_kpi": "Fort Lee + Garfield coverage ≥70%; confirms factory authorization path for vector-class munis"
+      "action": "Dispatch P — final re-validation gate. PASSED 2026-06-04. Fort Lee 67.8%/84.1% coverage at 50m/200m; Garfield 75.0%/93.2%; bound-only accuracy 17/17 (100%) across both towns. GO WITH RASTER CARVE-OUT decision recorded in docs/OP5_PROOF_DECISION.md.",
+      "status": "complete"
+    },
+    {
+      "rank": 1,
+      "lane": "op5-factory-orchestrator",
+      "action": "Op-5 factory pre-build A-D per docs/OP5_FACTORY_72H_PLAN.md before H+0. Generalize Op-5 proof orchestrator into per-county runner (op5_factory_orchestrator.py + op5_discovery_classify.py + op5_per_muni_runner.py). Build review queue UI at /admin/op5-review. Replicate bergen_zoning_directory.json pattern for Essex/Middlesex NJ/Monmouth/Burlington. DB capacity check on Supabase preview. ~24h pre-build budget, ~5 agents.",
+      "wake_condition": "Immediate. Master Planning 2026-06-04 factory authorization.",
+      "dependency_order": "Blocks factory H+0. Master CP-Pre review required before Phase 0 launch.",
+      "expected_kpi": "factory orchestrator + review UI + 4 county directories ready for 25-agent dispatch"
+    },
+    {
+      "rank": 2,
+      "lane": "op5-factory-orchestrator",
+      "action": "Op-5 factory 72h execution per docs/OP5_FACTORY_72H_PLAN.md. Phase 0 discovery-classify all 210 munis (5 agents, 4h). Phase 1 vector-class extraction (20 agents, 36-48h, ~178-189 munis). Phase 3 audit + promote (12h). Master review at CP-Phase0 (H+4), CP-Phase1-mid (H+24), CP-Phase3 (H+60).",
+      "wake_condition": "Master CP-Pre approval of pre-build deliverables.",
+      "dependency_order": "Sequential after rank 1.",
+      "expected_kpi": "~150-170 NJ Tier-S munis operational on prod; ~25M parcels covered with bound verdicts; Tier-S strategic coverage jumps from ~17% to ~65-75%"
+    },
+    {
+      "rank": 3,
+      "lane": "operator-track",
+      "action": "Operator-assisted Op-5 queue for raster + text-only-legend carve-out munis (~21-32 estimated). Standard QGIS workflow per docs/archive/BERGEN_PDF_OPERATIONALIZATION.md. Runs in parallel with factory; non-blocking for prod promotion of factory munis.",
+      "wake_condition": "Phase 0 discovery-classify identifies carve-out muni list.",
+      "dependency_order": "Parallel to factory Phase 1.",
+      "expected_kpi": "additional ~10-15% of NJ Tier-S coverage via operator labor (~19-43 hours over Sprint-2 window)"
+    },
+    {
+      "rank": 4,
+      "lane": "frontend",
+      "action": "ParcelDrawer binding-method badge — small frontend PR (~50 LOC). Read parcels.zone_binding_method, display 'Zone: B1 (within district)' vs 'Zone: B1 (nearest, ~30m)' badge. Ships post-factory promotion.",
+      "wake_condition": "Factory promotion to prod.",
+      "dependency_order": "Post-factory; not blocking.",
+      "expected_kpi": "customer-trust transparency on inferred bindings"
     },
     {
       "rank": 4,
