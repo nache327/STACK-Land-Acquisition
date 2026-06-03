@@ -1,0 +1,4027 @@
+{
+  "jurisdiction_id": "394ef40c-ca0d-4d57-9b11-dc5417430240",
+  "jurisdiction_name": "Somerset County, NJ",
+  "generated_for_review": true,
+  "review_instructions": "verdicts: city -> zone_code -> {4 uses}. Each use cell carries permission (permitted|conditional|prohibited|unclear), confidence, cited_subsection, conditions_json, verification_note. Edit permission values in place against the ordinance, then run --apply on this file. NOTE: confidence/cited_subsection/verification_note are zone-level (the parser grounds the whole zone, not each use separately); conditions_json is null unless a use is conditional with stated terms. diagnostics holds per-city fetch coverage \u2014 check chars_combined / parser_warnings before trusting a city's verdicts.",
+  "verdicts": {
+    "Bridgewater township": {
+      "BRCC": {
+        "zone_name": "Bridgewater Regional Corporate Center",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Corporate campus; no storage or industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Corporate campus; no storage or industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Corporate campus; no storage or industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Corporate campus; no storage or industrial."
+        }
+      },
+      "Bridgewater Regional Center": {
+        "zone_name": "Regional Center",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping/office/hotel only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping/office/hotel only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping/office/hotel only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping/office/hotel only."
+        }
+      },
+      "C-1": {
+        "zone_name": "Neighborhood Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126-311",
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail; no storage/industrial listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126-311",
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail; no storage/industrial listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126-311",
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail; no storage/industrial listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126-311",
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail; no storage/industrial listed."
+        }
+      },
+      "C-1A": {
+        "zone_name": "Neighborhood Commercial (Sixth Avenue)",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Small-scale neighborhood retail."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Small-scale neighborhood retail."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Small-scale neighborhood retail."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Small-scale neighborhood retail."
+        }
+      },
+      "C-2": {
+        "zone_name": "Regional Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping center uses; no storage/industrial listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping center uses; no storage/industrial listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping center uses; no storage/industrial listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Regional shopping center uses; no storage/industrial listed."
+        }
+      },
+      "C-3": {
+        "zone_name": "Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/medical/research; no storage/industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/medical/research; no storage/industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/medical/research; no storage/industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/medical/research; no storage/industrial."
+        }
+      },
+      "C-3A": {
+        "zone_name": "Limited Office",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses; offices only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses; offices only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses; offices only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses; offices only."
+        }
+      },
+      "C-3B": {
+        "zone_name": "Transitional Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential/office transitional zone."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential/office transitional zone."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential/office transitional zone."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential/office transitional zone."
+        }
+      },
+      "C-4": {
+        "zone_name": "Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/restaurants; no storage/industrial listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/restaurants; no storage/industrial listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/restaurants; no storage/industrial listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/restaurants; no storage/industrial listed."
+        }
+      },
+      "C-5": {
+        "zone_name": "Commercial (Nursing/Office)",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Nursing/office only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Nursing/office only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Nursing/office only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Nursing/office only."
+        }
+      },
+      "C-6": {
+        "zone_name": "Limited Service Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Banks/offices/churches only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Banks/offices/churches only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Banks/offices/churches only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Banks/offices/churches only."
+        }
+      },
+      "C-7": {
+        "zone_name": "Commercial Enterprise",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/hotel/restaurant zone."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/hotel/restaurant zone."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/hotel/restaurant zone."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/hotel/restaurant zone."
+        }
+      },
+      "GC": {
+        "zone_name": "General Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/retail; convenience stores excluded; no storage/industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/retail; convenience stores excluded; no storage/industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/retail; convenience stores excluded; no storage/industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/retail; convenience stores excluded; no storage/industrial."
+        }
+      },
+      "GCE": {
+        "zone_name": "Golf Course Enterprise",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-310.2",
+          "conditions_json": null,
+          "verification_note": "Recreational only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-310.2",
+          "conditions_json": null,
+          "verification_note": "Recreational only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-310.2",
+          "conditions_json": null,
+          "verification_note": "Recreational only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-310.2",
+          "conditions_json": null,
+          "verification_note": "Recreational only."
+        }
+      },
+      "GCM": {
+        "zone_name": "General Commercial/Manufacturing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing permitted; warehousing/self-storage not listed. Luxury garage condo conditional per inference rule from light_industrial=permitted."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing permitted; warehousing/self-storage not listed. Luxury garage condo conditional per inference rule from light_industrial=permitted."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing permitted; warehousing/self-storage not listed. Luxury garage condo conditional per inference rule from light_industrial=permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing permitted; warehousing/self-storage not listed. Luxury garage condo conditional per inference rule from light_industrial=permitted."
+        }
+      },
+      "HIC": {
+        "zone_name": "Highway Interchange Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Hotel/office focus."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Hotel/office focus."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Hotel/office focus."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Hotel/office focus."
+        }
+      },
+      "LC": {
+        "zone_name": "Limited Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/office/hotel; no storage or industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/office/hotel; no storage or industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/office/hotel; no storage or industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Retail/office/hotel; no storage or industrial."
+        }
+      },
+      "M-1": {
+        "zone_name": "Limited Manufacturing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing and warehouse uses permitted but self-storage/mini-warehouse not specifically listed (only general 'warehouse' under \u00a7126-2 definition - ambiguous as to self-storage). Light industrial clearly permitted. Luxury garage condo conditional per inference."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing and warehouse uses permitted but self-storage/mini-warehouse not specifically listed (only general 'warehouse' under \u00a7126-2 definition - ambiguous as to self-storage). Light industrial clearly permitted. Luxury garage condo conditional per inference."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing and warehouse uses permitted but self-storage/mini-warehouse not specifically listed (only general 'warehouse' under \u00a7126-2 definition - ambiguous as to self-storage). Light industrial clearly permitted. Luxury garage condo conditional per inference."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing and warehouse uses permitted but self-storage/mini-warehouse not specifically listed (only general 'warehouse' under \u00a7126-2 definition - ambiguous as to self-storage). Light industrial clearly permitted. Luxury garage condo conditional per inference."
+        }
+      },
+      "M-1A": {
+        "zone_name": "Limited Manufacturing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Warehouse use permitted but self-storage/mini-warehouse not specifically listed. Light industrial permitted. Luxury garage condo conditional per inference."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Warehouse use permitted but self-storage/mini-warehouse not specifically listed. Light industrial permitted. Luxury garage condo conditional per inference."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Warehouse use permitted but self-storage/mini-warehouse not specifically listed. Light industrial permitted. Luxury garage condo conditional per inference."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Warehouse use permitted but self-storage/mini-warehouse not specifically listed. Light industrial permitted. Luxury garage condo conditional per inference."
+        }
+      },
+      "M-1B": {
+        "zone_name": "Limited Manufacturing",
+        "self_storage": {
+          "permission": "conditional",
+          "confidence": 0.85,
+          "cited_subsection": "126-316",
+          "conditions_json": null,
+          "verification_note": "Specific provisions for miniwarehouse/self-storage warehouse with conditions (625-foot setback from Route 22, resident manager, etc.) suggest these are conditional/regulated uses. Manufacturing permitted."
+        },
+        "mini_warehouse": {
+          "permission": "conditional",
+          "confidence": 0.85,
+          "cited_subsection": "126-316",
+          "conditions_json": null,
+          "verification_note": "Specific provisions for miniwarehouse/self-storage warehouse with conditions (625-foot setback from Route 22, resident manager, etc.) suggest these are conditional/regulated uses. Manufacturing permitted."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.85,
+          "cited_subsection": "126-316",
+          "conditions_json": null,
+          "verification_note": "Specific provisions for miniwarehouse/self-storage warehouse with conditions (625-foot setback from Route 22, resident manager, etc.) suggest these are conditional/regulated uses. Manufacturing permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.85,
+          "cited_subsection": "126-316",
+          "conditions_json": null,
+          "verification_note": "Specific provisions for miniwarehouse/self-storage warehouse with conditions (625-foot setback from Route 22, resident manager, etc.) suggest these are conditional/regulated uses. Manufacturing permitted."
+        }
+      },
+      "M-1C": {
+        "zone_name": "Limited Manufacturing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing/warehouse permitted but self-storage/mini-warehouse not specifically listed. Luxury garage condo conditional per inference."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing/warehouse permitted but self-storage/mini-warehouse not specifically listed. Luxury garage condo conditional per inference."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing/warehouse permitted but self-storage/mini-warehouse not specifically listed. Luxury garage condo conditional per inference."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing/warehouse permitted but self-storage/mini-warehouse not specifically listed. Luxury garage condo conditional per inference."
+        }
+      },
+      "M-2": {
+        "zone_name": "Manufacturing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing permitted; self-storage/mini-warehouse not listed. Luxury garage condo conditional per inference."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing permitted; self-storage/mini-warehouse not listed. Luxury garage condo conditional per inference."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing permitted; self-storage/mini-warehouse not listed. Luxury garage condo conditional per inference."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.8,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Manufacturing permitted; self-storage/mini-warehouse not listed. Luxury garage condo conditional per inference."
+        }
+      },
+      "M-3": {
+        "zone_name": "Manufacturing/Quarry",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Quarry-only zone; not general light industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Quarry-only zone; not general light industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Quarry-only zone; not general light industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Quarry-only zone; not general light industrial."
+        }
+      },
+      "MPD": {
+        "zone_name": "Medical Professional District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-322",
+          "conditions_json": null,
+          "verification_note": "Medical-only zone."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-322",
+          "conditions_json": null,
+          "verification_note": "Medical-only zone."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-322",
+          "conditions_json": null,
+          "verification_note": "Medical-only zone."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-322",
+          "conditions_json": null,
+          "verification_note": "Medical-only zone."
+        }
+      },
+      "OC": {
+        "zone_name": "Office Commercial (cluster of office uses)",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/hotel zone; no storage or industrial uses listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/hotel zone; no storage or industrial uses listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/hotel zone; no storage or industrial uses listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/hotel zone; no storage or industrial uses listed."
+        }
+      },
+      "OR/D": {
+        "zone_name": "Office, Research and Development",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing explicitly permitted. Luxury garage condo conditional per inference."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing explicitly permitted. Luxury garage condo conditional per inference."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing explicitly permitted. Luxury garage condo conditional per inference."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Light manufacturing explicitly permitted. Luxury garage condo conditional per inference."
+        }
+      },
+      "P": {
+        "zone_name": "Public",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/institutional only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/institutional only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/institutional only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/institutional only."
+        }
+      },
+      "P-2": {
+        "zone_name": "Public/Community Service",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/community service only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/community service only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/community service only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Public/community service only."
+        }
+      },
+      "PRCPD": {
+        "zone_name": "Planned Retail Commercial and Public Development",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.78,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Includes M-2 permitted uses (manufacturing). Light industrial permitted. Luxury garage condo conditional per inference."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.78,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Includes M-2 permitted uses (manufacturing). Light industrial permitted. Luxury garage condo conditional per inference."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.78,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Includes M-2 permitted uses (manufacturing). Light industrial permitted. Luxury garage condo conditional per inference."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.78,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Includes M-2 permitted uses (manufacturing). Light industrial permitted. Luxury garage condo conditional per inference."
+        }
+      },
+      "PURD": {
+        "zone_name": "Planned Unit Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-10": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        }
+      },
+      "R-10.C": {
+        "zone_name": "Professional Office Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126-308.3",
+          "conditions_json": null,
+          "verification_note": "Mixed residential/office; no storage or industrial uses."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126-308.3",
+          "conditions_json": null,
+          "verification_note": "Mixed residential/office; no storage or industrial uses."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126-308.3",
+          "conditions_json": null,
+          "verification_note": "Mixed residential/office; no storage or industrial uses."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "126-308.3",
+          "conditions_json": null,
+          "verification_note": "Mixed residential/office; no storage or industrial uses."
+        }
+      },
+      "R-10A": {
+        "zone_name": "Low-Density Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-308.1",
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-308.1",
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-308.1",
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-308.1",
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        }
+      },
+      "R-10B": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone."
+        }
+      },
+      "R-15": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        }
+      },
+      "R-20": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        }
+      },
+      "R-20.1": {
+        "zone_name": "Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone based on R-20."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone based on R-20."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone based on R-20."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential zone based on R-20."
+        }
+      },
+      "R-40": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Same as R-50."
+        }
+      },
+      "R-40A": {
+        "zone_name": "Residential/Office",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits uses not listed; only residential and low-intensity offices permitted."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits uses not listed; only residential and low-intensity offices permitted."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits uses not listed; only residential and low-intensity offices permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits uses not listed; only residential and low-intensity offices permitted."
+        }
+      },
+      "R-40B": {
+        "zone_name": "Residential/Office",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        }
+      },
+      "R-40C": {
+        "zone_name": "Residential/Office",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Explicitly prohibits non-listed uses."
+        }
+      },
+      "R-50": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential zone; no industrial or storage uses listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential zone; no industrial or storage uses listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential zone; no industrial or storage uses listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential zone; no industrial or storage uses listed."
+        }
+      },
+      "R-MDU-10.5": {
+        "zone_name": "Residential Multiple Dwelling Unit",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        }
+      },
+      "R-MDU-5": {
+        "zone_name": "Residential Multiple Dwelling Unit",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        }
+      },
+      "R-MDU-6": {
+        "zone_name": "Residential Multiple Dwelling Unit",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        }
+      },
+      "R-MDU-8": {
+        "zone_name": "Residential Multiple Dwelling Unit",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential only."
+        }
+      },
+      "R-RMDU-13": {
+        "zone_name": "Multifamily Residential Redevelopment",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        }
+      },
+      "RMDU-26": {
+        "zone_name": "Multifamily Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential only."
+        }
+      },
+      "SC/HD": {
+        "zone_name": "Senior Citizen/High Density",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-309.1",
+          "conditions_json": null,
+          "verification_note": "Senior housing only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-309.1",
+          "conditions_json": null,
+          "verification_note": "Senior housing only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-309.1",
+          "conditions_json": null,
+          "verification_note": "Senior housing only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "126-309.1",
+          "conditions_json": null,
+          "verification_note": "Senior housing only."
+        }
+      },
+      "SC/MD": {
+        "zone_name": "Senior Citizen/Medium Density",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-309.2",
+          "conditions_json": null,
+          "verification_note": "Office/assisted living only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-309.2",
+          "conditions_json": null,
+          "verification_note": "Office/assisted living only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-309.2",
+          "conditions_json": null,
+          "verification_note": "Office/assisted living only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "126-309.2",
+          "conditions_json": null,
+          "verification_note": "Office/assisted living only."
+        }
+      },
+      "SED": {
+        "zone_name": "Special Economic Development",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/R&D corporate campus; no manufacturing or storage."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/R&D corporate campus; no manufacturing or storage."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/R&D corporate campus; no manufacturing or storage."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "126",
+          "conditions_json": null,
+          "verification_note": "Office/R&D corporate campus; no manufacturing or storage."
+        }
+      }
+    },
+    "Franklin township": {
+      "A": {
+        "zone_name": "Agricultural",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10A",
+          "conditions_json": null,
+          "verification_note": "Agricultural purpose; no industrial/storage uses listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10A",
+          "conditions_json": null,
+          "verification_note": "Agricultural purpose; no industrial/storage uses listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10A",
+          "conditions_json": null,
+          "verification_note": "Agricultural purpose; no industrial/storage uses listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10A",
+          "conditions_json": null,
+          "verification_note": "Agricultural purpose; no industrial/storage uses listed."
+        }
+      },
+      "AC": {
+        "zone_name": "Agricultural Cluster",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10W",
+          "conditions_json": null,
+          "verification_note": "Agricultural/residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10W",
+          "conditions_json": null,
+          "verification_note": "Agricultural/residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10W",
+          "conditions_json": null,
+          "verification_note": "Agricultural/residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10W",
+          "conditions_json": null,
+          "verification_note": "Agricultural/residential."
+        }
+      },
+      "B-I": {
+        "zone_name": "Business and Industry",
+        "self_storage": {
+          "permission": "conditional",
+          "confidence": 0.78,
+          "cited_subsection": "220-10N",
+          "conditions_json": null,
+          "verification_note": "Light industrial/manufacturing explicitly permitted. Storage uses not explicitly listed but commonly allowed in industrial zone; marked conditional due to ambiguity. Luxury garage condo inferred conditional from light_industrial permitted."
+        },
+        "mini_warehouse": {
+          "permission": "conditional",
+          "confidence": 0.78,
+          "cited_subsection": "220-10N",
+          "conditions_json": null,
+          "verification_note": "Light industrial/manufacturing explicitly permitted. Storage uses not explicitly listed but commonly allowed in industrial zone; marked conditional due to ambiguity. Luxury garage condo inferred conditional from light_industrial permitted."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.78,
+          "cited_subsection": "220-10N",
+          "conditions_json": null,
+          "verification_note": "Light industrial/manufacturing explicitly permitted. Storage uses not explicitly listed but commonly allowed in industrial zone; marked conditional due to ambiguity. Luxury garage condo inferred conditional from light_industrial permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.78,
+          "cited_subsection": "220-10N",
+          "conditions_json": null,
+          "verification_note": "Light industrial/manufacturing explicitly permitted. Storage uses not explicitly listed but commonly allowed in industrial zone; marked conditional due to ambiguity. Luxury garage condo inferred conditional from light_industrial permitted."
+        }
+      },
+      "C-N": {
+        "zone_name": "Commercial Zone North",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mini warehouses not listed among permitted uses in C-N."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mini warehouses not listed among permitted uses in C-N."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mini warehouses not listed among permitted uses in C-N."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mini warehouses not listed among permitted uses in C-N."
+        }
+      },
+      "C-R": {
+        "zone_name": "Cluster-Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10K",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10K",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10K",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10K",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        }
+      },
+      "C-S": {
+        "zone_name": "Commercial Zone South",
+        "self_storage": {
+          "permission": "permitted",
+          "confidence": 0.92,
+          "cited_subsection": "C-S(1)(f)",
+          "conditions_json": null,
+          "verification_note": "Mini warehouses explicitly permitted principal use; this appears to be a different jurisdiction's text fragment but treated per content. Luxury garage condo inferred permitted from mini_warehouse permitted."
+        },
+        "mini_warehouse": {
+          "permission": "permitted",
+          "confidence": 0.92,
+          "cited_subsection": "C-S(1)(f)",
+          "conditions_json": null,
+          "verification_note": "Mini warehouses explicitly permitted principal use; this appears to be a different jurisdiction's text fragment but treated per content. Luxury garage condo inferred permitted from mini_warehouse permitted."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "C-S(1)(f)",
+          "conditions_json": null,
+          "verification_note": "Mini warehouses explicitly permitted principal use; this appears to be a different jurisdiction's text fragment but treated per content. Luxury garage condo inferred permitted from mini_warehouse permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "permitted",
+          "confidence": 0.92,
+          "cited_subsection": "C-S(1)(f)",
+          "conditions_json": null,
+          "verification_note": "Mini warehouses explicitly permitted principal use; this appears to be a different jurisdiction's text fragment but treated per content. Luxury garage condo inferred permitted from mini_warehouse permitted."
+        }
+      },
+      "CP": {
+        "zone_name": "Canal Preservation",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10X",
+          "conditions_json": null,
+          "verification_note": "Preservation district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10X",
+          "conditions_json": null,
+          "verification_note": "Preservation district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10X",
+          "conditions_json": null,
+          "verification_note": "Preservation district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "220-10X",
+          "conditions_json": null,
+          "verification_note": "Preservation district."
+        }
+      },
+      "CR-NH": {
+        "zone_name": "Cluster Residential (Nob Hill)",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10EE",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10EE",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10EE",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10EE",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "G-B": {
+        "zone_name": "General Business",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.75,
+          "cited_subsection": "220-10M",
+          "conditions_json": null,
+          "verification_note": "General commercial; storage/industrial not mentioned in purpose."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.75,
+          "cited_subsection": "220-10M",
+          "conditions_json": null,
+          "verification_note": "General commercial; storage/industrial not mentioned in purpose."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.75,
+          "cited_subsection": "220-10M",
+          "conditions_json": null,
+          "verification_note": "General commercial; storage/industrial not mentioned in purpose."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.75,
+          "cited_subsection": "220-10M",
+          "conditions_json": null,
+          "verification_note": "General commercial; storage/industrial not mentioned in purpose."
+        }
+      },
+      "H": {
+        "zone_name": "Historic Overlay",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10T",
+          "conditions_json": null,
+          "verification_note": "Overlay; no new uses."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10T",
+          "conditions_json": null,
+          "verification_note": "Overlay; no new uses."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10T",
+          "conditions_json": null,
+          "verification_note": "Overlay; no new uses."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10T",
+          "conditions_json": null,
+          "verification_note": "Overlay; no new uses."
+        }
+      },
+      "HBD": {
+        "zone_name": "Hamilton Street Business District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10Y",
+          "conditions_json": null,
+          "verification_note": "Pedestrian-oriented commercial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10Y",
+          "conditions_json": null,
+          "verification_note": "Pedestrian-oriented commercial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10Y",
+          "conditions_json": null,
+          "verification_note": "Pedestrian-oriented commercial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10Y",
+          "conditions_json": null,
+          "verification_note": "Pedestrian-oriented commercial."
+        }
+      },
+      "I-P": {
+        "zone_name": "Institutional/Public",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10AA",
+          "conditions_json": null,
+          "verification_note": "Institutional."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10AA",
+          "conditions_json": null,
+          "verification_note": "Institutional."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10AA",
+          "conditions_json": null,
+          "verification_note": "Institutional."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10AA",
+          "conditions_json": null,
+          "verification_note": "Institutional."
+        }
+      },
+      "ISL": {
+        "zone_name": "Independent Senior Living",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10BB",
+          "conditions_json": null,
+          "verification_note": "Senior housing."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10BB",
+          "conditions_json": null,
+          "verification_note": "Senior housing."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10BB",
+          "conditions_json": null,
+          "verification_note": "Senior housing."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10BB",
+          "conditions_json": null,
+          "verification_note": "Senior housing."
+        }
+      },
+      "M-3": {
+        "zone_name": "Mining",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10S",
+          "conditions_json": null,
+          "verification_note": "Mining/quarrying only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10S",
+          "conditions_json": null,
+          "verification_note": "Mining/quarrying only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10S",
+          "conditions_json": null,
+          "verification_note": "Mining/quarrying only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "220-10S",
+          "conditions_json": null,
+          "verification_note": "Mining/quarrying only."
+        }
+      },
+      "MFIZ-1": {
+        "zone_name": "Multi Family Inclusionary Zone - 1",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10FF",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10FF",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10FF",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10FF",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        }
+      },
+      "MFIZ-2": {
+        "zone_name": "Multi Family Inclusionary Zone - 2",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10GG",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10GG",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10GG",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10GG",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        }
+      },
+      "MFIZ-4": {
+        "zone_name": "Multi Family Inclusionary Zone - 4",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10HH",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10HH",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10HH",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10HH",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        }
+      },
+      "MFIZ-5": {
+        "zone_name": "Multi Family Inclusionary Zone - 5",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10II",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10II",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10II",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10II",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential."
+        }
+      },
+      "MXD": {
+        "zone_name": "Mixed-Use Development Overlay",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "MXD(3)(a)",
+          "conditions_json": null,
+          "verification_note": "Catch-all prohibition."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "MXD(3)(a)",
+          "conditions_json": null,
+          "verification_note": "Catch-all prohibition."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "MXD(3)(a)",
+          "conditions_json": null,
+          "verification_note": "Catch-all prohibition."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "MXD(3)(a)",
+          "conditions_json": null,
+          "verification_note": "Catch-all prohibition."
+        }
+      },
+      "N-B": {
+        "zone_name": "Neighborhood Business",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10L",
+          "conditions_json": null,
+          "verification_note": "Small neighborhood retail; storage/industrial not contemplated."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10L",
+          "conditions_json": null,
+          "verification_note": "Small neighborhood retail; storage/industrial not contemplated."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10L",
+          "conditions_json": null,
+          "verification_note": "Small neighborhood retail; storage/industrial not contemplated."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10L",
+          "conditions_json": null,
+          "verification_note": "Small neighborhood retail; storage/industrial not contemplated."
+        }
+      },
+      "NRPC": {
+        "zone_name": "Natural Resources Preservation Cluster",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10V",
+          "conditions_json": null,
+          "verification_note": "Residential preservation."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10V",
+          "conditions_json": null,
+          "verification_note": "Residential preservation."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10V",
+          "conditions_json": null,
+          "verification_note": "Residential preservation."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10V",
+          "conditions_json": null,
+          "verification_note": "Residential preservation."
+        }
+      },
+      "NRPC-R40": {
+        "zone_name": "Natural Resource Preservation Cluster (R-40 option)",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10DD",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10DD",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10DD",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10DD",
+          "conditions_json": null,
+          "verification_note": "Residential cluster."
+        }
+      },
+      "OP": {
+        "zone_name": "Office-Professional",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10P",
+          "conditions_json": null,
+          "verification_note": "Office/residential compatibility focus."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10P",
+          "conditions_json": null,
+          "verification_note": "Office/residential compatibility focus."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10P",
+          "conditions_json": null,
+          "verification_note": "Office/residential compatibility focus."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10P",
+          "conditions_json": null,
+          "verification_note": "Office/residential compatibility focus."
+        }
+      },
+      "PRC": {
+        "zone_name": "Planned Residential Community",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-10": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10G",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10G",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10G",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10G",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-10A": {
+        "zone_name": "Single-Family Development",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10H",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10H",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10H",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10H",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-10B": {
+        "zone_name": "Single-Family Development",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10I",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10I",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10I",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10I",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-15": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10F",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10F",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10F",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10F",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-20": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10E",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10E",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10E",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10E",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-40": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10D",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10D",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10D",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10D",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "R-7": {
+        "zone_name": "Single-Family Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10J",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10J",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10J",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "220-10J",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "RC": {
+        "zone_name": "Residential Cluster Option",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10U",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10U",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10U",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": "220-10U",
+          "conditions_json": null,
+          "verification_note": "Residential."
+        }
+      },
+      "RDO": {
+        "zone_name": "Retail District Overlay",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10Z",
+          "conditions_json": null,
+          "verification_note": "Retail overlay."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10Z",
+          "conditions_json": null,
+          "verification_note": "Retail overlay."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10Z",
+          "conditions_json": null,
+          "verification_note": "Retail overlay."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.88,
+          "cited_subsection": "220-10Z",
+          "conditions_json": null,
+          "verification_note": "Retail overlay."
+        }
+      },
+      "RR3": {
+        "zone_name": "Rural-Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10B",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10B",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10B",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10B",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        }
+      },
+      "RR5": {
+        "zone_name": "Rural-Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10C",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10C",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10C",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "220-10C",
+          "conditions_json": null,
+          "verification_note": "Residential purpose."
+        }
+      },
+      "SCV": {
+        "zone_name": "Senior Citizen Village",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Senior residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Senior residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Senior residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Senior residential."
+        }
+      }
+    },
+    "Bound Brook borough": {},
+    "Warren township": {
+      "APT": {
+        "zone_name": "Apartment District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential apartment district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential apartment district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential apartment district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential apartment district."
+        }
+      },
+      "BP": {
+        "zone_name": "Business Park District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "500-418.B(4)",
+          "conditions_json": null,
+          "verification_note": "Office combined with light manufacturing allowed; standalone warehouse/distribution conditional. Self-storage/mini-warehouse not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "500-418.B(4)",
+          "conditions_json": null,
+          "verification_note": "Office combined with light manufacturing allowed; standalone warehouse/distribution conditional. Self-storage/mini-warehouse not listed."
+        },
+        "light_industrial": {
+          "permission": "conditional",
+          "confidence": 0.8,
+          "cited_subsection": "500-418.B(4)",
+          "conditions_json": null,
+          "verification_note": "Office combined with light manufacturing allowed; standalone warehouse/distribution conditional. Self-storage/mini-warehouse not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.8,
+          "cited_subsection": "500-418.B(4)",
+          "conditions_json": null,
+          "verification_note": "Office combined with light manufacturing allowed; standalone warehouse/distribution conditional. Self-storage/mini-warehouse not listed."
+        }
+      },
+      "CR": {
+        "zone_name": "Commercial Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Small-scale commercial/residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Small-scale commercial/residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Small-scale commercial/residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Small-scale commercial/residential."
+        }
+      },
+      "ER": {
+        "zone_name": "Environmental Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "ER.B",
+          "conditions_json": null,
+          "verification_note": "Residential-only district; storage/industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "ER.B",
+          "conditions_json": null,
+          "verification_note": "Residential-only district; storage/industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "ER.B",
+          "conditions_json": null,
+          "verification_note": "Residential-only district; storage/industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "ER.B",
+          "conditions_json": null,
+          "verification_note": "Residential-only district; storage/industrial not listed."
+        }
+      },
+      "FP": {
+        "zone_name": "Floodplain Overlay District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "500-421.F(1)",
+          "conditions_json": null,
+          "verification_note": "Floodplain overlay prohibits buildings/storage."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "500-421.F(1)",
+          "conditions_json": null,
+          "verification_note": "Floodplain overlay prohibits buildings/storage."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "500-421.F(1)",
+          "conditions_json": null,
+          "verification_note": "Floodplain overlay prohibits buildings/storage."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.97,
+          "cited_subsection": "500-421.F(1)",
+          "conditions_json": null,
+          "verification_note": "Floodplain overlay prohibits buildings/storage."
+        }
+      },
+      "GCR": {
+        "zone_name": "Golf Course Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential/golf course."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential/golf course."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential/golf course."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential/golf course."
+        }
+      },
+      "GI": {
+        "zone_name": "General Industry District",
+        "self_storage": {
+          "permission": "permitted",
+          "confidence": 0.96,
+          "cited_subsection": "500-417.B(7)",
+          "conditions_json": null,
+          "verification_note": "Self-storage and light manufacturing explicitly permitted."
+        },
+        "mini_warehouse": {
+          "permission": "permitted",
+          "confidence": 0.96,
+          "cited_subsection": "500-417.B(7)",
+          "conditions_json": null,
+          "verification_note": "Self-storage and light manufacturing explicitly permitted."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.96,
+          "cited_subsection": "500-417.B(7)",
+          "conditions_json": null,
+          "verification_note": "Self-storage and light manufacturing explicitly permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "permitted",
+          "confidence": 0.96,
+          "cited_subsection": "500-417.B(7)",
+          "conditions_json": null,
+          "verification_note": "Self-storage and light manufacturing explicitly permitted."
+        }
+      },
+      "HC": {
+        "zone_name": "Highway Commercial District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Highway commercial retail/service; self-storage and light industrial not enumerated as permitted or conditional uses."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Highway commercial retail/service; self-storage and light industrial not enumerated as permitted or conditional uses."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Highway commercial retail/service; self-storage and light industrial not enumerated as permitted or conditional uses."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Highway commercial retail/service; self-storage and light industrial not enumerated as permitted or conditional uses."
+        }
+      },
+      "IA-APT": {
+        "zone_name": "Inclusionary Affordable Apartment Overlay",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential overlay."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential overlay."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential overlay."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential overlay."
+        }
+      },
+      "IN": {
+        "zone_name": "Institutional District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Institutional uses only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Institutional uses only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Institutional uses only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Institutional uses only."
+        }
+      },
+      "Little Pond Overlay": {
+        "zone_name": "Little Pond Overlay District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mixed residential/HC commercial; no storage or industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mixed residential/HC commercial; no storage or industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mixed residential/HC commercial; no storage or industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Mixed residential/HC commercial; no storage or industrial."
+        }
+      },
+      "NC": {
+        "zone_name": "Neighborhood Commercial District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail/services; storage and industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail/services; storage and industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail/services; storage and industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Neighborhood retail/services; storage and industrial not listed."
+        }
+      },
+      "OF": {
+        "zone_name": "Office District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office only; no storage/industrial uses listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office only; no storage/industrial uses listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office only; no storage/industrial uses listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office only; no storage/industrial uses listed."
+        }
+      },
+      "OR": {
+        "zone_name": "Office Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office/residential; no storage or industrial uses listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office/residential; no storage or industrial uses listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office/residential; no storage or industrial uses listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.93,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Office/residential; no storage or industrial uses listed."
+        }
+      },
+      "PR": {
+        "zone_name": "Parks and Recreation District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.98,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Parks/conservation only."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.98,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Parks/conservation only."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.98,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Parks/conservation only."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.98,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Parks/conservation only."
+        }
+      },
+      "R-1": {
+        "zone_name": "Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-1.B",
+          "conditions_json": null,
+          "verification_note": "Residential district; subject uses not permitted."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-1.B",
+          "conditions_json": null,
+          "verification_note": "Residential district; subject uses not permitted."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-1.B",
+          "conditions_json": null,
+          "verification_note": "Residential district; subject uses not permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-1.B",
+          "conditions_json": null,
+          "verification_note": "Residential district; subject uses not permitted."
+        }
+      },
+      "R-2": {
+        "zone_name": "Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-2.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-2.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-2.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-2.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        }
+      },
+      "R-3": {
+        "zone_name": "Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-3.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-3.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-3.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-3.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        }
+      },
+      "R-4": {
+        "zone_name": "Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-4.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-4.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-4.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.96,
+          "cited_subsection": "R-4.B",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        }
+      },
+      "RA": {
+        "zone_name": "Residential Attached District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential attached district; uses not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential attached district; uses not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential attached district; uses not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Residential attached district; uses not listed."
+        }
+      },
+      "SCR": {
+        "zone_name": "Senior Citizen Residential District",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential."
+        }
+      },
+      "SCR-HC": {
+        "zone_name": "Senior Citizen Residential - Highway Commercial Overlay",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Overlay combining SCR and HC permitted uses; no storage/industrial."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Overlay combining SCR and HC permitted uses; no storage/industrial."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Overlay combining SCR and HC permitted uses; no storage/industrial."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": null,
+          "conditions_json": null,
+          "verification_note": "Overlay combining SCR and HC permitted uses; no storage/industrial."
+        }
+      }
+    },
+    "Montgomery township": {
+      "APT/TH": {
+        "zone_name": "Apartment/Townhouse",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Multifamily residential district."
+        }
+      },
+      "CC-1": {
+        "zone_name": "Community Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        }
+      },
+      "CC-2": {
+        "zone_name": "Community Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.11a",
+          "conditions_json": null,
+          "verification_note": "Community commercial; storage/industrial not listed."
+        }
+      },
+      "HC": {
+        "zone_name": "Highway Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.12a",
+          "conditions_json": null,
+          "verification_note": "Highway commercial; storage/industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.12a",
+          "conditions_json": null,
+          "verification_note": "Highway commercial; storage/industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.12a",
+          "conditions_json": null,
+          "verification_note": "Highway commercial; storage/industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.12a",
+          "conditions_json": null,
+          "verification_note": "Highway commercial; storage/industrial not listed."
+        }
+      },
+      "LM": {
+        "zone_name": "Limited Manufacturing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.8a.4",
+          "conditions_json": null,
+          "verification_note": "Limited manufacturing permitted by right. Self-storage/mini-warehouse not listed as permitted. Luxury garage condo inferred conditional from light industrial permitted."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.8a.4",
+          "conditions_json": null,
+          "verification_note": "Limited manufacturing permitted by right. Self-storage/mini-warehouse not listed as permitted. Luxury garage condo inferred conditional from light industrial permitted."
+        },
+        "light_industrial": {
+          "permission": "permitted",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.8a.4",
+          "conditions_json": null,
+          "verification_note": "Limited manufacturing permitted by right. Self-storage/mini-warehouse not listed as permitted. Luxury garage condo inferred conditional from light industrial permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.8a.4",
+          "conditions_json": null,
+          "verification_note": "Limited manufacturing permitted by right. Self-storage/mini-warehouse not listed as permitted. Luxury garage condo inferred conditional from light industrial permitted."
+        }
+      },
+      "MFG": {
+        "zone_name": "Manufacturing (quarry processing)",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "16-4.7a",
+          "conditions_json": null,
+          "verification_note": "Limited to quarry-related processing; storage/general light industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "16-4.7a",
+          "conditions_json": null,
+          "verification_note": "Limited to quarry-related processing; storage/general light industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "16-4.7a",
+          "conditions_json": null,
+          "verification_note": "Limited to quarry-related processing; storage/general light industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.85,
+          "cited_subsection": "16-4.7a",
+          "conditions_json": null,
+          "verification_note": "Limited to quarry-related processing; storage/general light industrial not listed."
+        }
+      },
+      "MR": {
+        "zone_name": "Mountain Resource",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential/agricultural district; no storage or industrial uses listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential/agricultural district; no storage or industrial uses listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential/agricultural district; no storage or industrial uses listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.92,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential/agricultural district; no storage or industrial uses listed."
+        }
+      },
+      "MUARH": {
+        "zone_name": "Mixed-Use Age-Restricted Housing",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.13a",
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential/office district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.13a",
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential/office district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.13a",
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential/office district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.13a",
+          "conditions_json": null,
+          "verification_note": "Age-restricted residential/office district."
+        }
+      },
+      "NC": {
+        "zone_name": "Neighborhood Commercial",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.5a",
+          "conditions_json": null,
+          "verification_note": "Neighborhood commercial; storage/industrial not listed as permitted."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.5a",
+          "conditions_json": null,
+          "verification_note": "Neighborhood commercial; storage/industrial not listed as permitted."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.5a",
+          "conditions_json": null,
+          "verification_note": "Neighborhood commercial; storage/industrial not listed as permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.5a",
+          "conditions_json": null,
+          "verification_note": "Neighborhood commercial; storage/industrial not listed as permitted."
+        }
+      },
+      "PPE": {
+        "zone_name": "Public/Parks/Education",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.10a",
+          "conditions_json": null,
+          "verification_note": "Public/parks/education district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.10a",
+          "conditions_json": null,
+          "verification_note": "Public/parks/education district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.10a",
+          "conditions_json": null,
+          "verification_note": "Public/parks/education district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.10a",
+          "conditions_json": null,
+          "verification_note": "Public/parks/education district."
+        }
+      },
+      "R": {
+        "zone_name": "Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        }
+      },
+      "R-1": {
+        "zone_name": "Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district."
+        }
+      },
+      "R-2": {
+        "zone_name": "Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not permitted."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not permitted."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not permitted."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not permitted."
+        }
+      },
+      "R-5": {
+        "zone_name": "Residential",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-1.5a",
+          "conditions_json": null,
+          "verification_note": "Residential district; storage/industrial not listed."
+        }
+      },
+      "REO-1": {
+        "zone_name": "Research/Engineering/Office",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage not permitted in REO-1; light industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage not permitted in REO-1; light industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage not permitted in REO-1; light industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage not permitted in REO-1; light industrial not listed."
+        }
+      },
+      "REO-2": {
+        "zone_name": "Research/Engineering/Office",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage only permitted in REO-3."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage only permitted in REO-3."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage only permitted in REO-3."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.9,
+          "cited_subsection": "16-4.6a",
+          "conditions_json": null,
+          "verification_note": "Office/research district; self-storage only permitted in REO-3."
+        }
+      },
+      "REO-3": {
+        "zone_name": "Research/Engineering/Office",
+        "self_storage": {
+          "permission": "conditional",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.6a.14",
+          "conditions_json": null,
+          "verification_note": "Self-service storage facilities permitted as conditional use in REO-3 only. Mini-warehouse inferred from self-storage conditional. Light industrial not listed."
+        },
+        "mini_warehouse": {
+          "permission": "conditional",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.6a.14",
+          "conditions_json": null,
+          "verification_note": "Self-service storage facilities permitted as conditional use in REO-3 only. Mini-warehouse inferred from self-storage conditional. Light industrial not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.6a.14",
+          "conditions_json": null,
+          "verification_note": "Self-service storage facilities permitted as conditional use in REO-3 only. Mini-warehouse inferred from self-storage conditional. Light industrial not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "conditional",
+          "confidence": 0.95,
+          "cited_subsection": "16-4.6a.14",
+          "conditions_json": null,
+          "verification_note": "Self-service storage facilities permitted as conditional use in REO-3 only. Mini-warehouse inferred from self-storage conditional. Light industrial not listed."
+        }
+      },
+      "SB": {
+        "zone_name": "Service Business",
+        "self_storage": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "16-4.9a",
+          "conditions_json": null,
+          "verification_note": "Service business uses listed but self-storage/mini-warehouse not enumerated; light industrial/manufacturing not listed."
+        },
+        "mini_warehouse": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "16-4.9a",
+          "conditions_json": null,
+          "verification_note": "Service business uses listed but self-storage/mini-warehouse not enumerated; light industrial/manufacturing not listed."
+        },
+        "light_industrial": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "16-4.9a",
+          "conditions_json": null,
+          "verification_note": "Service business uses listed but self-storage/mini-warehouse not enumerated; light industrial/manufacturing not listed."
+        },
+        "luxury_garage_condo": {
+          "permission": "prohibited",
+          "confidence": 0.8,
+          "cited_subsection": "16-4.9a",
+          "conditions_json": null,
+          "verification_note": "Service business uses listed but self-storage/mini-warehouse not enumerated; light industrial/manufacturing not listed."
+        }
+      }
+    }
+  },
+  "diagnostics": {
+    "Bridgewater township": {
+      "ordinance_url": "https://ecode360.com/8962074",
+      "coverage_note": null,
+      "sections_fetched": 1,
+      "chars_combined": 200059,
+      "zone_count": 51,
+      "unknown_zones": [],
+      "parser_warnings": [
+        "M-1B Zone has specific operating conditions for miniwarehouse/self-storage including 625-foot setback from Route 22 and required resident caretaker, classified as conditional. Other M zones reference 'warehouse uses as defined in \u00a7126-2' but do not specifically mention self-storage or mini-warehouse\u2014classified as prohibited based on silence as to those specific use types."
+      ],
+      "fetch_warnings": [],
+      "error": null
+    },
+    "Franklin township": {
+      "ordinance_url": [
+        "https://ecode360.com/6274620",
+        "https://ecode360.com/10075729"
+      ],
+      "coverage_note": null,
+      "sections_fetched": 34,
+      "chars_combined": 57996,
+      "zone_count": 36,
+      "unknown_zones": [],
+      "parser_warnings": [
+        "Text appears to combine multiple ordinance sections, including provisions for zones not in the Franklin Township zone list (R-3.0, C-N, C-S, MF, MXD, AR-7.0); these may be from a different township section but were classified as found.",
+        "Schedule of Zone Requirements table not provided; B-I storage uses inferred from purpose statement only."
+      ],
+      "fetch_warnings": [],
+      "error": null
+    },
+    "Bound Brook borough": {
+      "ordinance_url": "https://ecode360.com/32691564",
+      "coverage_note": null,
+      "sections_fetched": 1,
+      "chars_combined": 200059,
+      "zone_count": 0,
+      "unknown_zones": [],
+      "parser_warnings": [
+        "The provided text contains general land use ordinance administrative provisions, definitions, and procedural rules but does not contain the specific use schedules, use tables, or zone-by-zone permitted use lists needed to classify self-storage, mini-warehouse, light industrial, or luxury garage condo uses. Section 21-10.1 lists that zoning districts exist and references a Zoning Map and Schedule of Requirements, but the actual use schedules for each district (e.g., R-1, R-2, R-3, R-4, R-6, B-1, B/R, O-B, RB-1, RB/SR, I-P, etc.) are not included in the provided excerpt. No classification can be made without the use schedule text."
+      ],
+      "fetch_warnings": [],
+      "error": null
+    },
+    "Warren township": {
+      "ordinance_url": "https://ecode360.com/42960282",
+      "coverage_note": null,
+      "sections_fetched": 160,
+      "chars_combined": 267486,
+      "zone_count": 22,
+      "unknown_zones": [],
+      "parser_warnings": [
+        "Text references Gloucester Township, NJ ordinance content despite user header stating Warren Township; classifications reflect ordinance text provided.",
+        "HC District does not enumerate self-storage; classified as prohibited by silence."
+      ],
+      "fetch_warnings": [],
+      "error": null
+    },
+    "Montgomery township": {
+      "ordinance_url": "https://ecode360.com/34978977",
+      "coverage_note": null,
+      "sections_fetched": 1,
+      "chars_combined": 200059,
+      "zone_count": 18,
+      "unknown_zones": [],
+      "parser_warnings": [
+        "Ordinance states only 2 zoning districts in 16-3.1 but text describes many districts via \u00a716-4 subsections; classifications based on \u00a716-4 district sections.",
+        "Self-service storage as conditional use is detailed in \u00a716-6.1s (referenced but not included in text)."
+      ],
+      "fetch_warnings": [],
+      "error": null
+    }
+  }
+}
