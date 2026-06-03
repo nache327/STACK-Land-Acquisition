@@ -307,8 +307,11 @@ async def run_apply(path: str) -> None:
                     print(f"  201   {muni} / {zone_code} "
                           f"(ss={payload['self_storage']})", file=sys.stderr)
                 elif r.status_code == 409:
-                    purl = (f"{base}/{quote(zone_code, safe='')}"
-                            f"?municipality={quote(muni, safe='')}")
+                    # Query-param PATCH route: handles zone codes with '/'
+                    # (B/R etc.) that 404 on the path route. base ends in
+                    # '/zones' -> '/zone'.
+                    purl = (f"{base[:-1]}?zone_code={quote(zone_code, safe='')}"
+                            f"&municipality={quote(muni, safe='')}")
                     patch_body = {
                         "self_storage": payload["self_storage"],
                         "mini_warehouse": payload["mini_warehouse"],
