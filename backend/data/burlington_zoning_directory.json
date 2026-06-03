@@ -1,0 +1,322 @@
+[
+  {
+    "muni_code": "0301",
+    "muni_name": "Bass River Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/bass_river_township/codes/municipal_code",
+    "website_url": "https://www.bassrivertownship.net/"
+  },
+  {
+    "muni_code": "0302",
+    "muni_name": "Beverly City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BE3153",
+    "website_url": "https://www.beverlynj.org/"
+  },
+  {
+    "muni_code": "0303",
+    "muni_name": "Bordentown City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BO1079",
+    "website_url": "https://cityofbordentown.com/"
+  },
+  {
+    "muni_code": "0304",
+    "muni_name": "Bordentown Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BO3500",
+    "website_url": "https://www.bordentowntownship.com/"
+  },
+  {
+    "muni_code": "0305",
+    "muni_name": "Burlington City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BU2898",
+    "website_url": "https://www.burlingtonnj.us/"
+  },
+  {
+    "muni_code": "0306",
+    "muni_name": "Burlington Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BU2696",
+    "website_url": "https://www.twp.burlington.nj.us/"
+  },
+  {
+    "muni_code": "0307",
+    "muni_name": "Chesterfield Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CH1100",
+    "website_url": "https://www.chesterfieldtwp.com/"
+  },
+  {
+    "muni_code": "0308",
+    "muni_name": "Cinnaminson Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CI0302",
+    "website_url": "https://www.cinnaminsonnj.org/"
+  },
+  {
+    "muni_code": "0309",
+    "muni_name": "Delanco Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/DE0379",
+    "website_url": "https://delancotownship.org/"
+  },
+  {
+    "muni_code": "0310",
+    "muni_name": "Delran Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/DE1570",
+    "website_url": "https://www.delrantownship.org/"
+  },
+  {
+    "muni_code": "0311",
+    "muni_name": "Eastampton Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/EA0462",
+    "website_url": "https://www.eastampton.com/"
+  },
+  {
+    "muni_code": "0312",
+    "muni_name": "Edgewater Park Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/ED3219",
+    "website_url": "https://www.edgewaterpark-nj.com/"
+  },
+  {
+    "muni_code": "0313",
+    "muni_name": "Evesham Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/EV0481",
+    "website_url": "https://www.evesham-nj.org/"
+  },
+  {
+    "muni_code": "0314",
+    "muni_name": "Fieldsboro Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": null,
+    "website_url": "https://www.fieldsboro.us/"
+  },
+  {
+    "muni_code": "0315",
+    "muni_name": "Florence Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/FL0864",
+    "website_url": "https://www.florence-nj.gov/"
+  },
+  {
+    "muni_code": "0316",
+    "muni_name": "Hainesport Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/HA0621",
+    "website_url": "https://www.hainesporttwp.com/"
+  },
+  {
+    "muni_code": "0317",
+    "muni_name": "Lumberton Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/LU1362",
+    "website_url": "https://www.lumbertontwp.com/"
+  },
+  {
+    "muni_code": "0318",
+    "muni_name": "Mansfield Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MA0249",
+    "website_url": "https://www.mansfieldtwpnj.com/"
+  },
+  {
+    "muni_code": "0319",
+    "muni_name": "Maple Shade Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MA0445",
+    "website_url": "https://mapleshade.com/"
+  },
+  {
+    "muni_code": "0320",
+    "muni_name": "Medford Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/ME0295",
+    "website_url": "https://medfordtownship.com/"
+  },
+  {
+    "muni_code": "0321",
+    "muni_name": "Medford Lakes Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/ME1961",
+    "website_url": "https://medfordlakes.gov/"
+  },
+  {
+    "muni_code": "0322",
+    "muni_name": "Moorestown Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MO1116",
+    "website_url": "https://www.moorestown.nj.us/"
+  },
+  {
+    "muni_code": "0323",
+    "muni_name": "Mount Holly Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MO1235",
+    "website_url": "https://www.mountholly.us/"
+  },
+  {
+    "muni_code": "0324",
+    "muni_name": "Mount Laurel Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MO0794",
+    "website_url": "https://www.mountlaurel.com/"
+  },
+  {
+    "muni_code": "0325",
+    "muni_name": "New Hanover Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NE1374",
+    "website_url": "https://www.newhanovertwp.com/"
+  },
+  {
+    "muni_code": "0326",
+    "muni_name": "North Hanover Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": null,
+    "website_url": "https://www.northhanovertwp.com/"
+  },
+  {
+    "muni_code": "0327",
+    "muni_name": "Palmyra Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/PA0254",
+    "website_url": "https://www.boroughofpalmyra.com/"
+  },
+  {
+    "muni_code": "0328",
+    "muni_name": "Pemberton Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/PE0435",
+    "website_url": "https://www.pembertonborough.com/"
+  },
+  {
+    "muni_code": "0329",
+    "muni_name": "Pemberton Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/PE0869",
+    "website_url": "https://www.pemberton-twp.com/"
+  },
+  {
+    "muni_code": "0330",
+    "muni_name": "Riverside Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/RI1446",
+    "website_url": "https://www.riversidetwp.org/"
+  },
+  {
+    "muni_code": "0331",
+    "muni_name": "Riverton Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/RI0487",
+    "website_url": "https://www.rivertonnj.org/"
+  },
+  {
+    "muni_code": "0332",
+    "muni_name": "Shamong Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SH2016",
+    "website_url": "https://www.shamong.net/"
+  },
+  {
+    "muni_code": "0333",
+    "muni_name": "Southampton Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SO3594",
+    "website_url": "https://www.southamptonnj.org/"
+  },
+  {
+    "muni_code": "0334",
+    "muni_name": "Springfield Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SP0427",
+    "website_url": "https://www.springfieldtwp.com/"
+  },
+  {
+    "muni_code": "0335",
+    "muni_name": "Tabernacle Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/TA4117",
+    "website_url": "https://www.tabernacletownship.net/"
+  },
+  {
+    "muni_code": "0336",
+    "muni_name": "Washington Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WA2779",
+    "website_url": "https://www.washingtontwp-nj.us/"
+  },
+  {
+    "muni_code": "0337",
+    "muni_name": "Westampton Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WE0355",
+    "website_url": "https://www.westampton.com/"
+  },
+  {
+    "muni_code": "0338",
+    "muni_name": "Willingboro Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WI3070",
+    "website_url": "https://www.willingboronj.gov/"
+  },
+  {
+    "muni_code": "0339",
+    "muni_name": "Woodland Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": null,
+    "website_url": "https://www.woodlandtownship.com/"
+  },
+  {
+    "muni_code": "0340",
+    "muni_name": "Wrightstown Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WR1798",
+    "website_url": "https://www.wrightstownboro.com/"
+  }
+]

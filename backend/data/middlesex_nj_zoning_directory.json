@@ -1,0 +1,202 @@
+[
+  {
+    "muni_code": "1201",
+    "muni_name": "Carteret Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CA1020",
+    "website_url": "https://www.carteret.net/"
+  },
+  {
+    "muni_code": "1202",
+    "muni_name": "Cranbury Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CR0758",
+    "website_url": "https://www.cranburytownship.org/"
+  },
+  {
+    "muni_code": "1203",
+    "muni_name": "Dunellen Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/DU0547",
+    "website_url": "https://www.dunellen-nj.gov/"
+  },
+  {
+    "muni_code": "1204",
+    "muni_name": "East Brunswick Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/EA0493",
+    "website_url": "https://www.eastbrunswick.org/"
+  },
+  {
+    "muni_code": "1205",
+    "muni_name": "Edison Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/ED0440",
+    "website_url": "https://www.edisonnj.org/"
+  },
+  {
+    "muni_code": "1206",
+    "muni_name": "Helmetta Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": null,
+    "website_url": "https://www.helmettaboro.com/"
+  },
+  {
+    "muni_code": "1207",
+    "muni_name": "Highland Park Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/HI2786",
+    "website_url": "https://www.hpboro.com/"
+  },
+  {
+    "muni_code": "1208",
+    "muni_name": "Jamesburg Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/JA4104",
+    "website_url": "https://www.jamesburgborough.org/"
+  },
+  {
+    "muni_code": "1209",
+    "muni_name": "Metuchen Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/ME1460",
+    "website_url": "https://metuchennj.org/"
+  },
+  {
+    "muni_code": "1210",
+    "muni_name": "Middlesex Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MI0188",
+    "website_url": "https://www.middlesexboro-nj.gov/"
+  },
+  {
+    "muni_code": "1211",
+    "muni_name": "Milltown Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MI0642",
+    "website_url": "https://www.milltownnj.org/"
+  },
+  {
+    "muni_code": "1212",
+    "muni_name": "Monroe Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MO0544",
+    "website_url": "https://www.monroetwp.com/"
+  },
+  {
+    "muni_code": "1213",
+    "muni_name": "New Brunswick City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/new_brunswick/codes/municipal_code",
+    "website_url": "https://www.cityofnewbrunswick.org/"
+  },
+  {
+    "muni_code": "1214",
+    "muni_name": "North Brunswick Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NO0467",
+    "website_url": "https://www.northbrunswicknj.gov/"
+  },
+  {
+    "muni_code": "1215",
+    "muni_name": "Old Bridge Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/OL0845",
+    "website_url": "https://www.oldbridge.com/"
+  },
+  {
+    "muni_code": "1216",
+    "muni_name": "Perth Amboy City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/PE0514",
+    "website_url": "https://www.perthamboynj.org/"
+  },
+  {
+    "muni_code": "1217",
+    "muni_name": "Piscataway Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/PI0646",
+    "website_url": "https://www.piscatawaynj.org/"
+  },
+  {
+    "muni_code": "1218",
+    "muni_name": "Plainsboro Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/PL1612",
+    "website_url": "https://www.plainsboronj.com/"
+  },
+  {
+    "muni_code": "1219",
+    "muni_name": "Sayreville Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/sayreville_borough/codes/code_of_ordinances",
+    "website_url": "https://www.sayreville.com/"
+  },
+  {
+    "muni_code": "1220",
+    "muni_name": "South Amboy City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SO0670",
+    "website_url": "https://www.southamboynj.gov/"
+  },
+  {
+    "muni_code": "1221",
+    "muni_name": "South Brunswick Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/south_brunswick_township/codes/code_of_ordinances",
+    "website_url": "https://www.sbtnj.net/"
+  },
+  {
+    "muni_code": "1222",
+    "muni_name": "South Plainfield Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SO0812",
+    "website_url": "https://www.southplainfieldnj.com/"
+  },
+  {
+    "muni_code": "1223",
+    "muni_name": "South River Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SO0444",
+    "website_url": "https://www.southrivernj.org/"
+  },
+  {
+    "muni_code": "1224",
+    "muni_name": "Spotswood Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SP1936",
+    "website_url": "https://www.spotswoodboro.com/"
+  },
+  {
+    "muni_code": "1225",
+    "muni_name": "Woodbridge Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WO0861",
+    "website_url": "https://www.twp.woodbridge.nj.us/"
+  }
+]
