@@ -298,8 +298,39 @@ def _extract_vector(
     )
 
 
+_MAX_RENDER_PIXELS = 24_000_000  # ~72 MB RGB; OpenCV color-seg comfortable, OOM-safe
+
+
 def _render_pdf_to_png(pdf_bytes: bytes, dpi: int) -> Optional[bytes]:
-    """pdftoppm with gdal_translate fallback. Returns first-page PNG bytes."""
+    """pdftoppm with gdal_translate fallback. Returns first-page PNG bytes.
+
+    Caps effective DPI so the rendered raster stays below `_MAX_RENDER_PIXELS`
+    (a 14,400×19,800-pixel render of Westwood's 48"×66" page would be ~850 MB
+    RGB and OOM-kills the runner; fix: scale DPI down based on PDF page size).
+    """
+    effective_dpi = dpi
+    try:
+        import pdfplumber  # type: ignore
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            if pdf.pages:
+                page = pdf.pages[0]
+                page_w_pt = float(getattr(page, "width", 612) or 612)
+                page_h_pt = float(getattr(page, "height", 792) or 792)
+                width_px = (page_w_pt / 72.0) * dpi
+                height_px = (page_h_pt / 72.0) * dpi
+                pixels = width_px * height_px
+                if pixels > _MAX_RENDER_PIXELS:
+                    scale = (_MAX_RENDER_PIXELS / pixels) ** 0.5
+                    effective_dpi = max(72, int(dpi * scale))
+                    LOGGER.info(
+                        "render: page %.0fx%.0f pt at %d DPI = %.1f Mpx; "
+                        "scaled DPI to %d for %.1f Mpx cap",
+                        page_w_pt, page_h_pt, dpi, pixels / 1e6,
+                        effective_dpi, _MAX_RENDER_PIXELS / 1e6,
+                    )
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.info("could not probe PDF dimensions (%s); using requested DPI %d", exc, dpi)
+
     with tempfile.TemporaryDirectory() as td:
         td_path = Path(td)
         pdf_path = td_path / "in.pdf"
@@ -307,7 +338,7 @@ def _render_pdf_to_png(pdf_bytes: bytes, dpi: int) -> Optional[bytes]:
         out_prefix = td_path / "page"
         try:
             subprocess.run(
-                ["pdftoppm", "-r", str(dpi), "-png", "-f", "1", "-l", "1",
+                ["pdftoppm", "-r", str(effective_dpi), "-png", "-f", "1", "-l", "1",
                  str(pdf_path), str(out_prefix)],
                 check=True, capture_output=True, timeout=180,
             )
