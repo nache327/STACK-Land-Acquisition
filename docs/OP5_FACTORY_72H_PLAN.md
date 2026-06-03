@@ -204,3 +204,12 @@ The factory MUST halt and surface to master if any of the following trigger:
 - Prod promotion runbook (separate PR after Phase 3 review)
 
 This is the master-planning spec. Execution is the factory orchestrator's job.
+
+
+---
+
+### Pre-build C contract precondition
+
+When building county zoning directories (essex / middlesex_nj / monmouth / burlington / future), directory rows MUST include `map_url` where it can be discovered from `website_url` via lightweight HTTP scanning (the same logic used by `op5_discovery_classify.py::discover_map_url_from_website`). It is acceptable to ship some rows with `map_url=null` if the website genuinely does not expose a zoning map, but a directory that ships with 0/N `map_url` populated is non-compliant and must be re-built before factory launch.
+
+Historic note: Pre-build C PR #179 initially shipped 0/140 — see `docs/OP5_PRE_BUILD_REPORT.md` Finding 3 for the resolution. This precondition was codified as a result.
