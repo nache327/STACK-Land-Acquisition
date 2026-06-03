@@ -3983,14 +3983,14 @@
       "error": null
     },
     "Bound Brook borough": {
-      "ordinance_url": "https://ecode360.com/32691564",
+      "ordinance_url": "https://ecode360.com/32692231",
       "coverage_note": null,
       "sections_fetched": 1,
       "chars_combined": 200059,
       "zone_count": 0,
       "unknown_zones": [],
       "parser_warnings": [
-        "The provided text contains general land use ordinance administrative provisions, definitions, and procedural rules but does not contain the specific use schedules, use tables, or zone-by-zone permitted use lists needed to classify self-storage, mini-warehouse, light industrial, or luxury garage condo uses. Section 21-10.1 lists that zoning districts exist and references a Zoning Map and Schedule of Requirements, but the actual use schedules for each district (e.g., R-1, R-2, R-3, R-4, R-6, B-1, B/R, O-B, RB-1, RB/SR, I-P, etc.) are not included in the provided excerpt. No classification can be made without the use schedule text."
+        "The provided text contains definitions, administrative procedures, and zoning district names but does NOT include the use matrix, schedule of permitted uses, or specific district regulations needed to classify uses. Zone districts referenced (R-1, R-1.1, R-2, R-3, R-4, R-4.1, R-6, B-1, B/R, OB, RB-1, RB/SR, I-P, etc.) are mentioned but their permitted/conditional/prohibited use lists are not contained in the excerpt. Cannot classify any uses without the use schedule or district regulations."
       ],
       "fetch_warnings": [],
       "error": null

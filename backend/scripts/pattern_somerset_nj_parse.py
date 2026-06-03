@@ -49,8 +49,9 @@ CITIES = [
     # zones. Multi-URL Art II (districts) + Art III (use regs) for the crawler.
     {"municipality": "Franklin township",
      "ordinance_urls": ["https://ecode360.com/6274620", "https://ecode360.com/10075729"]},
-    # Chapter 21: Land Use (small borough; chapter root crawls fine).
-    {"municipality": "Bound Brook borough", "ordinance_url": "https://ecode360.com/32691564"},
+    # §21-10 Zoning Regulations (parent of §21-10.1a B-1 General Business + all
+    # district subsections). The Ch.21 root (32691564) under-retrieved (0 zones).
+    {"municipality": "Bound Brook borough", "ordinance_url": "https://ecode360.com/32692231"},
     # Article IV: Zoning District Regulations (the Ch.16 root was the map chapter
     # and returned 0 zones; Art IV holds the per-district use lists, §16-14.2).
     {"municipality": "Warren township", "ordinance_url": "https://ecode360.com/42960282"},
