@@ -86,13 +86,13 @@ Confirm Supabase preview branch can sustain ~25 parallel ingest jobs:
 
 ### Phase 1 — Vector-class extraction (H 4–48)
 
-20-agent swarm runs `op5_per_muni_runner.py` against the ~178-189 vector-class munis. Each agent:
+14-agent swarm runs `op5_per_muni_runner.py` against the ~178-189 vector-class munis. (Cap was 20 in the original plan; reduced to 14 at CP-Pre after `docs/OP5_DB_CAPACITY_REPORT.md` measured the Supavisor session-mode pool capped at 15 client connections — 25 concurrent agents failed ~44% at connect time. See CP-Pre Finding 1 in `docs/OP5_PRE_BUILD_REPORT.md`.) Each agent:
 1. Pulls a muni from the queue
 2. Runs the proven Op-5 pipeline (color-seg → label-assign → matrix-adjudicate → preview ingest)
 3. Reports per-muni summary: coverage %, spot-check sample, confidence distribution
 4. Releases lock, picks next muni
 
-**Per-muni budget:** ~3.5h (proven on Fort Lee/Garfield). Throughput: 20 agents × ~6 munis/agent/day = 120 munis/day. **Full 178-189 munis complete in ~36-44 hours.**
+**Per-muni budget:** ~3.5h (proven on Fort Lee/Garfield). Throughput at the new cap: 14 agents × ~6 munis/agent/day = 84 munis/day. **Full 178-189 munis complete in ~51-54 hours** (still inside the 72-hour budget; original 20-agent estimate was ~36-44 hours).
 
 ### Phase 2 — Operator queue handoff (H 48–60, in parallel with Phase 1 tail)
 
