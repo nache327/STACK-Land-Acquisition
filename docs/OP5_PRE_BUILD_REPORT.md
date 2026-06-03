@@ -176,3 +176,119 @@ If Master closes Findings 2 + 3 with the recommended A2 + C1 options, confidence
 ## STOP for CP-Pre review
 
 Awaiting Master decision on Findings 1, 2, and 3. After Master signs off, Phase 0 dispatch can be authored and launched.
+
+---
+
+# CP-Pre v2 (post-Master-decisions on Findings 1/2/3)
+
+Master accepted the three findings (1: cap at 14; 2: wire real heavy logic; 3: discovery fallback + backfill). Two parallel agents executed the amendments, plus orchestrator-led docs amendments and the real Westwood smoke test. Results below.
+
+## A2 — PR #178 amended with real pipeline (Finding 2)
+
+Two agent commits + three orchestrator-led runtime-bug fixes pushed to `adarench/op5-pre-build-a-orchestrator`:
+
+| commit | author | purpose |
+|---|---|---|
+| `5b68219` | A2 agent | wire real extraction/ingest/backfill/audit defaults via new `backend/scripts/op5_lib/{extraction,ingestion_helpers}.py` |
+| `0d76a50` | A2 agent | cap `--max-parallel` default at 14 (Finding 1) |
+| `e3b7802` | C1 agent | `discover_map_url_from_website` fallback in classifier (Finding 3) |
+| `7d0c4fb` | orchestrator | fix Census Geocoder onelineaddress doesn't resolve plain place names; switched to TIGERweb REST API |
+| `117cfa6` | orchestrator | cap PDF render pixels (Westwood's 48"×66" page OOM-killed at 300 DPI = 285 Mpx ≈ 850 MB RGB) |
+| `ed44213` | orchestrator | downsize PNG before vision call (Anthropic 10 MB image cap; A2's code sent 16.7 MB and got 400) |
+
+Tests: A2 reports 37/37 pass locally (25 runner + 12 classifier). The three orchestrator runtime fixes do not have direct unit tests; they exercise on the smoke test instead.
+
+## C1 — PR #178 + PR #179 amended with map_url discovery (Finding 3)
+
+| commit | branch | purpose |
+|---|---|---|
+| `e3b7802` | `op5-pre-build-a-orchestrator` | added `discover_map_url_from_website` + 16 tests |
+| `f5483b1` | `op5-pre-build-c-county-directories` | ran discovery + backfilled 4 directories |
+| `4341d2b` | `op5-factory-pre-build` | appended "Pre-build C contract precondition" section to OP5_FACTORY_72H_PLAN.md |
+
+Backfill counts (sequential probe with realistic Chrome UA):
+
+| County | discovered / total | rate |
+|---|---|---|
+| Essex | 2 / 22 | 9.1% |
+| Middlesex NJ | 6 / 25 | 24.0% |
+| Monmouth | 4 / 53 | 7.5% |
+| Burlington | 6 / 40 | 15.0% |
+| **Total** | **18 / 140** | **12.9%** |
+
+**Materially below the 50% target Master set.** Root causes per C1 agent: ~24/53 Monmouth homepages returned HTTP 403 (CivicPlus/Cloudflare bot mitigation, even with a Chrome UA), NJ muni sites bury zoning maps 3+ levels behind JS mega-menus (bs4 can't traverse), scoring intentionally conservative to avoid false positives like "Residential Zoning Application Checklist.pdf". Further increases would require Playwright (disallowed) or per-site selectors (out of scope).
+
+Spot-inspection confirms the 18 discovered URLs are real zoning maps. Munis without a discovered map_url remain `null` and will route to Phase 0 `absent` → operator queue.
+
+## Finding 1 — orchestrator docs amend
+
+`fb9ed7e` on `adarench/op5-factory-pre-build` updates `docs/OP5_FACTORY_72H_PLAN.md` Phase 1 from "20-agent swarm" to "14-agent swarm" with recomputed Phase 1 budget (51-54 h, still inside 72 h gate).
+
+## Real Westwood smoke test result — **CARVE-OUT, not operational**
+
+Per Master's brief, ran the new `op5_per_muni_runner.py` against Westwood end-to-end with the now-real extraction path. Result:
+
+```json
+{
+  "status": "carve_out",
+  "county": "bergen",
+  "muni": "Westwood Borough",
+  "carve_reason": "empty color_to_zone (text-only legend)",
+  "source_class": "vector",
+  "vision_label_count": 0,
+  "wall_clock_s": 538.78
+}
+```
+
+Pipeline stages executed cleanly:
+1. PDF fetch via httpx (1.5 MB, 200 OK)
+2. Vector classification via pdfplumber lines > 50 (23,476 lines) ✅
+3. Place bbox via TIGERweb (Westwood borough centroid + envelope) ✅
+4. PDF render at scaled DPI 158 (capped from 300 to stay under 80 Mpx) ✅
+5. OpenCV color-segmentation ✅
+6. **Anthropic vision call returned 200 OK with 0 high-confidence (≥0.75) inline zone labels** → carve-out path fires
+7. Idempotent artifact written: `/tmp/op5_factory/bergen/westwood/carve_out.json`
+
+**What we learned:**
+- The runner's end-to-end shape, error handling, idempotency, exit codes, and carve-out branch all work in production-shaped conditions.
+- Westwood happens to be **text-only-legend class** for the new pipeline's vision-LLM prompt: vision sees the rendered map but cannot extract inline zone-code labels at ≥0.75 confidence. Either the map genuinely lacks inline labels (printed legend off-page) OR the prompt + 158 DPI is too strict for Westwood's label density. Distinguishing requires looking at the rendered PNG, which is a manual operator step.
+- **The green-path (extract → ingest → backfill → audit at coverage ≥70%) has NOT been validated end-to-end yet.** The smoke test exercised every stage up to the vision label step; ingest / backfill / audit code paths were not run because the muni carved out before reaching them.
+- Westwood may have been a poor choice for the smoke test target. The Master brief noted Westwood is on the "Paramus vendor tenant per docs/archive/BERGEN_INGEST_RUNBOOK.md (already-validated source)" — but that validation was via the vendor tenant, NOT via the Op-5 PDF pipeline. They are different code paths.
+
+## New Finding 4 — `op5_town` tag collision risk
+
+`normalize_muni_token('Garfield city')` → `'garfield'`. This **collides with the proof state's `op5_town='garfield'` tag** on Bergen preview. A2's ingest documents "never touching Fort Lee/Garfield/Hackensack proof state" but the safeguard is by tag, not by ingest-stage label, so a factory run on Garfield/Fort Lee/Hackensack would DELETE the proof state during the idempotent "remove prior rows under same op5_town tag" step.
+
+Detected during this report's smoke-test planning. We did NOT run the new runner against Garfield (preserving the proof state). Master decision needed:
+- **Option F1**: change A2's tag scheme to `op5_factory_{normalized_muni}` so factory runs never collide with proof tags.
+- **Option F2**: hardcode a protect-list in the runner that refuses to ingest into op5_town ∈ {fort_lee, garfield, hackensack} (or refuses to delete prior rows that don't carry the `op5_factory=true` marker).
+- **Option F3**: accept the risk and physically isolate the proof state in a separate raw_attributes namespace before factory launch.
+
+Recommend **F2**: minimal code, clearest intent, future-proof.
+
+## Updated ready-for-launch confidence
+
+**MEDIUM-LOW** (unchanged from CP-Pre v1; reasons differ).
+
+What's improved since CP-Pre v1:
+- A2's heavy logic is wired (Finding 2 addressed in code).
+- Discovery fallback exists (Finding 3 partially addressed).
+- The pipeline runs end-to-end without crashing (3 runtime bugs fixed during smoke test).
+- The carve-out branch is validated end-to-end on real data.
+
+What's still blocking HIGH:
+1. **Green-path not validated end-to-end on any muni.** Westwood carved out at vision-label step. We have not seen a muni complete the ingest → backfill → audit → coverage ≥70% trip via the new runner.
+2. **map_url discovery rate is 12.9%, not 50%.** Phase 0 will mark ~87% of new-county munis as `absent` → operator queue. Factory throughput model assumed ≥80% vector-class; we're closer to 13% × 4 counties + 100% Bergen.
+3. **Finding 4 op5_town tag collision** is a live foot-gun against the proof state.
+4. **No measured per-muni wall clock for a green-path muni.** Westwood took 9 min to carve out; a green-path run would be longer (ingest + backfill + audit) but we don't know how much. The 3.5 h per-muni budget in OP5_FACTORY_72H_PLAN.md was estimated from the proof's hand-coded runs, not measured on the new runner.
+
+## Master decisions needed before Phase 0 launch
+
+1. **Smoke test follow-up**: which Bergen muni should we re-attempt the smoke test against? Recommend selecting one that is NOT in the proof set and has known inline zone labels — `Ramsey Borough`, `Ridgewood Village`, or `Paramus Borough` are likely candidates. If we cannot find a non-proof Bergen muni that reaches operational, the factory is non-viable as currently scoped.
+2. **Finding 4**: Option F2 (recommended) or alternative.
+3. **Acceptance or revision of the 12.9% map_url discovery rate.** Either accept that ~87% of non-Bergen factory work routes to the operator queue, or invest in a richer discovery (Playwright authorization, per-vendor scraper, manual operator queue for directory build, etc).
+4. **Optional**: investigate whether the vision-label prompt needs revision. The A2 prompt requires the model to self-filter at ≥0.75 confidence. Looser thresholds + post-hoc filtering OR multi-pass prompts (legend extraction → inline label match) may catch more munis.
+
+## STOP for CP-Pre re-review
+
+All three Master-authorized findings have been executed. A new Finding 4 surfaced. The smoke test ran but Westwood carved out — green-path is unvalidated. Confidence remains MEDIUM-LOW pending decisions on the four items above.
