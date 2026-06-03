@@ -212,10 +212,30 @@ async def _fetch_with_playwright(url: str) -> list[OrdinanceSection]:
             html = await page.content()
             soup = BeautifulSoup(html, "lxml")
 
-            # For eCode360: the landed URL is a Chapter node whose body only
-            # renders the preamble + a list of child Article/Section links
-            # (the actual use regulations live in those children). Crawl them.
+            # For eCode360: React SPA that hydrates the full article/chapter
+            # body inline AFTER domcontentloaded. We must wait for that hydration
+            # (the section tree renders as div.litem nodes), then extract the
+            # USE-DENSE sections rather than the first _MAX_ORDINANCE_CHARS —
+            # because district permitted-use sections come AFTER the definitions
+            # / general provisions, so naive head-truncation drops exactly the
+            # rows we need (Marlboro §220-47+, Bound Brook §21-10.x, etc.).
             if "ecode360.com" in url:
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=20_000)
+                except Exception:
+                    pass
+                try:
+                    await page.wait_for_selector("div.litem", timeout=8_000)
+                except Exception:
+                    pass
+                await page.wait_for_timeout(1_500)
+                soup = BeautifulSoup(await page.content(), "lxml")
+
+                sections = _extract_ecode360_inline(soup, url)
+                if sections:
+                    return sections
+                # Fallback: chapter whose body is just child Article/Section
+                # links (no inline bodies) -> crawl those child nodes.
                 sections = await _crawl_ecode360_chapter(page, soup, url)
                 if sections:
                     return sections
@@ -330,6 +350,89 @@ def _find_appendix_links(soup: BeautifulSoup, base_url: str) -> list[str]:
             found.append(full)
 
     return found
+
+
+_ECODE_USE_RE = re.compile(
+    r"\b(permitted|prohibited|conditional|principal use|accessory use|"
+    r"use regulations|schedule of use|not specifically permitted)\b", re.I)
+_ECODE_STORE_RE = re.compile(
+    r"\b(storage|warehouse|self-?storage|mini-?warehouse|garage)\b", re.I)
+_ECODE_CODE_RE = re.compile(
+    r"\b([A-Z]{1,3}-\d{1,3}(?:\.\d+)?[A-Z]?|R-\d{1,3}|LC|L-?I|G-?I|HD|OB|RB|NB|CBD)\b")
+
+
+def _extract_ecode360_inline(soup: "BeautifulSoup", base_url: str) -> list[OrdinanceSection]:
+    """eCode360 hydrates the entire article/chapter body inline (nested
+    ``div.litem`` nodes). Extract a USE-DENSE concatenation from the main
+    content pane: drop nav/TOC/cookie chrome, then keep the highest use-signal
+    text windows (district codes + permitted/prohibited/use language) up to the
+    char cap, in document order. This beats head-truncation because the district
+    permitted-use sections sit AFTER the definitions/general provisions.
+
+    Returns [] when the page has little inline body (a pure child-link chapter),
+    so the caller can fall back to crawling the child Article/Section nodes.
+    """
+    content = BeautifulSoup(str(soup), "lxml")
+    for sel in (
+        "nav", "header", "footer", "script", "style",
+        "[class*='cookie']", "[class*='Cookie']", "[class*='sidebar']",
+        "#code-page-controls-enhanced-toc", "[id*='toc']", "[class*='Toc']",
+        "[class*='print']", "[class*='breadcrumb']",
+    ):
+        for el in content.select(sel):
+            el.decompose()
+
+    main = content.select_one("main") or content.select_one("#content") or content
+    text = main.get_text("\n", strip=True)
+    if len(text) < 4_000:
+        return []  # not inline-rendered -> let caller crawl child nodes
+
+    sid = base_url.rstrip("/").split("/")[-1]
+    h = content.find(re.compile(r"^h[1-3]$"))
+    heading = h.get_text(strip=True) if h else sid
+
+    if len(text) <= _MAX_ORDINANCE_CHARS:
+        return [OrdinanceSection(section_id=sid, heading=heading, text=text,
+                                 district_codes=_find_district_codes(text))]
+
+    # Use-density windowing: chunk by lines (~3k chars), score each, keep the
+    # top-scoring chunks (in document order) until the cap is hit.
+    lines = [ln for ln in (l.strip() for l in text.split("\n")) if ln]
+    chunks: list[str] = []
+    cur: list[str] = []
+    curlen = 0
+    for ln in lines:
+        cur.append(ln)
+        curlen += len(ln) + 1
+        if curlen >= 3_000:
+            chunks.append("\n".join(cur))
+            cur, curlen = [], 0
+    if cur:
+        chunks.append("\n".join(cur))
+
+    scored = []
+    for i, ch in enumerate(chunks):
+        score = (len(_ECODE_USE_RE.findall(ch))
+                 + 2 * len(_ECODE_STORE_RE.findall(ch))
+                 + len(_ECODE_CODE_RE.findall(ch)))
+        scored.append((i, score, ch))
+
+    keep: set[int] = set()
+    total = 0
+    for i, score, ch in sorted(scored, key=lambda t: -t[1]):
+        if score <= 0:
+            break
+        if total + len(ch) > _MAX_ORDINANCE_CHARS:
+            continue
+        keep.add(i)
+        total += len(ch)
+
+    combined = "\n\n".join(ch for i, score, ch in scored if i in keep)
+    if not combined:
+        combined = text[:_MAX_ORDINANCE_CHARS]
+    return [OrdinanceSection(section_id=sid, heading=heading,
+                             text=combined[:_MAX_ORDINANCE_CHARS],
+                             district_codes=_find_district_codes(combined))]
 
 
 async def _crawl_ecode360_chapter(page, chapter_soup: "BeautifulSoup", base_url: str) -> list[OrdinanceSection]:
