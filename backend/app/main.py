@@ -7,6 +7,7 @@ from app.config import settings
 from app.version import get_pipeline_version
 from app.api import (
     admin_backfill,
+    admin_op5,
     buybox,
     census_proxy,
     competition,
@@ -97,6 +98,7 @@ app.include_router(buybox.router, prefix="/api")
 app.include_router(census_proxy.router, prefix="/api")
 app.include_router(listings.router, prefix="/api")
 app.include_router(admin_backfill.router, prefix="/api")
+app.include_router(admin_op5.router, prefix="/api")
 
 
 @app.get("/health", tags=["meta"])

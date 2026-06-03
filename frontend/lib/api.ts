@@ -80,6 +80,84 @@ export interface CityCount {
   parcel_count: number;
 }
 
+// ---- op5 review queue (Pre-build B) --------------------------------------
+
+// Use-permission verdict for a single (zone, use) cell. Mirrors the
+// `UsePermission` enum on the backend.
+export type Op5UsePermission =
+  | "permitted"
+  | "conditional"
+  | "prohibited"
+  | "unclear";
+
+// Citation shape returned in adjudication rows. Both fields optional to
+// tolerate legacy/partial rows (see backend CitationRead docstring).
+export interface Op5Citation {
+  section?: string | null;
+  quote?: string | null;
+}
+
+// One row in the /admin/op5-review queue. Combines a zone_use_matrix
+// row with its jurisdiction context + a parcel count for blast-radius
+// awareness before approving.
+export interface AdjudicationRow {
+  id: number;
+  jurisdiction_id: string;
+  jurisdiction_name: string;
+  state: string;
+  county: string | null;
+  municipality: string | null;
+  zone_code: string;
+  zone_name: string | null;
+  parcel_count: number;
+  self_storage: Op5UsePermission;
+  mini_warehouse: Op5UsePermission;
+  light_industrial: Op5UsePermission;
+  luxury_garage_condo: Op5UsePermission;
+  confidence: number | null;
+  human_reviewed: boolean;
+  classification_source: string;
+  notes: string | null;
+  citations: Op5Citation[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Body for bulk-approve. Provide either by_ids OR by_filter (not both).
+export interface BulkApprovePayload {
+  by_ids?: { row_ids: number[] };
+  by_filter?: {
+    county?: string | null;
+    municipality?: string | null;
+    state?: string | null;
+    min_confidence: number;
+    max_rows?: number;
+  };
+}
+
+// Body for reject endpoint.
+export interface RejectPayload {
+  reason: string;
+}
+
+// Bulk-approve response.
+export interface BulkApproveResult {
+  approved: number;
+  row_ids: number[];
+}
+
+// Query params for the list endpoint.
+export interface AdjudicationListParams {
+  status?: "pending" | "approved";
+  county?: string;
+  municipality?: string;
+  state?: string;
+  min_confidence?: number;
+  max_confidence?: number;
+  limit?: number;
+  offset?: number;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -421,5 +499,48 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ items }),
     });
+  },
+
+  // ---- op5 review queue (Pre-build B) -------------------------------------
+
+  async listOp5Adjudications(
+    params: AdjudicationListParams = {}
+  ): Promise<AdjudicationRow[]> {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && v !== "") {
+        qs.set(k, String(v));
+      }
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return fetchJSON<AdjudicationRow[]>(
+      `/api/admin/op5/adjudications${suffix}`
+    );
+  },
+
+  async approveOp5Adjudication(rowId: number): Promise<AdjudicationRow> {
+    return fetchJSON<AdjudicationRow>(
+      `/api/admin/op5/adjudications/${rowId}/approve`,
+      { method: "POST" }
+    );
+  },
+
+  async bulkApproveOp5Adjudications(
+    payload: BulkApprovePayload
+  ): Promise<BulkApproveResult> {
+    return fetchJSON<BulkApproveResult>(
+      "/api/admin/op5/adjudications/bulk-approve",
+      { method: "POST", body: JSON.stringify(payload) }
+    );
+  },
+
+  async rejectOp5Adjudication(
+    rowId: number,
+    payload: RejectPayload
+  ): Promise<AdjudicationRow> {
+    return fetchJSON<AdjudicationRow>(
+      `/api/admin/op5/adjudications/${rowId}/reject`,
+      { method: "POST", body: JSON.stringify(payload) }
+    );
   },
 };
