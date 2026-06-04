@@ -117,12 +117,16 @@ async def get_zone_matrix(
     municipality: str | None = Query(
         default=None,
         description=(
-            "Scope to one municipality's effective matrix (town-specific rows "
-            "+ NULL county-default rows). REQUIRED for sane review of a "
+            "Scope to ONE municipality's own verdict rows (strict "
+            "municipality = <city>). REQUIRED for sane review of a "
             "county-as-jurisdiction (county_gis): without it the response mixes "
-            "every town's zones, so a single-town ordinance review hits false "
-            "'mismatch'/'missing' positives. Matches the buybox scoring "
-            "semantics (municipality = <city> OR municipality IS NULL)."
+            "every town's zones AND county-default (NULL-municipality bootstrap) "
+            "rows, so a single-town ordinance review hits false "
+            "'mismatch'/'missing' positives. This is the REVIEW set (the town's "
+            "own ordinance-derived rows) — intentionally NOT the buybox "
+            "'municipality = <city> OR NULL' scoring set, since county defaults "
+            "aren't that town's ordinance and would re-introduce the very false "
+            "positives this filter removes."
         ),
     ),
     db: AsyncSession = Depends(get_db),
@@ -132,16 +136,9 @@ async def get_zone_matrix(
         ZoneUseMatrix.deleted_at.is_(None),
     ]
     if municipality is not None:
-        where.append(
-            (ZoneUseMatrix.municipality == municipality)
-            | (ZoneUseMatrix.municipality.is_(None))
-        )
+        where.append(ZoneUseMatrix.municipality == municipality)
     result = await db.execute(
-        select(ZoneUseMatrix).where(*where).order_by(
-            # town-specific rows first, then county-default, then by code
-            ZoneUseMatrix.municipality.is_(None).asc(),
-            ZoneUseMatrix.zone_code,
-        )
+        select(ZoneUseMatrix).where(*where).order_by(ZoneUseMatrix.zone_code)
     )
     zones = result.scalars().all()
     return {"zones": zones, "unknown_zones": [], "parser_warnings": []}
