@@ -66,3 +66,6 @@ backend/uploads/*
 !backend/uploads/README.md
 listings_lehi.json
 search_lehi.json
+
+# Supabase CLI local artifacts (linked-project state, cli-latest cache)
+supabase/.temp/
