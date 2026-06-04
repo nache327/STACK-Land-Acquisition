@@ -22,18 +22,13 @@ from pathlib import Path
 SOMERSET = "394ef40c-ca0d-4d57-9b11-dc5417430240"
 
 CITIES = [
-    {"municipality": "Bernardsville borough", "jid": SOMERSET, "ordinance_urls": [
-        "https://ecode360.com/35370581",  # Article 12 Zoning (I/I-2/B-1/C-1/OB)
-    ]},
-    {"municipality": "Peapack and Gladstone borough", "jid": SOMERSET, "ordinance_urls": [
-        "https://ecode360.com/34919450",  # Article IV Zoning (L-I/ORL/VN/RR)
-    ]},
-    {"municipality": "Far Hills borough", "jid": SOMERSET, "ordinance_urls": [
-        "https://ecode360.com/31900731",  # Article VIII VC Village Commercial
+    {"municipality": "Bedminster township", "jid": SOMERSET, "ordinance_urls": [
+        "https://ecode360.com/35861743",  # Article 13-400 District Regulations (OR/OP/OR-V/PUD/PRD)
+        "https://ecode360.com/35861732",  # Zoning Districts and Zoning Map
     ]},
 ]
 
-OUT_PATH = Path(__file__).parent / "proposed_verdicts_batch4.json"
+OUT_PATH = Path(__file__).parent / "proposed_verdicts_bedminster.json"
 
 
 async def draft_city(city: dict) -> dict:

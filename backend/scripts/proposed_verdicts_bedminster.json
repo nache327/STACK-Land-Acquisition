@@ -1,0 +1,393 @@
+{
+  "generated_for_review": true,
+  "results": [
+    {
+      "municipality": "Bedminster township",
+      "jid": "394ef40c-ca0d-4d57-9b11-dc5417430240",
+      "ordinance_url": [
+        "https://ecode360.com/35861743",
+        "https://ecode360.com/35861732"
+      ],
+      "sections_fetched": 2,
+      "chars_combined": 144088,
+      "zones": [
+        {
+          "zone_code": "MF",
+          "zone_name": "High Density Multiple Family Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-404.1",
+              "quote": "Townhouses and/or apartments"
+            }
+          ],
+          "notes": "Multifamily residential."
+        },
+        {
+          "zone_code": "OP",
+          "zone_name": "Professional and General Office",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "13-406A.1",
+              "quote": "Detached dwelling units... Offices"
+            }
+          ],
+          "notes": "Office and residential only."
+        },
+        {
+          "zone_code": "OR",
+          "zone_name": "Office Research",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "conditional",
+          "luxury_garage_condo": "conditional",
+          "confidence": 0.85,
+          "citations": [
+            {
+              "section": "13-406.1",
+              "quote": "Research and engineering activities... not involving... warehousing, distribution or fabrication"
+            }
+          ],
+          "notes": "R&D permitted but explicitly excludes manufacturing/warehousing/distribution; light industrial in narrow R&D sense only. Warehousing explicitly excluded for self-storage/mini-warehouse."
+        },
+        {
+          "zone_code": "OR-1",
+          "zone_name": "Office Research/Corporate Suites",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "conditional",
+          "luxury_garage_condo": "conditional",
+          "confidence": 0.85,
+          "citations": [
+            {
+              "section": "13-406B.1",
+              "quote": "not involving the manufacturing, sale, processing, warehousing, distribution or fabrication"
+            }
+          ],
+          "notes": "Research permitted but warehousing/distribution explicitly excluded."
+        },
+        {
+          "zone_code": "OR-2",
+          "zone_name": "Office Research (Section 13-413, high-tech/lifestyle)",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "permitted",
+          "luxury_garage_condo": "permitted",
+          "confidence": 0.85,
+          "citations": [
+            {
+              "section": "13-413.1",
+              "quote": "Laboratory, research, development, engineering and design, aseptic manufacturing"
+            },
+            {
+              "section": "13-413.3",
+              "quote": "Retail distribution and warehouse facilities... prohibited"
+            }
+          ],
+          "notes": "High-tech zone with aseptic manufacturing permitted (light industrial). Warehouse/distribution and residential explicitly prohibited, so self_storage and mini_warehouse prohibited. Luxury garage condo inferred from light_industrial=permitted (per inference rule step 1 applied liberally given manufacturing permitted)."
+        },
+        {
+          "zone_code": "OR-V",
+          "zone_name": "Office Research-Village",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [
+            {
+              "section": "13-407.1",
+              "quote": "not involving the manufacturing, sale, processing, warehousing, distribution or fabrication"
+            }
+          ],
+          "notes": "Warehousing explicitly excluded; expressly prohibits large-scale retail and similar intensive uses."
+        },
+        {
+          "zone_code": "ORVMU",
+          "zone_name": "Office Research Village Mixed Use",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "conditional",
+          "luxury_garage_condo": "conditional",
+          "confidence": 0.85,
+          "citations": [
+            {
+              "section": "13-406C.2",
+              "quote": "not involving the manufacturer, sale, processing, warehousing, distribution or fabrication"
+            }
+          ],
+          "notes": "Mixed use with R&D; warehousing/distribution explicitly excluded."
+        },
+        {
+          "zone_code": "P",
+          "zone_name": "Public",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "13-408.2",
+              "quote": "Public parks and recreation... Open space... Conservation uses"
+            }
+          ],
+          "notes": "Public lands only."
+        },
+        {
+          "zone_code": "PRD",
+          "zone_name": "Planned Residential Development",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-410",
+              "quote": "Detached dwelling units... Townhouses and/or apartments"
+            }
+          ],
+          "notes": "Residential PRD."
+        },
+        {
+          "zone_code": "PUD",
+          "zone_name": "Planned Unit Development",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [
+            {
+              "section": "13-411",
+              "quote": "Retail sales of goods and services... Offices... Banks... Restaurants"
+            }
+          ],
+          "notes": "Mixed residential/limited commercial; no storage or industrial uses listed."
+        },
+        {
+          "zone_code": "R-1",
+          "zone_name": "Low Density Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-403.1",
+              "quote": "Farms... Detached dwelling units"
+            }
+          ],
+          "notes": "Residential district."
+        },
+        {
+          "zone_code": "R-1/2",
+          "zone_name": "Medium Density Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-403.1",
+              "quote": "Farms... Detached dwelling units"
+            }
+          ],
+          "notes": "Residential district."
+        },
+        {
+          "zone_code": "R-10",
+          "zone_name": "Rural Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-401.1",
+              "quote": "Farms... Detached dwelling units... Houses of worship"
+            }
+          ],
+          "notes": "Rural residential/agricultural district; no industrial or storage uses listed."
+        },
+        {
+          "zone_code": "R-2",
+          "zone_name": "Low Density Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-403.1",
+              "quote": "Farms... Detached dwelling units"
+            }
+          ],
+          "notes": "Residential district; storage/industrial uses not permitted."
+        },
+        {
+          "zone_code": "R-3",
+          "zone_name": "Rural Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-402.1",
+              "quote": "Farms... Detached dwelling units"
+            }
+          ],
+          "notes": "Rural residential district; no industrial/storage uses listed."
+        },
+        {
+          "zone_code": "SCH",
+          "zone_name": "Senior Citizen Housing",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "13-412",
+              "quote": "Multiple family dwellings... exclusively for occupancy by households"
+            }
+          ],
+          "notes": "Senior housing only."
+        },
+        {
+          "zone_code": "SFC",
+          "zone_name": "Single Family Cluster",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.96,
+          "citations": [
+            {
+              "section": "13-409",
+              "quote": "Detached dwelling units"
+            }
+          ],
+          "notes": "Single-family cluster residential."
+        },
+        {
+          "zone_code": "SFC-RD",
+          "zone_name": "Single Family Cluster-Restricted Development",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "13-403A.1",
+              "quote": "Detached dwelling units"
+            }
+          ],
+          "notes": "Restricted residential; only detached dwellings permitted."
+        },
+        {
+          "zone_code": "VN",
+          "zone_name": "Village Neighborhood",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.92,
+          "citations": [
+            {
+              "section": "13-405.1",
+              "quote": "Detached dwelling units... Grocery stores... Local retail activities"
+            }
+          ],
+          "notes": "Mixed residential/local retail village; no storage/industrial uses."
+        },
+        {
+          "zone_code": "VN-2",
+          "zone_name": "Restricted Village Neighborhood",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "13-405A.4",
+              "quote": "Antique shops... art galleries... book stores"
+            }
+          ],
+          "notes": "Restricted neighborhood; only small conditional retail uses listed."
+        },
+        {
+          "zone_code": "VN-3",
+          "zone_name": "Pottersville Village Neighborhood",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "13-405B.1",
+              "quote": "Detached dwelling units... Grocery stores"
+            }
+          ],
+          "notes": "Small village neighborhood; no industrial/storage uses."
+        },
+        {
+          "zone_code": "VR-100",
+          "zone_name": "Medium Density Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-403.1",
+              "quote": "Detached dwelling units"
+            }
+          ],
+          "notes": "Residential district."
+        },
+        {
+          "zone_code": "VR-80",
+          "zone_name": "Medium Density Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "13-403.1",
+              "quote": "Detached dwelling units"
+            }
+          ],
+          "notes": "Residential district."
+        }
+      ],
+      "zone_count": 23,
+      "parser_warnings": [
+        "Section 13-413 zone code not explicitly named in the district list provided in Section 13-301; tentatively labeled OR-2. Multiple OR zones (OR, OR-1, OR-V, ORVMU, 13-413) explicitly exclude warehousing/distribution, so self-storage and mini-warehouse classified as prohibited even where R&D is permitted."
+      ]
+    }
+  ]
+}
