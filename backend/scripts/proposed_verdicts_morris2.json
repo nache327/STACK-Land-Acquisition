@@ -1,0 +1,226 @@
+{
+  "jurisdiction_id": "746b7604-f362-470f-aa42-70dc8973b4ee",
+  "jurisdiction_name": "Morris County, NJ",
+  "generated_for_review": true,
+  "results": [
+    {
+      "municipality": "Mendham borough",
+      "ordinance_url": [
+        "https://ecode360.com/6683037",
+        "https://ecode360.com/6683095",
+        "https://ecode360.com/6683081",
+        "https://ecode360.com/6682660"
+      ],
+      "sections_fetched": 5,
+      "chars_combined": 15846,
+      "zones": [
+        {
+          "zone_code": "1-Acre Residence Zone",
+          "zone_name": "1-Acre Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [],
+          "notes": "Residential zone; storage/industrial uses prohibited by silence."
+        },
+        {
+          "zone_code": "1/2-Acre Residence Zone",
+          "zone_name": "1/2-Acre Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [],
+          "notes": "Residential zone; storage/industrial uses prohibited by silence."
+        },
+        {
+          "zone_code": "1/4-Acre Residence Zone",
+          "zone_name": "1/4-Acre Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [],
+          "notes": "Residential zone; storage/industrial uses prohibited by silence."
+        },
+        {
+          "zone_code": "3-Acre Residence Zone",
+          "zone_name": "3-Acre Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [],
+          "notes": "Residential zone; storage/industrial uses prohibited by silence."
+        },
+        {
+          "zone_code": "5-Acre Residence Zone",
+          "zone_name": "5-Acre Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [],
+          "notes": "Residential zone; storage/industrial uses not permitted by silence."
+        },
+        {
+          "zone_code": "5-Acre Residence and Religious Campus Zone",
+          "zone_name": "5-Acre Residence and Religious Campus Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [],
+          "notes": "Residential/religious campus zone; storage and industrial uses prohibited by silence."
+        },
+        {
+          "zone_code": "Affordable Housing Overlay Zone",
+          "zone_name": "Affordable Housing Overlay Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.85,
+          "citations": [],
+          "notes": "Residential overlay; storage/industrial uses not contemplated."
+        },
+        {
+          "zone_code": "East Business Affordable Housing Zone",
+          "zone_name": "East Business Affordable Housing Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.8,
+          "citations": [],
+          "notes": "Business/affordable housing zone; storage/industrial uses not listed in the available text."
+        },
+        {
+          "zone_code": "East Business Zone",
+          "zone_name": "East Business Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "East Business Zone",
+              "quote": "no building or land may be used in whole or in part for any use other than"
+            }
+          ],
+          "notes": "Exhaustive permitted use list (retail/service/automotive); storage and industrial uses not listed."
+        },
+        {
+          "zone_code": "Historic Business Zone",
+          "zone_name": "Historic Business Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "Historic Business Zone",
+              "quote": "no building or land may be used in whole or in part for any use other than"
+            }
+          ],
+          "notes": "Exhaustive permitted use list; storage/industrial uses not included."
+        },
+        {
+          "zone_code": "Historic District Overlay Zone",
+          "zone_name": "Historic District Overlay Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.8,
+          "citations": [],
+          "notes": "Overlay zone; underlying uses limited and historic preservation purpose; storage/industrial uses not contemplated."
+        },
+        {
+          "zone_code": "Limited Business Zone",
+          "zone_name": "Limited Business Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.4,
+          "citations": [],
+          "notes": "[llm+rule: zone_classifier filled unclear slots] Full list of permitted uses for Limited Business Zone not provided in the supplied text; only development standards and one accessory provision visible."
+        }
+      ],
+      "zone_count": 12,
+      "unknown_zones": [],
+      "parser_warnings": [
+        "Full permitted use list for Limited Business Zone was not included in the supplied text \u2014 only standards visible; classification set to 'unclear' for that zone.",
+        "Detailed permitted uses for residential and overlay zones were not provided in the excerpt; classifications inferred from zone names and Mendham's exhaustive-permitted-use ordinance structure."
+      ]
+    },
+    {
+      "municipality": "Chester township",
+      "ordinance_url": [
+        "https://ecode360.com/12403551",
+        "https://ecode360.com/12403569",
+        "https://ecode360.com/12403583"
+      ],
+      "sections_fetched": 3,
+      "chars_combined": 12712,
+      "zones": [
+        {
+          "zone_code": "B",
+          "zone_name": "Business Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.92,
+          "citations": [],
+          "notes": "B Zone permits retail, restaurants, offices, recreation, etc. No storage, warehousing, or industrial uses listed as permitted or conditional. Silence = prohibition."
+        },
+        {
+          "zone_code": "LB",
+          "zone_name": "Limited Business Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [
+            {
+              "section": "LB Permitted Uses (H)",
+              "quote": "Contractor and storage yards in existence as of"
+            }
+          ],
+          "notes": "LB Zone allows offices, funeral homes, agricultural, and grandfathered contractor/storage/retail uses only. No self-storage, mini-warehouse, or light industrial permitted or conditional."
+        },
+        {
+          "zone_code": "PO/R",
+          "zone_name": "Professional Office/Residential Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "PO/R B(6)",
+              "quote": "No merchandise, products, waste, equipment or similar material shall be sold, displayed, stored"
+            }
+          ],
+          "notes": "PO/R Zone limited to offices, banks, single-family dwellings, schools, child-care. Outdoor storage explicitly prohibited. No industrial or storage uses."
+        }
+      ],
+      "zone_count": 3,
+      "unknown_zones": [],
+      "parser_warnings": []
+    }
+  ]
+}
