@@ -256,6 +256,44 @@ async def _fetch_by_object_ids(
     return resp.json().get("features", [])
 
 
+async def _fetch_by_object_ids_resilient(
+    endpoint_url: str,
+    oid_chunk: list[int],
+    out_fields: str = "*",
+    client: httpx.AsyncClient | None = None,
+    floor: int = 50,
+) -> list[dict]:
+    """Fetch a batch by ObjectID; on failure, split the chunk in half and retry
+    recursively down to `floor`. Some self-hosted ArcGIS Servers (e.g.
+    gis.njtpa.org / Bergen layer 0) return 500 on a large geojson response even
+    after retries, while small batches succeed — so splitting converges. Below
+    `floor` a still-failing sub-chunk is logged and skipped rather than failing
+    the whole download. No cost on healthy layers (first try succeeds)."""
+    try:
+        return await _fetch_by_object_ids(
+            endpoint_url, oid_chunk, out_fields=out_fields, client=client,
+        )
+    except Exception as exc:  # noqa: BLE001
+        if len(oid_chunk) <= floor:
+            logger.warning(
+                "ObjectID batch of %d failed (%s) at floor; skipping sub-chunk",
+                len(oid_chunk), exc,
+            )
+            return []
+        mid = len(oid_chunk) // 2
+        logger.warning(
+            "ObjectID batch of %d failed (%s); splitting %d + %d",
+            len(oid_chunk), exc, mid, len(oid_chunk) - mid,
+        )
+        left = await _fetch_by_object_ids_resilient(
+            endpoint_url, oid_chunk[:mid], out_fields=out_fields, client=client, floor=floor,
+        )
+        right = await _fetch_by_object_ids_resilient(
+            endpoint_url, oid_chunk[mid:], out_fields=out_fields, client=client, floor=floor,
+        )
+        return left + right
+
+
 async def download_all_features(
     endpoint_url: str,
     where: str = "1=1",
@@ -301,7 +339,7 @@ async def download_all_features(
                 batch = oid_chunks[chunk_start : chunk_start + max_concurrency]
                 responses = await asyncio.gather(
                     *[
-                        _fetch_by_object_ids(endpoint_url, chunk, out_fields=out_fields, client=client)
+                        _fetch_by_object_ids_resilient(endpoint_url, chunk, out_fields=out_fields, client=client)
                         for chunk in batch
                     ]
                 )
