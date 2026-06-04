@@ -619,3 +619,140 @@ def test_orchestrator_default_max_parallel_is_14() -> None:
     """CP-Pre Finding 1 (master decision): default cap is 14, not 5 or 20."""
     import op5_factory_orchestrator as orch  # noqa: WPS433
     assert orch.DEFAULT_MAX_PARALLEL == 14
+
+
+# ── CP-Pre Finding 4 / Option F2 — proof-state protect list ────────────────
+
+
+class _FakeAsyncpgConn:
+    """Lightweight asyncpg.Connection stand-in for testing the protect-list.
+
+    Records every execute()/fetchrow() invocation so the test can assert
+    which SQL was/wasn't run. ``preloaded_rows`` is a list of dicts that
+    fetchrow consumes from in order; each call pops the head, returns it,
+    and remembers the SQL + args for inspection.
+    """
+
+    def __init__(self, preloaded_rows: list[dict]) -> None:
+        self._preloaded = list(preloaded_rows)
+        self.fetchrow_calls: list[tuple[str, tuple]] = []
+        self.execute_calls: list[tuple[str, tuple]] = []
+
+    async def fetchrow(self, sql: str, *args):
+        self.fetchrow_calls.append((sql, args))
+        if not self._preloaded:
+            return None
+        return self._preloaded.pop(0)
+
+    async def execute(self, sql: str, *args):
+        self.execute_calls.append((sql, args))
+        return "EXECUTE 0"
+
+
+@pytest.mark.asyncio
+async def test_ingest_refuses_when_proof_state_present() -> None:
+    """CP-Pre Finding 4 / Option F2: if rows exist under the target
+    op5_town that LACK op5_factory='true', the ingest helper MUST raise
+    ProofStateCollisionError BEFORE running any DELETE.
+    """
+    from op5_lib.ingestion_helpers import (
+        ProofStateCollisionError,
+        ingest_polygons_additive,
+    )
+
+    # The collision-check fetchrow returns n=215 (Garfield proof state).
+    conn = _FakeAsyncpgConn(preloaded_rows=[{"n": 215}])
+
+    with pytest.raises(ProofStateCollisionError) as excinfo:
+        await ingest_polygons_additive(
+            conn,
+            jurisdiction_id="4bf00234-4455-4987-a067-b22ee6b6aa1f",
+            op5_town="garfield",
+            polygons=[{
+                "zone_code": "R-1",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[-74.1, 40.8], [-74.1, 40.81],
+                                     [-74.09, 40.81], [-74.09, 40.8], [-74.1, 40.8]]],
+                },
+            }],
+        )
+
+    # The error message names the protected count and the op5_town tag.
+    msg = str(excinfo.value)
+    assert "215" in msg
+    assert "garfield" in msg
+
+    # CRITICAL: the DELETE must NOT have been issued.
+    delete_calls = [
+        sql for sql, _args in conn.execute_calls if "DELETE" in sql.upper()
+    ]
+    assert delete_calls == [], (
+        f"DELETE was issued despite proof-state collision: {delete_calls}"
+    )
+    # And no INSERT either.
+    insert_calls = [
+        sql for sql, _args in conn.execute_calls if "INSERT" in sql.upper()
+    ]
+    assert insert_calls == []
+
+
+@pytest.mark.asyncio
+async def test_ingest_proceeds_when_no_proof_state_present() -> None:
+    """When the pre-flight check finds 0 protected rows, the ingest runs
+    the DELETE and INSERT path normally.
+    """
+    from op5_lib.ingestion_helpers import ingest_polygons_additive
+
+    # n=0 -> safe to proceed.
+    conn = _FakeAsyncpgConn(preloaded_rows=[{"n": 0}])
+
+    inserted = await ingest_polygons_additive(
+        conn,
+        jurisdiction_id="4bf00234-4455-4987-a067-b22ee6b6aa1f",
+        op5_town="ridgewood",
+        polygons=[{
+            "zone_code": "R-1",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[-74.1, 40.8], [-74.1, 40.81],
+                                 [-74.09, 40.81], [-74.09, 40.8], [-74.1, 40.8]]],
+            },
+        }],
+    )
+    assert inserted == 1
+    # Exactly one DELETE and one INSERT.
+    delete_calls = [
+        sql for sql, _args in conn.execute_calls if sql.strip().startswith("\n        DELETE") or "DELETE FROM zoning_districts" in sql
+    ]
+    insert_calls = [
+        sql for sql, _args in conn.execute_calls if "INSERT INTO zoning_districts" in sql
+    ]
+    assert len(delete_calls) == 1
+    assert len(insert_calls) == 1
+    # The DELETE retains the op5_factory='true' filter as a backstop.
+    assert "op5_factory" in delete_calls[0]
+
+
+@pytest.mark.asyncio
+async def test_protect_check_query_uses_negated_factory_tag() -> None:
+    """The protect-check SELECT must count rows where op5_factory is
+    NULL or != 'true' — not the inverse. Pin the SQL shape so future
+    edits don't accidentally invert the predicate.
+    """
+    from op5_lib.ingestion_helpers import assert_no_proof_state_collision
+
+    conn = _FakeAsyncpgConn(preloaded_rows=[{"n": 0}])
+    n = await assert_no_proof_state_collision(
+        conn,
+        jurisdiction_id="4bf00234-4455-4987-a067-b22ee6b6aa1f",
+        op5_town="garfield",
+    )
+    assert n == 0
+    assert len(conn.fetchrow_calls) == 1
+    sql = conn.fetchrow_calls[0][0]
+    # Predicate sanity checks — these are the load-bearing pieces.
+    assert "op5_town" in sql
+    assert "op5_factory" in sql
+    assert "IS NULL" in sql.upper()
+    assert "<> 'true'" in sql or "!= 'true'" in sql

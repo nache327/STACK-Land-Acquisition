@@ -25,6 +25,23 @@ PREVIEW_REF = "bbvywbpxwsoyvdvygvyw"
 BERGEN_ID = "4bf00234-4455-4987-a067-b22ee6b6aa1f"
 
 
+class ProofStateCollisionError(RuntimeError):
+    """Raised when a factory ingest would clobber pre-existing proof state.
+
+    Factory rows are stamped with ``raw_attributes->>'op5_factory' = 'true'``.
+    The Op-5 proof state (Fort Lee / Garfield / Hackensack) predates the
+    factory and does NOT carry that tag — only ``op5_town`` / ``op5_stage``
+    / ``op5_source``. ``normalize_muni_token('Garfield city')`` returns
+    ``'garfield'`` which COLLIDES with the proof tag ``op5_town='garfield'``
+    even though the rows are different.
+
+    This exception fires when a factory ingest targets an ``op5_town`` that
+    already has non-factory rows present. The orchestrator catches this and
+    routes the muni to the operator carve-out queue rather than silently
+    overwriting the proof.
+    """
+
+
 def load_db_url() -> str:
     """Read DATABASE_URL from env or repo-root ``.env``.
 
@@ -101,6 +118,51 @@ async def lookup_jurisdiction_id(
     return row["id"] if row else None
 
 
+async def assert_no_proof_state_collision(
+    conn,  # asyncpg.Connection
+    *,
+    jurisdiction_id: str,
+    op5_town: str,
+) -> int:
+    """Refuse to proceed when a factory ingest would clobber proof state.
+
+    Counts rows in ``zoning_districts`` under this jurisdiction tagged with
+    the target ``op5_town`` but MISSING ``op5_factory='true'``. Those rows
+    were authored by the Op-5 proof (Fort Lee / Garfield / Hackensack) and
+    are protected.
+
+    Returns the count of protected rows found (0 == safe to proceed) and
+    raises :class:`ProofStateCollisionError` when the count is non-zero.
+    """
+    row = await conn.fetchrow(
+        """
+        SELECT COUNT(*)::int AS n
+        FROM zoning_districts
+        WHERE jurisdiction_id = $1::uuid
+          AND raw_attributes->>'op5_town' = $2
+          AND (
+                raw_attributes->>'op5_factory' IS NULL
+             OR raw_attributes->>'op5_factory' <> 'true'
+          )
+        """,
+        jurisdiction_id,
+        op5_town,
+    )
+    protected = int(row["n"]) if row else 0
+    if protected > 0:
+        msg = (
+            f"Op-5 factory ingest refused: {protected} pre-existing "
+            f"zoning_districts row(s) for op5_town={op5_town!r} under "
+            f"jurisdiction_id={jurisdiction_id} are MISSING the "
+            f"op5_factory='true' tag (proof state). Factory must not "
+            f"overwrite proof rows; route this muni to the operator "
+            f"carve-out queue."
+        )
+        LOGGER.error(msg)
+        raise ProofStateCollisionError(msg)
+    return protected
+
+
 async def ingest_polygons_additive(
     conn,  # asyncpg.Connection
     *,
@@ -120,11 +182,28 @@ async def ingest_polygons_additive(
             "color_rgb": [r, g, b],  # optional
         }
 
-    We delete any prior rows tagged with the SAME ``op5_town`` so re-runs
-    are idempotent within the factory tag-namespace, but we never touch
-    other towns' rows or non-factory rows.
+    Proof-state guard (CP-Pre Finding 4 / Option F2):
+    Before any DELETE, refuse to proceed if existing rows under this
+    ``op5_town`` tag are MISSING ``op5_factory='true'`` — those are Op-5
+    proof rows (Fort Lee / Garfield / Hackensack) and must not be
+    overwritten by the factory. Raises
+    :class:`ProofStateCollisionError` in that case.
+
+    Idempotent re-runs: delete any prior rows tagged with BOTH the same
+    ``op5_town`` AND ``op5_factory='true'`` — never touching other towns'
+    rows or non-factory rows. The ``op5_factory='true'`` filter on the
+    DELETE is the belt-and-suspenders backstop for the pre-flight check
+    above.
     """
+    # Pre-flight proof-state guard (CP-Pre Finding 4 / F2).
+    await assert_no_proof_state_collision(
+        conn, jurisdiction_id=jurisdiction_id, op5_town=op5_town,
+    )
+
     # Clear any prior factory rows for THIS muni only (idempotent re-run).
+    # The op5_factory='true' filter is critical: it prevents this DELETE
+    # from touching the Op-5 proof state even if the pre-flight check above
+    # were somehow bypassed.
     await conn.execute(
         """
         DELETE FROM zoning_districts
