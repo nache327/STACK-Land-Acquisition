@@ -9,9 +9,11 @@
 ## Scope
 
 **In scope (factory):**
-- Bergen (70), Essex (22), Middlesex NJ (25), Monmouth (53), Burlington (40) = **210 munis**
-- Expected vector-class (factory-routable): ~178-189 munis (85-90%)
-- Expected raster + text-only-legend (operator-routable): ~21-32 munis
+- Bergen (70), Essex (22), Middlesex NJ (25), Monmouth (53), Burlington (40) = **210 munis** nominally
+- **Phase 1A — Bergen factory** (~70 munis). Bergen munis have map_url populated from prior archive work AND have ArcGIS coverage via the verified-tenant catalog (`backend/data/zoning_source_tenants.json`) + NJSEA (10 Meadowlands towns). The runner's ArcGIS-first branch (CP-Pre Finding 5) handles these without PDF/vision-LLM.
+- **Phase 1B — non-Bergen with discovered map_url** (~18 munis across Essex/Middlesex/Monmouth/Burlington). Per CP-Pre Finding 3, only 18/140 non-Bergen munis had a discoverable `map_url`; these route through the PDF path.
+- **Operator queue (parallel, NOT factory)** — ~122 non-Bergen `absent`-classified munis + any Bergen raster/text-only-legend carve-outs. Per CP-Pre Decision 3, Master accepted the 12.9% non-Bergen discovery rate as-is and routes the remainder to operator-assisted Op-5.
+- Expected factory-routable total: **~88 munis** (70 Bergen + 18 non-Bergen). Down from the original 178-189 estimate after CP-Pre measurements.
 
 **Out of scope (operator-assisted track, parallel):**
 - Hackensack-class raster munis (no vision-LLM georef path)
@@ -86,13 +88,24 @@ Confirm Supabase preview branch can sustain ~25 parallel ingest jobs:
 
 ### Phase 1 — Vector-class extraction (H 4–48)
 
-14-agent swarm runs `op5_per_muni_runner.py` against the ~178-189 vector-class munis. (Cap was 20 in the original plan; reduced to 14 at CP-Pre after `docs/OP5_DB_CAPACITY_REPORT.md` measured the Supavisor session-mode pool capped at 15 client connections — 25 concurrent agents failed ~44% at connect time. See CP-Pre Finding 1 in `docs/OP5_PRE_BUILD_REPORT.md`.) Each agent:
-1. Pulls a muni from the queue
-2. Runs the proven Op-5 pipeline (color-seg → label-assign → matrix-adjudicate → preview ingest)
-3. Reports per-muni summary: coverage %, spot-check sample, confidence distribution
-4. Releases lock, picks next muni
+14-agent swarm runs `op5_per_muni_runner.py` against the ~88 in-scope munis (Phase 1A Bergen 70 + Phase 1B non-Bergen 18). Cap was 20 in the original plan; reduced to 14 at CP-Pre after `docs/OP5_DB_CAPACITY_REPORT.md` measured the Supavisor session-mode pool capped at 15 client connections — 25 concurrent agents failed ~44% at connect time. See CP-Pre Finding 1 in `docs/OP5_PRE_BUILD_REPORT.md`.
 
-**Per-muni budget:** ~3.5h (proven on Fort Lee/Garfield). Throughput at the new cap: 14 agents × ~6 munis/agent/day = 84 munis/day. **Full 178-189 munis complete in ~51-54 hours** (still inside the 72-hour budget; original 20-agent estimate was ~36-44 hours).
+Each agent:
+1. Pulls a muni from the queue
+2. Classifier (CP-Pre Finding 5) routes to one of:
+   - ArcGIS-verified (operator-confirmed tenant) → call `ingest_zoning_districts` directly with the FeatureServer URL
+   - ArcGIS-candidate (vendor catalog hint) → probe FeatureServer, ingest if alive
+   - NJSEA (Bergen Meadowlands) → use shared 20200609_Zoning service with `MUN_CODE LIKE '<code>%'`
+   - PDF path (color-seg → label-assign → matrix-adjudicate)
+3. Matrix adjudicate, preview ingest with F2 protect-list (CP-Pre Finding 4 — refuses to delete proof-state rows lacking `op5_factory='true'`)
+4. Spatial backfill via `backfill_parcel_zoning_from_districts(nearest_within_meters=100.0)`
+5. Audit + per-muni summary: coverage %, spot-check sample, binding-method distribution
+6. Releases lock, picks next muni
+
+**Per-muni budget:** ArcGIS path ~30-60 min; PDF path ~3.5 h (proven on Fort Lee/Garfield). Throughput at 14 agents:
+- ArcGIS-routed munis (most of Bergen, including the 10 NJSEA Meadowlands towns): ~30 munis/day per agent
+- PDF-routed munis (~20-30 of Bergen + all 18 non-Bergen Phase 1B): ~6 munis/agent/day
+**Full ~88 munis complete in ~24-36 hours** assuming the mix is ~60% ArcGIS / ~40% PDF. Comfortably inside the 72-hour budget.
 
 ### Phase 2 — Operator queue handoff (H 48–60, in parallel with Phase 1 tail)
 
