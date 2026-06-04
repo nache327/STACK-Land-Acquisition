@@ -113,7 +113,9 @@ class ExtractionResult:
     polygons: list[dict]       # GeoJSON-ish polygons w/ zone label + confidence
     color_to_zone: dict        # legend mapping; empty -> text-only-legend carve-out
     source_class: str          # "vector" | "raster" | "text_only_legend" | "absent"
+                               # | "arcgis_verified" | "arcgis_candidate" | "njsea"
     vision_label_count: int    # # labels at >= VISION_LABEL_CONFIDENCE_FLOOR
+    arcgis_source: Optional[Any] = None  # ArcgisSource when source_class.startswith("arcgis_") or =="njsea"
 
 
 @dataclass
@@ -257,9 +259,19 @@ def matrix_rows_path(county: str, muni: str, root: Path = ARTIFACT_ROOT) -> Path
 
 
 def default_extract_polygons_from_map(muni: MuniRecord) -> ExtractionResult:
-    """Production extraction path (CP-Pre Finding 2 / A2).
+    """Production extraction path (CP-Pre Finding 2 / A2 + Finding 5).
 
-    Routes through :mod:`op5_lib.extraction`:
+    ArcGIS-first (CP-Pre Finding 5):
+      Before any PDF work, consult :func:`op5_lib.arcgis_lookup.lookup_arcgis_source`.
+      If a verified/candidate tenant service or NJSEA layer exists for the
+      muni AND probes alive (returnCountOnly > 0), short-circuit: return an
+      ExtractionResult with ``source_class='arcgis_<confidence>'`` (or
+      ``'njsea'``), ``arcgis_source=<ArcgisSource>``, and empty polygons
+      — the ingest stage will call the ArcGIS path instead of using
+      extracted polygons. This is the master-identified critical path for
+      Westwood and the 10 NJSEA Meadowlands towns.
+
+    Routes through :mod:`op5_lib.extraction` on the PDF fallback:
 
     * Fetch ``muni.map_url`` (httpx, follow redirects).
     * Classify vector vs raster via ``pdfplumber`` line count (>50 -> vector).
@@ -277,6 +289,51 @@ def default_extract_polygons_from_map(muni: MuniRecord) -> ExtractionResult:
     Returns an empty extraction (source_class unchanged) for any heavy
     failure path so the carve-out flow is the single error sink.
     """
+    # ── ArcGIS-first short-circuit (CP-Pre Finding 5) ──────────────────
+    try:
+        from op5_lib.arcgis_lookup import (
+            lookup_arcgis_source,
+            probe_feature_server,
+        )
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.debug("op5_lib.arcgis_lookup import failed: %s — skipping arcgis path", exc)
+        lookup_arcgis_source = None  # type: ignore[assignment]
+        probe_feature_server = None  # type: ignore[assignment]
+
+    if lookup_arcgis_source is not None:
+        try:
+            arc = lookup_arcgis_source(muni.muni_name, "NJ")
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.debug("arcgis lookup error for %s: %s", muni.muni_name, exc)
+            arc = None
+        if arc is not None and probe_feature_server is not None:
+            try:
+                alive = probe_feature_server(arc.feature_server_url, arc.where_clause)
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.debug("arcgis probe error for %s: %s", muni.muni_name, exc)
+                alive = False
+            if alive:
+                source_class = (
+                    "njsea" if arc.confidence == "njsea"
+                    else f"arcgis_{arc.confidence}"
+                )
+                LOGGER.info(
+                    "arcgis-first route for %s -> %s (%s)",
+                    muni.muni_name, source_class, arc.feature_server_url,
+                )
+                return ExtractionResult(
+                    polygons=[],
+                    color_to_zone={},
+                    source_class=source_class,
+                    vision_label_count=0,
+                    arcgis_source=arc,
+                )
+            else:
+                LOGGER.info(
+                    "arcgis lookup hit %s but probe failed; falling through to PDF",
+                    muni.muni_name,
+                )
+
     try:
         from op5_lib.extraction import extract_polygons as _extract
     except Exception as exc:  # noqa: BLE001
@@ -367,7 +424,15 @@ async def default_ingest_polygons(
     preview_branch: str,
     county: str = "bergen",
 ) -> IngestResult:
-    """Production additive asyncpg ingest (CP-Pre Finding 2 / A2).
+    """Production additive asyncpg ingest (CP-Pre Finding 2 / A2 + Finding 5).
+
+    Dispatcher: routes by ``extraction.source_class``.
+
+    * ``arcgis_verified`` / ``arcgis_candidate`` / ``njsea`` -> ArcGIS path
+      (:func:`_ingest_arcgis_source`). Uses ``replace=False`` to honor the
+      F2 protect-list contract — existing non-factory rows are NOT touched.
+    * Anything else -> extraction-based additive insert via
+      :func:`op5_lib.ingestion_helpers.ingest_polygons_additive`.
 
     Tags every district with ``raw_attributes->>'op5_town'`` +
     ``op5_factory='true'`` + ``op5_factory_stage='cp3'`` so the spatial
@@ -391,6 +456,20 @@ async def default_ingest_polygons(
         raise RuntimeError(
             f"DATABASE_URL preview ref does not match expected {preview_branch!r}"
         )
+
+    # ── ArcGIS branch (CP-Pre Finding 5) ───────────────────────────────
+    if extraction.source_class.startswith("arcgis_") or extraction.source_class == "njsea":
+        if extraction.arcgis_source is None:
+            raise RuntimeError(
+                f"source_class={extraction.source_class!r} but extraction.arcgis_source is None"
+            )
+        return await _ingest_arcgis_source(
+            muni,
+            extraction.arcgis_source,
+            preview_branch=preview_branch,
+            county=county,
+        )
+
     op5_town = normalize_muni_token(muni.muni_name)
     conn = await asyncpg.connect(url, statement_cache_size=0, command_timeout=900)
     try:
@@ -410,6 +489,154 @@ async def default_ingest_polygons(
     return IngestResult(
         jurisdiction_id=jurisdiction_id,
         polygons_written=inserted,
+        nearest_within_meters=DEFAULT_NEAREST_WITHIN_METERS,
+    )
+
+
+async def _ingest_arcgis_source(
+    muni: MuniRecord,
+    arc: Any,   # ArcgisSource
+    *,
+    preview_branch: str,
+    county: str,
+) -> IngestResult:
+    """Ingest a muni from an ArcGIS FeatureServer via the platform API
+    (download_all_features + ingest_zoning_districts).
+
+    Honors the F2 protect-list contract by passing ``replace=False`` —
+    existing rows (Op-5 proof state, sibling munis, non-factory rows) are
+    NEVER deleted from this path.
+
+    We still tag inserted rows with ``op5_factory`` markers so they sort
+    cleanly in the audit + spatial-backfill scope. Tagging happens via a
+    post-insert UPDATE because ``ingest_zoning_districts`` doesn't accept
+    an ``extra_raw_attributes`` kwarg — this is the platform-touching
+    boundary that PR #178 stays the right side of (we don't edit
+    ``app.services.zoning_ingestion``).
+    """
+    import asyncpg
+    import json as _json
+    import uuid as _uuid
+
+    from op5_lib.ingestion_helpers import (
+        assert_preview_url,
+        load_db_url,
+        lookup_jurisdiction_id,
+    )
+
+    url = load_db_url()
+    assert_preview_url(url)
+    if preview_branch not in url:
+        raise RuntimeError(
+            f"DATABASE_URL preview ref does not match expected {preview_branch!r}"
+        )
+
+    # Look up jurisdiction id via raw asyncpg (mirrors the extraction path).
+    op5_town = normalize_muni_token(muni.muni_name)
+    pre_conn = await asyncpg.connect(url, statement_cache_size=0, command_timeout=900)
+    try:
+        jurisdiction_id = await lookup_jurisdiction_id(pre_conn, county=county)
+    finally:
+        await pre_conn.close()
+    if not jurisdiction_id:
+        raise RuntimeError(
+            f"No jurisdictions row found for county={county!r} state=NJ"
+        )
+
+    # Download + ingest via the public platform APIs. We never call
+    # ``ingest_zoning_districts(replace=True)`` from the factory.
+    from app.config import settings  # noqa: WPS433 — public API
+    from app.services.arcgis_query import download_all_features  # noqa: WPS433
+    from app.services.zoning_ingestion import ingest_zoning_districts  # noqa: WPS433
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    engine = create_async_engine(
+        settings.database_url,
+        echo=False,
+        pool_pre_ping=True,
+        connect_args={"statement_cache_size": 0},
+    )
+    sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
+    inserted = 0
+    pre_zone_ids: set = set()
+    try:
+        async with sessionmaker() as session:
+            # Snapshot existing zoning_district ids for this jurisdiction so
+            # the post-insert tag UPDATE only touches the rows WE inserted.
+            from sqlalchemy import text as _sql_text  # local import — keep API surface narrow
+            res = await session.execute(
+                _sql_text(
+                    "SELECT id::text FROM zoning_districts WHERE jurisdiction_id = :jid"
+                ),
+                {"jid": jurisdiction_id},
+            )
+            pre_zone_ids = {row[0] for row in res.fetchall()}
+
+            gdf = await download_all_features(
+                arc.feature_server_url,
+                where=arc.where_clause or "1=1",
+            )
+            if gdf.empty:
+                LOGGER.warning(
+                    "arcgis download returned 0 features for %s (%s, where=%s)",
+                    muni.muni_name, arc.feature_server_url, arc.where_clause,
+                )
+                inserted = 0
+            else:
+                jid_uuid = (
+                    jurisdiction_id
+                    if isinstance(jurisdiction_id, _uuid.UUID)
+                    else _uuid.UUID(jurisdiction_id)
+                )
+                # CRITICAL: replace=False to honor F2 protect-list semantics.
+                # The platform ingest will skip duplicates via
+                # uq_zoning_districts_jur_code_hash.
+                inserted = await ingest_zoning_districts(
+                    gdf, jid_uuid, session, replace=False,
+                )
+                await session.commit()
+
+                # Tag the rows we just inserted with op5_factory markers so
+                # the audit + spatial backfill can scope cleanly. We can't
+                # pass ``extra_raw_attributes`` to ``ingest_zoning_districts``
+                # (kwarg doesn't exist in the public API); this post-insert
+                # UPDATE is the workaround.
+                raw_patch = {
+                    "op5_town": op5_town,
+                    "op5_factory": "true",
+                    "op5_factory_stage": "cp3",
+                    "op5_source_label": arc.source_label,
+                    "op5_arcgis_confidence": arc.confidence,
+                }
+                # Use ANY(:pre_ids) over a uuid[] so we don't have to expand
+                # a tuple into IN clauses (some pre-existing jurisdictions
+                # have 10k+ rows). Empty array => everything in this
+                # jurisdiction is treated as newly inserted.
+                pre_ids_array = list(pre_zone_ids)
+                res = await session.execute(
+                    _sql_text(
+                        "UPDATE zoning_districts SET raw_attributes = "
+                        "COALESCE(raw_attributes, '{}'::jsonb) || CAST(:patch AS jsonb) "
+                        "WHERE jurisdiction_id = CAST(:jid AS uuid) "
+                        "AND NOT (id::text = ANY(CAST(:pre_ids AS text[]))) "
+                        "RETURNING id"
+                    ),
+                    {"patch": _json.dumps(raw_patch),
+                     "jid": str(jurisdiction_id),
+                     "pre_ids": pre_ids_array},
+                )
+                tagged = len(res.fetchall())
+                LOGGER.info(
+                    "arcgis ingest %s: inserted=%d tagged=%d",
+                    muni.muni_name, inserted, tagged,
+                )
+                await session.commit()
+    finally:
+        await engine.dispose()
+
+    return IngestResult(
+        jurisdiction_id=str(jurisdiction_id),
+        polygons_written=int(inserted),
         nearest_within_meters=DEFAULT_NEAREST_WITHIN_METERS,
     )
 

@@ -43,6 +43,17 @@ from op5_per_muni_runner import (  # noqa: E402  (sibling script import)
     load_county_directory,
 )
 
+try:
+    from op5_lib.arcgis_lookup import (  # noqa: E402
+        ArcgisSource,
+        lookup_arcgis_source,
+        probe_feature_server,
+    )
+except Exception:  # noqa: BLE001 — tests should still import this module
+    ArcgisSource = None  # type: ignore[assignment]
+    lookup_arcgis_source = None  # type: ignore[assignment]
+    probe_feature_server = None  # type: ignore[assignment]
+
 LOGGER = logging.getLogger("op5_discovery_classify")
 
 PER_MUNI_TIMEOUT_S = 60.0
@@ -108,12 +119,16 @@ _NON_MAP_KEYWORDS = (
 class ClassificationRecord:
     muni_code: str
     muni_name: str
-    cls: str               # vector|raster|absent  (text_only_legend deferred)
+    cls: str               # vector|raster|absent|arcgis_verified|arcgis_candidate|njsea
     map_url: Optional[str]
     ordinance_url: Optional[str]
     confidence: float
     error: Optional[str]
-    map_url_source: str = "directory"  # directory | website_discovery | none
+    map_url_source: str = "directory"  # directory | website_discovery | arcgis | none
+    feature_server_url: Optional[str] = None
+    where_clause: Optional[str] = None
+    source_label: Optional[str] = None
+    tenant_host: Optional[str] = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -364,8 +379,69 @@ def _is_image_path(url: str) -> bool:
     return path.endswith((".jpg", ".jpeg", ".png", ".gif", ".tif", ".tiff"))
 
 
+async def _probe_feature_server_async(
+    feature_server_url: str, where_clause: Optional[str],
+) -> bool:
+    """Run the (sync) probe_feature_server in a thread so we don't block."""
+    if probe_feature_server is None:
+        return False
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None,
+            lambda: probe_feature_server(feature_server_url, where_clause),
+        )
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.debug(
+            "feature-server probe error %s (%s): %s",
+            feature_server_url, where_clause, exc,
+        )
+        return False
+
+
 async def classify_one(muni: MuniRecord) -> ClassificationRecord:
-    """Single-muni probe + classify. Never raises — failure -> absent."""
+    """Single-muni probe + classify. Never raises — failure -> absent.
+
+    Order:
+      1. ArcGIS lookup (verified tenant -> candidate tenant -> NJSEA). If a
+         FeatureServer is found AND a returnCountOnly probe returns >0,
+         classify as ``arcgis_<confidence>`` (or ``njsea``) and skip the
+         PDF/vision path entirely. This is the master-identified critical
+         path for Westwood + the 10 NJSEA Meadowlands towns + Paramus etc.
+      2. Existing PDF path (vector / raster / absent).
+    """
+    # ── ArcGIS-first branch (CP-Pre Finding 5) ──────────────────────────
+    if lookup_arcgis_source is not None:
+        try:
+            arc = lookup_arcgis_source(muni.muni_name, "NJ")
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.debug("arcgis_lookup raised for %s: %s", muni.muni_name, exc)
+            arc = None
+        if arc is not None:
+            alive = await _probe_feature_server_async(
+                arc.feature_server_url, arc.where_clause,
+            )
+            if alive:
+                cls_label = "njsea" if arc.confidence == "njsea" else f"arcgis_{arc.confidence}"
+                return ClassificationRecord(
+                    muni_code=muni.muni_code,
+                    muni_name=muni.muni_name,
+                    cls=cls_label,
+                    map_url=arc.feature_server_url,
+                    ordinance_url=muni.ordinance_url,
+                    confidence=0.95 if arc.confidence == "verified" else 0.85,
+                    error=None,
+                    map_url_source="arcgis",
+                    feature_server_url=arc.feature_server_url,
+                    where_clause=arc.where_clause,
+                    source_label=arc.source_label,
+                    tenant_host=arc.tenant_host,
+                )
+            LOGGER.info(
+                "arcgis lookup hit %s (%s) but probe returned 0; falling through to PDF",
+                muni.muni_name, arc.source_label,
+            )
+
     map_url = muni.map_url
     map_url_source = "directory" if map_url else "none"
 
@@ -597,12 +673,18 @@ def main(argv: Optional[list[str]] = None) -> int:
     except (FileNotFoundError, KeyError) as exc:
         LOGGER.error("classification failed: %s", exc)
         return 2
-    summary = {"vector": 0, "raster": 0, "absent": 0, "text_only_legend": 0}
+    summary = {
+        "vector": 0, "raster": 0, "absent": 0, "text_only_legend": 0,
+        "arcgis_verified": 0, "arcgis_candidate": 0, "njsea": 0,
+    }
     for r in results:
         summary[r.get("class", "absent")] = summary.get(r.get("class", "absent"), 0) + 1
     LOGGER.info(
-        "%s totals: vector=%d raster=%d absent=%d",
-        args.county, summary.get("vector", 0), summary.get("raster", 0), summary.get("absent", 0),
+        "%s totals: vector=%d raster=%d absent=%d arcgis_verified=%d arcgis_candidate=%d njsea=%d",
+        args.county,
+        summary.get("vector", 0), summary.get("raster", 0), summary.get("absent", 0),
+        summary.get("arcgis_verified", 0), summary.get("arcgis_candidate", 0),
+        summary.get("njsea", 0),
     )
     print(json.dumps({"county": args.county, "totals": summary, "n": len(results)}, indent=2))
     return 0

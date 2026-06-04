@@ -489,7 +489,12 @@ def test_defaults_match_op5_decision_doc() -> None:
 def test_default_extract_vector_classification(monkeypatch, muni: runner.MuniRecord) -> None:
     """Vector-class PDF + mocked extractor returns source_class=vector with
     a non-empty polygon list."""
+    from op5_lib import arcgis_lookup as alook
     from op5_lib import extraction as ext
+
+    # Westwood now routes via ArcGIS by default (CP-Pre Finding 5). For this
+    # test we want the PDF/vector path, so disable the ArcGIS short-circuit.
+    monkeypatch.setattr(alook, "lookup_arcgis_source", lambda *_a, **_kw: None)
 
     sample = ext.ExtractionResult(
         polygons=[{
@@ -523,7 +528,12 @@ def test_default_extract_returns_absent_when_no_map_url() -> None:
 
 
 def test_default_extract_raster_routes_to_vision(monkeypatch, muni: runner.MuniRecord) -> None:
+    from op5_lib import arcgis_lookup as alook
     from op5_lib import extraction as ext
+
+    # Westwood now routes via ArcGIS by default (CP-Pre Finding 5). For this
+    # test we want the PDF/raster path, so disable the ArcGIS short-circuit.
+    monkeypatch.setattr(alook, "lookup_arcgis_source", lambda *_a, **_kw: None)
 
     sample = ext.ExtractionResult(
         polygons=[{
