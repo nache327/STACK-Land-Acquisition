@@ -1,0 +1,178 @@
+[
+  {
+    "muni_code": "0701",
+    "muni_name": "Belleville Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BE4059",
+    "website_url": "https://www.bellevillenj.org/"
+  },
+  {
+    "muni_code": "0702",
+    "muni_name": "Bloomfield Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BL0918",
+    "website_url": "https://www.bloomfieldtwpnj.com/"
+  },
+  {
+    "muni_code": "0703",
+    "muni_name": "Caldwell Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CA1417",
+    "website_url": "https://caldwell-nj.com/"
+  },
+  {
+    "muni_code": "0704",
+    "muni_name": "Cedar Grove Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CE0630",
+    "website_url": "https://cedargrovenj.org/"
+  },
+  {
+    "muni_code": "0705",
+    "muni_name": "East Orange City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/EA0647",
+    "website_url": "https://www.eastorange-nj.gov/"
+  },
+  {
+    "muni_code": "0706",
+    "muni_name": "Essex Fells Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/ES2826",
+    "website_url": "https://www.essexfellsnj.com/"
+  },
+  {
+    "muni_code": "0707",
+    "muni_name": "Fairfield Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/FA0184",
+    "website_url": "https://www.fairfieldnj.org/"
+  },
+  {
+    "muni_code": "0708",
+    "muni_name": "Glen Ridge Borough",
+    "in_statewide_aggregator": false,
+    "map_url": "https://www.glenridgenj.org/wp-content/uploads/2025/06/buildingzoningmap11.28.16.pdf",
+    "ordinance_url": "https://library.municode.com/nj/glen_ridge_borough/codes/code_of_ordinances",
+    "website_url": "https://www.glenridgenj.org/"
+  },
+  {
+    "muni_code": "0709",
+    "muni_name": "Irvington Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/IR0792",
+    "website_url": "https://www.irvingtonnj.org/"
+  },
+  {
+    "muni_code": "0710",
+    "muni_name": "Livingston Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/LI1238",
+    "website_url": "https://www.livingstonnj.org/"
+  },
+  {
+    "muni_code": "0711",
+    "muni_name": "Maplewood Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MA1203",
+    "website_url": "https://www.maplewoodnj.gov/"
+  },
+  {
+    "muni_code": "0712",
+    "muni_name": "Millburn Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MI4080",
+    "website_url": "https://www.millburn.org/"
+  },
+  {
+    "muni_code": "0713",
+    "muni_name": "Montclair Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MO0769",
+    "website_url": "https://www.montclairnjusa.org/"
+  },
+  {
+    "muni_code": "0714",
+    "muni_name": "Newark City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NE4043",
+    "website_url": "https://www.newarknj.gov/"
+  },
+  {
+    "muni_code": "0715",
+    "muni_name": "North Caldwell Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NO0390",
+    "website_url": "https://www.northcaldwell.org/"
+  },
+  {
+    "muni_code": "0716",
+    "muni_name": "Nutley Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NU0665",
+    "website_url": "https://www.nutleynj.org/"
+  },
+  {
+    "muni_code": "0717",
+    "muni_name": "Orange City Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/OR0804",
+    "website_url": "https://www.orangenj.gov/"
+  },
+  {
+    "muni_code": "0718",
+    "muni_name": "Roseland Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/RO4067",
+    "website_url": "https://www.roselandnj.org/"
+  },
+  {
+    "muni_code": "0719",
+    "muni_name": "South Orange Village Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/south_orange_village_township/codes/code_of_ordinances",
+    "website_url": "https://www.southorange.org/"
+  },
+  {
+    "muni_code": "0720",
+    "muni_name": "Verona Township",
+    "in_statewide_aggregator": false,
+    "map_url": "https://www.veronanj.org/media/Engineering/Zoning%20Forms/ZR-04%20Township%20of%20Verona%20Zone%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/VE0815",
+    "website_url": "https://www.veronanj.org/"
+  },
+  {
+    "muni_code": "0721",
+    "muni_name": "West Caldwell Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WE0897",
+    "website_url": "https://www.westcaldwell.com/"
+  },
+  {
+    "muni_code": "0722",
+    "muni_name": "West Orange Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WE2734",
+    "website_url": "https://www.westorange.org/"
+  }
+]

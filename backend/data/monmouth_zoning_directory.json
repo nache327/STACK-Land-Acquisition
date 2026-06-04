@@ -1,0 +1,426 @@
+[
+  {
+    "muni_code": "1301",
+    "muni_name": "Aberdeen Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/AB4052",
+    "website_url": "https://www.aberdeennj.org/"
+  },
+  {
+    "muni_code": "1302",
+    "muni_name": "Allenhurst Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/AL4036",
+    "website_url": "https://allenhurstnj.org/"
+  },
+  {
+    "muni_code": "1303",
+    "muni_name": "Allentown Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/AL0466",
+    "website_url": "https://www.allentownboro.com/"
+  },
+  {
+    "muni_code": "1304",
+    "muni_name": "Asbury Park City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/AS4053",
+    "website_url": "https://www.cityofasburypark.com/"
+  },
+  {
+    "muni_code": "1305",
+    "muni_name": "Atlantic Highlands Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/AT0153",
+    "website_url": "https://ahnj.com/"
+  },
+  {
+    "muni_code": "1306",
+    "muni_name": "Avon-by-the-Sea Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/AV0655",
+    "website_url": "https://www.avonbytheseanj.com/"
+  },
+  {
+    "muni_code": "1307",
+    "muni_name": "Belmar Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BE4028",
+    "website_url": "https://www.belmar.com/"
+  },
+  {
+    "muni_code": "1308",
+    "muni_name": "Bradley Beach Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BR2100",
+    "website_url": "https://www.bradleybeachnj.gov/"
+  },
+  {
+    "muni_code": "1309",
+    "muni_name": "Brielle Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/BR0342",
+    "website_url": "https://www.briellenj.com/"
+  },
+  {
+    "muni_code": "1310",
+    "muni_name": "Colts Neck Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/CO0256",
+    "website_url": "https://www.colts-neck.nj.us/"
+  },
+  {
+    "muni_code": "1311",
+    "muni_name": "Deal Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/DE4069",
+    "website_url": "https://dealborough.com/"
+  },
+  {
+    "muni_code": "1312",
+    "muni_name": "Eatontown Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/EA0040",
+    "website_url": "https://www.eatontownnj.com/"
+  },
+  {
+    "muni_code": "1313",
+    "muni_name": "Englishtown Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/EN0842",
+    "website_url": "https://www.englishtownboro.com/"
+  },
+  {
+    "muni_code": "1314",
+    "muni_name": "Fair Haven Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/FA4060",
+    "website_url": "https://fairhavennj.org/"
+  },
+  {
+    "muni_code": "1315",
+    "muni_name": "Farmingdale Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/FA4091",
+    "website_url": "https://farmingdaleborough.com/"
+  },
+  {
+    "muni_code": "1316",
+    "muni_name": "Freehold Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/Freehold",
+    "website_url": "https://www.freeholdboroughnj.gov/"
+  },
+  {
+    "muni_code": "1317",
+    "muni_name": "Freehold Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/FR2121",
+    "website_url": "https://twp.freehold.nj.us/"
+  },
+  {
+    "muni_code": "1318",
+    "muni_name": "Hazlet Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/HA0969",
+    "website_url": "https://www.hazlettwp.org/"
+  },
+  {
+    "muni_code": "1319",
+    "muni_name": "Highlands Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/HI4100",
+    "website_url": "https://highlandsborough.org/"
+  },
+  {
+    "muni_code": "1320",
+    "muni_name": "Holmdel Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/HO0333",
+    "website_url": "https://www.holmdeltownship.com/"
+  },
+  {
+    "muni_code": "1321",
+    "muni_name": "Howell Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/HO2064",
+    "website_url": "https://www.twp.howell.nj.us/"
+  },
+  {
+    "muni_code": "1322",
+    "muni_name": "Interlaken Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/IN4101",
+    "website_url": "https://interlakennj.com/"
+  },
+  {
+    "muni_code": "1323",
+    "muni_name": "Keansburg Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/KE4105",
+    "website_url": "https://www.keansburgnj.gov/"
+  },
+  {
+    "muni_code": "1324",
+    "muni_name": "Keyport Borough",
+    "in_statewide_aggregator": false,
+    "map_url": "https://www.keyportonline.com/filestorage/4031/5682/7599/7603/zoning_map_new.pdf",
+    "ordinance_url": "https://ecode360.com/KE3913",
+    "website_url": "https://www.keyportonline.com/"
+  },
+  {
+    "muni_code": "1325",
+    "muni_name": "Lake Como Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/LA4102",
+    "website_url": "https://www.lakecomonj.org/"
+  },
+  {
+    "muni_code": "1326",
+    "muni_name": "Little Silver Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/LI4031",
+    "website_url": "https://www.littlesilver.org/"
+  },
+  {
+    "muni_code": "1327",
+    "muni_name": "Loch Arbour Village",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": null,
+    "website_url": "https://www.locharbour.us/"
+  },
+  {
+    "muni_code": "1328",
+    "muni_name": "Long Branch City",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/LO1625",
+    "website_url": "https://www.longbranch.org/"
+  },
+  {
+    "muni_code": "1329",
+    "muni_name": "Manalapan Township",
+    "in_statewide_aggregator": false,
+    "map_url": "http://mtnj.org/images/uploads/Zoning/manalapan_zoning_map.pdf",
+    "ordinance_url": "https://ecode360.com/MA0726",
+    "website_url": "https://www.mtnj.org/"
+  },
+  {
+    "muni_code": "1330",
+    "muni_name": "Manasquan Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MA0368",
+    "website_url": "https://www.manasquan-nj.gov/"
+  },
+  {
+    "muni_code": "1331",
+    "muni_name": "Marlboro Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MA0373",
+    "website_url": "https://www.marlboro-nj.gov/"
+  },
+  {
+    "muni_code": "1332",
+    "muni_name": "Matawan Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MA1543",
+    "website_url": "https://www.matawanborough.com/"
+  },
+  {
+    "muni_code": "1333",
+    "muni_name": "Middletown Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://library.municode.com/nj/middletown_township/codes/code",
+    "website_url": "https://middletownnj.org/"
+  },
+  {
+    "muni_code": "1334",
+    "muni_name": "Millstone Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/MI0357",
+    "website_url": "https://www.millstone-nj.gov/"
+  },
+  {
+    "muni_code": "1335",
+    "muni_name": "Monmouth Beach Borough",
+    "in_statewide_aggregator": false,
+    "map_url": "https://ecode360.com/attachment/MO3812/MO3812-030d%20Appendix%20D%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/MO3812",
+    "website_url": "https://monmouthbeach.us/"
+  },
+  {
+    "muni_code": "1336",
+    "muni_name": "Neptune Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NE0517",
+    "website_url": "https://www.neptunetownship.org/"
+  },
+  {
+    "muni_code": "1337",
+    "muni_name": "Neptune City Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/NE0577",
+    "website_url": "https://www.neptunecitynj.com/"
+  },
+  {
+    "muni_code": "1338",
+    "muni_name": "Ocean Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/OC2941",
+    "website_url": "https://www.oceantwp.org/"
+  },
+  {
+    "muni_code": "1339",
+    "muni_name": "Oceanport Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/OC0304",
+    "website_url": "https://www.oceanportboro.com/"
+  },
+  {
+    "muni_code": "1340",
+    "muni_name": "Red Bank Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/RE2655",
+    "website_url": "https://www.redbanknj.org/"
+  },
+  {
+    "muni_code": "1341",
+    "muni_name": "Roosevelt Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/RO4034",
+    "website_url": "https://www.rooseveltnj.us/"
+  },
+  {
+    "muni_code": "1342",
+    "muni_name": "Rumson Borough",
+    "in_statewide_aggregator": false,
+    "map_url": "https://ecode360.com/attachment/RU4115/RU4115-022l%20Zoning%20Map.pdf",
+    "ordinance_url": "https://ecode360.com/RU4115",
+    "website_url": "https://rumsonnj.gov/"
+  },
+  {
+    "muni_code": "1343",
+    "muni_name": "Sea Bright Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SE1643",
+    "website_url": "https://www.seabrightnj.org/"
+  },
+  {
+    "muni_code": "1344",
+    "muni_name": "Sea Girt Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SE0257",
+    "website_url": "https://www.seagirtboro.com/"
+  },
+  {
+    "muni_code": "1345",
+    "muni_name": "Shrewsbury Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SH0387",
+    "website_url": "https://www.shrewsburyboro.com/"
+  },
+  {
+    "muni_code": "1346",
+    "muni_name": "Shrewsbury Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": null,
+    "website_url": "https://www.townshipofshrewsbury.com/"
+  },
+  {
+    "muni_code": "1347",
+    "muni_name": "Spring Lake Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SP0178",
+    "website_url": "https://www.springlake.org/"
+  },
+  {
+    "muni_code": "1348",
+    "muni_name": "Spring Lake Heights Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/SP0147",
+    "website_url": "https://slhnj.org/"
+  },
+  {
+    "muni_code": "1349",
+    "muni_name": "Tinton Falls Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/TI0772",
+    "website_url": "https://www.tintonfalls.com/"
+  },
+  {
+    "muni_code": "1350",
+    "muni_name": "Union Beach Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/UN4050",
+    "website_url": "https://www.unionbeachnj.gov/"
+  },
+  {
+    "muni_code": "1351",
+    "muni_name": "Upper Freehold Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/UP0585",
+    "website_url": "https://www.uftnj.com/"
+  },
+  {
+    "muni_code": "1352",
+    "muni_name": "Wall Township",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WA1959",
+    "website_url": "https://www.townshipofwall.com/"
+  },
+  {
+    "muni_code": "1353",
+    "muni_name": "West Long Branch Borough",
+    "in_statewide_aggregator": false,
+    "map_url": null,
+    "ordinance_url": "https://ecode360.com/WE4027",
+    "website_url": "https://www.westlongbranch.org/"
+  }
+]
