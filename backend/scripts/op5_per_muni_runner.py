@@ -894,13 +894,20 @@ async def run_per_muni(
     # CP1 — extraction.
     extraction = hooks.extract(muni)
 
-    # Raster / text-only-legend / absent / vision-empty carve-out.
+    # Carve-out only applies to PDF-pipeline paths. ArcGIS classes
+    # legitimately have empty color_to_zone + vision_label_count=0 because
+    # polygons come directly from the FeatureServer, not from
+    # color-segmentation / vision-label assignment.
+    is_arcgis_class = (
+        extraction.source_class.startswith("arcgis_")
+        or extraction.source_class == "njsea"
+    )
     carve_reason: Optional[str] = None
     if extraction.source_class in ("raster", "absent"):
         carve_reason = f"source_class={extraction.source_class}"
-    elif not extraction.color_to_zone:
+    elif not is_arcgis_class and not extraction.color_to_zone:
         carve_reason = "empty color_to_zone (text-only legend)"
-    elif extraction.vision_label_count == 0:
+    elif not is_arcgis_class and extraction.vision_label_count == 0:
         carve_reason = "vision returned 0 reliable labels at confidence >= 0.75"
 
     if carve_reason is not None:
