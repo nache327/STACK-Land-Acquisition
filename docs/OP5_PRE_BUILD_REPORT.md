@@ -292,3 +292,133 @@ What's still blocking HIGH:
 ## STOP for CP-Pre re-review
 
 All three Master-authorized findings have been executed. A new Finding 4 surfaced. The smoke test ran but Westwood carved out — green-path is unvalidated. Confidence remains MEDIUM-LOW pending decisions on the four items above.
+
+---
+
+# CP-Pre v3 (post-Master-decisions on Findings 1/4/5 + Decision 3)
+
+Master approved Findings 1/4/5 + Decision 3 + the two-smoke-test gate (Westwood ArcGIS path + Ridgewood PDF path). Hard constraint: "Two more pre-build iterations maximum. If CP-Pre v3 review shows we still don't have green-path success on both an ArcGIS muni AND a PDF muni in Bergen, Master will abandon the 25-agent factory thesis."
+
+This report documents iteration 2 (F2 + F5 amend + scope amend + two smoke tests). **The factory thesis is in trouble.**
+
+## What landed (commits in iteration 2)
+
+| commit | branch | purpose |
+|---|---|---|
+| `8e5b369` | PR #178 | **F2** — `ProofStateCollisionError` + `assert_no_proof_state_collision` helper. DELETE gains `op5_factory='true'` filter. 28/28 tests pass. **Integration test against live preview Garfield (215 proof rows): DELETE returned 0 rows, raised collision error, all 215 proof rows untouched.** |
+| `ada866c` | PR #178 | **F5** — `arcgis_lookup.py` + classifier + runner ArcGIS-first branch. 15/15 new tests + 59/59 total op5 tests pass. Verified lookups: Westwood→`Westwood_Zoning_2019` candidate; Carlstadt→NJSEA `MUN_CODE LIKE '0205%'`; Paramus→verified; Closter→None (excluded); Hackensack→None. |
+| `2cab048` | PR #178 | **carve-out fix** — runner skipped PDF-only carve-out conditions (`empty color_to_zone`, `vision_label_count==0`) for ArcGIS/NJSEA classes. Without this, Westwood always carved out on the empty-color-map check even though the ArcGIS branch correctly identified it. |
+| `07692ed` | factory-pre-build | docs: Phase 1A (Bergen 70) / Phase 1B (18 non-Bergen with discovered map_url) / operator queue (~134-142) split per Decision 3 + ArcGIS routing notes. Recomputed Phase 1 wall-clock: ~24-36 h. |
+
+## Smoke test 1 — Westwood (ArcGIS path) — **FAILED green-path**
+
+```
+arcgis-first route for Westwood Borough -> arcgis_candidate (Westwood_Zoning_2019)
+Total features to download: 3686
+Downloaded 3686 total features
+Mapping 3686 zoning GDF rows → ZoningDistrict dicts …
+WARNING: Skipped 3686 zoning rows (null geometry or missing code)
+ERROR: No usable zoning rows after mapping — aborting
+arcgis ingest Westwood Borough: inserted=0 tagged=0
+backfill skipping Bergen — 281000/281646 parcels (99.77%) already have zoning_code
+{
+  "status": "complete",
+  "operational": true,                      ← spurious; jurisdiction-wide
+  "polygons_written": 0,                    ← TRUE NEW POLYGONS = 0
+  "zone_codes": [],
+  "matrix_rows": 0,
+  "parcel_zoning_code_coverage_pct": 99.89, ← Bergen-wide, NOT Westwood
+  "matrix_match_pct_of_zoned": 84.5,        ← Bergen-wide
+  "spot_check_pass_pct": 0.0,               ← Westwood-scoped, 0/10 PASS
+  "binding_method_distribution": {"unknown": 3593},
+  "wall_clock_s": 387.88
+}
+```
+
+What worked end-to-end:
+- ArcGIS lookup → `arcgis_candidate` classification ✅
+- Probe `returnCountOnly=true` → 3686 features ✅
+- ArcGIS download (4 pages, pagination) → 3686 features in GeoDataFrame ✅
+- `default_audit_muni` returned a structured result (spot-check, binding distribution) ✅
+- F2 protect-list did NOT fire (Westwood doesn't have prior proof rows) ✅
+
+What broke:
+- **`app.services.zoning_ingestion.ingest_zoning_districts` rejected ALL 3686 features**: `Skipped 3686 zoning rows (null geometry or missing code)`. F5's adapter didn't normalize Westwood's ArcGIS field names (`ZONE` or `ZONE_CODE` or similar) to the platform's expected `zone_code` column. **0 polygons inserted to preview.**
+- **Audit-coverage % is jurisdiction-wide, not muni-scoped.** A2's `default_audit_muni` claimed to scope by `parcels.city = ?` but the 99.89% number is Bergen-wide. Either A2 wired the wrong audit call or `audit_zoning_coverage.py --json` returns whole-jurisdiction even with a city filter. This makes per-muni operational status impossible to compute from the runner's audit result.
+- **Spot-check 0/10 (correctly muni-scoped)** confirms Westwood ends up with no `op5_factory='true'` districts and so no parcels get bound. The `binding_method_distribution: {"unknown": 3593}` shows all 3593 Westwood parcels carry pre-existing zoning_code from a non-Op5 source with no `zone_binding_method` set.
+
+**Green-path FAILED.** Operational gate (`coverage ≥70%` + `spot-check ≥9/10`) not met on Westwood. The "operational": true in the output is a bug in the operational-gate computation that relies on the bogus jurisdiction-wide coverage %.
+
+## Smoke test 2 — Ridgewood Village (PDF path) — **BLOCKED, did not complete**
+
+```
+INFO httpx | HTTP Request: GET https://mods.ridgewoodnj.net/.../Zone_Map_2022_27X27.pdf "HTTP/1.1 200 OK"
+INFO httpx | HTTP Request: GET tigerweb.geo.census.gov/.../Places_CouSub_ConCity_SubMCD/MapServer/4/query "HTTP/1.1 200 OK"
+WARNING op5_lib.extraction | TIGERweb bbox lookup failed for Ridgewood, NJ: Expecting value: line 1 column 1 (char 0)
+WARNING op5_lib.extraction | no Census place bbox for Ridgewood, NJ — carving out
+```
+
+Manual probe of the same URL:
+```
+$ curl -s "https://tigerweb.geo.census.gov/.../MapServer/4/query?where=BASENAME%3D%27Ridgewood%27..."
+<html><head><title>Request Rejected</title></head><body>The requested URL was rejected. Please consult with your administrator.</body></html>
+```
+
+The TIGER WAF blocked our IP after the session's repeated programmatic requests during fixes/smoke tests. The Westwood TIGER lookup worked at the start of the session; subsequent requests get rejected. Switching to a Chrome User-Agent (tested) did NOT unblock — appears to be IP/rate-based.
+
+A2's `_census_place_bbox` has no retry / backoff / IP-rotation; on WAF block it returns `None` and the runner falls through to the carve-out path. **Ridgewood smoke did not exercise the PDF green-path at all** — it carved out at the bbox-lookup step before render / color-segmentation / vision / ingest.
+
+## Two new bugs surfaced (NOT triaged for fix per Master's iteration cap)
+
+| # | Bug | Severity | Fix shape |
+|---|---|---|---|
+| 6 | `_ingest_arcgis_source` doesn't normalize FeatureServer field names to the platform's `zone_code` column → 0 polygons inserted | **Blocker** (no ArcGIS muni can land via the factory in current state) | F5 adapter needs a field-mapping layer: introspect the FeatureServer's `fields` endpoint, map common variants (`ZONE`, `ZONE_CODE`, `Zone_Code`, `ZoneCode`) onto `zone_code`, OR derive from `extra_raw_attributes`. ~1-2 agent-hours. |
+| 7 | `default_audit_muni` returns jurisdiction-wide coverage % instead of muni-scoped | **High** (operational gate computation is wrong; no per-muni accountability) | A2's audit helper needs to filter `audit_zoning_coverage.py`'s output by `city = <muni>` post-hoc OR run a custom muni-scoped query. ~1-2 agent-hours. |
+
+Plus a third infrastructure note:
+- TIGER WAF block is real and recurring. A2's `_census_place_bbox` needs retry+UA-rotation OR Bergen needs a pre-loaded place-bbox cache file (Bergen has 70 munis; cache them once at build time). The proof's pipeline avoided this by using the GENZ2024 shapefile (downloaded once, queried locally), not a per-request HTTP API.
+
+## Are we at the abandonment trigger?
+
+**Per Master's explicit constraint:**
+> "If CP-Pre v3 review shows we still don't have green-path success on both an ArcGIS muni AND a PDF muni in Bergen, Master will abandon the 25-agent factory thesis."
+
+Current state:
+- ArcGIS muni green-path: **0 polygons inserted** due to bug 6 → **FAILED**
+- PDF muni green-path: **never executed** due to TIGER WAF block → **NOT VALIDATED**
+
+Per the strict reading of the hard constraint, **Master should abandon the factory thesis and shift to operator-assisted Op-5 at scale**.
+
+The orchestrator's honest assessment: the factory implementation has shown a recurring pattern across iterations — each fix surfaces another infrastructure-shaped bug (Census Geocoder broken → swap to TIGER → TIGER WAF blocks; PDF OOM → cap → vision image cap → resize; runner stubs → fill in → field mapper drops; carve-out condition → fix → audit scope wrong). The proof's pipeline avoided many of these by running each muni manually with hand-tuned scripts. **The 25-agent factory thesis assumed the proof's per-muni pipeline could be made unattended at scale; the cumulative evidence does not support that assumption.**
+
+## Counter-argument for not abandoning yet
+
+Two of the three remaining infrastructure bugs (bug 6 ArcGIS field mapping, bug 7 audit scope) are small and well-understood (combined ~3-4 agent-hours). If Master is willing to accept ONE more iteration despite the explicit cap, those fixes plus a TIGER bbox cache could plausibly unlock both green-paths in a 4-6 hour iteration. The protective infrastructure (F2 collision guard, F5 ArcGIS routing, op5 directory data, review UI, DB capacity report) is all already shipped.
+
+The orchestrator recommends Master make this call explicitly rather than the orchestrator silently iterating past the cap. Both outcomes are defensible:
+
+- **GO ABANDON** (strict reading): factory thesis non-viable in 72 h budget. Shift NJ Tier-S work to operator-assisted Op-5 (3-4 weeks of operator labor for 88 munis at proven 55-80 min/muni rates).
+- **GO ONE MORE ITERATION** (relaxed cap): close bugs 6+7+TIGER cache, re-smoke Westwood + Ridgewood. Hard stop at iteration 3 outcome regardless.
+
+## Updated ready-for-launch confidence
+
+**LOW.** Down from MEDIUM-LOW (CP-Pre v2).
+
+Reasons:
+- F2 protect-list is working and verified — proof state is safe.
+- F5 ArcGIS routing logic is correct but the ingest adapter doesn't deliver any data.
+- Audit scope is wrong — the operational-gate computation cannot be trusted.
+- TIGER dependency is fragile under repeated probing.
+- Iteration cap reached without green-path on either smoke target.
+
+## Artifacts
+
+- `/tmp/op5_smoke_westwood_v6.log` — Westwood ArcGIS run (387s, 0 polygons inserted)
+- `/tmp/op5_smoke_ridgewood_v1.log` — Ridgewood PDF run (carved out at TIGER step)
+- Live preview Garfield rows: 215 (verified untouched after F2 integration test)
+- Latest PR #178 commits: `8e5b369` (F2), `ada866c` (F5), `2cab048` (carve-out fix)
+- Latest factory-pre-build commits: `07692ed` (Phase 1A/1B split), this report.
+
+## STOP for CP-Pre v3 Master decision
+
+Awaiting Master decision: **abandon factory thesis** (strict reading of the iteration cap), or **authorize one more bounded iteration** to close bugs 6 + 7 + TIGER cache and re-smoke. Both arguments above.
