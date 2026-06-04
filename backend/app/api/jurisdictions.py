@@ -114,15 +114,34 @@ async def get_feature_flags(
 @router.get("/jurisdictions/{jurisdiction_id}/zones", response_model=ZoneMatrixResponse)
 async def get_zone_matrix(
     jurisdiction_id: uuid.UUID,
+    municipality: str | None = Query(
+        default=None,
+        description=(
+            "Scope to one municipality's effective matrix (town-specific rows "
+            "+ NULL county-default rows). REQUIRED for sane review of a "
+            "county-as-jurisdiction (county_gis): without it the response mixes "
+            "every town's zones, so a single-town ordinance review hits false "
+            "'mismatch'/'missing' positives. Matches the buybox scoring "
+            "semantics (municipality = <city> OR municipality IS NULL)."
+        ),
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    result = await db.execute(
-        select(ZoneUseMatrix)
-        .where(
-            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
-            ZoneUseMatrix.deleted_at.is_(None),
+    where = [
+        ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+        ZoneUseMatrix.deleted_at.is_(None),
+    ]
+    if municipality is not None:
+        where.append(
+            (ZoneUseMatrix.municipality == municipality)
+            | (ZoneUseMatrix.municipality.is_(None))
         )
-        .order_by(ZoneUseMatrix.zone_code)
+    result = await db.execute(
+        select(ZoneUseMatrix).where(*where).order_by(
+            # town-specific rows first, then county-default, then by code
+            ZoneUseMatrix.municipality.is_(None).asc(),
+            ZoneUseMatrix.zone_code,
+        )
     )
     zones = result.scalars().all()
     return {"zones": zones, "unknown_zones": [], "parser_warnings": []}
