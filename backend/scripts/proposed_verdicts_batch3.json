@@ -1,0 +1,583 @@
+{
+  "generated_for_review": true,
+  "results": [
+    {
+      "municipality": "Middletown township",
+      "jid": "703d95b4-3229-42f8-8bb1-460d46b3ceb2",
+      "ordinance_url": [
+        "https://ecode360.com/30144872",
+        "https://ecode360.com/30144444"
+      ],
+      "error": "fetch failed: https://ecode360.com/30144872: Playwright loaded 'https://ecode360.com/30144872' but found no parseable ordinance content.  Try uploading a PDF of the zoning chapter instead.; https://ecode360.com/30144444: Playwright loaded 'https://ecode360.com/30144444' but found no parseable ordinance content.  Try uploading a PDF of the zoning chapter instead.",
+      "zones": []
+    },
+    {
+      "municipality": "Sea Bright borough",
+      "jid": "703d95b4-3229-42f8-8bb1-460d46b3ceb2",
+      "ordinance_url": "https://ecode360.com/8056383",
+      "sections_fetched": 1,
+      "chars_combined": 71398,
+      "zones": [
+        {
+          "zone_code": "B-1",
+          "zone_name": "Central Business District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "130-38(E)(1)(a)",
+              "quote": "encourage a pedestrian-friendly, mixed-use-Main-Street character for this zone"
+            },
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Pedestrian Main Street retail/service zone; storage and industrial uses not enumerated and not consistent with zone purpose."
+        },
+        {
+          "zone_code": "B-2",
+          "zone_name": "Riverfront Business District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "130-38(C)(5)",
+              "quote": "Marina or boat storage yard"
+            },
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "River-oriented zone; only marina/boat storage allowed (not equivalent to self-storage). Other storage/industrial uses not enumerated, prohibited."
+        },
+        {
+          "zone_code": "B-3",
+          "zone_name": "Oceanfront Business District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.98,
+          "citations": [
+            {
+              "section": "130-38(E)(1)(c)",
+              "quote": "no building whatsoever shall be erected between the sea wall and the Atlantic Ocean"
+            }
+          ],
+          "notes": "Oceanfront beach-activity zone with severe building restrictions; storage/industrial uses not permitted."
+        },
+        {
+          "zone_code": "B-R",
+          "zone_name": "Business Residential Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "conditional",
+          "luxury_garage_condo": "conditional",
+          "confidence": 0.8,
+          "citations": [
+            {
+              "section": "130-38(C)(7)(b)[1]",
+              "quote": "Existing light industrial parcels (not permitted to expand)"
+            },
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Existing light industrial parcels listed as conditional use (no expansion permitted). Self-storage/mini-warehouse not enumerated, prohibited. Luxury garage condo inferred as conditional from light_industrial."
+        },
+        {
+          "zone_code": "CP",
+          "zone_name": "Coastal Protection District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.99,
+          "citations": [
+            {
+              "section": "130-38(C)(8)(a)[1]",
+              "quote": "No building whatsoever shall be erected for any purpose nor shall any commercial use be permitted"
+            }
+          ],
+          "notes": "No buildings or commercial uses allowed in this coastal zone."
+        },
+        {
+          "zone_code": "R-1",
+          "zone_name": "Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Residential zone; only single-family, churches, public parks permitted. Ordinance explicitly states unlisted uses are prohibited."
+        },
+        {
+          "zone_code": "R-2",
+          "zone_name": "Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Residential zone; storage/industrial uses not enumerated, therefore prohibited."
+        },
+        {
+          "zone_code": "R-3",
+          "zone_name": "Downtown Residence Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Residential zone; storage/industrial uses not enumerated, therefore prohibited."
+        },
+        {
+          "zone_code": "R-4",
+          "zone_name": "Multifamily Housing",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Multifamily residential; storage/industrial uses not permitted."
+        },
+        {
+          "zone_code": "RO",
+          "zone_name": "Residential Overlay Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "130-38(G)",
+              "quote": "use which is not specifically enumerated...is hereby declared to be a prohibited use"
+            }
+          ],
+          "notes": "Residential overlay with mixed-use retail/service; storage and industrial uses not enumerated, therefore prohibited."
+        }
+      ],
+      "zone_count": 10,
+      "parser_warnings": [
+        "Ordinance is exhaustive per \u00a7 130-38(G): unenumerated uses are explicitly prohibited."
+      ]
+    },
+    {
+      "municipality": "Spring Lake borough",
+      "jid": "703d95b4-3229-42f8-8bb1-460d46b3ceb2",
+      "ordinance_url": "https://ecode360.com/8207810",
+      "sections_fetched": 1,
+      "chars_combined": 53589,
+      "zones": [
+        {
+          "zone_code": "AHOZ",
+          "zone_name": "Affordable Housing Overlay Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "225 AHOZ.C(1)",
+              "quote": "Multifamily residential, rental unit"
+            }
+          ],
+          "notes": "Affordable housing overlay; only multifamily residential permitted."
+        },
+        {
+          "zone_code": "CS-SC",
+          "zone_name": "Common Services Residence Senior Citizen District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.98,
+          "citations": [
+            {
+              "section": "225 CS-SC.A",
+              "quote": "permit construction of luxury common service residences for senior citizens"
+            }
+          ],
+          "notes": "Senior citizen residence district only; no commercial or industrial uses."
+        },
+        {
+          "zone_code": "GC",
+          "zone_name": "General Commercial District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.75,
+          "citations": [
+            {
+              "section": "225-13.A(8)",
+              "quote": "Wholesale distribution centers and warehouses in the GC District only"
+            }
+          ],
+          "notes": "GC permits wholesale distribution centers and warehouses, but not self-storage, mini-warehouse, or light industrial. Use list appears exhaustive; specialty storage uses not enumerated."
+        },
+        {
+          "zone_code": "MUAHCZ",
+          "zone_name": "Mixed Use Affordable Housing Contribution Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.9,
+          "citations": [
+            {
+              "section": "225 MUAHCZ.C",
+              "quote": "One mixed use building"
+            }
+          ],
+          "notes": "Mixed use building with ground floor RC uses; storage/industrial not among permitted RC uses."
+        },
+        {
+          "zone_code": "MUAHOZ",
+          "zone_name": "Mixed-Use Affordable Housing Overlay Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.85,
+          "citations": [
+            {
+              "section": "225 MUAHOZ.B",
+              "quote": "non-residential principal use or uses otherwise permitted in the underlying zone"
+            }
+          ],
+          "notes": "Permits mixed-use buildings with underlying zone non-residential uses; underlying commercial zones do not permit storage/industrial uses."
+        },
+        {
+          "zone_code": "R-1",
+          "zone_name": "R-1 Residential District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "225-12.A",
+              "quote": "One detached dwelling unit per lot"
+            }
+          ],
+          "notes": "Residential district; only detached dwellings, churches, schools, parks permitted. No industrial or storage uses."
+        },
+        {
+          "zone_code": "R-2",
+          "zone_name": "R-2 Residential District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "225-12.A",
+              "quote": "One detached dwelling unit per lot"
+            }
+          ],
+          "notes": "Residential district; no commercial or industrial uses permitted."
+        },
+        {
+          "zone_code": "R-3",
+          "zone_name": "R-3 Residential District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "225-12.A",
+              "quote": "One detached dwelling unit per lot"
+            }
+          ],
+          "notes": "Residential district; no commercial or industrial uses permitted."
+        },
+        {
+          "zone_code": "RC",
+          "zone_name": "Retail Commercial District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.92,
+          "citations": [
+            {
+              "section": "225-13.A(1)",
+              "quote": "Local retail activities including grocery stores, meat markets, seafood markets"
+            }
+          ],
+          "notes": "Pedestrian-oriented downtown retail district. Warehouses/storage not listed; storage uses restricted to GC District."
+        }
+      ],
+      "zone_count": 9,
+      "parser_warnings": [
+        "Known zone codes list was 'unknown'; zones identified from ordinance text directly.",
+        "GC District permits 'wholesale distribution centers and warehouses' but the list of principal permitted uses appears exhaustive and does not include self-storage, mini-warehouse, or light industrial as separately named uses."
+      ]
+    },
+    {
+      "municipality": "Spring Lake Heights borough",
+      "jid": "703d95b4-3229-42f8-8bb1-460d46b3ceb2",
+      "ordinance_url": "https://ecode360.com/36507551",
+      "sections_fetched": 1,
+      "chars_combined": 139322,
+      "zones": [
+        {
+          "zone_code": "AH-3",
+          "zone_name": "Affordable Housing 3",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Affordable housing zone; only residential/limited commercial permitted."
+        },
+        {
+          "zone_code": "AH-4",
+          "zone_name": "Affordable Housing 4",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "22-606.6(d)",
+              "quote": "Parking or storage of boats, boat trailers, motorhomes, and recreational vehicles"
+            },
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Residential-only zone; vehicle/boat storage and industrial prohibited."
+        },
+        {
+          "zone_code": "B-2",
+          "zone_name": "Commercial",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.93,
+          "citations": [
+            {
+              "section": "22-606.3(a)",
+              "quote": "Retail sale of consumable products, wearing apparel, pharmaceuticals, hardware, appliances"
+            },
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Commercial zone limited to retail, offices, restaurants, motels, banquet; storage/warehouse not permitted and industrial prohibited boroughwide."
+        },
+        {
+          "zone_code": "MU-1",
+          "zone_name": "Mixed Use 1",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.94,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            },
+            {
+              "section": "22-606.2",
+              "quote": "Retail/commercial on ground level with residential units above"
+            }
+          ],
+          "notes": "Mixed-use commercial/residential along Route 71; storage and industrial uses not listed and industrial prohibited boroughwide."
+        },
+        {
+          "zone_code": "MU-2",
+          "zone_name": "Mixed Use 2",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.94,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            },
+            {
+              "section": "22-606.2",
+              "quote": "Retail/commercial on ground level with residential units above"
+            }
+          ],
+          "notes": "Mixed-use commercial/residential along Route 71; storage and industrial uses not listed."
+        },
+        {
+          "zone_code": "MU-AH-1",
+          "zone_name": "Mixed Use Affordable Housing 1",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Mixed-use affordable housing zone; only retail/office and residential permitted."
+        },
+        {
+          "zone_code": "MU-AH-2",
+          "zone_name": "Mixed Use Affordable Housing 2",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Inclusionary residential/mixed use; industrial prohibited."
+        },
+        {
+          "zone_code": "R-1",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "22-603",
+              "quote": "Any use not specifically permitted or conditionally permitted in a zone shall be considered prohibited"
+            },
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Residential zone; industrial uses expressly prohibited boroughwide."
+        },
+        {
+          "zone_code": "R-2",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Residential zone; industrial prohibited boroughwide."
+        },
+        {
+          "zone_code": "R-3",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Residential zone; industrial prohibited boroughwide."
+        },
+        {
+          "zone_code": "R-4",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Residential zone; industrial prohibited boroughwide."
+        },
+        {
+          "zone_code": "R-5",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "22-603(b)",
+              "quote": "Manufacturing, fabrication, assembly or other industrial process"
+            }
+          ],
+          "notes": "Residential zone; industrial prohibited boroughwide."
+        }
+      ],
+      "zone_count": 12,
+      "parser_warnings": [
+        "Borough has no industrial zone; section 22-603 expressly prohibits manufacturing, fabrication, assembly or other industrial process boroughwide, and any use not specifically permitted is prohibited."
+      ]
+    }
+  ]
+}

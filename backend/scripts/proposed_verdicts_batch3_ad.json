@@ -1,0 +1,311 @@
+{
+  "generated_for_review": true,
+  "results": [
+    {
+      "municipality": "Allenhurst borough",
+      "jid": "703d95b4-3229-42f8-8bb1-460d46b3ceb2",
+      "ordinance_url": "https://ecode360.com/34621706",
+      "sections_fetched": 1,
+      "chars_combined": 132727,
+      "zones": [
+        {
+          "zone_code": "B1",
+          "zone_name": "Business Office",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "26-4.8(a)",
+              "quote": "Business offices. Ticket offices and newspaper stands... Houses of worship"
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "Limited to business offices, ticket/newspaper stands, and houses of worship; storage/industrial not listed."
+        },
+        {
+          "zone_code": "B2",
+          "zone_name": "Business Office",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.98,
+          "citations": [
+            {
+              "section": "26-4.9(a)",
+              "quote": "no building shall be used for other than business offices, a post office or houses of worship"
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "Explicitly limited to offices, post office, and houses of worship."
+        },
+        {
+          "zone_code": "C1",
+          "zone_name": "Commercial",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "26-4.5(a)",
+              "quote": "the following uses and businesses may be conducted"
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "C-1 lists retail/service uses; no storage, warehouse, or industrial uses listed. Catch-all prohibits unlisted uses."
+        },
+        {
+          "zone_code": "C2",
+          "zone_name": "Commercial",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "26-4.6(a)",
+              "quote": "All uses and businesses permitted in C-1 District. All uses typically associated with a public utility."
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "C-2 permits C-1 uses plus public utility uses. No storage/industrial."
+        },
+        {
+          "zone_code": "C3",
+          "zone_name": "Commercial",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "26-4.7(a)",
+              "quote": "All uses and businesses permitted in the C-1 District."
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "C-3 permits only C-1 uses; no storage/industrial."
+        },
+        {
+          "zone_code": "MS CD",
+          "zone_name": "Main Street Commercial District Inclusionary Overlay Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.95,
+          "citations": [
+            {
+              "section": "26-4.10(b)",
+              "quote": "All uses permitted within the zoning districts underlying this overlay zone."
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "Overlay adds multi-family residential to underlying commercial zones (C-1/C-2/C-3); no storage or industrial uses."
+        },
+        {
+          "zone_code": "R1",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.98,
+          "citations": [
+            {
+              "section": "26-4.2",
+              "quote": "No building shall be used for other than a one (1) family dwelling house"
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "Single-family residential district only; all non-residential uses prohibited by silence and by explicit catch-all."
+        },
+        {
+          "zone_code": "R2",
+          "zone_name": "Residential",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.98,
+          "citations": [
+            {
+              "section": "26-4.3",
+              "quote": "No building shall be used for other than a one-family dwelling house"
+            },
+            {
+              "section": "26-4.4(g)",
+              "quote": "All uses not expressly permitted in this chapter are prohibited."
+            }
+          ],
+          "notes": "Single-family residential; only conditional use is houses of worship. All target uses prohibited."
+        }
+      ],
+      "zone_count": 8,
+      "parser_warnings": [
+        "Allenhurst is a small, built-out residential/commercial borough with no industrial zoning district; all target uses are prohibited boroughwide by the catch-all in \u00a726-4.4(g)."
+      ]
+    },
+    {
+      "municipality": "Deal borough",
+      "jid": "703d95b4-3229-42f8-8bb1-460d46b3ceb2",
+      "ordinance_url": "https://ecode360.com/36242592",
+      "sections_fetched": 1,
+      "chars_combined": 11213,
+      "zones": [
+        {
+          "zone_code": "C",
+          "zone_name": "Commercial District",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.96,
+          "citations": [
+            {
+              "section": "30-87.5(a)",
+              "quote": "No factory buildings or manufacturing of any kind shall be permitted in the commercial district"
+            },
+            {
+              "section": "30-83",
+              "quote": "Uses not expressly permitted in this chapter are prohibited"
+            }
+          ],
+          "notes": "Commercial district permits retail, services, offices, restaurants, churches. Manufacturing explicitly prohibited; storage uses not listed and thus prohibited per Section 30-83."
+        },
+        {
+          "zone_code": "OS/R",
+          "zone_name": "Open Space/Recreation Zone",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.98,
+          "citations": [
+            {
+              "section": "30-86.7",
+              "quote": "Permitted Uses. Golf course. Accessories associated with a golf course. Playground."
+            },
+            {
+              "section": "30-83",
+              "quote": "Uses not expressly permitted in this chapter are prohibited"
+            }
+          ],
+          "notes": "Open Space/Recreation zone limited to golf course, accessories, and playground."
+        },
+        {
+          "zone_code": "R-1",
+          "zone_name": "Residential R-1",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "30-86.5(b)",
+              "quote": "No factory buildings or manufacturing of any kind shall be permitted"
+            },
+            {
+              "section": "30-83",
+              "quote": "Uses not expressly permitted in this chapter are prohibited"
+            }
+          ],
+          "notes": "Residential district; only single-family dwellings permitted. Manufacturing explicitly prohibited."
+        },
+        {
+          "zone_code": "R-2",
+          "zone_name": "Residential R-2",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "30-86.5(b)",
+              "quote": "No factory buildings or manufacturing of any kind shall be permitted"
+            },
+            {
+              "section": "30-83",
+              "quote": "Uses not expressly permitted in this chapter are prohibited"
+            }
+          ],
+          "notes": "Residential district; only single-family dwellings permitted."
+        },
+        {
+          "zone_code": "R-3",
+          "zone_name": "Residential R-3",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "30-86.5(b)",
+              "quote": "No factory buildings or manufacturing of any kind shall be permitted"
+            },
+            {
+              "section": "30-83",
+              "quote": "Uses not expressly permitted in this chapter are prohibited"
+            }
+          ],
+          "notes": "Residential district; only single-family dwellings permitted."
+        },
+        {
+          "zone_code": "R-4",
+          "zone_name": "Residential R-4",
+          "self_storage": "prohibited",
+          "mini_warehouse": "prohibited",
+          "light_industrial": "prohibited",
+          "luxury_garage_condo": "prohibited",
+          "confidence": 0.97,
+          "citations": [
+            {
+              "section": "30-86.5(b)",
+              "quote": "No factory buildings or manufacturing of any kind shall be permitted"
+            },
+            {
+              "section": "30-83",
+              "quote": "Uses not expressly permitted in this chapter are prohibited"
+            }
+          ],
+          "notes": "Residential district; small lot housing. Manufacturing explicitly prohibited."
+        }
+      ],
+      "zone_count": 6,
+      "parser_warnings": [
+        "Known zone codes were not provided; zones identified from ordinance text: R-1, R-2, R-3, R-4, OS/R (Open Space/Recreation), and C (Commercial)."
+      ]
+    }
+  ]
+}
