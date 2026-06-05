@@ -9,6 +9,7 @@ from app.api import (
     admin_backfill,
     admin_op5,
     admin_op5_matrix,
+    admin_op5_uncovered,
     buybox,
     census_proxy,
     competition,
@@ -101,6 +102,7 @@ app.include_router(listings.router, prefix="/api")
 app.include_router(admin_backfill.router, prefix="/api")
 app.include_router(admin_op5.router, prefix="/api")
 app.include_router(admin_op5_matrix.router, prefix="/api")
+app.include_router(admin_op5_uncovered.router, prefix="/api")
 
 
 @app.get("/health", tags=["meta"])
