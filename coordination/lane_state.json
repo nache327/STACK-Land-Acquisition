@@ -1,38 +1,45 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-04T22:00:00Z",
+  "updated_at": "2026-06-05T23:30:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
-    "progress_doc_last_audit": "2026-06-01 May-31 close, backend/tmp/audit_may31_close.json",
-    "origin_main_at_snapshot": "5bd76d7",
+    "progress_doc_last_audit": "2026-06-05 Bergen flip, docs/OP5_BERGEN_MATRIX_SPRINT.md (PR #184)",
+    "origin_main_at_snapshot": "c32df08",
     "op5_proof_plan": "docs/OP5_PROOF_PLAN.md",
     "op5_proof_decision": "docs/OP5_PROOF_DECISION.md",
-    "op5_factory_plan": "docs/OP5_FACTORY_72H_PLAN.md",
-    "dispatch_j_pr": "PR #172 merged 2026-06-02 (84d8263) — spatial_backfill nearest_within_meters fallback live on main",
-    "dispatch_o_result": "FAILED — vision-LLM cannot localize landmarks to pixel coords; Hackensack-class carved out to operator-assisted Op-5",
-    "dispatch_p_result": "PASSED for vector-class — Fort Lee 67.8%/84.1% coverage at 50m/200m; Garfield 75.0%/93.2%; bound-only accuracy 17/17 (100%) across both towns; mixed-sample failures are unbound parcels, not wrong bindings"
+    "op5_factory_abandoned": "docs/OP5_FACTORY_ABANDONED.md (PR #181)",
+    "op5_operator_runbook": "docs/OP5_OPERATOR_RUNBOOK.md",
+    "bergen_matrix_sprint": "docs/OP5_BERGEN_MATRIX_SPRINT.md (PR #184)",
+    "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
+    "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_factory_authorized_go_with_raster_carve_out",
+  "mode": "op5_operator_assisted_matrix_path_validated_bergen_flipped",
   "op5_proof": {
-    "status": "DECIDED_2026_06_04 — GO WITH RASTER CARVE-OUT",
-    "decision_doc": "docs/OP5_PROOF_DECISION.md",
-    "factory_plan_doc": "docs/OP5_FACTORY_72H_PLAN.md",
-    "cp3_final_results": {
-      "fort_lee": {"coverage_50m": "67.8%", "coverage_200m": "84.1%", "spot_check_bound_only": "9/9 (100%)", "verdict": "PASS — vector-class factory-routable"},
-      "garfield": {"coverage_50m": "75.0%", "coverage_200m": "93.2%", "spot_check_bound_only": "8/8 (100%)", "verdict": "PASS — vector-class factory-routable"},
-      "hackensack": {"verdict": "CARVE-OUT — raster-class, operator-assisted Op-5"},
-      "fair_lawn": {"verdict": "CARVE-OUT — text-only-legend class, operator-assisted Op-5"}
+    "status": "BERGEN_FLIPPED_2026_06_05 — operator-assisted matrix-completion path validated end-to-end",
+    "decision_history": [
+      "2026-06-04 GO_WITH_RASTER_CARVE_OUT per docs/OP5_PROOF_DECISION.md",
+      "2026-06-04 Factory pre-build iterated 4 times; 7 distinct issues surfaced; cumulative pattern showed hand-tuned pipeline doesn't unattend-scale",
+      "2026-06-04 25-agent factory ABANDONED per docs/OP5_FACTORY_ABANDONED.md (PR #181); pre-build PRs kept as operator toolkit",
+      "2026-06-05 Matrix-completion path PROVEN on Bergen via PR #184 — 50 matrix rows authored + applied via PR #182 endpoint → Bergen flipped operational"
+    ],
+    "bergen_flip_evidence": {
+      "matrix_zone_count": "125 → 247",
+      "operational_readiness": "partial → operational",
+      "blocking_gaps": "[low_matrix_match_pct, coverage_level_overstates_readiness] → []",
+      "parcel_zoning_code_coverage_pct": 99.8,
+      "self_storage_classified_parcel_pct": 99.9,
+      "matrix_rows_authored": 50,
+      "wall_clock_hours": 5,
+      "sprint_report": "docs/OP5_BERGEN_MATRIX_SPRINT.md"
     },
-    "production_decisions": {
-      "nearest_within_meters_default": 100,
-      "per_jurisdiction_override": true,
-      "binding_method_ui_in_v1": true,
-      "raster_class_route": "operator_assisted_op5_qgis_workflow",
-      "factory_scope_munis": 210,
-      "factory_scope_counties": ["Bergen 70", "Essex 22", "Middlesex NJ 25", "Monmouth 53", "Burlington 40"]
+    "tooling_built": {
+      "matrix_endpoint": "POST /api/jurisdictions/{id}/_upload-matrix-rows (PR #182)",
+      "uncovered_codes_endpoint": "GET /api/admin/op5/uncovered-zone-codes (PR #183)",
+      "operator_runbook": "docs/OP5_OPERATOR_RUNBOOK.md (PR #181)",
+      "spatial_backfill_nearest_fallback": "PR #172 (84d8263)",
+      "review_queue_ui": "/admin/op5-review (PR #177)"
     },
-    "factory_authorization_status": "AUTHORIZED 2026-06-04 — pre-build A-D required before H+0",
-    "carve_out_estimate": "21-32 munis (~10-15%) routed to operator-assisted Op-5"
+    "next_targets_estimated": "Morris (39 munis), Hunterdon (26), Monmouth (53), Essex (22), Burlington (40) — each ~2-3h flip-time now that tooling is built; sequence and prioritization TBD per Master Planning"
   },
   "current_known_state": {
     "mode": "kpi_growth_entered_2026_05_28",

@@ -49,13 +49,13 @@ June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequenc
 ## 1. Current KPI Snapshot
 
 **Owner:** master thread (refresh after every audit)
-**Source:** `backend/tmp/audit_may31_close.json` (2026-06-01 Lane A May-31 close snapshot. Canonical full CLI attempt did not return after 4m38s; artifact starts from the latest complete audit, keeps current Middlesex County MA, and replaces Norfolk County MA with targeted live aggregate counts after PR #155.)
+**Source:** `docs/OP5_BERGEN_MATRIX_SPRINT.md` (2026-06-05 Bergen matrix-completion sprint, PR #184) + `backend/tmp/audit_may31_close.json` (2026-06-01 baseline for non-Bergen jurisdictions).
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **45** | audit_may31_close.json `.summary.operational_count` | unchanged vs post-PR-#98 |
-| 1 #1 | Audit-operational jurisdictions | **45** | audit_may31_close.json `.summary.operational_count` | -3 vs 2026-05-21 audit baseline (48) |
-| 1 #2 | Trustworthy parcel verdict count | **3,292,352** | audit_may31_close.json operational classified parcel sum | unchanged; Middlesex MA and Norfolk MA remain partial |
+| 1 #1 | Honest operational jurisdictions | **46** | post-Bergen flip 2026-06-05 + audit_may31_close.json baseline | **+1 vs May-31 close (Bergen County NJ flipped operational via matrix-completion sprint PR #184)** |
+| 1 #1 | Audit-operational jurisdictions | **46** | same | +1 |
+| 1 #2 | Trustworthy parcel verdict count | **~3,573,153** | May-31 baseline 3,292,352 + Bergen 280,801 (99.9% classified of 281,646 parcels per `docs/OP5_BERGEN_MATRIX_SPRINT.md`) | **+280,801 (+8.5%) from Bergen flip** |
 | 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
 | 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
 | 1 #3 | Partial unclear rows / unclear-bound parcels | **289 / 79,653** | audit_may31_close.json partial sums | -23 rows / -17,699 parcels vs post-PR-#143 artifact |
@@ -328,6 +328,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ---
 
 ## 15. Daily Changelog
+
+### 2026-06-05
+
+- **FLIP** Bergen County, NJ → operational. Matrix-completion sprint per PR #184 (`docs/OP5_BERGEN_MATRIX_SPRINT.md`). Authored 50 matrix rows targeting the top uncovered zone codes by parcel count via the new `_upload-matrix-rows` endpoint (PR #182) and `_uncovered-zone-codes` enumeration endpoint (PR #183). All 50 applied across 5 batches with zero errors. `matrix_zone_count` 125 → 247, `low_matrix_match_pct` cleared, `coverage_level_overstates_readiness` cleared as derivative meta-gap. Final state: `operational_readiness=operational`, `blocking_gaps=[]`, `parcel_zoning_code_coverage_pct=99.8`, `self_storage_classified_parcel_pct=99.9`. First NJ Tier-S county operational; +280,801 trustworthy parcels; Tier-S strategic coverage jumps from ~17% to ~25%. Sprint wall-clock: ~5h total from Phase 1 kickoff to final flip.
+- **DECISION** Op-5 factory thesis empirically validated for operator-assisted matrix-completion path. The 25-agent unattended factory was abandoned per `docs/OP5_FACTORY_ABANDONED.md` (PR #181); the operator-assisted toolkit it produced (matrix endpoint, uncovered-codes enumeration, review queue UI, county directories) just delivered the first Tier-S NJ flip in ~5 hours. Path is now reproducible for Morris / Hunterdon / Monmouth / Essex / Burlington at estimated ~2-3h each (tooling is built; no more endpoint work needed).
 
 **Owner:** any lane appends (reverse chronological).
 
