@@ -246,7 +246,7 @@ def row_for(code: str, polygon_info: dict[str, object]) -> dict[str, object]:
     row["citations"] = [asdict(c) for c in item.citations]
     row["polygon_count"] = polygon_info["polygon_count"]
     row["polygon_feature_indexes"] = polygon_info["feature_indexes"]
-    row["classification_source"] = "human_cp2_draft"
+    row["classification_source"] = "human"
     row["municipality"] = MUNICIPALITY
     row["requires_review"] = item.confidence < 0.85 or "unclear" in {
         item.self_storage,
