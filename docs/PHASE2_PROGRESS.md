@@ -49,13 +49,13 @@ June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequenc
 ## 1. Current KPI Snapshot
 
 **Owner:** master thread (refresh after every audit)
-**Source:** `docs/OP5_BERGEN_MATRIX_SPRINT.md` (2026-06-05 Bergen matrix-completion sprint, PR #184) + `backend/tmp/audit_may31_close.json` (2026-06-01 baseline for non-Bergen jurisdictions).
+**Source:** `docs/OP5_BERGEN_MATRIX_SPRINT.md` (PR #184) + `docs/OP5_MORRIS_MATRIX_SPRINT.md` (PR #186) + `backend/tmp/audit_may31_close.json` (May-31 baseline). **PROVISIONAL count pending prod-wide reconciliation** — Lane E's parallel matrix work may have flipped additional jurisdictions; orchestrator queued to reconcile prod-wide operational count.
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **46** | post-Bergen flip 2026-06-05 + audit_may31_close.json baseline | **+1 vs May-31 close (Bergen County NJ flipped operational via matrix-completion sprint PR #184)** |
-| 1 #1 | Audit-operational jurisdictions | **46** | same | +1 |
-| 1 #2 | Trustworthy parcel verdict count | **~3,573,153** | May-31 baseline 3,292,352 + Bergen 280,801 (99.9% classified of 281,646 parcels per `docs/OP5_BERGEN_MATRIX_SPRINT.md`) | **+280,801 (+8.5%) from Bergen flip** |
+| 1 #1 | Honest operational jurisdictions | **≥47** | May-31 baseline 45 + Bergen (PR #184) + Morris (PR #186); orchestrator surfaced possible Essex undercount + Lane E parallel flips — reconciliation pending | **+2 confirmed today (Bergen + Morris); possibly +1 (Essex previously uncounted)** |
+| 1 #1 | Audit-operational jurisdictions | **≥47** | same | same |
+| 1 #2 | Trustworthy parcel verdict count | **~3,750,000+** | May-31 baseline 3,292,352 + Bergen ~280,801 + Morris ~177,000 (estimated from 99.9% classified at the Bergen-equivalent denominator) | **+~458,000 (~14%) from today's two flips** |
 | 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
 | 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
 | 1 #3 | Partial unclear rows / unclear-bound parcels | **289 / 79,653** | audit_may31_close.json partial sums | -23 rows / -17,699 parcels vs post-PR-#143 artifact |
@@ -328,6 +328,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ---
 
 ## 15. Daily Changelog
+
+### 2026-06-06
+
+- **FLIP** Morris County, NJ → operational. Matrix-completion sprint per PR #186 (`docs/OP5_MORRIS_MATRIX_SPRINT.md`). 60 matrix rows authored + applied via `_upload-matrix-rows` endpoint (PR #182); top uncovered codes enumerated via `_uncovered-zone-codes` endpoint (PR #183). `matrix_zone_count` 30 → 186; `low_matrix_match_pct` cleared; `blocking_gaps=[]`. Final state: `operational_readiness=operational`, `parcel_zoning_code_coverage_pct=100.0`, `self_storage_classified_parcel_pct=99.9`. Second NJ Tier-S county operational in 24h (after Bergen 2026-06-05). Wall-clock ~3.5h — proven path is faster after Bergen built the tooling.
+- **DISCOVERY** Essex County NJ + Lane E parallel work may have silently flipped additional jurisdictions during the Op-5 sprint window. Orchestrator queued for prod-wide operational count reconciliation. Master KPI count above marked PROVISIONAL pending reconciliation. NJ Tier-S confirmed-operational set: Bergen + Morris + Somerset (Lane E prior) + possibly Essex = 3-4 of 11.
 
 ### 2026-06-05
 
