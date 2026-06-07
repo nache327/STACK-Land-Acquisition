@@ -1,6 +1,6 @@
 """Op-5 review queue API.
 
-GET    /api/admin/op5/adjudications                  — list pending|approved rows
+GET    /api/admin/op5/adjudications                  — list pending|approved|rejected|all rows
 POST   /api/admin/op5/adjudications/{row_id}/approve — mark human_reviewed=true
 POST   /api/admin/op5/adjudications/bulk-approve     — bulk-approve by ids or by filter
 POST   /api/admin/op5/adjudications/{row_id}/reject  — soft-delete (deleted_at=now)
@@ -17,6 +17,25 @@ Scope:
       `zone_use_matrix.classification_source` (-> "human" on approve),
       `zone_use_matrix.notes`, and `zone_use_matrix.deleted_at`.
     * Does NOT touch `zoning_districts` or `parcels`.
+
+Status semantics on the list endpoint:
+    Rejection on this model is encoded as a soft-delete: the reject
+    endpoint sets `deleted_at = now()` and prepends "REJECTED: " to
+    `notes`. There is no separate `status` / `rejected_at` column on
+    `zone_use_matrix` — `deleted_at IS NOT NULL` IS the rejected state.
+
+    * `status=pending`   → human_reviewed IS FALSE AND deleted_at IS NULL
+    * `status=approved`  → human_reviewed IS TRUE  AND deleted_at IS NULL
+    * `status=rejected`  → deleted_at IS NOT NULL    (the soft-delete tombstone)
+    * `status=all`       → no human_reviewed / deleted_at filter at all
+
+    `status=all` mirrors what `backend/scripts/audit_zoning_coverage.py`'s
+    `matrix_stats` CTE counts — that CTE has no WHERE clause, so any row in
+    `zone_use_matrix` (active OR tombstoned) is included in the audit's
+    `matrix_zone_count`. Exposing `status=all|rejected` lets operators see
+    the rows the audit is scoring but that pending|approved was hiding
+    (e.g. Allentown's 81-row delta between audit `matrix_zone_count=117`
+    and the 36 rows visible via `status=approved`+`status=pending`).
 
 Auth:
     No new auth surface — reuses the dependency hook already used by
@@ -85,6 +104,11 @@ class AdjudicationRow(BaseModel):
     citations: list[CitationRead] | None
     created_at: datetime
     updated_at: datetime
+    # Computed bucket the row falls into in the review queue. Derived
+    # from `human_reviewed` + `deleted_at`; not a stored column. Lets
+    # operators see at-a-glance which slice of the queue each row is
+    # in when calling with `status=all`.
+    status: Literal["pending", "approved", "rejected"]
 
 
 class BulkApproveByIds(BaseModel):
@@ -148,6 +172,20 @@ def _parcel_count_subquery():
     )
 
 
+def _row_status(row: ZoneUseMatrix) -> Literal["pending", "approved", "rejected"]:
+    """Compute the queue-bucket label for one matrix row.
+
+    `deleted_at IS NOT NULL` is the soft-delete tombstone the reject
+    endpoint writes — that wins over human_reviewed because a row can
+    be approved AND later rejected, in which case the operator's
+    intent is "rejected" (tombstoned)."""
+    if row.deleted_at is not None:
+        return "rejected"
+    if row.human_reviewed:
+        return "approved"
+    return "pending"
+
+
 def _row_to_adjudication(
     row: ZoneUseMatrix,
     jurisdiction: Jurisdiction,
@@ -176,6 +214,7 @@ def _row_to_adjudication(
         else None,
         created_at=row.created_at,
         updated_at=row.updated_at,
+        status=_row_status(row),
     )
 
 
@@ -187,7 +226,7 @@ def _row_to_adjudication(
 @router.get("/adjudications", response_model=list[AdjudicationRow])
 async def list_pending_adjudications(
     status: Annotated[
-        Literal["pending", "approved"], Query()
+        Literal["pending", "approved", "rejected", "all"], Query()
     ] = "pending",
     county: str | None = None,
     municipality: str | None = None,
@@ -200,12 +239,24 @@ async def list_pending_adjudications(
 ) -> list[AdjudicationRow]:
     """Return adjudication rows for the review queue.
 
-    `status="pending"` -> human_reviewed=false; `status="approved"` ->
-    human_reviewed=true. Both filter out tombstoned rows
-    (`deleted_at IS NULL`).
+    Status semantics (rejection is encoded as a soft-delete — no
+    separate column exists; see module docstring):
+
+    * `status="pending"`  → human_reviewed=false, deleted_at IS NULL
+    * `status="approved"` → human_reviewed=true,  deleted_at IS NULL
+    * `status="rejected"` → deleted_at IS NOT NULL (soft-deleted rows)
+    * `status="all"`      → no filter beyond the user filters below
+      (mirrors `audit_zoning_coverage.py`'s `matrix_stats` CTE, which
+      counts every row in the table)
+
+    Default remains `pending` to preserve existing caller behavior.
     """
     counts = _parcel_count_subquery()
 
+    # No baseline deleted_at filter — each `status` branch adds its
+    # own predicate so `all` and `rejected` can see tombstones, while
+    # `pending`/`approved` keep the historical "active rows only"
+    # semantics.
     stmt = (
         select(ZoneUseMatrix, Jurisdiction, counts.c.parcel_count)
         .join(Jurisdiction, Jurisdiction.id == ZoneUseMatrix.jurisdiction_id)
@@ -217,13 +268,21 @@ async def list_pending_adjudications(
             ),
             isouter=True,
         )
-        .where(ZoneUseMatrix.deleted_at.is_(None))
     )
 
     if status == "pending":
-        stmt = stmt.where(ZoneUseMatrix.human_reviewed.is_(False))
-    else:
-        stmt = stmt.where(ZoneUseMatrix.human_reviewed.is_(True))
+        stmt = stmt.where(
+            ZoneUseMatrix.deleted_at.is_(None),
+            ZoneUseMatrix.human_reviewed.is_(False),
+        )
+    elif status == "approved":
+        stmt = stmt.where(
+            ZoneUseMatrix.deleted_at.is_(None),
+            ZoneUseMatrix.human_reviewed.is_(True),
+        )
+    elif status == "rejected":
+        stmt = stmt.where(ZoneUseMatrix.deleted_at.is_not(None))
+    # status == "all" → no extra status predicate; mirrors audit CTE.
 
     if county:
         stmt = stmt.where(Jurisdiction.county == county)
