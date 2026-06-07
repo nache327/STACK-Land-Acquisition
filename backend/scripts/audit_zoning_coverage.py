@@ -223,6 +223,13 @@ def _build_audit_sql(schema: SchemaProfile):
         ),
         {zoning_stats_cte}
         matrix_stats AS (
+            -- `deleted_at IS NULL` is the load-bearing filter: the reject
+            -- adjudication endpoint soft-deletes a row (sets deleted_at)
+            -- instead of dropping it, so without this filter every reject
+            -- still counts toward matrix_zone_count and the self_storage
+            -- bucket totals. Allentown surfaced this — audit reported
+            -- matrix_zone_count=117, but only 36 rows are live (81 are
+            -- tombstoned rejects). See PR #189 for the API-side reveal.
             SELECT
                 zum.jurisdiction_id,
                 COUNT(*)::bigint AS matrix_zone_count,
@@ -232,6 +239,7 @@ def _build_audit_sql(schema: SchemaProfile):
                 COUNT(*) FILTER (WHERE zum.self_storage = 'unclear')::bigint AS matrix_self_storage_unclear_count,
                 COUNT(*) FILTER (WHERE zum.human_reviewed IS TRUE)::bigint AS matrix_human_reviewed_count
             FROM zone_use_matrix zum
+            WHERE zum.deleted_at IS NULL
             GROUP BY zum.jurisdiction_id
         ),
         parcel_zone_matrix AS (
