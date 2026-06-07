@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-06T01:30:00Z",
+  "updated_at": "2026-06-06T17:30:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
-    "progress_doc_last_audit": "PROVISIONAL — pending prod-wide reconciliation; sources: docs/OP5_BERGEN_MATRIX_SPRINT.md (PR #184) + docs/OP5_MORRIS_MATRIX_SPRINT.md (PR #186)",
-    "origin_main_at_snapshot": "f40c91a",
+    "progress_doc_last_audit": "RECONCILED 2026-06-06 — honest baseline is 15 per prod API (will drop to 13 on Essex+Draper stale-anomaly refresh, then +2 confirmed = 15). See docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md.",
+    "origin_main_at_snapshot": "9b6bfbe",
+    "reckoning_doc": "docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md",
     "op5_proof_plan": "docs/OP5_PROOF_PLAN.md",
     "op5_proof_decision": "docs/OP5_PROOF_DECISION.md",
     "op5_factory_abandoned": "docs/OP5_FACTORY_ABANDONED.md (PR #181)",
@@ -14,14 +15,25 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_two_flips_in_24h_bergen_morris_reconciliation_pending",
+  "mode": "op5_reconciled_honest_count_15_recovery_queue_active",
+  "honest_operational_count": {
+    "current_api_truth": 15,
+    "post_essex_draper_refresh": 13,
+    "baseline_pre_this_week": 13,
+    "confirmed_new_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)"],
+    "net": "13 + 2 = 15",
+    "prior_master_tracker_was": "47 (DEPRECATED — based on pre-PR-#98 rules)",
+    "reckoning_doc": "docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md"
+  },
   "nj_tier_s_status": {
-    "confirmed_operational": ["Somerset (Lane E prior)", "Bergen (PR #184, 2026-06-05)", "Morris (PR #186, 2026-06-06)"],
-    "possibly_operational_pending_confirm": ["Essex (orchestrator reports 100% match / 23.8% coverage — investigation queued)"],
-    "next_target_pending_data": "Hunterdon (audit refresh re-fired; live endpoint shows 165 codes / 51,751 parcels uncovered but audit cache shows 0 zoned)",
-    "deferred_quality_pass_needed": "Monmouth (high_unclear_self_storage_share gap means Bergen-style 'prohibit + catchall' rows may regress; quality-pass diagnosis dispatch required before sprint)",
+    "confirmed_operational": ["Bergen (PR #184, 2026-06-05)", "Morris (PR #186, 2026-06-06)"],
+    "dropped_recoverable_lane_e_quality_pass": ["Somerset NJ (high_unclear_self_storage_share)", "Allentown PA (high_unclear)"],
+    "stale_anomalies_will_drop_on_refresh": ["Essex (cov 23.8% < 70% gate)", "Draper UT (cov 65.9% < 70% gate)"],
+    "next_target_pending_refresh": "Hunterdon (refresh re-fired 2026-06-06T21:17Z, worker not yet picked up; live endpoint shows 165 codes / 51,751 parcels uncovered — likely single-blocker on refresh)",
+    "deferred_quality_pass_needed": "Monmouth (high_unclear_self_storage_share gap)",
     "ingest_required_first": ["Middlesex NJ", "Passaic", "Union", "Hudson — 0 zoned parcels in prod; need ArcGIS source acquisition before matrix work"],
-    "missing_from_prod": ["Burlington", "Ocean — not registered as jurisdictions; create + ingest dispatch required"]
+    "missing_from_prod": ["Burlington", "Ocean — not registered as jurisdictions; create + ingest dispatch required"],
+    "operator_assisted_op5_multi_week": ["29 UT cities dropped via no_zoning_polygons — recovery via polygon work per city"]
   },
   "op5_proof": {
     "status": "BERGEN_FLIPPED_2026_06_05 — operator-assisted matrix-completion path validated end-to-end",
