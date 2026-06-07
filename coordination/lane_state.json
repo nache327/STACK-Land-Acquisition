@@ -15,15 +15,20 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_reconciled_honest_count_15_recovery_queue_active",
+  "mode": "op5_somerset_recovery_first_proven_audit_fix_pending_validation",
   "honest_operational_count": {
-    "current_api_truth": 15,
-    "post_essex_draper_refresh": 13,
+    "current_api_truth": 16,
     "baseline_pre_this_week": 13,
-    "confirmed_new_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)"],
-    "net": "13 + 2 = 15",
+    "confirmed_new_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)", "Somerset recovery (PR #190)"],
+    "net": "13 + 3 = 16",
     "prior_master_tracker_was": "47 (DEPRECATED — based on pre-PR-#98 rules)",
     "reckoning_doc": "docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md"
+  },
+  "audit_fix_pending": {
+    "pr": "PR #191 — adarench/audit-matrix-deleted-filter",
+    "scope": "Expand WHERE deleted_at IS NULL filter to all 3 CTEs touching zone_use_matrix (matrix_stats + parcel_zone_matrix + unmatched_zone_samples)",
+    "validation_harness": "backend/scripts/validate_audit_matrix_deleted_filter.py (read-only A/B)",
+    "blocker": "Master to run harness against preview DATABASE_URL before merge; may self-flip Allentown via tombstone exclusion"
   },
   "nj_tier_s_status": {
     "confirmed_operational": ["Bergen (PR #184, 2026-06-05)", "Morris (PR #186, 2026-06-06)"],
