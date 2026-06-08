@@ -284,9 +284,15 @@ def _build_audit_sql(schema: SchemaProfile):
                       AND zum.zone_code IS NOT NULL
                 )::bigint AS parcel_distinct_zone_with_matrix_match_count
             FROM parcels p
+            -- deleted_at IS NULL goes in the ON clause (not WHERE) so
+            -- LEFT JOIN semantics stay intact — parcels whose only
+            -- matrix row is tombstoned still show up with zum.* NULL
+            -- and correctly count as unmatched. See matrix_stats above
+            -- for the soft-delete-as-rejection encoding.
             LEFT JOIN zone_use_matrix zum
               ON zum.jurisdiction_id = p.jurisdiction_id
              AND zum.zone_code = p.zoning_code
+             AND zum.deleted_at IS NULL
             GROUP BY p.jurisdiction_id
         ),
         unmatched_zone_samples AS (
@@ -303,9 +309,16 @@ def _build_audit_sql(schema: SchemaProfile):
                         ORDER BY COUNT(*) DESC, p.zoning_code
                     ) AS rn
                 FROM parcels p
+                -- deleted_at IS NULL on the JOIN, not the WHERE, so a
+                -- parcel whose only live match is tombstoned correctly
+                -- yields zum.zone_code IS NULL and shows up as
+                -- unmatched. Putting it in WHERE would still flag
+                -- those parcels but break the zum.zone_code IS NULL
+                -- semantics elsewhere if reused.
                 LEFT JOIN zone_use_matrix zum
                   ON zum.jurisdiction_id = p.jurisdiction_id
                  AND zum.zone_code = p.zoning_code
+                 AND zum.deleted_at IS NULL
                 WHERE p.zoning_code IS NOT NULL
                   AND btrim(p.zoning_code) <> ''
                   AND zum.zone_code IS NULL
