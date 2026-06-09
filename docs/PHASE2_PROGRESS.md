@@ -53,8 +53,8 @@ June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequenc
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **15** | Prod API 2026-06-06; will drop to 13 when Essex + Draper stale snapshots refresh; +2 confirmed flips this week (Bergen, Morris) brings us back to 15 | **CORRECTED: was reported ≥47 prior to reconciliation; honest baseline is 13 + 2 new flips = 15. The 30-jurisdiction gap is post-May-31 audit tightening (PR #98 + truthfulness gates), not regression.** |
-| 1 #1 | Audit-operational jurisdictions | **15** | same | same |
+| 1 #1 | Honest operational jurisdictions | **16** | Prod API 2026-06-07 post-Somerset flip; honest baseline 13 + 3 NJ flips this week (Bergen + Morris + Somerset recovery) | **+1 from Somerset NJ unclear-row recovery via PR #190 (Lane E pattern: 21 unclear→prohibited with citations)** |
+| 1 #1 | Audit-operational jurisdictions | **16** | same | same |
 | 1 #2 | Trustworthy parcel verdict count | **TBD pending fresh audit** | Bergen ~280,801 + Morris ~177,000 confirmed new; baseline trustworthy parcel count needs reconciliation against the 13-jurisdiction honest baseline (orchestrator queued for fresh sum) | Awaiting prod-wide trustworthy parcel sum recompute under post-PR-#98 rules |
 | 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
 | 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
@@ -328,6 +328,11 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ---
 
 ## 15. Daily Changelog
+
+### 2026-06-07
+
+- **RECOVER** Somerset County, NJ → operational. PR #190 (`docs/OP5_SOMERSET_UNCLEAR_RECOVERY.md`). 21 of 61 unclear matrix rows re-verdicted from `unclear` → `prohibited` with eCode360 catchall citations via `_upload-matrix-rows` endpoint. `self_storage_classified_parcel_pct` 90.9% → 99.6% (cleared 95% gate by 4.6pp). `matrix_zone_count` 296 → 442 (includes tombstoned rows per Lane A audit-fix finding in PR #191). `blocking_gaps` 2 → 0. `operational_readiness=operational`. **First recovery flip via Lane E unclear-cleanup pattern** — proves the recovery path that the reconciliation reckoning doc (`docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md`) queued. The 40 remaining Somerset unclear rows (no ordinance anchor for those zone codes) confirmed irrelevant to the gate; no follow-up needed.
+- **FIND** Lane A discovered the audit's `matrix_stats` CTE in `backend/scripts/audit_zoning_coverage.py` has no `deleted_at IS NULL` filter — tombstoned rejected matrix rows are still being scored in audit calculations. Surfaced during Allentown visibility scoping (PR #189). Audit-fix PR #191 (`adarench/audit-matrix-deleted-filter`) opened with scoped fix + read-only A/B validation harness. **Scope decision: expand fix to all 3 CTEs touching `zone_use_matrix`** (`matrix_stats` + `parcel_zone_matrix` + `unmatched_zone_samples`) for internal consistency. Master to run validation harness against preview before merge.
 
 ### 2026-06-06
 
