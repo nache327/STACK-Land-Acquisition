@@ -53,8 +53,8 @@ June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequenc
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **16** | Prod API 2026-06-09 post-Hunterdon flip (captured_at 2026-06-09T03:53:48Z) | **+1 Hunterdon NJ matrix-completion sprint via PR #196 (165 rows, full backlog cleanup)** |
-| 1 #1 | Audit-operational jurisdictions | **16** | same | same |
+| 1 #1 | Honest operational jurisdictions | **17** | Prod API 2026-06-10; post-Monmouth flip per PR #199 + ~120 supplemental matrix rows (Lane E parallel work + sprint follow-on; final Monmouth matrix=259) | **+1 Monmouth NJ — full recovery via PR #199 Plan B (14 unclear cleanup + 60 matrix completion) plus matrix supplement to clear `low_matrix_match_pct` gate** |
+| 1 #1 | Audit-operational jurisdictions | **17** | same | same |
 | 1 #2 | Trustworthy parcel verdict count | **TBD pending fresh audit** | Bergen ~280,801 + Morris ~177,000 confirmed new; baseline trustworthy parcel count needs reconciliation against the 13-jurisdiction honest baseline (orchestrator queued for fresh sum) | Awaiting prod-wide trustworthy parcel sum recompute under post-PR-#98 rules |
 | 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
 | 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
@@ -328,6 +328,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ---
 
 ## 15. Daily Changelog
+
+### 2026-06-10
+
+- **FLIP** Monmouth County, NJ → operational. Recovery sprint per PR #199 (`docs/OP5_MONMOUTH_RECOVERY_SPRINT.md`) Plan B: 14 unclear-row cleanup + 60-code matrix completion. Sprint flagged that 60 codes was mathematically insufficient to clear `low_matrix_match_pct` (projected 76.4% vs 90% gate). Between Sat 06-09 and Tue 06-10 morning, **~120 supplemental matrix rows landed on Monmouth** (Lane E parallel work + likely sprint follow-on; final `matrix_zone_count=259`), pushing match_pct above the 90% gate. Final state: `operational_readiness=operational`, `blocking_gaps=[]`, 251,486 parcels covered. 5th confirmed NJ Tier-S flip of the week (Bergen, Morris, Somerset, Hunterdon, Monmouth — Allentown PA also flipped via PR #193 audit-fix). **Total NJ Tier-S operational: 5 of 11 counties.** Master tracker bumped 16 → 17.
 
 ### 2026-06-09
 

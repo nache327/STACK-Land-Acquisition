@@ -15,13 +15,13 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_hunterdon_flipped_16_operational_monmouth_pending_filter_fix",
+  "mode": "op5_monmouth_flipped_17_operational_nj_tier_s_5_of_11",
   "honest_operational_count": {
-    "current_api_truth": 16,
+    "current_api_truth": 17,
     "baseline_pre_this_week": 13,
-    "confirmed_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)", "Somerset recovery (PR #190)", "Allentown auto-promote (PR #193 + #194 refresh wave)", "Hunterdon (PR #196)"],
+    "confirmed_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)", "Somerset recovery (PR #190)", "Allentown auto-promote (PR #193 + #194 refresh wave)", "Hunterdon (PR #196)", "Monmouth (PR #199 + supplemental)"],
     "confirmed_regressions_this_week": ["Essex NJ (stale anomaly, cov 23.8% < 70% gate)", "Draper UT (stale anomaly, cov 65.9% < 70% gate)"],
-    "net": "13 + 5 - 2 = 16",
+    "net": "13 + 6 - 2 = 17",
     "prior_master_tracker_was": "47 (DEPRECATED — based on pre-PR-#98 rules)",
     "reckoning_doc": "docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md"
   },
