@@ -96,9 +96,19 @@ async_session_maker = async_sessionmaker(
 # Long-running engine for operator-triggered batch operations like the
 # coverage_audit refresh sweep — the audit SQL legitimately takes minutes
 # on big counties (Middlesex MA 423k, Mont MD 281k, Mont PA 301k parcels).
-# A separate engine with command_timeout=600 lets those complete; the
-# default 90s engine is unchanged.
-long_running_engine = make_engine(command_timeout=600)
+# A separate engine with a much higher per-command ceiling lets those
+# complete; the default 90s engine is unchanged.
+#
+# Bumped from 600s → 3600s on 2026-06-08 after Hunterdon's audit hit the
+# 600s ceiling on the coverage_audit refresh path (165 distinct zone codes,
+# 51,751 uncovered parcels — the parcel_zone_matrix CTE LEFT JOIN blew the
+# plan). The CLI audit script doesn't pass command_timeout at all (asyncpg
+# defaults to None = no client timeout) and runs to completion on the same
+# data, so 3600 is a generous-but-finite ceiling rather than a guess. The
+# server-side `SET LOCAL statement_timeout = 0` already set in
+# coverage_audit._refresh_all_snapshots_inner stays in place — we want the
+# query to complete, not be cancelled.
+long_running_engine = make_engine(command_timeout=3600)
 long_running_session_maker = async_sessionmaker(
     long_running_engine,
     class_=AsyncSession,

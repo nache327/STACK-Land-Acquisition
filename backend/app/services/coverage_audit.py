@@ -57,10 +57,11 @@ async def refresh_all_snapshots(
     Inserts are batched into a single transaction via the SQLAlchemy
     session for atomicity with the rest of the app.
 
-    Uses the long_running_session_maker (command_timeout=600) for the
-    audit reads — the SQL legitimately takes minutes on big counties.
-    The injected `db` (from the request) is used only for the snapshot
-    INSERTs at the end.
+    Uses the long_running_session_maker (command_timeout=3600 as of
+    2026-06-08; bumped from 600 after Hunterdon hit the 10-min ceiling)
+    for the audit reads — the SQL legitimately takes minutes on big
+    counties. The injected `db` (from the request) is used only for the
+    snapshot INSERTs at the end.
 
     Returns: {"snapshots_written": N, "summary": <audit summary>}.
     """
