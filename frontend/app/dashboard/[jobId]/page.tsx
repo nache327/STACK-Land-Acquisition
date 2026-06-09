@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useJobPoller } from "@/hooks/useJobPoller";
 import { useCandidateParcelSearch, useParcelDetail } from "@/hooks/useParcels";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useJurisdictionBounds } from "@/hooks/useJurisdictionBounds";
 import { useParcelScores } from "@/hooks/useParcelScores";
 import { JobProgress } from "@/components/JobProgress";
@@ -248,14 +249,22 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     setSelectedIds(new Set());
   }, [filters]);
 
-  useEffect(() => {
-    if (!jurisdictionBounds || bbox) return;
-    setBBox(jurisdictionBounds as [number, number, number, number]);
-  }, [bbox, jurisdictionBounds]);
+  // Phase 2: bbox is set by Map.tsx's first-moveend handler (after the
+  // initial centroid flyTo settles) and by subsequent user-driven moves.
+  // Don't initialize it from jurisdictionBounds — that would re-fetch
+  // the whole-county set on initial load and erase the Phase 2 win.
+  // Table-side: bbox never propagates into tablePayload (Master's
+  // direction — table view stays full-county-scoped).
 
   useEffect(() => {
     setPage(1);
-  }, [filters, bbox]);
+  }, [filters]);
+
+  // Debounce bbox updates from the map's moveend so a single pan/zoom
+  // gesture doesn't trigger N intermediate fetches before settling.
+  // 300ms matches the dispatch spec; long enough that mousedown→drag
+  // →mouseup is one event, short enough that the UI feels responsive.
+  const debouncedBbox = useDebouncedValue(bbox, 300);
 
   // Persist saturation threshold settings to localStorage
   useEffect(() => {
@@ -270,12 +279,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
   }, [satThresholdHigh]);
 
-  const activeBbox =
-    bbox ??
-    (jurisdictionBounds as [number, number, number, number] | null) ??
-    null;
-
-  const basePayload = useMemo<CandidateParcelSearchRequest | null>(() => {
+  const basePayload = useMemo<Omit<CandidateParcelSearchRequest, "bbox"> | null>(() => {
     if (!jurisdictionId) return null;
 
     return {
@@ -305,7 +309,6 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
         // acres/score page that may not include them at all.
         listed_only: buyBoxFilter.requireListed === true,
       },
-      bbox: activeBbox,
       search: filters.search.trim() || null,
       page: 1,
       page_size: TABLE_PAGE_SIZE,
@@ -315,22 +318,31 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       // CandidateParcelRow shape.
       slim: false,
     };
-  }, [activeBbox, filters, jurisdictionId, buyBoxFilter.requireListed]);
+  }, [filters, jurisdictionId, buyBoxFilter.requireListed]);
 
-  const tablePayload = useMemo(() => {
+  const tablePayload = useMemo<CandidateParcelSearchRequest | null>(() => {
     if (!basePayload) return null;
-    return { ...basePayload, page, page_size: TABLE_PAGE_SIZE };
+    // Phase 2: table view stays full-county-scoped — bbox is null
+    // regardless of what the map is showing.
+    return { ...basePayload, page, page_size: TABLE_PAGE_SIZE, bbox: null };
   }, [basePayload, page]);
 
-  const mapPayload = useMemo(() => {
+  const mapPayload = useMemo<CandidateParcelSearchRequest | null>(() => {
     if (!basePayload) return null;
-    // Map layer reads only paint-relevant fields (parcel_id, geom,
-    // storage_permission, zone_class, zoning_code, is_viable, apn for
-    // click). Slim mode drops the ~10 popup-only fields and skips the
-    // listing-summary second query — ~3-5x size reduction on Bergen
-    // page_size=5000 (measured 4.9 MB → ~1-1.5 MB expected).
-    return { ...basePayload, page: 1, page_size: MAP_PAGE_SIZE, slim: true };
-  }, [basePayload]);
+    // Phase 2: gate the map fetch on bbox. Initial dashboard load
+    // shows no parcels until Map.tsx's first moveend (after the
+    // centroid flyTo settles) sets bbox. Without this gate, an empty
+    // bbox payload triggers the slow ~28 s whole-county fetch on
+    // first paint.
+    if (!debouncedBbox) return null;
+    return {
+      ...basePayload,
+      page: 1,
+      page_size: MAP_PAGE_SIZE,
+      slim: true,
+      bbox: debouncedBbox,
+    };
+  }, [basePayload, debouncedBbox]);
 
   const { data: parcelList, isLoading: tableLoading } =
     useCandidateParcelSearch(tablePayload);

@@ -452,13 +452,21 @@ export default function Map({
     const map = mapRef.current;
     if (!map || !bounds || hasFitRef.current === jurisdictionId) return;
 
-    map.fitBounds(
-      [
-        [bounds[0], bounds[1]],
-        [bounds[2], bounds[3]],
-      ],
-      { padding: 40, maxZoom: 14, duration: 800 }
-    );
+    // Phase 2: open at the jurisdiction centroid at zoom 13 (~5 sq mi
+    // window) rather than fit-to-county. The bbox-filtered search
+    // returns ~5k parcels for a window of this size in ~3 s on Bergen,
+    // versus ~28 s for the whole-county fetch. Acquisitions users
+    // start by drilling into a specific neighborhood, not by scanning
+    // the whole county, so the centroid view matches intent. The
+    // explicit "zoom out to county" path (click-same-parcel-twice)
+    // below is preserved as the deliberate full-county gesture.
+    const centerLng = (bounds[0] + bounds[2]) / 2;
+    const centerLat = (bounds[1] + bounds[3]) / 2;
+    map.flyTo({
+      center: [centerLng, centerLat],
+      zoom: 13,
+      duration: 800,
+    });
 
     hasFitRef.current = jurisdictionId;
   }, [bounds, jurisdictionId]);
@@ -1044,9 +1052,23 @@ export default function Map({
     const map = mapRef.current;
     if (!map || !onBoundsChange) return;
 
-    const handleMoveEnd = () => {
+    // Phase 2 bbox capture. Two cases fire onBoundsChange:
+    //   1. Very first moveend after mount — regardless of source —
+    //      so the initial programmatic flyTo to the jurisdiction
+    //      centroid captures a starting bbox. Without this the map
+    //      stays empty until the user moves.
+    //   2. Any subsequent USER-driven moveend (pan, zoom, scroll).
+    //      `event.originalEvent` is set by MapLibre only on
+    //      user-driven moves; programmatic flyTo/fitBounds/jumpTo
+    //      from parcel-row click or zoom-out leave it undefined.
+    //      Filtering these prevents every flyTo from cascading into
+    //      a refetch.
+    const hasCapturedFirstRef = { current: false };
+    const handleMoveEnd = (event: maplibregl.MapLibreEvent) => {
+      const isFirstCapture = !hasCapturedFirstRef.current;
+      if (!event?.originalEvent && !isFirstCapture) return;
+      hasCapturedFirstRef.current = true;
       const nextBounds = map.getBounds();
-
       onBoundsChange([
         nextBounds.getWest(),
         nextBounds.getSouth(),
