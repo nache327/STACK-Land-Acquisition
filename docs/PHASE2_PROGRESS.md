@@ -53,8 +53,8 @@ June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequenc
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **15** | Prod API 2026-06-08 post-PR-#194 refresh wave; baseline 13 + 3 NJ flips (Bergen, Morris, Somerset) + Allentown PA promoted by audit-fix + Essex NJ + Draper UT regressed (stale anomalies confirmed) | **Net -1 from prior 16: -2 Essex/Draper stale-anomaly regressions (predicted in reconciliation doc), +1 Allentown PA promoted post-PR-#193 tombstone exclusion** |
-| 1 #1 | Audit-operational jurisdictions | **15** | same | same |
+| 1 #1 | Honest operational jurisdictions | **16** | Prod API 2026-06-09 post-Hunterdon flip (captured_at 2026-06-09T03:53:48Z) | **+1 Hunterdon NJ matrix-completion sprint via PR #196 (165 rows, full backlog cleanup)** |
+| 1 #1 | Audit-operational jurisdictions | **16** | same | same |
 | 1 #2 | Trustworthy parcel verdict count | **TBD pending fresh audit** | Bergen ~280,801 + Morris ~177,000 confirmed new; baseline trustworthy parcel count needs reconciliation against the 13-jurisdiction honest baseline (orchestrator queued for fresh sum) | Awaiting prod-wide trustworthy parcel sum recompute under post-PR-#98 rules |
 | 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
 | 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
@@ -328,6 +328,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ---
 
 ## 15. Daily Changelog
+
+### 2026-06-09
+
+- **FLIP** Hunterdon County, NJ → operational. Matrix-completion sprint per PR #196 (`docs/OP5_HUNTERDON_MATRIX_SPRINT.md`). 165 matrix rows authored — full backlog cleanup in one pass (all uncovered codes covering 51,751 parcels). Applied via `_upload-matrix-rows` endpoint with bias-against-unclear classifier. `matrix_zone_count` 14 → 179, `parcel_zoning_code_coverage_pct=100.0`, `self_storage_classified_parcel_pct=100.0`, `blocking_gaps=[]`, `operational_readiness=operational`. Audit refresh required 2 fires + 16 min wall-clock to commit (refresh-endpoint behavior under heavier post-sprint CTE joins worth monitoring). 5th NJ Tier-S county operational (Bergen, Morris, Somerset, Allentown, Hunterdon). Citation quality follow-up queued: author `backend/data/hunterdon_zoning_directory.json` with verified per-muni deep links (Lane B / operator task, MEDIUM priority).
 
 ### 2026-06-08
 
