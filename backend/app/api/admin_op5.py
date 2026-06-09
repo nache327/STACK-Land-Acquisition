@@ -228,6 +228,14 @@ async def list_pending_adjudications(
     status: Annotated[
         Literal["pending", "approved", "rejected", "all"], Query()
     ] = "pending",
+    jurisdiction_id: uuid.UUID | None = Query(
+        default=None,
+        description=(
+            "Restrict results to a single jurisdiction. When omitted, the "
+            "endpoint returns rows across all jurisdictions matching the "
+            "other filters (legacy behavior)."
+        ),
+    ),
     county: str | None = None,
     municipality: str | None = None,
     state: str | None = None,
@@ -284,6 +292,14 @@ async def list_pending_adjudications(
         stmt = stmt.where(ZoneUseMatrix.deleted_at.is_not(None))
     # status == "all" → no extra status predicate; mirrors audit CTE.
 
+    # When `jurisdiction_id` is supplied, restrict to that jurisdiction —
+    # this is the narrowest filter and short-circuits cross-jurisdiction
+    # leakage when callers (e.g. unclear-row recovery scoping) need an
+    # exact roster for a single muni/county. Omitting the param preserves
+    # the historical "all jurisdictions" behavior so existing callers
+    # (county/state-only filters, audit dashboards) keep working.
+    if jurisdiction_id is not None:
+        stmt = stmt.where(ZoneUseMatrix.jurisdiction_id == jurisdiction_id)
     if county:
         stmt = stmt.where(Jurisdiction.county == county)
     if state:

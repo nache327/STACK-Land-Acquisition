@@ -287,3 +287,264 @@ async def test_status_default_unchanged(
     assert not (returned_ids & set(by_status["rejected"]))
     assert not (returned_ids & set(by_status["approved"]))
     assert all(row["status"] == "pending" for row in rows)
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# 4. jurisdiction_id filter scopes results to a single jurisdiction
+# ────────────────────────────────────────────────────────────────────────────
+#
+# Regression guard for the cross-jurisdiction leak in
+# GET /api/admin/op5/adjudications. Before the fix the endpoint accepted
+# `jurisdiction_id` in the query string but silently dropped it (no
+# WHERE clause), so callers asking for one jurisdiction got rows from
+# every jurisdiction in the table. The orchestrator confirmed the leak
+# applied to both `status=approved` and `status=pending` (and `rejected`),
+# so this test exercises the two most-trafficked status branches against
+# a fixture with rows seeded in two distinct jurisdictions.
+#
+# Seeds:
+#   juris A (state=YA)  → 2 pending + 1 approved rows
+#   juris B (state=YB)  → 2 pending + 1 approved rows
+#
+# When the caller passes `jurisdiction_id=<A>`, every returned row's
+# `jurisdiction_id` must equal `<A>`. Same assertion for `<B>`. Status
+# filter is tested for both `pending` and `approved` to prove the fix
+# is in the shared query path, not a status-specific code branch.
+
+
+@pytest_asyncio.fixture(loop_scope="session")
+async def two_jurisdictions(db_session) -> tuple[uuid.UUID, uuid.UUID]:
+    """Two throwaway jurisdictions in different sentinel states.
+
+    Uses non-"ZZ" states so this fixture is fully independent of the
+    `jurisdiction_id` fixture used by the earlier status tests — no
+    risk of cross-contamination if both fixtures end up in the same
+    test session.
+    """
+    a_id = uuid.uuid4()
+    b_id = uuid.uuid4()
+    await db_session.execute(
+        text(
+            "INSERT INTO jurisdictions (id, name, state) "
+            "VALUES (:id, :name, 'YA')"
+        ),
+        {"id": a_id, "name": f"test-jur-a-{a_id.hex[:8]}"},
+    )
+    await db_session.execute(
+        text(
+            "INSERT INTO jurisdictions (id, name, state) "
+            "VALUES (:id, :name, 'YB')"
+        ),
+        {"id": b_id, "name": f"test-jur-b-{b_id.hex[:8]}"},
+    )
+    await db_session.flush()
+    return a_id, b_id
+
+
+async def _seed_two_jurisdictions(
+    db_session, juris_a: uuid.UUID, juris_b: uuid.UUID
+) -> dict[uuid.UUID, dict[str, list[int]]]:
+    """Seed each jurisdiction with 2 pending + 1 approved row.
+
+    Returns {juris_id: {"pending": [...], "approved": [...]}} so the
+    test can assert on identity per jurisdiction.
+    """
+    seeds_a_pending = [
+        ZoneUseMatrix(
+            jurisdiction_id=juris_a,
+            zone_code="A-P1",
+            municipality=None,
+            self_storage="unclear",
+            mini_warehouse="unclear",
+            light_industrial="unclear",
+            luxury_garage_condo="unclear",
+            confidence=0.35,
+            human_reviewed=False,
+            classification_source="llm_low_confidence",
+        ),
+        ZoneUseMatrix(
+            jurisdiction_id=juris_a,
+            zone_code="A-P2",
+            municipality=None,
+            self_storage="unclear",
+            mini_warehouse="unclear",
+            light_industrial="unclear",
+            luxury_garage_condo="unclear",
+            confidence=0.40,
+            human_reviewed=False,
+            classification_source="llm_low_confidence",
+        ),
+    ]
+    seeds_a_approved = [
+        ZoneUseMatrix(
+            jurisdiction_id=juris_a,
+            zone_code="A-AP1",
+            municipality=None,
+            self_storage="permitted",
+            mini_warehouse="permitted",
+            light_industrial="permitted",
+            luxury_garage_condo="permitted",
+            confidence=0.95,
+            human_reviewed=True,
+            classification_source="human",
+        ),
+    ]
+    seeds_b_pending = [
+        ZoneUseMatrix(
+            jurisdiction_id=juris_b,
+            zone_code="B-P1",
+            municipality=None,
+            self_storage="unclear",
+            mini_warehouse="unclear",
+            light_industrial="unclear",
+            luxury_garage_condo="unclear",
+            confidence=0.30,
+            human_reviewed=False,
+            classification_source="llm_low_confidence",
+        ),
+        ZoneUseMatrix(
+            jurisdiction_id=juris_b,
+            zone_code="B-P2",
+            municipality=None,
+            self_storage="unclear",
+            mini_warehouse="unclear",
+            light_industrial="unclear",
+            luxury_garage_condo="unclear",
+            confidence=0.45,
+            human_reviewed=False,
+            classification_source="llm_low_confidence",
+        ),
+    ]
+    seeds_b_approved = [
+        ZoneUseMatrix(
+            jurisdiction_id=juris_b,
+            zone_code="B-AP1",
+            municipality=None,
+            self_storage="prohibited",
+            mini_warehouse="prohibited",
+            light_industrial="prohibited",
+            luxury_garage_condo="prohibited",
+            confidence=0.92,
+            human_reviewed=True,
+            classification_source="human",
+        ),
+    ]
+    db_session.add_all(
+        seeds_a_pending + seeds_a_approved + seeds_b_pending + seeds_b_approved
+    )
+    await db_session.flush()
+    return {
+        juris_a: {
+            "pending": [s.id for s in seeds_a_pending],
+            "approved": [s.id for s in seeds_a_approved],
+        },
+        juris_b: {
+            "pending": [s.id for s in seeds_b_pending],
+            "approved": [s.id for s in seeds_b_approved],
+        },
+    }
+
+
+async def test_jurisdiction_id_filter_scopes_pending_and_approved(
+    client, db_session, two_jurisdictions
+):
+    """`jurisdiction_id` query param must restrict rows to that jurisdiction.
+
+    Regression for the cross-jurisdiction leak documented in the Lane A
+    bug: a request like `?jurisdiction_id=<A>&status=pending` was
+    returning rows from every jurisdiction in the table. After the fix,
+    every returned row must report `jurisdiction_id == <A>`.
+
+    Exercises both `status=pending` and `status=approved` because the
+    orchestrator confirmed both branches leaked — proving the fix lives
+    in the shared query path, not a status-specific branch.
+    """
+    juris_a, juris_b = two_jurisdictions
+    by_juris = await _seed_two_jurisdictions(db_session, juris_a, juris_b)
+
+    # ── status=pending, scoped to juris_a ────────────────────────────────
+    r = await client.get(
+        "/api/admin/op5/adjudications",
+        params={
+            "status": "pending",
+            "jurisdiction_id": str(juris_a),
+            "limit": 500,
+        },
+    )
+    assert r.status_code == 200, r.text
+    rows = r.json()
+    # Every row must belong to juris_a — this is THE bug fix assertion.
+    assert all(row["jurisdiction_id"] == str(juris_a) for row in rows), (
+        f"expected every row.jurisdiction_id == {juris_a}, got "
+        f"{sorted({row['jurisdiction_id'] for row in rows})}"
+    )
+    # And specifically the pending seeds for juris_a must be present.
+    returned_ids = {row["id"] for row in rows}
+    for rid in by_juris[juris_a]["pending"]:
+        assert rid in returned_ids, f"pending seed {rid} missing from response"
+    # None of juris_b's seeds may leak in.
+    for rid in (
+        by_juris[juris_b]["pending"] + by_juris[juris_b]["approved"]
+    ):
+        assert rid not in returned_ids, (
+            f"juris_b seed {rid} leaked into juris_a query"
+        )
+
+    # ── status=approved, scoped to juris_b ───────────────────────────────
+    r = await client.get(
+        "/api/admin/op5/adjudications",
+        params={
+            "status": "approved",
+            "jurisdiction_id": str(juris_b),
+            "limit": 500,
+        },
+    )
+    assert r.status_code == 200, r.text
+    rows = r.json()
+    assert all(row["jurisdiction_id"] == str(juris_b) for row in rows), (
+        f"expected every row.jurisdiction_id == {juris_b}, got "
+        f"{sorted({row['jurisdiction_id'] for row in rows})}"
+    )
+    returned_ids = {row["id"] for row in rows}
+    for rid in by_juris[juris_b]["approved"]:
+        assert rid in returned_ids, f"approved seed {rid} missing from response"
+    # None of juris_a's seeds may leak in.
+    for rid in (
+        by_juris[juris_a]["pending"] + by_juris[juris_a]["approved"]
+    ):
+        assert rid not in returned_ids, (
+            f"juris_a seed {rid} leaked into juris_b query"
+        )
+
+
+async def test_jurisdiction_id_omitted_preserves_legacy_behavior(
+    client, db_session, two_jurisdictions
+):
+    """Omitting `jurisdiction_id` keeps the cross-jurisdiction behavior.
+
+    The fix must not silently break callers that intentionally don't
+    pass `jurisdiction_id` (e.g. global audit dashboards). With no
+    jurisdiction_id but `status=pending`, both juris_a and juris_b's
+    pending seeds must still appear.
+    """
+    juris_a, juris_b = two_jurisdictions
+    by_juris = await _seed_two_jurisdictions(db_session, juris_a, juris_b)
+
+    r = await client.get(
+        "/api/admin/op5/adjudications",
+        params={"status": "pending", "limit": 500},
+    )
+    assert r.status_code == 200, r.text
+    rows = r.json()
+    returned_ids = {row["id"] for row in rows}
+
+    # Both jurisdictions' pending seeds must show up — proves the fix
+    # didn't accidentally add an unconditional WHERE clause.
+    for rid in by_juris[juris_a]["pending"]:
+        assert rid in returned_ids, (
+            f"juris_a pending seed {rid} missing when jurisdiction_id omitted"
+        )
+    for rid in by_juris[juris_b]["pending"]:
+        assert rid in returned_ids, (
+            f"juris_b pending seed {rid} missing when jurisdiction_id omitted"
+        )
