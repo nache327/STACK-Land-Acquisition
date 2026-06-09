@@ -53,8 +53,8 @@ June/Sprint-2 handoff: run Master Planning to choose the next KPI-growth sequenc
 
 | Tier | KPI | Value | Source | Δ vs prior |
 |---|---|---:|---|---:|
-| 1 #1 | Honest operational jurisdictions | **16** | Prod API 2026-06-07 post-Somerset flip; honest baseline 13 + 3 NJ flips this week (Bergen + Morris + Somerset recovery) | **+1 from Somerset NJ unclear-row recovery via PR #190 (Lane E pattern: 21 unclear→prohibited with citations)** |
-| 1 #1 | Audit-operational jurisdictions | **16** | same | same |
+| 1 #1 | Honest operational jurisdictions | **15** | Prod API 2026-06-08 post-PR-#194 refresh wave; baseline 13 + 3 NJ flips (Bergen, Morris, Somerset) + Allentown PA promoted by audit-fix + Essex NJ + Draper UT regressed (stale anomalies confirmed) | **Net -1 from prior 16: -2 Essex/Draper stale-anomaly regressions (predicted in reconciliation doc), +1 Allentown PA promoted post-PR-#193 tombstone exclusion** |
+| 1 #1 | Audit-operational jurisdictions | **15** | same | same |
 | 1 #2 | Trustworthy parcel verdict count | **TBD pending fresh audit** | Bergen ~280,801 + Morris ~177,000 confirmed new; baseline trustworthy parcel count needs reconciliation against the 13-jurisdiction honest baseline (orchestrator queued for fresh sum) | Awaiting prod-wide trustworthy parcel sum recompute under post-PR-#98 rules |
 | 1 #2 | All classified parcel verdicts across audit rows | **3,986,326** | audit_may31_close.json all-jurisdiction classified parcel sum | +17,699 vs post-PR-#143 artifact; May-31 work +26,916 from PR #143 + PR #155 |
 | 1 #3 | Avg unclear share (partials) | **10.3%** | audit_may31_close.json weighted partial unclear/matrix parcel share (`79,653 / 773,627`) | -2.3pp vs post-PR-#143 §1 snapshot |
@@ -328,6 +328,16 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 ---
 
 ## 15. Daily Changelog
+
+### 2026-06-08
+
+- **REFRESH WAVE** Post-PR-#194 (refresh endpoint honest-failure + 3600s timeout) deployed; fired refresh on Allentown, Hunterdon, Essex, Draper to test now-working endpoint. Results:
+  - **Allentown PA** → operational. **Self-flipped from PR #193 tombstone exclusion** (99 PA-LUC rejected rows no longer inflating unclear share). Preview validation projected no flip; prod data differed enough to produce one. +1 op.
+  - **Essex County NJ** → operational → partial. Confirmed stale-anomaly regression: 23.8% coverage below the 70% truthfulness gate (predicted in `docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md`). -1 op.
+  - **Draper City UT** → operational → partial. Same class: 65.9% coverage below 70% gate. -1 op.
+  - **Hunterdon County NJ** → refresh completed for first time since 2026-06-03 (audit timeout extension worked). Audit confirms sprintable single-blocker class — queued for next matrix-completion sprint.
+  - Net operational count delta: 16 → 15 (-2 +1).
+- **VALIDATE** PR #194 (`317973a`) refresh-endpoint contract change deployed successfully. Honest 502 on all-fail + 3600s timeout extension both load-bearing for refresh-wave success. First validated case of refresh-driven state changes post-PR-#193 audit fix.
 
 ### 2026-06-07
 
