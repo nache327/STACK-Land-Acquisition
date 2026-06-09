@@ -266,9 +266,11 @@ async def _benchmark_jurisdiction(
 
 def _render_markdown(report: dict[str, Any]) -> str:
     rows = report["results"]
+    # Foreground bbox: this is the customer-facing path. Sort by
+    # cold_bbox_p50 descending; whole-county is a sidebar metric.
     rows_sorted = sorted(
         rows,
-        key=lambda r: (r["cold_whole"]["p50_s"] or -1),
+        key=lambda r: (r["cold_bbox"]["p50_s"] or -1),
         reverse=True,
     )
     lines: list[str] = []
@@ -280,15 +282,41 @@ def _render_markdown(report: dict[str, Any]) -> str:
     lines.append(f"- Throttle: {report['throttle_seconds']}s between requests")
     lines.append(f"- Timeout: {report['timeout_seconds']}s per request")
     lines.append(f"- Bbox window: ±{BBOX_HALF_DEG}° around jurisdiction centroid")
+    lines.append(f"- Sweep wall-clock: {report.get('run_elapsed_s', '?')}s")
     lines.append("")
-    lines.append("Cold = first-fetch MISS (forced via distinct `sort` per trial).")
-    lines.append("Warm = same payload immediately replayed (memo HIT).")
-    lines.append("`payload_kb` = median bytes / 1024 across whole-county cold trials.")
+    lines.append("## Methodology — read before quoting numbers")
+    lines.append("")
+    lines.append(
+        "**Bbox p50 is the customer-facing metric.** The dashboard map "
+        "uses bbox-filtered queries; whole-county fetches happen only "
+        "on the table view (which is paged and not the buyer-blocking "
+        "path). Sort and outlier flags are anchored on `cold_bbox_p50`; "
+        "whole-county columns are kept as a sidebar so the table view "
+        "doesn't silently rot."
+    )
+    lines.append("")
+    lines.append(
+        "**Cold = memo-cold, NOT a quiet server.** Each \"cold\" trial "
+        "varies the `sort` field, which changes the SHA256 cache key "
+        "(`app.api.parcels._parcels_search_cache_key`) — so trial N+1 "
+        "cannot HIT the in-process LRU memo. But the underlying "
+        "Postgres buffer cache, query plan cache, and TCP/TLS "
+        "connection stay warm across trials. The numbers therefore "
+        "model **\"first user landing on an already-busy county\"**, "
+        "not **\"first user touching a county that's been idle for "
+        "hours.\"** True cold-cold would be slower."
+    )
+    lines.append("")
+    lines.append(
+        "**Warm** = same payload immediately replayed — HITs the "
+        "in-process LRU memo. `payload_kb` = median bytes / 1024 "
+        "across cold-bbox trials."
+    )
     lines.append("")
     header = (
         "| Jurisdiction | Parcels | Ready | "
-        "cold_whole p50 | warm_whole p50 | "
         "cold_bbox p50 | warm_bbox p50 | "
+        "cold_whole p50 | warm_whole p50 | "
         "payload kb | errs |"
     )
     sep = (
@@ -301,9 +329,11 @@ def _render_markdown(report: dict[str, Any]) -> str:
         ww = r["warm_whole"]
         cb = r["cold_bbox"]
         wb = r["warm_bbox"]
+        # `payload_kb` keys on bbox (the customer-facing path), not
+        # the whole-county sidebar.
         kb = (
-            round(cw["median_bytes"] / 1024, 1)
-            if cw.get("median_bytes") is not None
+            round(cb["median_bytes"] / 1024, 1)
+            if cb.get("median_bytes") is not None
             else "—"
         )
         errs = (
@@ -314,34 +344,45 @@ def _render_markdown(report: dict[str, Any]) -> str:
             f"| {r['jurisdiction_name']} | "
             f"{r['parcel_count']:,} | "
             f"{r['operational_readiness']} | "
-            f"{cw['p50_s'] if cw['p50_s'] is not None else '—'} | "
-            f"{ww['p50_s'] if ww['p50_s'] is not None else '—'} | "
             f"{cb['p50_s'] if cb['p50_s'] is not None else '—'} | "
             f"{wb['p50_s'] if wb['p50_s'] is not None else '—'} | "
+            f"{cw['p50_s'] if cw['p50_s'] is not None else '—'} | "
+            f"{ww['p50_s'] if ww['p50_s'] is not None else '—'} | "
             f"{kb} | {errs} |"
         )
     lines.append("")
     lines.append("## Outliers")
     outliers = [
         r for r in rows_sorted
-        if (r["cold_whole"]["p50_s"] or 0) > 8.0
-        or (r["cold_bbox"]["p50_s"] or 0) > 2.0
+        if (r["cold_bbox"]["p50_s"] or 0) > 2.0
+        or (r["cold_whole"]["p50_s"] or 0) > 8.0
     ]
+    lines.append("")
     if outliers:
-        lines.append("")
         lines.append(
-            "Flagged: `cold_whole_p50 > 8s` OR `cold_bbox_p50 > 2s`. "
-            "Candidates for Phase 3 follow-up — do not fix mid-flight."
+            "Flagged: `cold_bbox_p50 > 2s` OR `cold_whole_p50 > 8s`. "
+            "Candidates for Phase 3 follow-up — do not fix mid-flight. "
+            "`parcel_count` and `payload_kb` are inlined so the "
+            "parcel-count-vs-something-else question can be answered "
+            "without re-running the harness."
         )
+        lines.append("")
         for r in outliers:
+            cb = r["cold_bbox"]
+            cw = r["cold_whole"]
+            kb = (
+                round(cb["median_bytes"] / 1024, 1)
+                if cb.get("median_bytes") is not None
+                else "?"
+            )
             lines.append(
                 f"- **{r['jurisdiction_name']}** "
-                f"({r['parcel_count']:,} parcels): "
-                f"cold_whole={r['cold_whole']['p50_s']}s, "
-                f"cold_bbox={r['cold_bbox']['p50_s']}s"
+                f"(parcels={r['parcel_count']:,}, "
+                f"payload_kb={kb}): "
+                f"cold_bbox={cb['p50_s']}s, "
+                f"cold_whole={cw['p50_s']}s"
             )
     else:
-        lines.append("")
         lines.append("None — every jurisdiction within thresholds.")
     return "\n".join(lines) + "\n"
 
