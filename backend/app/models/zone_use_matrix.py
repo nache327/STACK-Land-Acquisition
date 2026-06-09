@@ -33,6 +33,8 @@ class ClassificationSource(str, enum.Enum):
     llm_rule = "llm_rule"                # Claude parsed; unclear slots filled by rule classifier
     crosswalk = "crosswalk"              # Copied from a sibling jurisdiction's matrix (e.g. per-city city jurisdiction → county jurisdiction)
     inherited_pending = "inherited_pending"  # Defers to a per-town/per-city sprint not yet run
+    op5_factory = "op5_factory"          # Op-5 factory grounded verdict (per-county pattern script)
+    op5_factory_catchall = "op5_factory_catchall"  # Op-5 factory catchall stub (requires_review; ordinance text too sparse)
 
 
 class ZoneUseMatrix(Base):
