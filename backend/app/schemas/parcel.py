@@ -122,6 +122,16 @@ class CandidateParcelSearchRequest(BaseModel):
     page: int = Field(1, ge=1)
     page_size: int = Field(100, ge=1, le=5000)
     sort: ParcelSearchSort = ParcelSearchSort.acres_desc
+    # When True the endpoint returns CandidateParcelRowSlim (paint-only
+    # fields) instead of the full CandidateParcelRow. The MapLibre paint
+    # pipeline only reads parcel_id, geom, zoning_code, zone_class,
+    # storage_permission, is_viable; popup detail comes from
+    # GET /api/parcels/{parcel_id} on click. Bergen page_size=5000:
+    # full response ≈ 4.9 MB / 23 s, slim drops the ~10 popup-only
+    # fields and skips the listing-summary second query.
+    # Default False preserves the existing contract for all current
+    # callers (parcel table, operator scripts, etc).
+    slim: bool = False
 
 
 class ListingSummary(BaseModel):
@@ -170,8 +180,28 @@ class CandidateParcelRow(BaseModel):
         return bool(v)
 
 
+class CandidateParcelRowSlim(BaseModel):
+    """Paint-only subset of CandidateParcelRow for the map layer.
+
+    Returned when CandidateParcelSearchRequest.slim is True. Drops every
+    field the MapLibre paint pipeline doesn't read. Click-time popup
+    fetches the heavy detail from GET /api/parcels/{parcel_id}, so no
+    field is lost to the operator — only deferred until click.
+    """
+    parcel_id: int
+    apn: str
+    zoning_code: str | None = None
+    zone_class: ZoneClass | None = None
+    storage_permission: str | None = None
+    is_viable: bool
+    geom: dict[str, Any] | None = None
+
+
 class CandidateParcelSearchResponse(BaseModel):
-    items: list[CandidateParcelRow]
+    # Union to keep the response model truthful in both modes. The
+    # endpoint's response_model is set to this union'd shape and the
+    # service returns whichever variant matches the request flag.
+    items: list[CandidateParcelRow] | list[CandidateParcelRowSlim]
     total: int
     page: int
     page_size: int

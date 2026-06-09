@@ -310,6 +310,10 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       page: 1,
       page_size: TABLE_PAGE_SIZE,
       sort: "acres_desc",
+      // Default to the full shape (slim=false). mapPayload below
+      // overrides to slim=true; table consumers stay on the full
+      // CandidateParcelRow shape.
+      slim: false,
     };
   }, [activeBbox, filters, jurisdictionId, buyBoxFilter.requireListed]);
 
@@ -320,7 +324,12 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
   const mapPayload = useMemo(() => {
     if (!basePayload) return null;
-    return { ...basePayload, page: 1, page_size: MAP_PAGE_SIZE };
+    // Map layer reads only paint-relevant fields (parcel_id, geom,
+    // storage_permission, zone_class, zoning_code, is_viable, apn for
+    // click). Slim mode drops the ~10 popup-only fields and skips the
+    // listing-summary second query — ~3-5x size reduction on Bergen
+    // page_size=5000 (measured 4.9 MB → ~1-1.5 MB expected).
+    return { ...basePayload, page: 1, page_size: MAP_PAGE_SIZE, slim: true };
   }, [basePayload]);
 
   const { data: parcelList, isLoading: tableLoading } =
