@@ -163,6 +163,14 @@ async def _top_parcels_for_filter(
     # maxTotalPrice closes the 15ac * $900k/ac = $13.5M sneak-through —
     # both per-acre AND total caps need to fire for a deal to qualify.
     max_total_price = filter_json.get("maxTotalPrice")
+    # Storage Needles dedicated-track gate (see
+    # scripts/_drafts/_storage_needles_track_design.md). NULL = current
+    # behavior (no self_storage gate). "only" restricts to human-reviewed
+    # self_storage permitted/conditional parcels so wealth-pocket needles
+    # surface on their own ranked track instead of being out-ranked by
+    # market-agnostic no-verdict deals. "exclude" gates them OUT (so the
+    # general buy-box email doesn't double-list a needle). NULL-safe.
+    storage_verdict_mode = filter_json.get("storageVerdictMode")
 
     # Pre-narrow into a MATERIALIZED `eligible` CTE BEFORE the three
     # LATERAL joins (listing / zone-matrix / dashboard-job). The driving
@@ -311,7 +319,7 @@ async def _top_parcels_for_filter(
              LIMIT 1
         ) lst ON true
         LEFT JOIN LATERAL (
-            SELECT self_storage, confidence
+            SELECT self_storage, confidence, human_reviewed
               FROM zone_use_matrix
              WHERE jurisdiction_id = e.jurisdiction_id
                AND zone_code      = e.zoning_code
@@ -350,6 +358,20 @@ async def _top_parcels_for_filter(
           AND (CAST(:max_total_price AS DOUBLE PRECISION) IS NULL
                OR lst.sale_price IS NULL
                OR lst.sale_price <= CAST(:max_total_price AS DOUBLE PRECISION))
+          -- Storage Needles gate. NULL -> no gate (current behavior).
+          -- 'only' -> keep ONLY human-reviewed self_storage needles.
+          -- 'exclude' -> drop needles (NULL-safe: no-verdict + non-needle
+          -- rows pass, so the general buy-box still surfaces them).
+          AND (
+                :storage_verdict_mode IS NULL
+             OR (:storage_verdict_mode = 'only'
+                 AND zum.self_storage::text IN ('permitted', 'conditional')
+                 AND zum.human_reviewed = TRUE)
+             OR (:storage_verdict_mode = 'exclude'
+                 AND NOT COALESCE(
+                       zum.self_storage::text IN ('permitted', 'conditional')
+                       AND zum.human_reviewed, FALSE))
+          )
         ORDER BY e.score DESC, e.parcel_id
         LIMIT :lim
         """
@@ -365,6 +387,7 @@ async def _top_parcels_for_filter(
             "max_acres": max_acres,
             "max_price_per_acre": max_price_per_acre,
             "max_total_price": max_total_price,
+            "storage_verdict_mode": storage_verdict_mode,
         },
     )
     out: list[DigestParcel] = []
