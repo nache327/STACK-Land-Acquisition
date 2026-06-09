@@ -11,6 +11,7 @@ from app.models.parcel import Parcel
 from app.models.zone_use_matrix import UsePermission, ZoneUseMatrix
 from app.schemas.parcel import (
     CandidateParcelRow,
+    CandidateParcelRowSlim,
     CandidateParcelSearchRequest,
     CandidateParcelSearchResponse,
     ListingSummary,
@@ -234,9 +235,12 @@ async def search_candidate_parcels(
     # (matched_parcel_id) is indexed. DISTINCT ON picks the most-recent
     # current listing per parcel when multiple exist (same property listed
     # on CoStar + LoopNet etc).
+    # Skip entirely in slim mode — listing_summary isn't in the slim
+    # shape, and on Bergen page_size=5000 this second query dominates
+    # the time savings.
     parcel_ids = [r.parcel_id for r in rows]
     listing_by_parcel: dict[int, ListingSummary] = {}
-    if parcel_ids:
+    if parcel_ids and not payload.slim:
         listing_rows = (
             await db.execute(
                 select(
@@ -275,7 +279,7 @@ async def search_candidate_parcels(
                 match_method=lr.match_method,
             )
 
-    items: list[CandidateParcelRow] = []
+    items: list[CandidateParcelRow] | list[CandidateParcelRowSlim] = []
     for row in rows:
         permission = row.target_permission
         if hasattr(permission, "value"):
@@ -290,6 +294,20 @@ async def search_candidate_parcels(
             in_wetland=row.in_wetland,
         )
         geom = json.loads(row.geom) if row.geom else None
+        is_viable = len(violation_reasons) == 0
+        if payload.slim:
+            items.append(
+                CandidateParcelRowSlim(
+                    parcel_id=row.parcel_id,
+                    apn=row.apn,
+                    zoning_code=row.zoning_code,
+                    zone_class=row.zone_class,
+                    storage_permission=row.storage_permission,
+                    is_viable=is_viable,
+                    geom=geom,
+                )
+            )
+            continue
         items.append(
             CandidateParcelRow(
                 parcel_id=row.parcel_id,
@@ -307,7 +325,7 @@ async def search_candidate_parcels(
                 in_wetland=row.in_wetland,
                 aadt=row.aadt,
                 has_structure=row.has_structure,
-                is_viable=len(violation_reasons) == 0,
+                is_viable=is_viable,
                 violation_reasons=violation_reasons,
                 geom=geom,
                 listing_summary=listing_by_parcel.get(int(row.parcel_id)),

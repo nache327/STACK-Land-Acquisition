@@ -2,11 +2,16 @@
 GET /api/jurisdictions/:id/parcels — filtered parcel list (Phase 2+)
 GET /api/parcels/:id               — single parcel detail (drawer)
 """
+import hashlib
+import json as _json
+import os
+import time as _time
 import uuid
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import and_, case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,12 +31,125 @@ from app.services.zoning_system import get_zoning_from_db
 router = APIRouter(tags=["parcels"])
 
 
+# ── /parcels/search response cache ───────────────────────────────────────────
+#
+# Mirrors the (jid, captured_at)-keyed memo pattern PR #201 added for
+# /jurisdictions/{id}/parcels/map. The search endpoint has more cache-key
+# variety than the bulk map endpoint (filter combinations, bbox windows,
+# page/sort) so the cache key is a SHA256 over the canonical request
+# payload + the latest `coverage_snapshots.captured_at` for the
+# jurisdiction. When the audit refresh advances captured_at the key
+# rotates and the next request rebuilds.
+#
+# Stored as already-serialized JSON bytes — cache hits skip the
+# Postgres round-trip AND Pydantic's serialization.
+#
+# Cache-Control on a POST response is mostly cosmetic (HTTP caches
+# don't cache POSTs by default), but Vercel's edge cache may honor it
+# and a future migration to GET would pick it up for free.
+_PARCELS_SEARCH_CACHE: "OrderedDict[str, tuple[float, bytes]]" = OrderedDict()
+_PARCELS_SEARCH_CACHE_TTL_SECONDS = 300.0
+_PARCELS_SEARCH_CACHE_MAX_ENTRIES = int(
+    os.environ.get("_PARCELS_SEARCH_CACHE_MAX_ENTRIES", "64")
+)
+_PARCELS_SEARCH_CACHE_CONTROL = "public, s-maxage=60, stale-while-revalidate=300"
+
+
+def _parcels_search_cache_get(key: str) -> bytes | None:
+    entry = _PARCELS_SEARCH_CACHE.get(key)
+    if entry is None:
+        return None
+    inserted_at, payload = entry
+    if _time.monotonic() - inserted_at > _PARCELS_SEARCH_CACHE_TTL_SECONDS:
+        _PARCELS_SEARCH_CACHE.pop(key, None)
+        return None
+    _PARCELS_SEARCH_CACHE.move_to_end(key)
+    return payload
+
+
+def _parcels_search_cache_set(key: str, payload: bytes) -> None:
+    _PARCELS_SEARCH_CACHE[key] = (_time.monotonic(), payload)
+    _PARCELS_SEARCH_CACHE.move_to_end(key)
+    while len(_PARCELS_SEARCH_CACHE) > _PARCELS_SEARCH_CACHE_MAX_ENTRIES:
+        _PARCELS_SEARCH_CACHE.popitem(last=False)
+
+
+def _parcels_search_cache_clear() -> None:
+    """Test helper; not exposed via HTTP."""
+    _PARCELS_SEARCH_CACHE.clear()
+
+
+def _parcels_search_cache_key(
+    payload: CandidateParcelSearchRequest, captured_at_iso: str | None
+) -> str:
+    """SHA256 over canonical JSON of (payload, captured_at_iso).
+
+    `model_dump(mode='json')` gives a JSON-serializable dict with stable
+    field ordering driven by the Pydantic model; sort_keys forces
+    determinism across dict insertion-order variation. The hash is short
+    enough to use as a dict key with no collision risk for ~64 entries.
+    """
+    canonical = _json.dumps(
+        {
+            "payload": payload.model_dump(mode="json"),
+            "captured_at": captured_at_iso,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 @router.post("/parcels/search", response_model=CandidateParcelSearchResponse)
 async def candidate_parcel_search(
     payload: CandidateParcelSearchRequest,
     db: AsyncSession = Depends(get_db),
-) -> CandidateParcelSearchResponse:
-    return await search_candidate_parcels(payload, db)
+) -> Response:
+    """Run the candidate search; serve from the in-process memo on hit.
+
+    The memo key folds in the latest `coverage_snapshots.captured_at`
+    for the jurisdiction so an audit refresh implicitly invalidates
+    every cached entry for that jurisdiction. Hits surface
+    `X-Cache: HIT`; misses `X-Cache: MISS`. The Cache-Control header
+    is set on both for the (mostly cosmetic on POST) edge-cache path.
+    """
+    captured_at_row = await db.execute(
+        text(
+            "SELECT MAX(captured_at) AS ts FROM coverage_snapshots "
+            "WHERE jurisdiction_id = :jid"
+        ),
+        {"jid": payload.jurisdiction_id},
+    )
+    captured_at = captured_at_row.scalar_one_or_none()
+    captured_at_key = captured_at.isoformat() if captured_at is not None else None
+    cache_key = _parcels_search_cache_key(payload, captured_at_key)
+
+    cached = _parcels_search_cache_get(cache_key)
+    if cached is not None:
+        return Response(
+            content=cached,
+            media_type="application/json",
+            headers={
+                "Cache-Control": _PARCELS_SEARCH_CACHE_CONTROL,
+                "X-Cache": "HIT",
+            },
+        )
+
+    result = await search_candidate_parcels(payload, db)
+    # model_dump_json honors the union'd items field — full or slim,
+    # whichever the service returned. The bytes are what the cache
+    # stores; subsequent hits skip both the SQL and this dump.
+    body = result.model_dump_json().encode("utf-8")
+    _parcels_search_cache_set(cache_key, body)
+
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={
+            "Cache-Control": _PARCELS_SEARCH_CACHE_CONTROL,
+            "X-Cache": "MISS",
+        },
+    )
 
 
 _storage_perm_expr = case(

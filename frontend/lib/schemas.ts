@@ -202,6 +202,11 @@ export const CandidateParcelSearchRequestSchema = z.object({
   page: z.number().int().min(1).default(1),
   page_size: z.number().int().min(1).max(5000).default(100),
   sort: ParcelSearchSortSchema.default("acres_desc"),
+  // Map layer uses slim=true so the response omits popup-only fields
+  // (address, acres, flood/wetland flags, listing_summary, etc.). The
+  // parcels table keeps the default (slim=false) so its rows still
+  // render fully. Click handler fetches heavy detail via /api/parcels/{id}.
+  slim: z.boolean().default(false),
 });
 export type CandidateParcelSearchRequest = z.infer<typeof CandidateParcelSearchRequestSchema>;
 
@@ -216,26 +221,31 @@ export const ListingSummarySchema = z.object({
 });
 export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 
+// Each row accepts BOTH the full and slim shapes. Fields that the slim
+// mode drops are marked .optional() so the same parsed type can carry
+// either response — Map.tsx tolerates undefined for popup-only fields
+// because they're never read by paint expressions, only by the popup
+// HTML that's gated on a separate /api/parcels/{id} fetch.
 export const CandidateParcelRowSchema = z.object({
   parcel_id: z.number().int(),
   apn: z.string(),
-  address: z.string().nullable(),
+  address: z.string().nullable().optional(),       // slim: dropped
   city: z.string().nullable().optional(),
-  acres: z.number().nullable(),
+  acres: z.number().nullable().optional(),         // slim: dropped
   zoning_code: z.string().nullable().optional(),
   zone_class: ZoneClassSchema.nullable().optional(),
-  storage_allowed: z.boolean(),
-  storage_conditional: z.boolean(),
+  storage_allowed: z.boolean().optional(),         // slim: dropped
+  storage_conditional: z.boolean().optional(),     // slim: dropped
   storage_permission: z.string().nullable().optional(),
-  garage_permission: z.string().nullable().optional(),
-  in_flood_zone: z.boolean(),
-  in_wetland: z.boolean(),
-  aadt: z.number().int().nullable().optional(),
-  has_structure: z.boolean().nullable(),
+  garage_permission: z.string().nullable().optional(),  // slim: dropped
+  in_flood_zone: z.boolean().optional(),           // slim: dropped
+  in_wetland: z.boolean().optional(),              // slim: dropped
+  aadt: z.number().int().nullable().optional(),    // slim: dropped
+  has_structure: z.boolean().nullable().optional(),// slim: dropped
   is_viable: z.boolean(),
-  violation_reasons: z.array(z.string()),
+  violation_reasons: z.array(z.string()).optional().default([]),  // slim: dropped
   geom: z.record(z.unknown()).nullable().optional(),
-  listing_summary: ListingSummarySchema.nullable().optional(),
+  listing_summary: ListingSummarySchema.nullable().optional(),  // slim: dropped
 });
 export type CandidateParcelRow = z.infer<typeof CandidateParcelRowSchema>;
 
