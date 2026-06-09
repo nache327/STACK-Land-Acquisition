@@ -72,14 +72,18 @@ async def jurisdiction_with_one_parcel(db_session):
         ),
         {"jid": jid},
     )
+    # zone_use_matrix has Python-side defaults on the four UsePermission
+    # columns + human_reviewed; raw INSERT bypasses them, so supply each
+    # NOT NULL column explicitly. light_industrial was the column that
+    # surfaced this on CI.
     await db_session.execute(
         text(
             """
             INSERT INTO zone_use_matrix (
                 jurisdiction_id, zone_code, self_storage, mini_warehouse,
-                luxury_garage_condo, human_reviewed
+                light_industrial, luxury_garage_condo, human_reviewed
             )
-            VALUES (:jid, 'R-1', 'permitted', 'unclear', 'unclear', TRUE)
+            VALUES (:jid, 'R-1', 'permitted', 'unclear', 'unclear', 'unclear', TRUE)
             """
         ),
         {"jid": jid},
