@@ -137,6 +137,10 @@ _SLIM_KEPT_KEYS = {
     "zoning_code",
     "zone_class",
     "is_viable",
+    # Restored after the initial slim landing — Map.tsx paint
+    # expressions (lines 678, 892) read both. See the slim-restore PR.
+    "has_listing",
+    "garage_permission",
 }
 
 _SLIM_DROPPED_KEYS = {
@@ -146,7 +150,6 @@ _SLIM_DROPPED_KEYS = {
     "in_flood_zone",
     "in_wetland",
     "aadt",
-    "garage_permission",
     "storage_allowed",
     "storage_conditional",
     "violation_reasons",
@@ -176,6 +179,94 @@ async def test_slim_response_has_only_paint_fields(
     assert row["zoning_code"] == "R-1"
     assert row["zone_class"] == "residential"
     assert row["is_viable"] is True  # permitted + no structure/flood/wetland
+    # Paint-pipeline fields restored after the initial slim landing:
+    # the test fixture has no forsale_listings row + matrix.luxury_garage_condo
+    # is 'unclear', so has_listing=false and garage_permission='unclear'.
+    assert row["has_listing"] is False
+    assert row["garage_permission"] == "unclear"
+
+
+# ─── paint fields populate correctly when underlying data exists ─────────────
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_slim_has_listing_true_when_matched_listing_exists(
+    client, db_session, jurisdiction_with_one_parcel
+):
+    """Insert a current matched forsale_listing for the fixture parcel
+    and assert slim's has_listing flips true. This is the load-bearing
+    paint field for Map.tsx:678's magenta for-sale outline."""
+    jid = jurisdiction_with_one_parcel
+    # Discover the parcel_id from the test fixture row.
+    row = (await db_session.execute(
+        text("SELECT id FROM parcels WHERE jurisdiction_id = :jid"),
+        {"jid": jid},
+    )).scalar_one()
+    # forsale_listings has several NOT NULL columns with no server_default
+    # (address, sale_status, raw_row). is_current / first_seen_at /
+    # last_seen_at have server_defaults so they can be omitted.
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO forsale_listings (
+                jurisdiction_id, source, address, sale_status, raw_row,
+                matched_parcel_id
+            )
+            VALUES (
+                :jid, 'test', '1 Test Way', 'Active', '{}'::jsonb,
+                :pid
+            )
+            """
+        ),
+        {"jid": jid, "pid": row},
+    )
+    await db_session.commit()
+
+    from app.api.parcels import _parcels_search_cache_clear
+    _parcels_search_cache_clear()
+
+    try:
+        resp = await client.post(
+            "/api/parcels/search", json=_basic_payload(jid, slim=True)
+        )
+        assert resp.status_code == 200
+        item = resp.json()["items"][0]
+        assert item["has_listing"] is True
+    finally:
+        await db_session.execute(
+            text("DELETE FROM forsale_listings WHERE jurisdiction_id = :jid"),
+            {"jid": jid},
+        )
+        await db_session.commit()
+        _parcels_search_cache_clear()
+
+
+# ─── slim payload is still meaningfully smaller than full ────────────────────
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_slim_response_is_smaller_than_full(
+    client, jurisdiction_with_one_parcel
+):
+    """Restoring has_listing + garage_permission adds ~13 bytes per row;
+    slim should still be measurably smaller than full because the
+    popup-only fields (address, acres, has_structure, in_flood_zone,
+    in_wetland, aadt, storage_allowed, storage_conditional,
+    violation_reasons, listing_summary, city) all drop out."""
+    jid = jurisdiction_with_one_parcel
+
+    full_resp = await client.post(
+        "/api/parcels/search", json=_basic_payload(jid, slim=False)
+    )
+    slim_resp = await client.post(
+        "/api/parcels/search", json=_basic_payload(jid, slim=True)
+    )
+    assert full_resp.status_code == 200
+    assert slim_resp.status_code == 200
+    # One-row fixture isn't representative of Bergen-scale savings but
+    # any savings at all proves slim is still narrower than full —
+    # production validation lives in the PR body's curl harness.
+    assert len(slim_resp.content) < len(full_resp.content)
 
 
 # ─── backward-compat: slim=false is the existing shape ───────────────────────

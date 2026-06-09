@@ -367,7 +367,12 @@ export default function Map({
               // Listings indicator — true when this parcel has a current
               // matched listing (any source, confidence >= 0.85). Drives
               // the magenta polygon outline below.
-              has_listing: parcel.listing_summary?.has_listing === true,
+              // Slim responses carry `has_listing` directly (no
+              // listing_summary); full responses derive it from
+              // listing_summary. Read whichever shape is present.
+              has_listing:
+                parcel.has_listing === true ||
+                parcel.listing_summary?.has_listing === true,
             },
             geometry: parcel.geom as unknown as GeoJSON.Geometry,
           };

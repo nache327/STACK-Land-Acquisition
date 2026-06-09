@@ -200,6 +200,24 @@ async def search_candidate_parcels(
     total = (await db.execute(count_stmt)).scalar_one()
 
     offset = (payload.page - 1) * payload.page_size
+    # `has_listing_expr` is a scalar EXISTS over forsale_listings keyed
+    # on (matched_parcel_id, is_current). The matched_parcel_id index
+    # makes this cheap per row — negligible at page_size=5000. Adding
+    # it inline (rather than running the full listings second-pass)
+    # lets slim mode keep paint correctness for the for-sale outline
+    # in Map.tsx:678 without dragging the heavy listing_summary
+    # secondary query along. The full path still does its own
+    # secondary fetch below for the rich listing_summary fields the
+    # drawer reads.
+    has_listing_expr = (
+        select(literal_column("1"))
+        .where(
+            ForsaleListing.matched_parcel_id == Parcel.id,
+            ForsaleListing.is_current.is_(True),
+        )
+        .exists()
+        .label("has_listing")
+    )
     row_stmt = (
         select(
             Parcel.id.label("parcel_id"),
@@ -216,6 +234,7 @@ async def search_candidate_parcels(
             target_column.label("target_permission"),
             _PERMISSION_LABEL.label("storage_permission"),
             _GARAGE_PERM_LABEL.label("garage_permission"),
+            has_listing_expr,
             func.ST_AsGeoJSON(
                 func.ST_SimplifyPreserveTopology(Parcel.geom, 0.00001)
             ).label("geom"),
@@ -303,6 +322,8 @@ async def search_candidate_parcels(
                     zoning_code=row.zoning_code,
                     zone_class=row.zone_class,
                     storage_permission=row.storage_permission,
+                    has_listing=bool(row.has_listing),
+                    garage_permission=row.garage_permission,
                     is_viable=is_viable,
                     geom=geom,
                 )

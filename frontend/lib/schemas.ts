@@ -226,6 +226,12 @@ export type ListingSummary = z.infer<typeof ListingSummarySchema>;
 // either response — Map.tsx tolerates undefined for popup-only fields
 // because they're never read by paint expressions, only by the popup
 // HTML that's gated on a separate /api/parcels/{id} fetch.
+//
+// has_listing and garage_permission are kept in BOTH shapes (slim
+// includes them, full derives has_listing from listing_summary): Map.tsx
+// paint expressions read both, and after PR #202 shipped without them
+// the for-sale outline and KEEP_LAYER colors broke. See the slim-restore
+// PR for the trade analysis.
 export const CandidateParcelRowSchema = z.object({
   parcel_id: z.number().int(),
   apn: z.string(),
@@ -237,7 +243,8 @@ export const CandidateParcelRowSchema = z.object({
   storage_allowed: z.boolean().optional(),         // slim: dropped
   storage_conditional: z.boolean().optional(),     // slim: dropped
   storage_permission: z.string().nullable().optional(),
-  garage_permission: z.string().nullable().optional(),  // slim: dropped
+  garage_permission: z.string().nullable().optional(),  // slim: kept (paint)
+  has_listing: z.boolean().optional(),                  // slim: kept (paint)
   in_flood_zone: z.boolean().optional(),           // slim: dropped
   in_wetland: z.boolean().optional(),              // slim: dropped
   aadt: z.number().int().nullable().optional(),    // slim: dropped
