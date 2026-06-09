@@ -47,29 +47,68 @@ from scripts.audit_zoning_coverage import (
 
 
 def _strip_deleted_at_filter(sql: str) -> str:
-    """Reproduce the pre-fix matrix_stats CTE so we can A/B the audit.
+    """Reproduce the pre-fix audit SQL so we can A/B the audit.
 
-    The new code has `WHERE zum.deleted_at IS NULL` inside matrix_stats;
-    stripping that line gives back the old behavior. We use a narrow
-    string replace anchored on the unique surrounding lines so this
-    can't accidentally null other CTEs.
+    Three places in `_build_audit_sql` now filter `zum.deleted_at IS NULL`:
+
+    1. `matrix_stats` CTE — `WHERE zum.deleted_at IS NULL` (PR #191).
+    2. `parcel_zone_matrix` CTE LEFT JOIN — `AND zum.deleted_at IS NULL`
+       in the ON clause (this PR).
+    3. `unmatched_zone_samples` CTE LEFT JOIN — same shape (this PR).
+
+    To reconstruct the true pre-PR-#191 baseline (and thus give Master
+    the total before/after delta this whole effort produces), the
+    harness strips all three. We use narrow string anchors so this
+    can't drift if a future CTE adds a similar filter.
     """
-    needle = (
-        "            FROM zone_use_matrix zum\n"
-        "            WHERE zum.deleted_at IS NULL\n"
-        "            GROUP BY zum.jurisdiction_id\n"
+    patches = (
+        # matrix_stats CTE (PR #191)
+        (
+            "            FROM zone_use_matrix zum\n"
+            "            WHERE zum.deleted_at IS NULL\n"
+            "            GROUP BY zum.jurisdiction_id\n",
+            "            FROM zone_use_matrix zum\n"
+            "            GROUP BY zum.jurisdiction_id\n",
+        ),
+        # parcel_zone_matrix CTE LEFT JOIN (this PR)
+        (
+            "            LEFT JOIN zone_use_matrix zum\n"
+            "              ON zum.jurisdiction_id = p.jurisdiction_id\n"
+            "             AND zum.zone_code = p.zoning_code\n"
+            "             AND zum.deleted_at IS NULL\n"
+            "            GROUP BY p.jurisdiction_id\n",
+            "            LEFT JOIN zone_use_matrix zum\n"
+            "              ON zum.jurisdiction_id = p.jurisdiction_id\n"
+            "             AND zum.zone_code = p.zoning_code\n"
+            "            GROUP BY p.jurisdiction_id\n",
+        ),
+        # unmatched_zone_samples CTE LEFT JOIN (this PR) — note the
+        # extra indentation level vs parcel_zone_matrix's join.
+        (
+            "                LEFT JOIN zone_use_matrix zum\n"
+            "                  ON zum.jurisdiction_id = p.jurisdiction_id\n"
+            "                 AND zum.zone_code = p.zoning_code\n"
+            "                 AND zum.deleted_at IS NULL\n",
+            "                LEFT JOIN zone_use_matrix zum\n"
+            "                  ON zum.jurisdiction_id = p.jurisdiction_id\n"
+            "                 AND zum.zone_code = p.zoning_code\n",
+        ),
     )
-    replacement = (
-        "            FROM zone_use_matrix zum\n"
-        "            GROUP BY zum.jurisdiction_id\n"
-    )
-    if needle not in sql:
+    out = sql
+    missing: list[int] = []
+    for i, (needle, replacement) in enumerate(patches):
+        if needle not in out:
+            missing.append(i)
+            continue
+        out = out.replace(needle, replacement)
+    if missing:
         raise RuntimeError(
-            "Could not locate the matrix_stats WHERE clause to strip — "
-            "the audit SQL was rewritten in a way this harness doesn't "
-            "understand. Fix the harness before trusting its output."
+            "Could not locate filter clause(s) to strip at index(es) "
+            f"{missing}. The audit SQL was rewritten in a way this "
+            "harness doesn't understand. Fix the harness before "
+            "trusting its output."
         )
-    return sql.replace(needle, replacement)
+    return out
 
 
 async def _run_audit(conn, schema, *, old_behavior: bool) -> list[Any]:
