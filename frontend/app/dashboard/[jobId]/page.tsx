@@ -310,6 +310,10 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       page: 1,
       page_size: TABLE_PAGE_SIZE,
       sort: "acres_desc",
+      // Default to the full shape (slim=false). mapPayload below
+      // overrides to slim=true; table consumers stay on the full
+      // CandidateParcelRow shape.
+      slim: false,
     };
   }, [activeBbox, filters, jurisdictionId, buyBoxFilter.requireListed]);
 
