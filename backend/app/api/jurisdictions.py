@@ -902,9 +902,32 @@ async def admin_coverage_refresh(
     each row (e.g. 'manual', 'scheduled', 'post-ingest').
 
     Returns the count of rows written + the audit summary.
+
+    HTTP status:
+      200 — at least one snapshot written (full or partial success). A
+            partial-success body still includes `snapshots_failed > 0`
+            so the operator can see degradation without losing the
+            full-sweep continuation behavior.
+      502 — every snapshot attempt failed and nothing was written. Until
+            2026-06-08 this case returned 200 with `snapshots_written:
+            0` in the body — operators reading HTTP status missed it
+            (Hunterdon fired 4 refreshes over 24h with `captured_at`
+            unchanged because the audit SQL was hitting the asyncpg
+            `command_timeout` and the response was silently swallowed
+            into the body). Raising 502 surfaces the failure honestly.
     """
     from app.services.coverage_audit import refresh_all_snapshots
     result = await refresh_all_snapshots(db, jurisdiction_id=jurisdiction_id, source=source)
+    written = int(result.get("snapshots_written", 0) or 0)
+    failed = int(result.get("snapshots_failed", 0) or 0)
+    if written == 0 and failed > 0:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": "coverage refresh failed; no snapshots written",
+                "result": result,
+            },
+        )
     return result
 
 
