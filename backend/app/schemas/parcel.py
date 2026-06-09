@@ -187,12 +187,26 @@ class CandidateParcelRowSlim(BaseModel):
     field the MapLibre paint pipeline doesn't read. Click-time popup
     fetches the heavy detail from GET /api/parcels/{parcel_id}, so no
     field is lost to the operator — only deferred until click.
+
+    `has_listing` and `garage_permission` were added back after the
+    initial slim landing (PR #202): Map.tsx:678 reads has_listing for
+    the magenta for-sale outline filter, and Map.tsx:892 reads
+    garage_permission for the KEEP_LAYER fill. Dropping them broke
+    those two paint expressions; restoring them costs ~13 bytes per
+    row (~65 KB on a 5000-row Bergen page) — Master accepted the
+    trade for paint correctness.
     """
     parcel_id: int
     apn: str
     zoning_code: str | None = None
     zone_class: ZoneClass | None = None
     storage_permission: str | None = None
+    # Always present in slim — derived via a scalar EXISTS subquery in
+    # the main row SELECT, so slim mode never fires the heavy
+    # forsale_listings second-pass query that the full path uses to
+    # build listing_summary.
+    has_listing: bool = False
+    garage_permission: str | None = None
     is_viable: bool
     geom: dict[str, Any] | None = None
 
