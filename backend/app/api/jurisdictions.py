@@ -773,6 +773,67 @@ async def list_jurisdiction_cities(
     return [_CityCount(city=row.city, parcel_count=row.n) for row in result.all()]
 
 
+# ── /parcels/map response cache ──────────────────────────────────────────────
+#
+# In-process TTL+LRU cache for the parcels/map FeatureCollection. The endpoint
+# returns a single ~10-50 MB JSON blob for big counties (Bergen 281k, NYC
+# 856k features); on a hot key the recompute cost is the dominant request
+# latency. Each entry is keyed by `(jurisdiction_id, latest captured_at)` —
+# whenever the audit refresh advances `captured_at`, the key changes and the
+# new request gets a clean recompute. This is the "invalidate when audit
+# refreshes" pattern the Phase-1 brief calls for, with the TTL as a safety
+# net for environments where audits haven't run.
+#
+# Stored as bytes (already-serialized JSON) so cache hits skip both the
+# Postgres round-trip and the Python-side json.dumps; the JSONResponse
+# wrapper handles content negotiation. OrderedDict gives O(1) LRU eviction.
+#
+# Sized for ~75 jurisdictions × a small concurrent multiplier — 32 entries
+# at typical 5-20 MB each is ~600 MB worst case; on Railway's 2 GB plan
+# that's comfortable. Tune _PARCELS_MAP_CACHE_MAX_ENTRIES down if memory
+# pressure shows up in deploy logs.
+import json as _json
+import time as _time
+from collections import OrderedDict
+
+_PARCELS_MAP_CACHE: "OrderedDict[tuple[uuid.UUID, str | None], tuple[float, bytes]]" = (
+    OrderedDict()
+)
+_PARCELS_MAP_CACHE_TTL_SECONDS = 300.0
+_PARCELS_MAP_CACHE_MAX_ENTRIES = 32
+_PARCELS_MAP_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600"
+
+
+def _parcels_map_cache_get(
+    key: "tuple[uuid.UUID, str | None]",
+) -> bytes | None:
+    """Return cached payload bytes if present and not expired; else None.
+    Moves the entry to the MRU end on hit."""
+    entry = _PARCELS_MAP_CACHE.get(key)
+    if entry is None:
+        return None
+    inserted_at, payload = entry
+    if _time.monotonic() - inserted_at > _PARCELS_MAP_CACHE_TTL_SECONDS:
+        _PARCELS_MAP_CACHE.pop(key, None)
+        return None
+    _PARCELS_MAP_CACHE.move_to_end(key)
+    return payload
+
+
+def _parcels_map_cache_set(
+    key: "tuple[uuid.UUID, str | None]", payload: bytes
+) -> None:
+    _PARCELS_MAP_CACHE[key] = (_time.monotonic(), payload)
+    _PARCELS_MAP_CACHE.move_to_end(key)
+    while len(_PARCELS_MAP_CACHE) > _PARCELS_MAP_CACHE_MAX_ENTRIES:
+        _PARCELS_MAP_CACHE.popitem(last=False)
+
+
+def _parcels_map_cache_clear() -> None:
+    """Test helper; not exposed via HTTP."""
+    _PARCELS_MAP_CACHE.clear()
+
+
 @router.get("/jurisdictions/{jurisdiction_id}/parcels/map")
 async def get_parcels_map_layer(
     jurisdiction_id: uuid.UUID,
@@ -784,8 +845,53 @@ async def get_parcels_map_layer(
 
     Uses PostGIS ST_AsGeoJSON for efficient server-side serialization.
     Geometry is simplified to 6 decimal places (~0.1 m precision) to reduce
-    payload size.  Only parcels with valid geometries are included.
+    payload size. Only parcels with valid geometries are included.
+
+    Performance — Phase 1 (2026-06-08):
+      1. `Cache-Control: public, s-maxage=300, stale-while-revalidate=600`
+         lets the upstream CDN (or any HTTP cache between client and server)
+         serve hot requests without hitting the origin. Parcels-with-zoning
+         don't change mid-session; a 5-min freshness window is acceptable
+         for the matrix-edit cadence.
+      2. Server-side TTL+LRU memo keyed by `(jurisdiction_id, latest
+         captured_at)`. The captured_at lookup is a cheap indexed SELECT;
+         when the audit refresh advances the snapshot, the cache key
+         changes and the next request rebuilds the FeatureCollection.
+      3. Slim property set: only the fields the MapLibre paint pipeline
+         actually reads (`zoning_code`, `zone_class`, `storage_permission`,
+         plus the Feature-level `id` for click routing). The popup/drawer
+         fetches heavy detail via `GET /api/parcels/{parcel_id}` on click.
+         See PR body for the audit of which fields were dropped + why.
     """
+    # captured_at lookup is cheap (~5 ms on an indexed `(jurisdiction_id,
+    # captured_at DESC)` access path). If no snapshot exists yet, the key
+    # falls back to `(jurisdiction_id, None)` and the TTL alone gates
+    # invalidation.
+    captured_at_row = await db.execute(
+        text(
+            "SELECT MAX(captured_at) AS ts FROM coverage_snapshots "
+            "WHERE jurisdiction_id = :jid"
+        ),
+        {"jid": jurisdiction_id},
+    )
+    captured_at = captured_at_row.scalar_one_or_none()
+    captured_at_key = captured_at.isoformat() if captured_at is not None else None
+    cache_key = (jurisdiction_id, captured_at_key)
+
+    cached = _parcels_map_cache_get(cache_key)
+    if cached is not None:
+        # Return pre-serialized bytes via the base Response — bypasses
+        # JSONResponse's redundant json.dumps step on cache hit.
+        from fastapi import Response as _Response
+        return _Response(
+            content=cached,
+            media_type="application/geo+json",
+            headers={
+                "Cache-Control": _PARCELS_MAP_CACHE_CONTROL,
+                "X-Cache": "HIT",
+            },
+        )
+
     sql = text("""
         SELECT json_build_object(
             'type', 'FeatureCollection',
@@ -797,14 +903,8 @@ async def get_parcels_map_layer(
                         'geometry',   ST_AsGeoJSON(p.geom, 6)::json,
                         'properties', json_build_object(
                             'id',                p.id,
-                            'apn',               p.apn,
                             'zoning_code',       p.zoning_code,
                             'zone_class',        p.zone_class,
-                            'acres',             p.acres,
-                            'has_structure',     p.has_structure,
-                            'in_flood_zone',     p.in_flood_zone,
-                            'in_wetland',        p.in_wetland,
-                            'address',           p.address,
                             'storage_permission', CASE
                                 -- Any use permitted — show green regardless of source
                                 WHEN zum.self_storage = 'permitted'
@@ -846,16 +946,24 @@ async def get_parcels_map_layer(
     result = await db.execute(sql, {"jid": jurisdiction_id})
     row = result.one_or_none()
 
-    headers = {"Cache-Control": "no-store"}
+    fc = row.fc if (row is not None and row.fc is not None) else {
+        "type": "FeatureCollection",
+        "features": [],
+    }
+    # Serialize once, cache the bytes, return them. Caching the rendered
+    # bytes (not the Python dict) means cache hits skip both the DB query
+    # and the json.dumps step.
+    payload = _json.dumps(fc, separators=(",", ":")).encode("utf-8")
+    _parcels_map_cache_set(cache_key, payload)
 
-    if row is None or row.fc is None:
-        return JSONResponse(
-            content={"type": "FeatureCollection", "features": []},
-            media_type="application/geo+json",
-            headers=headers,
-        )
-
-    return JSONResponse(content=row.fc, media_type="application/geo+json", headers=headers)
+    return JSONResponse(
+        content=fc,
+        media_type="application/geo+json",
+        headers={
+            "Cache-Control": _PARCELS_MAP_CACHE_CONTROL,
+            "X-Cache": "MISS",
+        },
+    )
 
 
 # ─── Admin: cleanup empty / duplicate jurisdictions ──────────────────────────
