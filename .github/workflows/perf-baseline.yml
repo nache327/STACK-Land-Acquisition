@@ -1,0 +1,204 @@
+name: Perf baseline (parcels-search latency)
+
+# When this runs:
+#  - push to main that touches the parcels-search path
+#  - PR that touches the parcels-search path (gates merge on cold regression)
+#  - weekly cron, Mondays 09:00 UTC (drift detection across the fleet)
+#  - workflow_dispatch (Master fires ad-hoc when investigating)
+#
+# What it compares:
+#   benchmark_parcels_search.py output vs the committed
+#   docs/PERF_BASELINE_2026_06_10.json (machine-readable file).
+#
+# Failure condition:
+#   any jurisdiction regresses cold_bbox_p50 OR cold_whole_p50 by
+#   more than the regression-threshold (+50% default) AND by more
+#   than the absolute floor (+3.0 s default). Warm metrics are
+#   surfaced in the diff but not gated.
+#
+# PR-only carve-out (added after workflow run 27267128054):
+#   When a PR doesn't change any of the three watched SERVICE files
+#   (api/parcels, services/candidate_search, schemas/parcel), a
+#   detected regression cannot be PR-attributable — meta-PRs that
+#   change only the workflow, comparator, harness, or docs can't
+#   slow down prod. In that case the gate runs informationally:
+#   the comment is still posted, but the workflow doesn't fail.
+#   Cron, push-to-main, and workflow_dispatch always fail on
+#   regression — those paths exist to catch drift and post-merge
+#   issues.
+#
+# Side effects:
+#   - PR runs always post a markdown comment with movements >25%.
+#   - Cron runs open a GitHub issue when regressions are detected.
+#   - The baseline file is NEVER updated automatically — promotion
+#     requires an explicit human PR.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/api/parcels.py"
+      - "backend/app/services/candidate_search.py"
+      - "backend/app/schemas/parcel.py"
+      - "backend/scripts/benchmark_parcels_search.py"
+      - "backend/scripts/compare_perf_baseline.py"
+      - ".github/workflows/perf-baseline.yml"
+  pull_request:
+    paths:
+      - "backend/app/api/parcels.py"
+      - "backend/app/services/candidate_search.py"
+      - "backend/app/schemas/parcel.py"
+      - "backend/scripts/benchmark_parcels_search.py"
+      - "backend/scripts/compare_perf_baseline.py"
+      - ".github/workflows/perf-baseline.yml"
+  schedule:
+    # Weekly: Mondays 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+# Required for posting PR comments + opening issues via `gh`.
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+# Don't pile sweeps on top of each other — a long sweep mid-day
+# should cancel any pending re-triggers on the same ref.
+concurrency:
+  group: perf-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  perf:
+    name: Sweep + compare
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need full history so the path-aware gate can diff the PR
+          # head against its base ref.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install harness deps
+        run: pip install httpx
+
+      - name: Run benchmark sweep
+        id: sweep
+        run: |
+          python backend/scripts/benchmark_parcels_search.py \
+            --json-out /tmp/perf_current.json \
+            --md-out /tmp/perf_current.md
+        # The harness itself never fails the workflow — even if a few
+        # counties time out, the comparison step is what gates.
+        continue-on-error: true
+
+      - name: Compare against committed baseline
+        id: compare
+        continue-on-error: true
+        # Two-gate failure threshold: BOTH +50% relative AND +3.0s
+        # absolute on cold_bbox_p50 or cold_whole_p50. Workflow run
+        # 27248352894 (an unchanged-prod re-run of the harness)
+        # crossed the relative gate three times at absolute deltas
+        # of +1.47 / +2.07 / +2.85 s — all noise. The 3.0 s floor
+        # clears that band while still catching real ≥3 s
+        # regressions. See the comparator's --help for tuning.
+        run: |
+          python backend/scripts/compare_perf_baseline.py \
+            --baseline docs/PERF_BASELINE_2026_06_10.json \
+            --current /tmp/perf_current.json \
+            --diff-out /tmp/perf_diff.md \
+            --signal-threshold 0.25 \
+            --regression-threshold 0.50 \
+            --min-absolute-regression-s 3.0
+
+      - name: Capture compare outcome
+        id: outcome
+        run: |
+          if [ "${{ steps.compare.outcome }}" = "failure" ]; then
+            echo "regressed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "regressed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect whether PR touches service code
+        id: paths
+        # Path-aware gate skip. On PRs that only change meta files
+        # (workflow, comparator, harness, docs), a perf "regression"
+        # cannot be PR-attributable — those files don't run in
+        # prod. We still post the comment so Master sees infra
+        # drift, but we don't FAIL the workflow and block the PR.
+        # No-op on schedule / push / workflow_dispatch.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+          echo "Changed files in this PR:"
+          echo "$changed" | sed 's/^/  /'
+          if echo "$changed" | grep -qE '^backend/app/(api/parcels|services/candidate_search|schemas/parcel)\.py$'; then
+            echo "service_changed=true" >> "$GITHUB_OUTPUT"
+            echo "→ PR touches service code; gate is ACTIVE."
+          else
+            echo "service_changed=false" >> "$GITHUB_OUTPUT"
+            echo "→ PR does NOT touch service code; gate is INFORMATIONAL."
+          fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-baseline-${{ github.run_id }}
+          path: |
+            /tmp/perf_current.json
+            /tmp/perf_current.md
+            /tmp/perf_diff.md
+          retention-days: 30
+
+      - name: Post PR comment with diff
+        if: github.event_name == 'pull_request' && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -f /tmp/perf_diff.md ]; then
+            gh pr comment "$PR_NUMBER" --body-file /tmp/perf_diff.md
+          else
+            echo "no diff to post (compare step likely never produced one)" >&2
+          fi
+
+      - name: Open issue on cron regression
+        if: >-
+          github.event_name == 'schedule' &&
+          steps.outcome.outputs.regressed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "perf-baseline regression — $(date -u +%Y-%m-%d)" \
+            --body-file /tmp/perf_diff.md \
+            --label perf-regression
+          echo "Opened regression issue."
+
+      - name: Fail the job if cold regressed
+        # Gate logic:
+        #   PR + meta-only change          → skip fail (comment posted)
+        #   PR + service-file change       → fail (real PR signal)
+        #   schedule / push / dispatch     → always fail on regression
+        if: >-
+          steps.outcome.outputs.regressed == 'true' &&
+          (
+            github.event_name != 'pull_request' ||
+            steps.paths.outputs.service_changed == 'true'
+          )
+        run: |
+          echo "❌ Compare step found cold_bbox or cold_whole regressions >50%."
+          exit 1
