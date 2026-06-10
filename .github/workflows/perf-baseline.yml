@@ -87,13 +87,21 @@ jobs:
       - name: Compare against committed baseline
         id: compare
         continue-on-error: true
+        # Two-gate failure threshold: BOTH +50% relative AND +3.0s
+        # absolute on cold_bbox_p50 or cold_whole_p50. Workflow run
+        # 27248352894 (an unchanged-prod re-run of the harness)
+        # crossed the relative gate three times at absolute deltas
+        # of +1.47 / +2.07 / +2.85 s — all noise. The 3.0 s floor
+        # clears that band while still catching real ≥3 s
+        # regressions. See the comparator's --help for tuning.
         run: |
           python backend/scripts/compare_perf_baseline.py \
             --baseline docs/PERF_BASELINE_2026_06_10.json \
             --current /tmp/perf_current.json \
             --diff-out /tmp/perf_diff.md \
             --signal-threshold 0.25 \
-            --regression-threshold 0.50
+            --regression-threshold 0.50 \
+            --min-absolute-regression-s 3.0
 
       - name: Capture compare outcome
         id: outcome

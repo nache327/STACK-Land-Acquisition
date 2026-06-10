@@ -17,6 +17,18 @@ Inputs
 --regression-threshold  Fractional regression that triggers a non-zero
                         exit on cold_bbox_p50 or cold_whole_p50.
                         Default 0.50.
+--min-absolute-regression-s
+                        Minimum absolute (current - baseline) increase
+                        in seconds required IN ADDITION TO the relative
+                        threshold before a metric is gated as a
+                        regression. Default 3.0. The first cross-run
+                        (workflow run 27248352894 vs 2026-06-09 baseline)
+                        showed fleet-wide ±25-50% drift between
+                        identical prod code measured at different
+                        times — three metrics crossed 50% relative
+                        with absolute deltas of +1.47 / +2.07 / +2.85 s,
+                        all noise. 3.0 s clears that noise band while
+                        still catching real ≥3 s absolute regressions.
 --diff-out   Where to write the markdown diff. Default stdout.
 
 Exit codes
@@ -103,6 +115,7 @@ def _render_diff_markdown(
     missing_jurisdictions: list[dict[str, Any]],
     regression_threshold: float,
     signal_threshold: float,
+    min_absolute_regression_s: float,
     regressions: list[dict[str, Any]],
 ) -> str:
     out: list[str] = []
@@ -119,29 +132,36 @@ def _render_diff_markdown(
     out.append(f"- Signal threshold (listed): ±{signal_threshold * 100:.0f}%")
     out.append(
         f"- Regression threshold (gates the workflow): "
-        f"+{regression_threshold * 100:.0f}% on cold_bbox_p50 "
+        f"+{regression_threshold * 100:.0f}% relative AND "
+        f"+{min_absolute_regression_s:.1f}s absolute on cold_bbox_p50 "
         f"OR cold_whole_p50"
     )
     out.append("")
     if regressions:
         out.append(
             f"## ❌ {len(regressions)} regression(s) above "
-            f"+{regression_threshold * 100:.0f}%"
+            f"+{regression_threshold * 100:.0f}% AND "
+            f"+{min_absolute_regression_s:.1f}s absolute"
         )
         out.append("")
-        out.append("| Jurisdiction | Metric | Baseline | Current | Δ |")
-        out.append("|---|---|---:|---:|---:|")
+        out.append(
+            "| Jurisdiction | Metric | Baseline | Current | "
+            "Δ (rel) | Δ (abs) |"
+        )
+        out.append("|---|---|---:|---:|---:|---:|")
         for r in regressions:
             out.append(
                 f"| {r['name']} | `{r['metric']}` | "
                 f"{_fmt_seconds(r['baseline'])} s | "
                 f"{_fmt_seconds(r['current'])} s | "
-                f"**{_pct(r['delta_frac'])}** |"
+                f"**{_pct(r['delta_frac'])}** | "
+                f"+{r.get('delta_s', 0):.2f} s |"
             )
         out.append("")
     else:
         out.append(
             f"## ✅ No regressions above +{regression_threshold * 100:.0f}% "
+            f"AND +{min_absolute_regression_s:.1f}s absolute "
             f"on cold_bbox_p50 or cold_whole_p50."
         )
         out.append("")
@@ -190,6 +210,7 @@ def _diff(
     *,
     regression_threshold: float,
     signal_threshold: float,
+    min_absolute_regression_s: float,
 ) -> tuple[str, list[dict[str, Any]]]:
     base_idx = _index(baseline)
     cur_idx = _index(current)
@@ -218,16 +239,30 @@ def _diff(
                     "current": mv["current"],
                     "delta_frac": delta,
                 })
+            # Two-gate: BOTH relative > regression_threshold AND
+            # absolute (current - baseline) > min_absolute_regression_s.
+            # The absolute floor filters cross-run noise on cheap
+            # metrics — empirical evidence in workflow run
+            # 27248352894 showed 3 noise crossings of the 50% gate at
+            # absolute deltas of +1.47 / +2.07 / +2.85 s while prod
+            # code was unchanged. 3.0 s default clears that noise band
+            # without masking real ≥3 s regressions.
+            base = mv["baseline"]
+            cur = mv["current"]
+            abs_delta = (cur - base) if (cur is not None and base is not None) else None
             if (
                 metric in GATED_METRICS
                 and delta > regression_threshold
+                and abs_delta is not None
+                and abs_delta > min_absolute_regression_s
             ):
                 regressions.append({
                     "name": name,
                     "metric": metric,
-                    "baseline": mv["baseline"],
-                    "current": mv["current"],
+                    "baseline": base,
+                    "current": cur,
                     "delta_frac": delta,
+                    "delta_s": abs_delta,
                 })
     for jid, base_row in base_idx.items():
         if jid not in cur_idx:
@@ -252,6 +287,7 @@ def _diff(
         missing_jurisdictions=missing_jurisdictions,
         regression_threshold=regression_threshold,
         signal_threshold=signal_threshold,
+        min_absolute_regression_s=min_absolute_regression_s,
         regressions=regressions,
     )
     return md, regressions
@@ -270,6 +306,15 @@ def main() -> int:
         help="Fractional movement that lists a row in the diff. Default 0.25.",
     )
     parser.add_argument(
+        "--min-absolute-regression-s", type=float, default=3.0,
+        help=(
+            "Minimum absolute (current - baseline) increase in seconds "
+            "REQUIRED in addition to the relative threshold before a "
+            "metric is gated. Default 3.0. Filters cross-run noise on "
+            "cheap metrics."
+        ),
+    )
+    parser.add_argument(
         "--diff-out",
         help="Path to write the markdown diff. Default stdout.",
     )
@@ -282,6 +327,7 @@ def main() -> int:
         current,
         regression_threshold=args.regression_threshold,
         signal_threshold=args.signal_threshold,
+        min_absolute_regression_s=args.min_absolute_regression_s,
     )
     if args.diff_out:
         Path(args.diff_out).write_text(md)
@@ -290,10 +336,14 @@ def main() -> int:
     if regressions:
         sys.stderr.write(
             f"\n❌ {len(regressions)} regression(s) above "
-            f"+{args.regression_threshold * 100:.0f}%.\n"
+            f"+{args.regression_threshold * 100:.0f}% "
+            f"AND +{args.min_absolute_regression_s:.1f}s absolute.\n"
         )
         return 1
-    sys.stderr.write("\n✅ no regressions.\n")
+    sys.stderr.write(
+        f"\n✅ no regressions above +{args.regression_threshold * 100:.0f}% "
+        f"AND +{args.min_absolute_regression_s:.1f}s absolute.\n"
+    )
     return 0
 
 
