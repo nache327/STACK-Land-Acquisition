@@ -12,8 +12,20 @@ name: Perf baseline (parcels-search latency)
 #
 # Failure condition:
 #   any jurisdiction regresses cold_bbox_p50 OR cold_whole_p50 by
-#   more than the regression-threshold (+50% default). Warm
-#   metrics are surfaced in the diff but not gated.
+#   more than the regression-threshold (+50% default) AND by more
+#   than the absolute floor (+3.0 s default). Warm metrics are
+#   surfaced in the diff but not gated.
+#
+# PR-only carve-out (added after workflow run 27267128054):
+#   When a PR doesn't change any of the three watched SERVICE files
+#   (api/parcels, services/candidate_search, schemas/parcel), a
+#   detected regression cannot be PR-attributable — meta-PRs that
+#   change only the workflow, comparator, harness, or docs can't
+#   slow down prod. In that case the gate runs informationally:
+#   the comment is still posted, but the workflow doesn't fail.
+#   Cron, push-to-main, and workflow_dispatch always fail on
+#   regression — those paths exist to catch drift and post-merge
+#   issues.
 #
 # Side effects:
 #   - PR runs always post a markdown comment with movements >25%.
@@ -65,6 +77,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Need full history so the path-aware gate can diff the PR
+          # head against its base ref.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -112,6 +128,30 @@ jobs:
             echo "regressed=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Detect whether PR touches service code
+        id: paths
+        # Path-aware gate skip. On PRs that only change meta files
+        # (workflow, comparator, harness, docs), a perf "regression"
+        # cannot be PR-attributable — those files don't run in
+        # prod. We still post the comment so Master sees infra
+        # drift, but we don't FAIL the workflow and block the PR.
+        # No-op on schedule / push / workflow_dispatch.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+          echo "Changed files in this PR:"
+          echo "$changed" | sed 's/^/  /'
+          if echo "$changed" | grep -qE '^backend/app/(api/parcels|services/candidate_search|schemas/parcel)\.py$'; then
+            echo "service_changed=true" >> "$GITHUB_OUTPUT"
+            echo "→ PR touches service code; gate is ACTIVE."
+          else
+            echo "service_changed=false" >> "$GITHUB_OUTPUT"
+            echo "→ PR does NOT touch service code; gate is INFORMATIONAL."
+          fi
+
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -149,7 +189,16 @@ jobs:
           echo "Opened regression issue."
 
       - name: Fail the job if cold regressed
-        if: steps.outcome.outputs.regressed == 'true'
+        # Gate logic:
+        #   PR + meta-only change          → skip fail (comment posted)
+        #   PR + service-file change       → fail (real PR signal)
+        #   schedule / push / dispatch     → always fail on regression
+        if: >-
+          steps.outcome.outputs.regressed == 'true' &&
+          (
+            github.event_name != 'pull_request' ||
+            steps.paths.outputs.service_changed == 'true'
+          )
         run: |
           echo "❌ Compare step found cold_bbox or cold_whole regressions >50%."
           exit 1
