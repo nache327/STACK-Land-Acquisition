@@ -352,15 +352,20 @@ def _render_markdown(report: dict[str, Any]) -> str:
         )
     lines.append("")
     lines.append("## Outliers")
+    # Thresholds: the 2026-06-09 baseline established a fleet-floor of
+    # ~2.3 s for cold_bbox (PG/network constant), so the original 2.0 s
+    # flag caught every county. Bumped to 4.0 s — flags only the
+    # buyer-blocking outliers (currently just Philadelphia at 6.56 s).
+    # cold_whole stays at 8.0 s.
     outliers = [
         r for r in rows_sorted
-        if (r["cold_bbox"]["p50_s"] or 0) > 2.0
+        if (r["cold_bbox"]["p50_s"] or 0) > 4.0
         or (r["cold_whole"]["p50_s"] or 0) > 8.0
     ]
     lines.append("")
     if outliers:
         lines.append(
-            "Flagged: `cold_bbox_p50 > 2s` OR `cold_whole_p50 > 8s`. "
+            "Flagged: `cold_bbox_p50 > 4s` OR `cold_whole_p50 > 8s`. "
             "Candidates for Phase 3 follow-up — do not fix mid-flight. "
             "`parcel_count` and `payload_kb` are inlined so the "
             "parcel-count-vs-something-else question can be answered "
