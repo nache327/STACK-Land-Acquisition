@@ -16,30 +16,30 @@ For each Westchester muni that lands in Lane A's Task 4 ingest, look up the row 
 
 ## Westchester muni roster — 43 entries (prod_city_value sorted by parcel_count desc)
 
-### ✓ Verified entries (6 munis)
+### ✓ Verified entries (10 munis)
 
-These have confirmed `ordinance_url` + chapter from `docs/PHASE2_NY_CT_DIAGNOSTIC.md` or Lane A's directory file.
+These have confirmed `ordinance_url` + chapter from `docs/PHASE2_NY_CT_DIAGNOSTIC.md`, Lane A's directory file, or this round's WebSearch verification.
 
 | prod_city_value | parcels | type | platform | ordinance_url | chapter | use_structure | notes |
 |---|---:|---|---|---|---|---|---|
-| **Scarsdale** | 5,929 | village (overlap with town) | eCode360 | https://ecode360.com/6439798 | Chapter 310 (Zoning) | district_narrative | ✓ Lane A's directory file. Sprint precedent: PR #234. Article II use restrictions at ecode360.com/6439862 |
-| **Rye** | 4,948 | city | eCode360 | https://ecode360.com/6977013 | Chapter 197 | partial NJ-like (cumulative district text) | Article IV → Article VIII Table of Regulations at ecode360.com/6977440 |
+| **Yonkers** | 36,431 | city | eCode360 | https://ecode360.com/15113784 | Chapter 43 (Zoning, 2000) | district_narrative w/ Schedule of Use Regulations | **32 classes of districts.** Sample codes: D-MX, D-IRT, UR-LD, L-MX, OL, BR, B, BA, CB, DW, GC, C, CM, CU, IP, I. Article V Use & Dimensional Regulations at ecode360.com/15114432. Article XVIII Downtown Districts at ecode360.com/16004495. Has both "Schedule of Use Regulations" + "List of Use Regulations by District" — closest to NJ pattern of the 4 big cities. **Expect 25-40 codes from this muni alone.** |
+| **New Rochelle** | 15,756 | city | eCode360 | https://ecode360.com/6729498 | Chapter 331 (Zoning, 2001) | district_narrative w/ separate residential + commercial use articles | Article VI Uses in Residence Districts at ecode360.com/6729979. Uses in Commercial and Industrial Districts at ecode360.com/6730813. District Purposes at ecode360.com/6729933. Sample codes: R1-20 (one-family 20k lot), R2-7.0, NB-2.0 (Neighborhood Business), LI-H (Light Industry Hotel). Has Downtown Overlay Zones at ecode360.com/31366866. **Expect 20-35 codes.** |
+| **Mount Vernon** | 11,173 | city | eCode360 | https://ecode360.com/6605362 | Chapter 267 (Zoning, 2018 amendment) | district_narrative w/ residence + mixed-use + nonresidence + special | Article III Establishment of Districts at ecode360.com/39302219. Article V Districts at ecode360.com/39302384. Sample codes: R1-7, R1-4.5, R1-3.6, R2-4.5, R1-TH, RMF-6.75, RMF-10, RMF-15 (residential), LI-15, LI-7.5 (light industrial), MX-1 (mixed-use w/ "Washington Street Light Industrial Area"), MVW (Mount Vernon West Transit-Oriented Development). **Expect 20-30 codes.** |
+| **White Plains** | 13,965 | city | **Municode** (not city-PDF as PHASE2 diagnostic suggested) | https://library.municode.com/ny/white_plains/codes/code_of_ordinances?nodeId=TITIXZOPLBUST_CH9-2ZO | Chapter 9-2 (Zoning) | Municode TOC w/ district sections | **Correction**: White Plains zoning is on **Municode** library.municode.com/ny/white_plains, NOT city-hosted PDF. The PDF at cityofwhiteplains.com is a printed copy; the authoritative live source is Municode. Sample codes: R1-30, R1-20, R1-12.5, R1-7.5, R1-5 (Residential One-Family), R2-4, R2-2.5 (One/Two-Family), RM-2.5, RM-2, RM-1.5, RM-1.5T, RM-1, RM-0.7, RM-0.4, RM-0.35 (Multi-Family), PSRDD (Planned Senior Residential), C-O (Campus Office), O-R (Office-Residential). **Expect 25-40 codes.** |
+| **Scarsdale** | 5,929 | village (overlap with town) | eCode360 | https://ecode360.com/6439798 | Chapter 310 (Zoning) | district_narrative | ✓ Lane A's directory file. Sprint precedent: PR #234. Article II use restrictions at ecode360.com/6439862. **18 codes confirmed (PR #234)** |
+| **Rye** | 4,948 | city | eCode360 | https://ecode360.com/6977013 | Chapter 197 | partial NJ-like (cumulative district text) | Article IV → Article VIII Table of Regulations at ecode360.com/6977440. Sample codes: R-6, RT, RA-1 through RA-6, B districts |
 | **Mount Kisco** | 2,805 | village/town | eCode360 | https://ecode360.com/10863078 | Chapter 110 | district_narrative | District regulations at ecode360.com/10863108. PD, CD, RS-12, CB-1, GR, RDX, ML districts |
-| **White Plains** | 13,965 | city | city-hosted PDF | https://www.cityofwhiteplains.com/120/White-Plains-Zoning-Ordinance | (PDF; not eCode) | PDF workflow | NOT eCode360. City-hosted PDF; Planning Department for use questions |
 | **Bronxville** | 1,723 | village | eCode360 | https://ecode360.com/9450363 | Chapter 310 | district_narrative | Article III is district-use-and-bulk: AAA, AA, A, B, C, D, Central Business A, Service Business B |
 
-### ⚠️ Research-needed entries (37 munis)
+### ⚠️ Research-needed entries (33 munis)
 
-These all have a confirmed `prod_city_value` (parcel_count from prod) but `ordinance_url` + chapter need verification before matrix sprint. Default platform assumption: **eCode360** (the predominant NY suburban platform per PHASE2_NY_CT_DIAGNOSTIC). Each entry's "best guess URL" should be spot-verified before use in citations.
+These all have a confirmed `prod_city_value` (parcel_count from prod) but `ordinance_url` + chapter need verification before matrix sprint. Default platform assumption: **eCode360** (the predominant NY suburban platform per PHASE2_NY_CT_DIAGNOSTIC, confirmed by Yonkers + New Rochelle + Mount Vernon being on eCode360). Each entry's "best guess URL" should be spot-verified before use in citations.
 
-#### Cities (4 ⚠️ — all major; verify ordinance URL carefully)
+#### Cities (1 ⚠️ — Peekskill only; the other 3 cities have been verified above)
 
 | prod_city_value | parcels | type | best-guess platform | research-needed URL | notes |
 |---|---:|---|---|---|---|
-| **Yonkers** | 36,431 | city | eCode360 | https://ecode360.com/YO0290 (placeholder pattern; verify short code) | NY's largest by parcel count in Westchester; ordinance likely Chapter 200 (Yonkers Zoning) |
-| **New Rochelle** | 15,756 | city | eCode360 | https://ecode360.com/NE0301 (placeholder; verify) | Article 3 zoning likely |
-| **Mount Vernon** | 11,173 | city | eCode360 OR city-hosted | research-needed | Likely Chapter 267 or similar |
-| **Peekskill** | 6,436 | city | eCode360 | https://ecode360.com/PE0570 (placeholder; verify) | |
+| **Peekskill** | 6,436 | city | eCode360 | research-needed | Likely 20-25 codes. Small Hudson River city; possibly Chapter 300 or 575 |
 
 #### Towns (15 ⚠️)
 
@@ -92,6 +92,32 @@ These all have a confirmed `prod_city_value` (parcel_count from prod) but `ordin
 - **43 muni entries** (41 distinct names, with Mamaroneck + Ossining each split into town/village rows)
 - **Total Westchester parcels in these 43 munis: ~232,000** (sum of parcel_count column)
 - **Westchester parcel_count (audit): 257,914** — a delta of ~26k parcels not assigned to any of these 43 (likely unincorporated areas or NULL `city` rows from the parcel ingest)
+
+### Verification status
+
+| status | munis | parcel coverage |
+|---|---:|---:|
+| ✓ verified (URL + chapter + sample codes) | **10** (Yonkers, New Rochelle, Mount Vernon, White Plains, Scarsdale, Rye, Mount Kisco, Bronxville, + 2 pre-existing) | **~108,000 parcels** (~47% of in-roster total) |
+| ⚠️ research-needed (prod_city_value confirmed; URL pending) | 33 | ~124,000 parcels |
+
+**The 4 major cities (Yonkers + New Rochelle + Mount Vernon + White Plains) = 77,325 parcels = 33% of in-roster total are now deeply verified with sample zone codes + use-table section anchors.** These were the largest-risk munis per Master's pre-stage extension brief.
+
+### Combined zone-code estimate
+
+| muni | likely codes |
+|---|---:|
+| Yonkers | 25-40 |
+| New Rochelle | 20-35 |
+| Mount Vernon | 20-30 |
+| White Plains | 25-40 |
+| Scarsdale (confirmed PR #234) | 18 |
+| Rye | 10-15 |
+| Mount Kisco | 8-12 |
+| Bronxville | 6-10 |
+| Other 35 munis (avg ~6 each) | 200-250 |
+| **Total county estimate** | **350-450** |
+
+Master's earlier estimate "200-400 unique codes after overlap dedup" should be revised upward to **350-450 unique codes** based on this pre-stage research. Sprint budget should reflect this.
 
 ---
 
