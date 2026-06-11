@@ -490,6 +490,56 @@ async def precompute_ring_metrics_status(job_id: str) -> dict:
 
 
 @router.post(
+    "/jurisdictions/{jurisdiction_id}/_precompute-ring-metrics-worker",
+    status_code=202,
+)
+async def precompute_ring_metrics_worker(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Enqueue ring-metrics precompute via the Dramatiq WORKER path.
+
+    Canonical for county-sized (>5 min) precompute. The sibling
+    `_precompute-ring-metrics` endpoint runs the job in a FastAPI
+    BackgroundTask on the WEB dyno, which a web restart/deploy kills
+    silently — orphaning its Redis job-state at status="running"
+    (observed: Bergen 2026-06-11 stalled 65+ min, parcels_written=0;
+    a re-run via this contract-free path also risks it). This variant
+    enqueues to the Dramatiq worker service, which is built for long
+    jobs and survives web-dyno churn. See discipline-catch #12 in the
+    ops ledger.
+
+    The worker path writes NO Redis job-state, so there is no
+    status endpoint to poll; monitor via the parcel_ring_metrics row
+    count for the jurisdiction or the worker-service logs. Idempotent:
+    the underlying UPSERT refreshes demographic columns only.
+    """
+    from app.config import settings as _settings
+
+    if not _settings.mapbox_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "MAPBOX_TOKEN not configured. Set it in the backend env to "
+                "enable ring-metric precompute."
+            ),
+        )
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    from app.services.job_queue import enqueue_ring_metrics_precompute
+
+    enqueue_ring_metrics_precompute(jurisdiction_id)
+    return {
+        "status": "enqueued",
+        "path": "worker",
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+    }
+
+
+@router.post(
     "/jurisdictions/{jurisdiction_id}/_backfill-has-structure-from-lir",
     status_code=202,
 )
