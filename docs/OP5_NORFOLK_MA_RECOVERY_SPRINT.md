@@ -1,6 +1,6 @@
 # Op-5 Norfolk County, MA Recovery Sprint — Plan A (heuristic-unclear cleanup)
 
-**Sprint date:** 2026-06-09
+**Sprint date:** 2026-06-11
 **Target:** Flip Norfolk County, MA from `partial` (2 blockers) → `operational` via Somerset-pattern unclear-row cleanup.
 **Outcome:** **77 rows updated in place; audit-refresh pending.**
 
@@ -69,7 +69,7 @@ total: 289 rows | unclear: 0 | permitted: 39 | conditional: 73 | prohibited: 177
 
 ### 6. ONE final audit refresh
 
-`POST /api/admin/coverage/refresh?jurisdiction_id=<norfolk>&source=norfolk-ma-sprint-2026-06-09` fired at sprint end (timestamp captured in run log). HTTP 000 / 180s edge timeout per known Railway behavior; backend continues server-side. Audit commit expected in ~16-20 min per the Hunterdon/Monmouth precedent.
+`POST /api/admin/coverage/refresh?jurisdiction_id=<norfolk>&source=norfolk-ma-sprint-2026-06-11` fired at sprint end (timestamp captured in run log). HTTP 000 / 180s edge timeout per known Railway behavior; backend continues server-side. Audit commit expected in ~16-20 min per the Hunterdon/Monmouth precedent.
 
 ---
 
