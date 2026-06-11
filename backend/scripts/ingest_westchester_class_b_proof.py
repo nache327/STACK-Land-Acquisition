@@ -278,6 +278,10 @@ async def _preflight(entry: dict[str, Any]) -> int:
 
         # Gate 2: bbox coverage. Uses ST_MakeEnvelope (returns geometry
         # with SRID) so the intersection comparison stays clean.
+        # NOTE: $2 = muni_name (matches raw_attributes payload stamped
+        # by _build_zoning_district_rows); $3 = prod_city_value (matches
+        # parcels.city). For Scarsdale these collapse, but for Rye
+        # City→'Rye' they differ.
         bbox_pct = await conn.fetchval(
             """
             WITH d AS (
@@ -289,13 +293,13 @@ async def _preflight(entry: dict[str, Any]) -> int:
             p AS (
                 SELECT ST_SetSRID(ST_Extent(geom)::geometry, 4326) AS bb
                 FROM parcels
-                WHERE jurisdiction_id = $1::uuid AND city = $2
+                WHERE jurisdiction_id = $1::uuid AND city = $3
             )
             SELECT ROUND((ST_Area(ST_Intersection(d.bb, p.bb))
                 / NULLIF(ST_Area(p.bb), 0) * 100)::numeric, 1)
             FROM d, p
             """,
-            str(WESTCHESTER_JID), entry["prod_city_value"],
+            str(WESTCHESTER_JID), entry["muni_name"], entry["prod_city_value"],
         )
 
         # Gate 3: ST_Within match rate on 1,000-row sample.
@@ -304,7 +308,7 @@ async def _preflight(entry: dict[str, Any]) -> int:
             WITH sample AS (
                 SELECT id, geom FROM parcels
                 WHERE jurisdiction_id = $1::uuid
-                  AND city = $2
+                  AND city = $3
                   AND (zoning_code IS NULL OR btrim(zoning_code) = '')
                   AND geom IS NOT NULL
                 ORDER BY random()
@@ -320,7 +324,7 @@ async def _preflight(entry: dict[str, Any]) -> int:
             ) / NULLIF(COUNT(*), 0))::numeric, 1)
             FROM sample s
             """,
-            str(WESTCHESTER_JID), entry["prod_city_value"],
+            str(WESTCHESTER_JID), entry["muni_name"], entry["prod_city_value"],
         )
 
         # Coverage prediction: real ST_Within sweep across all city
@@ -337,10 +341,10 @@ async def _preflight(entry: dict[str, Any]) -> int:
             ) / NULLIF(COUNT(*), 0))::numeric, 1)
             FROM parcels p
             WHERE p.jurisdiction_id = $1::uuid
-              AND p.city = $2
+              AND p.city = $3
               AND p.geom IS NOT NULL
             """,
-            str(WESTCHESTER_JID), entry["prod_city_value"],
+            str(WESTCHESTER_JID), entry["muni_name"], entry["prod_city_value"],
         )
 
         print(f"\n--- strengthened Class A gates (PR #216) ---")
@@ -410,6 +414,7 @@ async def _fire(entry: dict[str, Any], nearest_within_meters: float = 50.0) -> i
         print(f"INSERTed {len(rows)} zoning_districts rows")
 
         # Pass 1: ST_Within (centroid contained).
+        # $2 = muni_name (raw_attributes payload); $3 = prod_city_value (parcels.city).
         status_contained = await conn.execute(
             """
             UPDATE parcels target
@@ -430,12 +435,12 @@ async def _fire(entry: dict[str, Any], nearest_within_meters: float = 50.0) -> i
                     LIMIT 1
                 ) m
                 WHERE p.jurisdiction_id = $1::uuid
-                  AND p.city = $2
+                  AND p.city = $3
                   AND p.geom IS NOT NULL
             ) sub
             WHERE target.id = sub.parcel_id
             """,
-            str(WESTCHESTER_JID), entry["prod_city_value"],
+            str(WESTCHESTER_JID), entry["muni_name"], entry["prod_city_value"],
         )
         try:
             n_contained = int(status_contained.split()[-1])
@@ -444,12 +449,14 @@ async def _fire(entry: dict[str, Any], nearest_within_meters: float = 50.0) -> i
         print(f"Pass 1 contained: UPDATEd {n_contained} parcels")
 
         # Pass 2: ST_DWithin nearest fallback for the remainder.
+        # $2 = muni_name (raw_attributes); $3 = prod_city_value (parcels.city);
+        # $4 = binding_label; $5 = nearest distance (m).
         binding_label = f"nearest_{int(round(nearest_within_meters))}m"
         status_nearest = await conn.execute(
             """
             UPDATE parcels target
             SET zone_class = sub.zone_class,
-                zone_binding_method = $3,
+                zone_binding_method = $4,
                 zoning_code = COALESCE(NULLIF(target.zoning_code, ''), sub.zone_code)
             FROM (
                 SELECT p.id AS parcel_id, m.zone_class, m.zone_code
@@ -463,7 +470,7 @@ async def _fire(entry: dict[str, Any], nearest_within_meters: float = 50.0) -> i
                       AND ST_DWithin(
                         zd.geom::geography,
                         ST_Centroid(p.geom)::geography,
-                        $4
+                        $5
                       )
                     ORDER BY ST_Distance(
                         zd.geom::geography,
@@ -472,13 +479,14 @@ async def _fire(entry: dict[str, Any], nearest_within_meters: float = 50.0) -> i
                     LIMIT 1
                 ) m
                 WHERE p.jurisdiction_id = $1::uuid
-                  AND p.city = $2
+                  AND p.city = $3
                   AND p.geom IS NOT NULL
                   AND p.zone_binding_method IS NULL
             ) sub
             WHERE target.id = sub.parcel_id
             """,
             str(WESTCHESTER_JID),
+            entry["muni_name"],
             entry["prod_city_value"],
             binding_label,
             float(nearest_within_meters),

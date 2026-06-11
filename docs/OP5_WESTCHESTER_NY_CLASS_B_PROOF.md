@@ -374,3 +374,124 @@ right longer-horizon answer once Westchester is consolidated.
 - `/tmp/probe_scarsdale_unmatched.py` — one-off probe used for the
   Class A pre-flight + unmatched-parcel investigation.
 - DB-level verification queries captured in this doc.
+
+---
+
+## Task 4 — Scale to 5 additional Westchester munis (2026-06-11)
+
+Scarsdale's proof-of-concept opened the question: do the rest of the
+Westchester munis fit the same adapter shape? Master approved scaling
+to a priority-5 batch (Rye City, Rye Brook, Bronxville, Eastchester,
+Larchmont) — all in the wealth-band targets per
+`docs/TARGET_MARKETS.md`.
+
+### Scope
+
+The 5 next-priority munis. Each is a directory-entry addition to
+`backend/data/westchester_zoning_directory.json` + a re-run of the
+existing adapter (`backend/scripts/ingest_westchester_class_b_proof.py`)
+with a per-muni `--muni <name>` argument.
+
+### Bug surfaced + fix (good news first)
+
+The pre-flight gates for Rye City **failed on initial run** — bbox
+returned `None %`, ST_Within sample returned `0.0 %`. Initially looked
+like Montgomery PA all over again. It wasn't: the script had a latent
+bug exposed by the *first* muni where `muni_name` ("Rye City") differs
+from `prod_city_value` ("Rye"). Both the pre-flight gate queries and
+the fire UPDATE statements used `entry["prod_city_value"]` for *both*
+the parcels filter and the `raw_attributes->>'muni_name'` filter — for
+Scarsdale they happen to be identical, so the bug never fired in
+Phase 2C.
+
+Patched in this PR: pre-flight queries and fire UPDATEs now take
+`entry["muni_name"]` for the `raw_attributes` lookup and
+`entry["prod_city_value"]` for the `parcels.city` lookup, as separate
+parameters. Scarsdale's behavior is unchanged (the two are
+identical), but Rye City and any future muni with a city-suffix
+mismatch now bind correctly.
+
+This is the second time halt-and-report discipline surfaced a script
+bug before it could write garbage to prod (Phase 2A surfaced a data
+problem; here we surfaced a code problem masked by Scarsdale's naming
+coincidence). The transactional pre-flight gate is the right primitive.
+
+### Per-muni results
+
+All 5 munis cleared the strengthened Class A gates (bbox ≥ 50% and
+ST_Within sample ≥ 50%) with massive margin. Fire results:
+
+| muni        | MUN code | layer vintage | districts | parcels | bound | contained | nearest_50m | coverage | nearest share | distinct codes |
+|-------------|----------|--------------:|----------:|--------:|------:|----------:|------------:|---------:|--------------:|---------------:|
+| Rye City    | RYC      |          2016 |        95 |   4,948 | 4,946 |     4,930 |          16 |  100.0 % |        0.32 % |             24 |
+| Rye Brook   | RYB      |          2011 |        32 |   3,514 | 3,514 |     3,509 |           5 |  100.0 % |        0.14 % |             18 |
+| Bronxville  | BXV      |          2011 |        20 |   1,723 | 1,723 |     1,723 |           0 |  100.0 % |        0.00 % |              8 |
+| Eastchester | ECH      |          2011 |        70 |   5,496 | 5,484 |     5,438 |          46 |   99.8 % |        0.84 % |             19 |
+| Larchmont   | LAR      |          2011 |        25 |   1,909 | 1,906 |     1,903 |           3 |   99.8 % |        0.16 % |             10 |
+
+**For reference, Scarsdale (Phase 2C) sits at 73.4 % coverage / 7.49 %
+nearest share.** Every Task 4 muni dramatically outperforms the proof
+case — Scarsdale was the *hard* test case, not a representative one,
+because of its 2011 vintage + scale + topology drift. The smaller and
+fresher munis bind almost cleanly.
+
+### Quality gates (all PASS)
+
+| Gate | Threshold | Result |
+|------|-----------|--------|
+| Coverage ≥ 70 % (per muni) | each muni ≥ 99.8 % | ✓ |
+| nearest_* share < 30 % | each muni ≤ 0.84 % | ✓ |
+| raw_attributes preserved (Norfolk gate) | 0 empty `{}` / 0 missing `source_url` across 242 new districts | ✓ |
+| `no_zoning_polygons` cleared | each muni went from 0 → N>0 districts | ✓ |
+
+### County roll-up
+
+- **Westchester County coverage** jumped from 5,929 / 257,914 ≈ 2.30 %
+  (Scarsdale alone) to 21,922 / 257,914 = **8.50 %** (six munis).
+- **+15,993 newly-bound parcels** in this Task 4 batch.
+- **79 net new zone codes** captured: 24 (RYC) + 18 (RYB) + 8 (BXV)
+  + 19 (ECH) + 10 (LAR) — orchestrator will need to author matrix
+  rows for these too if dashboard verdicts are desired.
+
+### Refresh status
+
+`POST /api/admin/coverage/refresh?jurisdiction_id=3e706886-…` fired
+**once** at 2026-06-11 14:50 EDT. Returned HTTP 502 from the Railway
+proxy at ~150 s wall-clock. Did **not** retry per the dispatch hard
+rule "ONE refresh per task." The worker may have continued past the
+proxy timeout (Hunterdon PR #196 precedent shows the worker often
+completes after the proxy hangs up). Audit snapshots will reconcile
+on the next automated refresh cycle. DB-level numbers in this doc
+are the authoritative truth.
+
+### What changed in the repo (Task 4)
+
+- `backend/data/westchester_zoning_directory.json` — 5 new entries
+  (RYC, RYB, BXV, ECH, LAR). `ordinance_url` left null where
+  authoritative source not yet confirmed.
+- `backend/scripts/ingest_westchester_class_b_proof.py` — fix for
+  the `muni_name` vs `prod_city_value` collision (separate
+  parameters in pre-flight + fire SQL).
+- `docs/OP5_WESTCHESTER_NY_CLASS_B_PROOF.md` — this continuation
+  section.
+- `docs/PHASE2_PROGRESS.md` §15 — Task 4 entry.
+
+### Recommended next steps
+
+- **Path A (recommended, fast):** Push to the remaining ~39
+  Westchester munis (the layer's 46 distinct MUN codes minus the 6
+  we've covered; 1 entry is null/empty). With the bug fix landed,
+  each muni is ~30 sec compute + ~2 sec network. The script handles
+  per-muni iteration via `--muni`. Estimated 30-60 min for the
+  remaining county.
+- **Path B (Master's queued Task 5):** Contra Costa CA preview-gated
+  proof. Diagnostic spec already exists (PR #227 successor at
+  `docs/CONTRA_COSTA_CA_ACQUISITION_SPEC.md`).
+- **Path C (orchestrator domain):** Author zone-use-matrix rows for
+  the 79 new codes (plus Scarsdale's 18). Without matrix, the
+  parcels are coverage-bound but not yet verdict-producing on the
+  dashboard.
+
+Lane A's recommendation: **Path A** — finish Westchester first while
+the adapter is hot, then queue Task 5 (Contra Costa) once Master has
+reviewed the county-wide result. Path C is orchestrator's call.
