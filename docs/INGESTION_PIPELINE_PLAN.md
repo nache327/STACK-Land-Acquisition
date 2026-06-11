@@ -19,29 +19,47 @@ needing a different amount of work to clear PR #98's truthfulness
 gates (parcel_zoning_code_coverage ≥ 70 %, matrix_zone_match_pct
 ≥ 90 %, self_storage_classified ≥ 95 %).
 
-> **Revised 2026-06-11 after PR #216.** The original TL;DR named
-> Montgomery PA as the headline Class A free win. Pre-flight
-> probing found the 54 ingested districts cover only ~1.2 % of
-> the county's parcel bbox — a single-township partial ingest,
-> not a county-wide layer. Montgomery PA reclassifies as Class
-> B/D; the strengthened Class A gates and the at-risk-jurisdiction
-> probe table are in [§ Class A](#class-a---polygons-loaded-and-spatially-cover-the-parcels-not-yet-bound).
-> No N=5 county is currently a genuine Class A free win.
+> **Revised 2026-06-11 after PR #216** (Class A misdiagnosis on
+> Montgomery PA). **Re-revised 2026-06-11 after PR #221** (Class C
+> misdiagnosis on Fairfield CT — the CT CAMA layer publishes zero
+> zoning attributes; the "field-map dropped them" hypothesis was
+> wrong).
+>
+> Two corrections in this revision:
+>
+> 1. **CT counties move from Class C to Class B.** No statewide CT
+>    aggregator publishes municipal zoning (CGS Chapter 124 makes
+>    zoning authority municipal; PR #212 already covered this
+>    structurally; PR #221 confirmed it at the data layer). All 8
+>    CT counties source from the same CAMA layer and inherit the
+>    same gap.
+> 2. **Class C definition strengthened** with two new pre-flight
+>    gates that mirror PR #216's Class A strengthening at the
+>    aggregator-level abstraction. See [§ Class C pre-flight gates](#class-c-pre-flight-gates).
+>
+> No N=5 county is currently a genuine Class A or Class C win. All
+> three non-Class-D counties in the bucket (Fairfield, Westchester,
+> Montgomery PA) route through Class B or Class D source-acquisition
+> work.
 
 | Class | Counties (N=5) | Source state | Net-new work | Per-county effort after pipeline build |
 |---|---|---|---|---|
 | **A — polygons loaded AND spatially cover the parcels, not yet bound** | *(none from N=5 after PR #216 retiering)* | — | Fire existing `spatial_backfill` + matrix expansion | **2-4 h** when a county does qualify |
-| **B — city drilldown works, no district polygons** | Westchester NY | 100 % parcels.city populated, 0 districts | Per-municipality zoning shapefile ingestion + directory | **8-12 h per muni**; ~3 munis to clear ≥70 % parcel coverage of the county |
-| **C — statewide aggregator, field mapping dropped** | Fairfield CT | CT CAMA Statewide, 0 city / 0 zoning_code | Re-ingest with CAMA "Town" / "Zone" field mapping recovered | **6-10 h** (re-ingest is cheap once mapping is right) |
+| **B — city drilldown works (or unblockable via re-ingest), no district polygons** | Westchester NY · **Fairfield CT** (retiered after PR #221) | Westchester: 100 % parcels.city populated, 0 districts. Fairfield: 0 % city but `Town_Name` already in `parcels.raw`; no-code re-ingest populates `parcels.city` and unblocks per-muni work. | Per-municipality zoning shapefile ingestion + directory | **8-12 h per muni** for proof + acquisition; ~3-5 munis to clear ≥ 70 % parcel coverage of a typical county |
+| **C — statewide aggregator with target attribute, field mapping dropped** | *(none from N=5 after PR #221 retiering)* | — | Re-ingest with field-map recovered | **6-10 h** when a county does qualify (i.e. when the upstream source genuinely publishes the missing attribute and the existing field-map dropped it) |
 | **D — county GIS, no zoning attribute at all** | DuPage IL · Nassau NY · **Montgomery PA** (retiered after PR #216) | County-direct GIS, 0 city / 0 zoning_code | Separate county zoning shapefile OR per-muni discovery + ingest + matrix sprint | **20-40 h** |
 
-**The single biggest unlock from one ticket** shifts to **Class C
-on Fairfield CT**: the CT CAMA statewide layer already provides
-zoning attributes on every CT parcel, but the existing ingest
-field-map drops them. Recovering the map is a one-time fix that
-amortizes across every CT county sourced from the same layer
-(Hartford, New Haven, Litchfield, etc. — see Phase 2B notes
-below). The 6-10 h Class C estimate stands.
+**The single biggest unlock from one ticket** is no longer
+identifiable from N=5 after the two re-tierings. The closest thing
+to a cheap win is the **Fairfield CT no-code re-ingest** — populates
+`parcels.city` from existing `Town_Name` in `parcels.raw` via the
+already-deployed `_CITY_FIELDS` matcher. That won't flip Fairfield
+operational (still 0 % zoning_code) but it unblocks the Class B
+per-muni adapter pattern for Fairfield specifically, and the same
+re-ingest pattern would unblock the other 7 CT counties on the
+same CAMA layer if/when they're added to the 57-list (per
+`docs/TARGET_MARKETS.md` Phase 2, only Fairfield is currently on
+the list).
 
 The Class A free win remains the right shape **when a county
 qualifies** — it just isn't on the N=5 list today. If/when an
@@ -292,25 +310,30 @@ puts ~92 k of 258 k parcels under coverage — short of the 70 %
 gate. To clear 70 % of Westchester (~180 k parcels), expect to
 ingest the top ~10-15 munis.
 
-### Class C — statewide aggregator with field mapping dropped (Fairfield CT shape)
+### Class C — statewide aggregator with target attribute, field mapping dropped
 
-Fairfield came from CT CAMA (Statewide
-`Connecticut_CAMA_and_Parcel_Layer_2024`). The CAMA layer has, per
-the CT Office of Policy and Management metadata, fields including
-`TOWN_ID`, `MUN_NAME` (or similar variants per cycle), and parcel
-attribute fields. **None of those reached `parcels.city` or
-`parcels.zoning_code` in prod for Fairfield**, suggesting the
-existing CT ingest path lost them at the `ingestion.py` field-map
-step.
+> **Revised 2026-06-11 after PR #221** found Fairfield CT was a
+> false-positive Class C. The original definition assumed the
+> aggregator publishes the target attribute (`TOWN_ID`,
+> `ZONE_CODE`, etc.) and the issue was an `ingestion.py`
+> field-map gap. PR #221's pre-flight field audit on the live CT
+> CAMA layer turned up **zero zoning attributes** — the source
+> never published zoning at any vintage sampled. Class C is the
+> right shape **when an aggregator genuinely has the attribute**,
+> but the classification needs a live field audit before being
+> assigned to a county. The strengthened pre-flight gates below
+> mirror PR #216's Class A strengthening at the aggregator-level
+> abstraction.
 
-Pipeline plug points already in place:
+Pipeline plug points (unchanged) when the aggregator does
+publish the attribute:
 
 ```text
-re-fetch from CT CAMA Statewide (same parcel_endpoint)
+re-fetch from aggregator (same parcel_endpoint)
        │
        ▼
 backend/app/services/ingestion.py
-  └─ field_map: extend to include TOWN_ID → city, ZONE_CODE → zoning_code
+  └─ field_map: copy aggregator's target field → parcels.<column>
        │
        ▼
 re-upsert into parcels (idempotent on (jurisdiction_id, apn))
@@ -322,18 +345,62 @@ backend/app/services/spatial_backfill.py (for any town with district polygons)
 matrix sprint
 ```
 
-**Net-new work:** **(1) audit the CT CAMA layer fields** —
-`https://services3.arcgis.com/3FL1kr7L4LvwA2Kb/.../FeatureServer/0?f=json`
-returns the field list; confirm `TOWN_ID` (or equivalent) and any
-zone field. **(2) extend the existing CT ingest field map** to copy
-those fields through. **(3) re-run** the parcel ingest scoped to
-Fairfield. This is cheaper than B because the per-parcel data
-already exists upstream — we just need to extract it.
+#### Class C pre-flight gates
 
-**The same fix amortizes across the other CT counties** that came
-through the same CAMA source. Lane A did not check the other CT
-counties' fields in this dispatch — recommend Phase 2 starts with
-field audit of the layer.
+Before classifying any county as Class C, the operator (or an
+automated pre-flight) must verify **all three** of the following
+against the live aggregator:
+
+1. **Aggregator layer reachable + metadata loadable.** (Existing
+   implicit check.)
+2. **Live field audit** — fetch the FeatureServer
+   `?f=json` and grep the field list for the target attribute:
+   ```sh
+   curl ".../<LayerName>/FeatureServer/0?f=json" \
+     | jq -r '.fields[] | "\(.name)|\(.alias)"' \
+     | grep -iE "<target>"
+   ```
+   If the grep returns zero hits, **the county is NOT Class C** —
+   no field-map extension can recover what isn't published. The
+   county re-tiers to Class B (per-muni acquisition required) or
+   Class D (no source path at all).
+3. **Live row sample** — query 5 random rows for ≥ 2 munis on the
+   layer:
+   ```sh
+   curl ".../FeatureServer/0/query?where=Town_Name+%3D+%27<Muni>%27&outFields=<target>,…&resultRecordCount=5"
+   ```
+   If the target attribute is consistently null / blank / `nan` /
+   `NULL`, the field exists in metadata but isn't populated in
+   practice. **The county is NOT Class C** — re-tier as above.
+
+A county that passes (1) but fails (2) or (3) **is not** Class C.
+This is the same false-positive pattern PR #216 surfaced for Class
+A; the cure is the same: audit before classifying.
+
+#### Re-tiering after PR #221
+
+| County | Aggregator | Live field audit (`zon|distri`) | Live row sample | Original tier | Revised tier |
+|---|---|---|---|---|---|
+| Fairfield County, CT | CT CAMA `Connecticut_CAMA_and_Parcel_Layer_2024` | 0 hits | Greenwich: `Town_Name`/`State_Use`/`Parcel_Typ`/… — no zoning attribute | **Class C** | **Class B** (re-ingest unblocks `city`; zoning needs per-muni) |
+| Hartford / Litchfield / Middlesex / New Haven / New London / Tolland / Windham CT | CT CAMA (likely same layer) | not directly probed by Lane A — orchestrator to confirm | same null pattern expected | **Class C** | **Class B** (only Fairfield is on the 57-list per `docs/TARGET_MARKETS.md`; the other 7 are flagged but deferred until they appear on the list) |
+
+Per PR #221's pre-flight, **`parcels.city` for Fairfield CT can be
+populated by a no-code re-ingest** via the existing
+`_CITY_FIELDS` matcher (`TOWN_NAME` listed; `_first()` is
+case-insensitive at `backend/app/services/ingestion.py:202`, so it
+matches CAMA's `Town_Name`). That re-ingest is **not** the
+Class C field-map fix — it's the prerequisite Master picked from
+PR #221's Option B that unblocks Class B per-muni work for
+Fairfield. Per-muni zoning acquisition stays the long-pole work
+under Class B.
+
+**Implication for Phase 2:** Class C is no longer the headline
+ticket; the headline shifts to **Class B proof on Westchester
+NY** (Phase 2C in the dispatch order below). Class C remains a
+valid tier *when* an aggregator that does publish the target
+attribute is encountered — the strengthened pre-flight gates are
+how a future operator will recognize one without repeating PR
+#221's misdiagnosis.
 
 ### Class D — county GIS with no zoning attribute (DuPage IL · Nassau NY)
 
@@ -375,7 +442,7 @@ Pipeline build (one-time, amortizes across the bucket):
 |---|---|---|
 | Per-source adapter wrapping `zoning_ingestion.ingest_zoning_districts` | 1-2 days | Accepts directory entry; handles ArcGIS / shapefile / KMZ; normalises field names |
 | Directory schema + per-county JSON files | 4-6 h | Mirrors `backend/data/bergen_zoning_directory.json`; one per county |
-| CT CAMA field-map extension in `ingestion.py` | 2-3 h | Class C only; same change unlocks every CT county |
+| ~~CT CAMA field-map extension in `ingestion.py`~~ | ~~2-3 h~~ | ~~Class C only~~ **Removed after PR #221.** CT CAMA has no zoning attribute to map; field-map extension is non-actionable. |
 | Operator playbook + matrix-sprint runbook | 4-6 h | Shared across all classes |
 
 After the pipeline ships, **per-county execution cost** breaks down
@@ -385,24 +452,29 @@ as:
 |---|---|---:|---|---:|
 | Montgomery County, PA | ~~A~~ **D** (retiered after PR #216) | 20-40 h (source acquisition + adapter) | 2.2 % → ≥70 % once county-wide districts loaded | ~30-60 once source acquired |
 | Westchester County, NY | B | 8-12 h × ~10-15 munis = **80-180 h** | 0 % → ≥70 % over top munis | ~150-300 |
-| Fairfield County, CT | C | 6-10 h | 0 % → ≥80 % (CAMA has near-complete town/zone) | ~100-200 |
+| Fairfield County, CT | ~~C~~ **B** (retiered after PR #221) | 1 h city re-ingest (Master picked PR #221 Option B) + 8-12 h × ~3-5 munis = **25-65 h** for ≥ 70 % coverage | 0 % city → 100 % via re-ingest; 0 % zoning_code → ≥ 70 % over top munis | ~80-150 |
 | Nassau County, NY | D (likely D.2) | 18-30 h directory + per-muni cost | 0 % → 50-70 % over ~year+ of work | ~200-400 |
 | DuPage County, IL | D (likely D.1) | 8-12 h if county zoning layer exists, else 60-100 h | 0 % → ≥70 % | ~80-150 |
 
 **Bucket-wide extrapolation** assuming the other 7 unknown counties
-in orchestrator's enumeration split roughly the same way (1A / 2B /
-2C / 2D, after PR #216 takes one A → D):
+in orchestrator's enumeration split roughly the same way (0 A /
+3 B / 0 C / 2 D, after PR #216 takes one A → D and PR #221 takes
+one C → B):
 
-- Pipeline build: ~3-4 days.
-- Per-county execution to clear 12 counties: lumpy. Class C counties
-  land in days; Class B and D counties land in weeks. A genuine
-  Class A win (after a county-wide district ingest) would still be
-  the fastest path when one materialises.
-- Realistic 90-day target: **5-7 of the bucket counties operational**
-  (revised down by 1 after PR #216 — Montgomery PA leaves the
-  fast-track), starting with Class C re-ingest (Fairfield + the
-  rest of CT), then top-N Class B municipalities for the larger
-  counties.
+- Pipeline build: ~3-4 days (CT CAMA field-map line item removed
+  after PR #221; net build cost roughly unchanged because the
+  per-source adapter handles CT once Class B work begins).
+- Per-county execution to clear 12 counties: lumpy. Class B and
+  Class D counties land in weeks. A genuine Class A or Class C
+  win — when one materialises and passes the strengthened
+  pre-flight gates — would still be the fastest path.
+- Realistic 90-day target: **4-6 of the bucket counties
+  operational** (revised down by 2 from the original 5-8: 1 from
+  PR #216 reclassifying Montgomery PA, 1 from PR #221 reclassifying
+  the CT counties), starting with the Fairfield CT city re-ingest
+  to unblock per-muni work, then top-N Class B municipalities for
+  Westchester + Fairfield, with Class D counties deferred until
+  the playbook proves on B.
 
 ### Bucket enumeration caveat
 
@@ -492,45 +564,86 @@ prod writes. Sprint doc:
 retiered from Class A to Class B/D — needs source-acquisition
 work, not a backfill fire.
 
-### Phase 2B — pipeline build + Class C Fairfield CT (3-4 days, **new headline ticket**)
+### Phase 2B — HALTED at pre-flight (see PR #221)
 
-1. Define `MunicipalityZoningDirectoryEntry` schema (Python +
+**Originally proposed**: extend the CT CAMA field-map so Fairfield
+CT parcels carry `zoning_code` from the existing statewide CAMA
+layer. **Outcome**: pre-flight field audit found the layer
+publishes zero zoning attributes; no field-map extension can
+recover what isn't published. Halted, no prod writes, no code
+changes shipped. Sprint doc:
+`docs/OP5_FAIRFIELD_CT_INGEST.md` (PR #221). Fairfield CT and all
+8 CT counties retiered from Class C to Class B per Master's Option
+A pick on PR #221.
+
+### Phase 2B-redux — Fairfield CT no-code city re-ingest (~1 h, Master picked PR #221 Option B)
+
+1. Confirm `parcels.raw` carries `Town_Name` for Fairfield CT
+   (verified during PR #221 pre-flight; spot-check 5 random
+   parcels to re-verify before firing).
+2. Trigger a no-code re-ingest via the existing admin path. The
+   current `_CITY_FIELDS` matcher at
+   `backend/app/services/ingestion.py:181` includes `TOWN_NAME`
+   (uppercase); `_first()` is case-insensitive at line 202, so
+   `Town_Name` (CT casing) matches.
+3. Audit refresh ONCE after re-ingest.
+4. Verify `parcels.city` populates 0 % → ~100 %; no
+   `parcels.zoning_code` change; no `parcels.geom` change; no
+   matrix or zoning_districts table changes.
+
+**Why second:** unblocks the Class B per-muni adapter pattern for
+Fairfield without code, validates the city-re-ingest mechanic
+that the other 7 CT counties will also need when/if they appear
+on the 57-list, and gives Master a real result on which to anchor
+Phase 2C kickoff.
+
+### Phase 2C — Class B proof: Westchester NY top-1 muni (headline ticket after PR #221)
+
+1. Build per-source adapter wrapping `ingest_zoning_districts` for
+   `arcgis_feature_server`, `shapefile`, `kmz` source kinds.
+2. Define `MunicipalityZoningDirectoryEntry` schema (Python +
    pydantic, mirrors PR #212's shape).
-2. Author per-source adapter wrapping `ingest_zoning_districts`
-   for `arcgis_feature_server`, `shapefile`, `kmz` source kinds.
-3. Author the Class C field-map extension in `ingestion.py` for CT
-   CAMA layer; dry-run on Fairfield without write.
-4. Build the per-county directory file for Fairfield.
-5. Run Fairfield Class C re-ingest; audit; flip if gates clear.
+3. Build `backend/data/westchester_zoning_directory.json` with
+   one starter entry — the proof muni picked from the PR #212
+   sample. Recommended: **Scarsdale** or **Rye** because both
+   have clean eCode360 ordinances per PR #212 and reasonable
+   parcel counts (Scarsdale 5,929; Rye 4,948 — small enough that
+   one operator can verify end-to-end without scale concerns).
+4. Run per-muni ingest + spatial backfill + (if matrix complete)
+   matrix sprint. Verify the three PR #214 quality gates per-muni
+   (parcel_zoning_code_coverage_pct ≥ 70 % for the proof muni;
+   `nearest_*` < 30 %; provenance receipt).
+5. If quality gates hold, the directory entry pattern is
+   validated and Westchester's remaining 14+ munis enter a
+   weekly-cadence per-muni grind (Phase 2D).
 
-**Why this is now first:** Phase 2A's free-win pretext is gone.
-Class C is the next-cheapest path and amortizes across every CT
-county on the same CAMA layer (Hartford, New Haven, Litchfield).
-A successful Fairfield CT flip validates the adapter pattern AND
-unlocks ~4-5 more counties with no per-county pipeline work.
+**Why this is the headline ticket now:** Westchester is on the
+57-list per `docs/TARGET_MARKETS.md` Phase 2 (~11 polygons of
+19 %); a successful proof muni is the prerequisite for the rest
+of the Westchester rollout AND the same adapter unlocks Fairfield
+CT per-muni work the moment its city re-ingest lands. The
+~8-12 h estimate is for one proof muni only.
 
-### Phase 2C — incremental Class B rollout: Westchester (ongoing, after 2B lands)
+### Phase 2D (future) — incremental Class B rollout + Class D follow-up
 
-1. Build Westchester directory (top 5 munis from PR #212's sample).
-2. Run per-muni ingest + matrix for Yonkers + Greenburgh + New
-   Rochelle. Validate quality gates per-muni before moving on.
-3. Decision point: if quality gates hold per-muni, continue with
-   Westchester's next 5 munis. If they don't, fall back and
-   investigate.
+**Westchester per-muni queue** (after Phase 2C proof clears):
+incremental per-muni grind for the remaining top-N Westchester
+munis. Weekly cadence; sized to ~8-12 h per muni after the
+adapter is built.
 
-Tickets 2B and 2C should not be bundled — 2B is a one-shot
-adapter build; 2C is a slow per-muni grind that wants its own
-weekly cadence.
+**Fairfield CT per-muni queue** (after Phase 2B-redux clears city):
+same pattern at smaller scale. Greenwich / Westport / Darien /
+New Canaan / Stamford from PR #212's sample are the natural
+proof munis.
 
-### Phase 2D (future) — Montgomery PA + Class D follow-up
-
-**Class D counties (DuPage, Nassau, Montgomery PA after PR #216
-retiering)** explicitly OUT of Phase 2A/B/C. Their cost-benefit
-is significantly worse and they need their own scoping after the
-playbook is proven. Phase 2A's diagnostic still applies — if a
-county-wide Montgomery PA zoning layer is later loaded, the
-existing `spatial_backfill` path is ready to fire, and the
-strengthened Class A gates above are the pre-flight playbook.
+**Class D counties (DuPage IL, Nassau NY, Montgomery PA after
+PR #216 retiering)** explicitly OUT of Phase 2A/B/C/D. Their
+cost-benefit is significantly worse and they need their own
+scoping after the playbook is proven. PR #216's diagnostic still
+applies — if a county-wide Montgomery PA zoning layer is later
+loaded, the existing `spatial_backfill` path is ready to fire,
+and the strengthened Class A gates above are the pre-flight
+playbook.
 
 ---
 
