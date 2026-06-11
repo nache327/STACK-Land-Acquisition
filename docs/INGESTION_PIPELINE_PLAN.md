@@ -19,17 +19,35 @@ needing a different amount of work to clear PR #98's truthfulness
 gates (parcel_zoning_code_coverage ≥ 70 %, matrix_zone_match_pct
 ≥ 90 %, self_storage_classified ≥ 95 %).
 
+> **Revised 2026-06-11 after PR #216.** The original TL;DR named
+> Montgomery PA as the headline Class A free win. Pre-flight
+> probing found the 54 ingested districts cover only ~1.2 % of
+> the county's parcel bbox — a single-township partial ingest,
+> not a county-wide layer. Montgomery PA reclassifies as Class
+> B/D; the strengthened Class A gates and the at-risk-jurisdiction
+> probe table are in [§ Class A](#class-a---polygons-loaded-and-spatially-cover-the-parcels-not-yet-bound).
+> No N=5 county is currently a genuine Class A free win.
+
 | Class | Counties (N=5) | Source state | Net-new work | Per-county effort after pipeline build |
 |---|---|---|---|---|
-| **A — polygons loaded, not bound** | Montgomery PA | 54 districts, 12 matrix, 2.2 % zoning_code | Almost nothing — fire existing `spatial_backfill` + matrix expansion | **2-4 h** |
+| **A — polygons loaded AND spatially cover the parcels, not yet bound** | *(none from N=5 after PR #216 retiering)* | — | Fire existing `spatial_backfill` + matrix expansion | **2-4 h** when a county does qualify |
 | **B — city drilldown works, no district polygons** | Westchester NY | 100 % parcels.city populated, 0 districts | Per-municipality zoning shapefile ingestion + directory | **8-12 h per muni**; ~3 munis to clear ≥70 % parcel coverage of the county |
 | **C — statewide aggregator, field mapping dropped** | Fairfield CT | CT CAMA Statewide, 0 city / 0 zoning_code | Re-ingest with CAMA "Town" / "Zone" field mapping recovered | **6-10 h** (re-ingest is cheap once mapping is right) |
-| **D — county GIS, no zoning attribute at all** | DuPage IL · Nassau NY | County-direct GIS, 0 city / 0 zoning_code | Separate county zoning shapefile OR per-muni discovery + ingest + matrix sprint | **20-40 h** |
+| **D — county GIS, no zoning attribute at all** | DuPage IL · Nassau NY · **Montgomery PA** (retiered after PR #216) | County-direct GIS, 0 city / 0 zoning_code | Separate county zoning shapefile OR per-muni discovery + ingest + matrix sprint | **20-40 h** |
 
-**The single biggest unlock from one ticket** is Class A → run
-`spatial_backfill` against Montgomery PA today, then expand its
-12-row matrix to cover whatever distinct zones surface. **Montgomery
-PA could be operational this week with no new code.**
+**The single biggest unlock from one ticket** shifts to **Class C
+on Fairfield CT**: the CT CAMA statewide layer already provides
+zoning attributes on every CT parcel, but the existing ingest
+field-map drops them. Recovering the map is a one-time fix that
+amortizes across every CT county sourced from the same layer
+(Hartford, New Haven, Litchfield, etc. — see Phase 2B notes
+below). The 6-10 h Class C estimate stands.
+
+The Class A free win remains the right shape **when a county
+qualifies** — it just isn't on the N=5 list today. If/when an
+operator loads county-wide districts for Montgomery PA (or any
+other county currently failing the strengthened Class A gates),
+the existing `spatial_backfill` path is ready to fire.
 
 The reusable pipeline component that amortizes across B/C/D is a
 **municipality directory + per-source ingest adapter** that follows
@@ -93,18 +111,101 @@ pipeline (`backend/app/services/pipeline.py`) already orchestrates
 the stages we need. The gap is **adapters + per-county directories**
 that plug into existing stages.
 
-### Class A — polygons loaded, not bound (Montgomery PA shape)
+### Class A — polygons loaded AND spatially cover the parcels, not yet bound
 
-Pipeline plug points already in place:
+> **Revised 2026-06-11 after PR #216 found Montgomery PA was a
+> false-positive Class A.** The original definition keyed only on
+> `zoning_district_count > 0` and that signal turned out to be a
+> partial-ingest trap: when only one township's worth of districts
+> is loaded for a county, the count looks high but the spatial
+> coverage is tiny. See [§ Class A pre-flight gates](#class-a-pre-flight-gates) below for the
+> strengthened classification, and [§ Re-tiering after PR #216](#re-tiering-after-pr-216) for the
+> live audit against prod.
+
+Pipeline plug points already in place (unchanged):
 
 ```text
-existing zoning_districts (54 polygons, geom populated)
+existing zoning_districts (county-coverage polygons, geom populated)
        │
        ▼
 backend/app/services/spatial_backfill.py
   └─ backfill_parcel_zoning_from_districts(jid)
        └─ ST_Within(centroid, district.geom) → parcels.zoning_code
 ```
+
+#### Class A pre-flight gates
+
+Before classifying any county as Class A, the operator (or an
+automated pre-flight) must verify **all three** of the following
+against prod:
+
+1. **`zoning_district_count > 0`** for the jurisdiction. (Existing
+   check — necessary but not sufficient.)
+2. **District bbox covers ≥ 50 % of the parcel bbox**:
+   ```sql
+   WITH d AS (SELECT ST_Extent(geom) AS bb FROM zoning_districts WHERE jurisdiction_id = :jid),
+        p AS (SELECT ST_Extent(geom) AS bb FROM parcels         WHERE jurisdiction_id = :jid)
+   SELECT ST_Area(ST_Intersection(d.bb, p.bb)) / NULLIF(ST_Area(p.bb), 0) AS pct
+   FROM d, p;
+   ```
+   Below 50 % means the loaded districts are a partial-source
+   ingest covering only a fraction of the county.
+3. **1,000-parcel `ST_Within` dry-run returns ≥ 50 % matches** on
+   unzoned parcels:
+   ```sql
+   WITH sample AS (
+     SELECT id, geom FROM parcels
+     WHERE jurisdiction_id = :jid
+       AND (zoning_code IS NULL OR btrim(zoning_code) = '')
+       AND geom IS NOT NULL
+     LIMIT 1000
+   )
+   SELECT COUNT(*) FILTER (WHERE EXISTS (
+     SELECT 1 FROM zoning_districts zd
+     WHERE zd.jurisdiction_id = :jid
+       AND zd.geom IS NOT NULL
+       AND ST_Within(ST_Centroid(s.geom), zd.geom)
+   )) / 10.0 AS match_pct
+   FROM sample s;
+   ```
+   Below 50 % means the loaded districts don't sit where the
+   unzoned parcels live, regardless of bbox arithmetic.
+
+A county that passes (1) but fails (2) **or** (3) is **not** Class
+A. It's Class B / D depending on whether `parcels.city` is
+populated and whether a county-wide source exists upstream.
+
+#### Re-tiering after PR #216
+
+Live probe against prod 2026-06-11 of every jurisdiction with
+`zoning_district_count > 0 AND parcel_zoning_code_coverage_pct
+< 70`:
+
+| Jurisdiction | districts | zoning_pct | district-bbox / parcel-bbox | ST_Within dry-run (1,000 sample) | Original tier | Revised tier |
+|---|---:|---:|---:|---:|---|---|
+| Payson, UT | 14 | 0.3 % | 2.9 % | 0 / 1,000 | (n/a, not in bucket) | Not Class A — partial ingest |
+| Montgomery County, PA | 54 | 2.2 % | 1.2 % | 0 / 1,000 | **Class A** | **Class B/D** (see PR #216) |
+| Essex County, NJ | 2,966 | 23.8 % | 24.3 % | 0 / 1,000 | (n/a, not in bucket) | Not Class A — partial ingest |
+| Draper City, UT | 55 | 65.9 % | 59.7 % | 0 / 1,000 | (n/a, not in bucket) | Not Class A — already-bound parcels live where the districts are; the unbound 34 % live elsewhere |
+
+**All four jurisdictions that previously presented as Class A
+candidates fail the strengthened gates.** The signal is
+systematic — `zoning_district_count` on its own is misleading on
+partial-source ingests. The strengthened gates are the right
+classification primitive.
+
+Implication for the Phase 2 bucket: the N=5 sample's other
+jurisdictions (Westchester NY, Nassau NY, Fairfield CT, DuPage IL)
+all have `zoning_district_count = 0` and were therefore correctly
+classified as B / C / D originally — no re-tiering needed for
+them. **Only Montgomery PA moves**, and it moves out of Class A.
+
+Recommendation for the Phase 2 operator playbook: run the Class A
+pre-flight (3 gates above) before any backfill fire, and treat any
+failure as a halt-and-report event in the OP5 sprint-doc format
+that PR #216 established.
+
+
 
 **Net-new work:** none. The function already exists, ships in prod,
 is wired into `pipeline.py:1617` and again at `:1677`. The "skip if
@@ -282,22 +383,26 @@ as:
 
 | County | Class | Per-county hours after pipeline | Estimated parcel coverage uplift | Net-new 57-list polygons |
 |---|---|---:|---|---:|
-| Montgomery County, PA | **A** | 2-4 h | 2.2 % → ≥70 % via backfill | unknown — district count is 54 today, distinct zones after backfill TBD; expect ~30-60 |
+| Montgomery County, PA | ~~A~~ **D** (retiered after PR #216) | 20-40 h (source acquisition + adapter) | 2.2 % → ≥70 % once county-wide districts loaded | ~30-60 once source acquired |
 | Westchester County, NY | B | 8-12 h × ~10-15 munis = **80-180 h** | 0 % → ≥70 % over top munis | ~150-300 |
 | Fairfield County, CT | C | 6-10 h | 0 % → ≥80 % (CAMA has near-complete town/zone) | ~100-200 |
 | Nassau County, NY | D (likely D.2) | 18-30 h directory + per-muni cost | 0 % → 50-70 % over ~year+ of work | ~200-400 |
 | DuPage County, IL | D (likely D.1) | 8-12 h if county zoning layer exists, else 60-100 h | 0 % → ≥70 % | ~80-150 |
 
 **Bucket-wide extrapolation** assuming the other 7 unknown counties
-in orchestrator's enumeration split roughly the same way (2A / 2B /
-2C / 2D):
+in orchestrator's enumeration split roughly the same way (1A / 2B /
+2C / 2D, after PR #216 takes one A → D):
 
 - Pipeline build: ~3-4 days.
-- Per-county execution to clear 12 counties: lumpy. Class A and C
-  counties land in days; Class B and D counties land in weeks.
-- Realistic 90-day target: **5-8 of the bucket counties operational**,
-  starting with Class A free wins, then C re-ingests, then top-N
-  Class B municipalities for the larger counties.
+- Per-county execution to clear 12 counties: lumpy. Class C counties
+  land in days; Class B and D counties land in weeks. A genuine
+  Class A win (after a county-wide district ingest) would still be
+  the fastest path when one materialises.
+- Realistic 90-day target: **5-7 of the bucket counties operational**
+  (revised down by 1 after PR #216 — Montgomery PA leaves the
+  fast-track), starting with Class C re-ingest (Fairfield + the
+  rest of CT), then top-N Class B municipalities for the larger
+  counties.
 
 ### Bucket enumeration caveat
 
@@ -376,23 +481,18 @@ schema changes.
 Three concrete tickets, sized so the cheapest one ships first and
 validates the playbook before sinking time into the harder ones:
 
-### Phase 2A — free win: Montgomery PA (1 day, no new code)
+### Phase 2A — HALTED at pre-flight (see PR #216)
 
-1. Confirm spatial_backfill hasn't been run since the 2026-05-19
-   district ingest (operator check + audit snapshot).
-2. Run `backfill_parcel_zoning_from_districts(montgomery_pa_id)`.
-3. Audit refresh; capture distinct zones now in `parcels.zoning_code`.
-4. Decide whether the 12 existing matrix rows already cover ≥90 %
-   of the new code distribution. If yes, audit will flip Montgomery
-   PA to operational without further work. If no, dispatch a
-   targeted matrix sprint scoped to the gap.
+**Originally proposed**: fire `spatial_backfill` on Montgomery PA
+based on the apparent Class A signal (54 zoning_districts loaded).
+**Outcome**: pre-flight discovered the districts cover ~1.2 % of
+the county and the dry-run returned 0 / 1,000 matches. Halted, no
+prod writes. Sprint doc:
+`docs/OP5_MONTGOMERY_PA_BACKFILL.md` (PR #216). Montgomery PA
+retiered from Class A to Class B/D — needs source-acquisition
+work, not a backfill fire.
 
-**Why first:** if this works, Montgomery PA goes operational with
-zero new code, validating that the parcels-only diagnosis is
-correct and gives Master a real result to anchor the next dispatch
-on.
-
-### Phase 2B — pipeline build (3-4 days)
+### Phase 2B — pipeline build + Class C Fairfield CT (3-4 days, **new headline ticket**)
 
 1. Define `MunicipalityZoningDirectoryEntry` schema (Python +
    pydantic, mirrors PR #212's shape).
@@ -403,11 +503,13 @@ on.
 4. Build the per-county directory file for Fairfield.
 5. Run Fairfield Class C re-ingest; audit; flip if gates clear.
 
-**Why second:** validates the adapter on the easier of the two
-non-Montgomery classes, gives us a second operational flip, and
-unlocks the rest of CT for free.
+**Why this is now first:** Phase 2A's free-win pretext is gone.
+Class C is the next-cheapest path and amortizes across every CT
+county on the same CAMA layer (Hartford, New Haven, Litchfield).
+A successful Fairfield CT flip validates the adapter pattern AND
+unlocks ~4-5 more counties with no per-county pipeline work.
 
-### Phase 2C — incremental Class B / D rollout (ongoing)
+### Phase 2C — incremental Class B rollout: Westchester (ongoing, after 2B lands)
 
 1. Build Westchester directory (top 5 munis from PR #212's sample).
 2. Run per-muni ingest + matrix for Yonkers + Greenburgh + New
@@ -420,9 +522,15 @@ Tickets 2B and 2C should not be bundled — 2B is a one-shot
 adapter build; 2C is a slow per-muni grind that wants its own
 weekly cadence.
 
-**Class D counties (DuPage, Nassau)** explicitly OUT of Phase 2.
-Their cost-benefit is significantly worse and they need their own
-scoping after the playbook is proven on A / B / C.
+### Phase 2D (future) — Montgomery PA + Class D follow-up
+
+**Class D counties (DuPage, Nassau, Montgomery PA after PR #216
+retiering)** explicitly OUT of Phase 2A/B/C. Their cost-benefit
+is significantly worse and they need their own scoping after the
+playbook is proven. Phase 2A's diagnostic still applies — if a
+county-wide Montgomery PA zoning layer is later loaded, the
+existing `spatial_backfill` path is ready to fire, and the
+strengthened Class A gates above are the pre-flight playbook.
 
 ---
 
