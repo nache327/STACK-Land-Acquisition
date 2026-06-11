@@ -1,0 +1,44 @@
+[
+  {
+    "muni_name": "Scarsdale",
+    "muni_type": "village",
+    "prod_city_value": "Scarsdale",
+    "county_jurisdiction_name": "Westchester County, NY",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://giswww.westchestergov.com/arcgis/rest/services/DataHub_EnvironmentandPlanning/MapServer/207",
+      "filter_query": "MUN='SCD'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZONE_NAME"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "MUN",
+        "TOWN",
+        "GENCODE",
+        "GENZDESC",
+        "OVERLAY",
+        "SUBZONE1",
+        "SUBZONE2",
+        "SUBZONE3",
+        "MIN_LOT",
+        "MAX_UNITS",
+        "MAX_FAR",
+        "MAX_HGHT",
+        "STORIES",
+        "BLDG_COVER",
+        "TOT_COVERA",
+        "ACRES",
+        "YEARUPDATED"
+      ]
+    },
+    "ordinance_url": "https://ecode360.com/6439798",
+    "ordinance_chapter": "Chapter 310 (Zoning)",
+    "ordinance_platform": "ecode360",
+    "use_structure": "district_narrative",
+    "vintage": "2011",
+    "notes": "Source layer's last YEARUPDATED is 2011. PR #212 noted Scarsdale's zoning ordinance has been updated since; the proof validates the adapter pattern even on stale county-published GIS data. Per-muni vintage cross-check should land before scaling to remaining 45 Westchester munis."
+  }
+]
