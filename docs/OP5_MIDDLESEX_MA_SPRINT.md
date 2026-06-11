@@ -2,7 +2,24 @@
 
 **Sprint date:** 2026-06-11
 **Target:** Flip Middlesex County, MA from `partial` (single blocker `high_unclear_self_storage_share`) → `operational`.
-**Outcome:** **163 unclear rows UPDATED in place; audit-refresh pending.**
+**Outcome:** **163 unclear rows UPDATED in place; CONFIRMED FLIP to operational. Operational count 16 → 17.**
+
+---
+
+## ✅ AUDITED RESULT (post-refresh, 2026-06-11T18:52:02Z)
+
+| field | BEFORE | AFTER (confirmed) |
+|---|---|---|
+| operational_readiness | partial | **operational** ✓ |
+| matrix_zone_count | 633 | 633 (no inserts, in-place updates) |
+| self_storage_classified_parcel_pct | 78.1% | **100.0%** ✓ |
+| parcel_zoning_code_coverage_pct | 92.3% | 92.3% |
+| blocking_gaps | `['high_unclear_self_storage_share']` | **`[]`** ✓ |
+| captured_at | 2026-05-19T21:08:14 | **2026-06-11T18:52:02** |
+
+Refresh fired at 18:36Z, audit committed at 18:52Z (~16 min wall-clock — matches Hunterdon/Norfolk precedent). Clean single-blocker flip; no residual gaps. Norfolk's 80% exception threshold concern did not apply here (Middlesex 92.3% > 80%).
+
+**Operational count: 16 → 17.**
 
 ---
 
