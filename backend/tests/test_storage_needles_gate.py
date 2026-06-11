@@ -55,6 +55,20 @@ def test_gate_clause_present_in_sql():
     assert "zum.human_reviewed = TRUE" in sql
 
 
+def test_verdict_mode_param_is_cast_to_text():
+    # Regression: asyncpg raises AmbiguousParameterError at prepare time if
+    # the bind is only ever used in `IS NULL` + untyped-literal comparisons
+    # — it can't infer the type. Every reference must CAST to TEXT, or the
+    # ENTIRE digest crashes (not just the SN filter). See daily_email.py.
+    sql, _ = _run({"requireListed": True, "storageVerdictMode": "only"})
+    # the bare, un-cast form must NOT appear anywhere in the gate
+    assert ":storage_verdict_mode IS NULL" not in sql
+    assert ":storage_verdict_mode = 'only'" not in sql
+    assert ":storage_verdict_mode = 'exclude'" not in sql
+    # all three references must be cast
+    assert sql.count("CAST(:storage_verdict_mode AS TEXT)") == 3
+
+
 def test_only_mode_binds_param():
     _, params = _run({"requireListed": True, "storageVerdictMode": "only"})
     assert params["storage_verdict_mode"] == "only"

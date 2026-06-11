@@ -362,12 +362,17 @@ async def _top_parcels_for_filter(
           -- 'only' -> keep ONLY human-reviewed self_storage needles.
           -- 'exclude' -> drop needles (NULL-safe: no-verdict + non-needle
           -- rows pass, so the general buy-box still surfaces them).
+          -- CAST to text: asyncpg cannot infer the bind type from
+          -- `$n IS NULL` + untyped-literal comparisons alone and raises
+          -- AmbiguousParameterError at prepare time (same reason the
+          -- price caps above CAST to DOUBLE PRECISION). Without this the
+          -- whole digest crashes for every filter, not just SN.
           AND (
-                :storage_verdict_mode IS NULL
-             OR (:storage_verdict_mode = 'only'
+                CAST(:storage_verdict_mode AS TEXT) IS NULL
+             OR (CAST(:storage_verdict_mode AS TEXT) = 'only'
                  AND zum.self_storage::text IN ('permitted', 'conditional')
                  AND zum.human_reviewed = TRUE)
-             OR (:storage_verdict_mode = 'exclude'
+             OR (CAST(:storage_verdict_mode AS TEXT) = 'exclude'
                  AND NOT COALESCE(
                        zum.self_storage::text IN ('permitted', 'conditional')
                        AND zum.human_reviewed, FALSE))
