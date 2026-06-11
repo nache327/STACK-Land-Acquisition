@@ -699,3 +699,131 @@ matrix on the 567 codes) and **Path B in parallel after Master
 signs off on Phase 2** (or never — the Contra Costa proof can wait
 behind a county-by-county scaling plan if Master prefers
 consolidation over new-county expansion).
+
+---
+
+## Task 6 — Sub-coverage muni diagnostic (2026-06-11)
+
+Master's question after PR #238 review: are the 5 sub-coverage
+Westchester munis (Bedford, North Salem, Port Chester, Somers,
+Yorktown) recoverable via a 100m or 200m nearest fallback, or
+should they be accepted at their current 56-69% coverage as the
+realistic ceiling?
+
+Read-only diagnostic. No prod writes.
+
+### Method
+
+For each of the 5 munis:
+1. Confirm dominant unmatched land_use_code (does the Scarsdale
+   "Property Class 210 single-family residence" pattern hold?).
+2. Measure centroid → nearest-district edge distance distribution
+   on a 200-1,000 unmatched-parcel sample (p50/p75/p90/max in m).
+3. Count how many unmatched parcels would bind at
+   `nearest_within_meters` ∈ {100, 200, 500} via ST_DWithin
+   (read-only EXISTS, no UPDATE fired).
+4. Project resulting coverage % and `nearest_*` share at each
+   threshold against the 70% / 30% quality gates.
+
+### Results
+
+| muni | vintage | current cov | unmatched | dominant code | p50 dist (m) | @100m cov / near% | @200m cov / near% | gate-clear? |
+|------|--------:|------------:|----------:|---------------|-------------:|-------------------|-------------------|-------------|
+| Bedford | 2011 | 68.8 % | 1,945 | `210` (1,264) | **1,477** | 70.2 % / 3.34 % | 71.9 % / 5.62 % | @100m ✓ (marginal) |
+| North Salem | 2023 | 55.8 % | 1,074 | `210` (536) | 522 | 59.1 % / 10.45 % | 64.1 % / 17.46 % | **NONE** (cov stays <70) |
+| Port Chester | 2016 | 69.1 % | 1,669 | `210` (1,384) | 209 | 76.1 % / 23.50 % | 85.0 % / 31.50 % ✗ | @100m ✓ (solid) |
+| Somers | 2011 | 55.7 % | 4,116 | `210` (3,676) | 148 | 65.5 % / 21.68 % | 80.4 % / 36.12 % ✗ | **NONE** (cov stays <70 at 100m, near breaches at 200m) |
+| Yorktown | 2011 | 67.3 % | 4,706 | `210` (4,265) | 166 | 71.4 % / 13.89 % | 79.3 % / 22.47 % | @100m ✓; @200m ✓ (better) |
+
+**Scarsdale pattern confirmed on all 5**: NYS Property Class `210`
+(one-family year-round residence) is the dominant unmatched class
+everywhere. The shortfall is residential-parcel topology drift vs
+stale district polygons, not parks/ROW/industrial.
+
+### Three groups emerge
+
+**Group A — recoverable via nearest_100m (3 munis):**
+- **Port Chester** — best candidate. nearest_100m → 76.1 % / 23.5 %, both gates clear comfortably. Median unmatched distance only 209 m.
+- **Yorktown** — nearest_100m → 71.4 % / 13.9 %, clears. nearest_200m → 79.3 % / 22.5 %, clears with more headroom. Either threshold works.
+- **Bedford** — nearest_100m → 70.2 % / 3.34 %, clears coverage gate by 0.2 pp (marginal). Many unmatched parcels are very far away (p50 = 1,477 m!) — adding 50 m of fallback range catches a small fraction.
+
+**Group B — not recoverable via nearest fallback (2 munis):**
+- **North Salem** (2023 vintage, town) — even at 500 m, cov only 77.1 % and near share breaches the 30 % cap at 31.4 %. **No nearest threshold clears both gates.**
+- **Somers** (2011 vintage, town) — nearest_100m hits 65.5 % cov (below gate by 4.5 pp); nearest_200m gets to 80.4 % cov but breaches the 30 % near cap at 36.1 %. **No nearest threshold clears both gates.**
+
+### Why Group B can't be rescued
+
+Both Group B munis are large geographic *towns* with low district
+density (Somers 53 districts / 9.3k parcels; North Salem 35 / 2.4k).
+The unmatched residential parcels are geographically dispersed across
+the muni rather than clustered along district edges. Lifting the
+nearest fallback catches more parcels per district but at the cost
+of mis-binding to a wrong-zone neighbor (and the near share breaches
+the 30% cap regardless).
+
+The clean fix for Group B is **per-muni Class B from the muni's own
+GIS portal** if it publishes a fresher polygon set than the county's
+2011 vintage. North Salem's county-published polygons are already
+2023 vintage so a self-published source is unlikely to differ much;
+Somers's are 2011 and could plausibly have a fresher self-published
+alternative.
+
+### Recommendation
+
+**Group A (3 munis)** — apply `nearest_within_meters=100` selectively.
+This is a per-muni script invocation, not a code change. The
+adapter already accepts `nearest_within_meters` as a parameter.
+
+| muni | proposed action | expected cov | expected near share |
+|------|-----------------|-------------:|--------------------:|
+| Port Chester | re-fire with nearest_100m for unmatched residual | 76.1 % | 23.5 % |
+| Yorktown | re-fire with nearest_100m for unmatched residual | 71.4 % | 13.9 % |
+| Bedford | re-fire with nearest_100m for unmatched residual | 70.2 % | 3.34 % |
+
+**Group B (2 munis)** — accept current coverage as-is. Per-muni
+Class B follow-up is too heavy for the marginal lift (the bound
+parcels are already correctly bound; the residual is just
+single-family residences out of polygon reach).
+
+| muni | proposed action | accepted cov | rationale |
+|------|-----------------|-------------:|-----------|
+| North Salem | accept-as-is | 55.8 % | No nearest threshold clears both gates; vintage already 2023 |
+| Somers | accept-as-is | 55.7 % | No nearest threshold clears both gates; per-muni Class B too heavy |
+
+### What this changes operationally
+
+- **County-level coverage**: 85.96 % → ~87.5 % (if Group A re-fires
+  land). Doesn't change the operational verdict (Westchester
+  county-wide is still partial pending matrix authoring).
+- **Per-muni operational readiness**: 3 munis flip from sub-gate
+  to gate-clear; 2 munis stay sub-gate but documented as
+  intrinsic.
+- **Risk**: re-firing Group A with `nearest_within_meters=100`
+  will re-stamp the binding method on parcels that were
+  previously contained — actually no, the adapter's two-pass
+  logic skips already-bound parcels in Pass 2 (`p.zone_binding_method
+  IS NULL` filter). So a Pass-2-only re-fire would only touch the
+  currently-unmatched parcels. Low risk.
+
+### Lane A recommendation
+
+**Master decides**:
+- **Option 1 (do nothing)**: accept all 5 at current coverage.
+  Operational verdict unchanged either way.
+- **Option 2 (Group A re-fire only)**: dispatch a follow-up to
+  re-fire Bedford/Port Chester/Yorktown at nearest_100m. ~5 min
+  per muni; ONE refresh at end. Lifts 3 munis to gate-clear and
+  Westchester county-wide coverage by ~1.5 pp.
+- **Option 3 (full per-muni Class B)**: out of scope; defer.
+
+Lane A leans **Option 2** — it's cheap and clears 3 of 5 flagged
+gates. But Option 1 is also defensible if Master prefers to lock
+the current state and move on to other counties.
+
+### Diagnostic artifacts
+
+- `/tmp/task6_subcov_diag.json` — full per-muni dataset.
+- `/tmp/task6_subcoverage_diag.py` — diagnostic script (read-only).
+- `/tmp/task6_yorktown_only.py` — Yorktown re-run with
+  `statement_timeout=0` (the 4,706 unmatched × 155 districts
+  ST_DWithin sweep takes longer than the default 600s).
