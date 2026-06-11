@@ -329,6 +329,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ## 15. Daily Changelog
 
+### 2026-06-11
+
+- **[HALT]** Phase 2A Montgomery County, PA spatial backfill — diagnosis was incomplete, no flip. Sprint doc: `docs/OP5_MONTGOMERY_PA_BACKFILL.md`. Pre-flight (no prod writes) found the 54 ingested `zoning_districts` cover ~1.2 % of the county by area (centroid -75.38, 40.13 — one township in the eastern half). Dry-run of `ST_Within(centroid, district.geom)` on 1,000 sample unzoned parcels returned **0 matches**. Firing `backfill_parcel_zoning_from_districts` in contained-only mode would have moved coverage 2.2 % → ~3.5 % (still below 70 % gate); firing with `nearest_within_meters` would have bound ~98 % of parcels to districts hundreds of meters away, violating the proposed `nearest_* > 30 %` quality gate from PR #214. Halted at pre-flight per the dispatch's halt-and-report rule. `docs/INGESTION_PIPELINE_PLAN.md`'s Class A claim for Montgomery PA reclassified as Class B/D — corrections proposed in the sprint doc. Coverage snapshot unchanged: 6,548 / 301,424 parcels, 2.2 %, partial. Recommended next dispatch: Option A (drop Montgomery PA from the bucket pending Class B/D source acquisition) — Master decides.
+
 ### 2026-06-10
 
 - **FLIP** Monmouth County, NJ → operational. Recovery sprint per PR #199 (`docs/OP5_MONMOUTH_RECOVERY_SPRINT.md`) Plan B: 14 unclear-row cleanup + 60-code matrix completion. Sprint flagged that 60 codes was mathematically insufficient to clear `low_matrix_match_pct` (projected 76.4% vs 90% gate). Between Sat 06-09 and Tue 06-10 morning, **~120 supplemental matrix rows landed on Monmouth** (Lane E parallel work + likely sprint follow-on; final `matrix_zone_count=259`), pushing match_pct above the 90% gate. Final state: `operational_readiness=operational`, `blocking_gaps=[]`, 251,486 parcels covered. 5th confirmed NJ Tier-S flip of the week (Bergen, Morris, Somerset, Hunterdon, Monmouth — Allentown PA also flipped via PR #193 audit-fix). **Total NJ Tier-S operational: 5 of 11 counties.** Master tracker bumped 16 → 17.
