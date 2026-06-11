@@ -40,5 +40,215 @@
     "use_structure": "district_narrative",
     "vintage": "2011",
     "notes": "Source layer's last YEARUPDATED is 2011. PR #212 noted Scarsdale's zoning ordinance has been updated since; the proof validates the adapter pattern even on stale county-published GIS data. Per-muni vintage cross-check should land before scaling to remaining 45 Westchester munis."
+  },
+  {
+    "muni_name": "Rye City",
+    "muni_type": "city",
+    "prod_city_value": "Rye",
+    "county_jurisdiction_name": "Westchester County, NY",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://giswww.westchestergov.com/arcgis/rest/services/DataHub_EnvironmentandPlanning/MapServer/207",
+      "filter_query": "MUN='RYC'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZONE_NAME"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "MUN",
+        "TOWN",
+        "GENCODE",
+        "GENZDESC",
+        "OVERLAY",
+        "SUBZONE1",
+        "SUBZONE2",
+        "SUBZONE3",
+        "MIN_LOT",
+        "MAX_UNITS",
+        "MAX_FAR",
+        "MAX_HGHT",
+        "STORIES",
+        "BLDG_COVER",
+        "TOT_COVERA",
+        "ACRES",
+        "YEARUPDATED"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2016",
+    "notes": "MUN=RYC, TOWN=RYC. 95 features, 24 distinct zone codes (top: R-3, B-1, R-4). Source YEARUPDATED=2016 — freshest of the priority-5 batch. Ordinance metadata left null pending researcher confirmation."
+  },
+  {
+    "muni_name": "Rye Brook",
+    "muni_type": "village",
+    "prod_city_value": "Rye Brook",
+    "county_jurisdiction_name": "Westchester County, NY",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://giswww.westchestergov.com/arcgis/rest/services/DataHub_EnvironmentandPlanning/MapServer/207",
+      "filter_query": "MUN='RYB'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZONE_NAME"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "MUN",
+        "TOWN",
+        "GENCODE",
+        "GENZDESC",
+        "OVERLAY",
+        "SUBZONE1",
+        "SUBZONE2",
+        "SUBZONE3",
+        "MIN_LOT",
+        "MAX_UNITS",
+        "MAX_FAR",
+        "MAX_HGHT",
+        "STORIES",
+        "BLDG_COVER",
+        "TOT_COVERA",
+        "ACRES",
+        "YEARUPDATED"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2011",
+    "notes": "MUN=RYB (village within Town of Rye, TOWN=RYT). 32 features, 18 distinct zone codes (top: R-20, P.U.D., OB-1). Vintage 2011. Ordinance metadata left null pending researcher confirmation."
+  },
+  {
+    "muni_name": "Bronxville",
+    "muni_type": "village",
+    "prod_city_value": "Bronxville",
+    "county_jurisdiction_name": "Westchester County, NY",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://giswww.westchestergov.com/arcgis/rest/services/DataHub_EnvironmentandPlanning/MapServer/207",
+      "filter_query": "MUN='BXV'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZONE_NAME"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "MUN",
+        "TOWN",
+        "GENCODE",
+        "GENZDESC",
+        "OVERLAY",
+        "SUBZONE1",
+        "SUBZONE2",
+        "SUBZONE3",
+        "MIN_LOT",
+        "MAX_UNITS",
+        "MAX_FAR",
+        "MAX_HGHT",
+        "STORIES",
+        "BLDG_COVER",
+        "TOT_COVERA",
+        "ACRES",
+        "YEARUPDATED"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2011",
+    "notes": "MUN=BXV (village within Town of Eastchester, TOWN=ECH). 20 features, 8 distinct zone codes (narrative-style: Residence A/AA/B/C/D). Vintage 2011. Ordinance metadata left null pending researcher confirmation."
+  },
+  {
+    "muni_name": "Eastchester",
+    "muni_type": "town",
+    "prod_city_value": "Eastchester",
+    "county_jurisdiction_name": "Westchester County, NY",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://giswww.westchestergov.com/arcgis/rest/services/DataHub_EnvironmentandPlanning/MapServer/207",
+      "filter_query": "MUN='ECH'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZONE_NAME"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "MUN",
+        "TOWN",
+        "GENCODE",
+        "GENZDESC",
+        "OVERLAY",
+        "SUBZONE1",
+        "SUBZONE2",
+        "SUBZONE3",
+        "MIN_LOT",
+        "MAX_UNITS",
+        "MAX_FAR",
+        "MAX_HGHT",
+        "STORIES",
+        "BLDG_COVER",
+        "TOT_COVERA",
+        "ACRES",
+        "YEARUPDATED"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2011",
+    "notes": "MUN=ECH (Town of Eastchester; excludes contained villages BXV and TUC). 70 features, 19 distinct zone codes (top: PARK, R7.5, R5). Vintage 2011. Ordinance metadata left null pending researcher confirmation."
+  },
+  {
+    "muni_name": "Larchmont",
+    "muni_type": "village",
+    "prod_city_value": "Larchmont",
+    "county_jurisdiction_name": "Westchester County, NY",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://giswww.westchestergov.com/arcgis/rest/services/DataHub_EnvironmentandPlanning/MapServer/207",
+      "filter_query": "MUN='LAR'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZONE_NAME"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "MUN",
+        "TOWN",
+        "GENCODE",
+        "GENZDESC",
+        "OVERLAY",
+        "SUBZONE1",
+        "SUBZONE2",
+        "SUBZONE3",
+        "MIN_LOT",
+        "MAX_UNITS",
+        "MAX_FAR",
+        "MAX_HGHT",
+        "STORIES",
+        "BLDG_COVER",
+        "TOT_COVERA",
+        "ACRES",
+        "YEARUPDATED"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2011",
+    "notes": "MUN=LAR (village within Town of Mamaroneck, TOWN=MMT). 25 features, 10 distinct zone codes (top: R-5, R-30, R-7.5). Vintage 2011. Ordinance metadata left null pending researcher confirmation."
   }
 ]
