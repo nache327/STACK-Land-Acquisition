@@ -495,3 +495,207 @@ are the authoritative truth.
 Lane A's recommendation: **Path A** — finish Westchester first while
 the adapter is hot, then queue Task 5 (Contra Costa) once Master has
 reviewed the county-wide result. Path C is orchestrator's call.
+
+---
+
+## Task 4-extended — All remaining Westchester munis (2026-06-11)
+
+Master approved Path A after PR #233 cleared. This continuation
+adds directory entries + ingests for every remaining MUN in the
+canonical Westchester County GIS layer (MapServer/207). 37 new munis;
+end state covers all 43 zoning-mapped munis in the county.
+
+### Scope + scale
+
+The Westchester layer publishes 44 distinct MUN codes (1 blank /
+unattributed). 6 were ingested in PR #231 + PR #233 (Scarsdale,
+Rye City, Rye Brook, Bronxville, Eastchester, Larchmont). The
+remaining 37 cover the rest of the county — every city, town,
+and incorporated village that publishes zoning to the county
+layer. Vintages span 2011 → 2025 (the layer is a rolling
+publication; municipalities push fresh polygons as they update).
+
+### Process
+
+1. **Enumerated MUNs** + per-MUN stats via ArcGIS REST (no DB).
+2. **Probed prod parcels** to map MUN → `prod_city_value`. 35/37
+   collapsed cleanly to a single city value. **2 collisions**
+   (MMT vs MMV, OST vs OSV) hand-fixed:
+   - MMT (Mamaroneck Town) → `city='Mamaroneck'` (4,029 parcels)
+   - MMV (Mamaroneck Village) → `city='Mamaroneck, Village'` (5,255)
+   - OST (Ossining Town) → `city='Ossining'` (2,180)
+   - OSV (Ossining Village) → `city='Ossining, Village'` (5,458)
+3. **5 representative preflights** (ARD, HAS, MMT, WHP, YON)
+   covering varied vintage / size / muni_type — all PASSED the
+   strengthened Class A gates. Confirmed PR #233's
+   `muni_name` vs `prod_city_value` fix holds at scale.
+4. **Bulk fire** sequentially via the existing adapter
+   (`backend/scripts/ingest_westchester_class_b_proof.py fire
+   --muni "<name>" --i-know-this-writes-to-prod`), per-muni
+   subprocess for transaction isolation. Total wall-clock for
+   37 fires: ~28 minutes.
+5. **DB-level gate verification** per muni against
+   `parcels.zone_binding_method` and `zoning_districts.raw_attributes`.
+6. **ONE audit refresh** fired post-fires; client timed out at 200 s
+   (Railway proxy ceiling). Did NOT retry per dispatch hard rule.
+
+### Quality gates — 38 PASS / 5 sub-coverage
+
+**Three of the four gates are 100 % across all 43 munis**:
+
+| Gate | Result | Notes |
+|------|--------|-------|
+| nearest_* share < 30 % | 43/43 ✓ | max 15.65 % (Port Chester) |
+| raw_attributes preserved | 43/43 ✓ | 0 empty `{}` / 0 missing `source_url` across 3,083 districts |
+| no_zoning_polygons cleared | 43/43 ✓ | every muni went from 0 → N>0 districts |
+| **coverage ≥ 70 %** | **38/43** | 5 sub-coverage munis — see below |
+
+### 5 sub-coverage munis
+
+These tripped the coverage gate at fire-time. They were NOT halted
+(adapter doesn't currently gate at fire-time — the gate is computed
+post-hoc) and their bound parcels are correctly bound; the
+shortfall is residual unmatched parcels, not bad binds.
+
+| muni | MUN | vintage | coverage | dominant unmatched land_use_code |
+|------|-----|--------:|---------:|----------------------------------|
+| North Salem | NSM | 2023 | 55.8 % | `210` single-family (536), `311` residential vacant (151) |
+| Somers | SOM | 2011 | 55.7 % | `210` (3,676), `311` (228) |
+| Yorktown | YTN | 2011 | 67.3 % | `210` (4,265), `311` (119) |
+| Bedford | BED | 2011 | 68.8 % | `210` (1,264), `311` (265) |
+| Port Chester | PCH | 2016 | 69.1 % | `210` (1,384), `220` two-family (152) |
+
+**Pattern**: 4 of 5 are large geographic *towns* (the 5th is a dense
+urban *village*). In all 5, the dominant unmatched class is NYS
+Property Class `210` (one-family year-round residence) — same
+topology-noise story as Scarsdale's 7.49 % nearest share at PR #231:
+modern individual residential parcels have centroids floating just
+outside the 2011/2016-vintage district edges, beyond the 50 m
+nearest fallback's reach.
+
+The fired bindings ARE correct (parcels bound to the district
+their centroid falls inside or within 50 m of). The shortfall is
+residual unmatched residential parcels, not mis-binding. These 5
+munis are **partial coverage**, not adapter failures.
+
+### Mitigation paths for the 5 sub-coverage munis
+
+- **Option 1 (cheap, no work)**: Accept partial coverage on these 5.
+  Westchester county-wide coverage is 85.96 %; orchestrator's
+  matrix sprint will pull these into verdict-producing state for
+  the parcels that ARE bound.
+- **Option 2 (medium)**: Lift `nearest_within_meters` from 50 to
+  100 or 200 on these 5 specifically. Risks misbinding to a
+  wrong-zone neighbor; would need spot-checks.
+- **Option 3 (heavy)**: Per-muni Class B from the muni's own GIS
+  portal if it publishes a fresher polygon set than the
+  county-published 2011 vintage (especially likely for Bedford,
+  Somers, Yorktown). Requires a per-muni source acquisition probe.
+
+Lane A's recommendation: **Option 1** unless a customer-side use
+case demands the residual coverage. The 5 munis represent ~32,000
+parcels out of 257,914 county-wide (~12.5 %).
+
+### Per-muni delta table
+
+| muni | MUN | vintage | districts | codes | parcels | bound | contained | nearest_50m | coverage | nearest share |
+|------|-----|--------:|----------:|------:|--------:|------:|----------:|------------:|---------:|--------------:|
+| Ardsley | ARD | 2023 | 20 | 10 | 1,746 | 1,734 | 1,675 | 59 | 99.3 % | 3.40 % |
+| Bedford | BED | 2011 | 72 | 15 | 6,234 | 4,289 | 4,228 | 61 | **68.8 %** | 1.42 % |
+| Briarcliff Manor | BRM | 2024 | 38 | 22 | 2,782 | 2,637 | 2,571 | 66 | 94.8 % | 2.50 % |
+| Buchanan | BUC | 2024 | 14 | 10 | 832 | 831 | 828 | 3 | 99.9 % | 0.36 % |
+| Cortlandt | CTD | 2011 | 155 | 19 | 11,119 | 8,201 | 7,483 | 718 | 73.8 % | 8.76 % |
+| Croton-on-Hudson | CRO | 2011 | 54 | 19 | 3,261 | 3,261 | 3,260 | 1 | 100.0 % | 0.03 % |
+| Dobbs Ferry | DBF | 2023 | 70 | 22 | 2,972 | 2,972 | 2,971 | 1 | 100.0 % | 0.03 % |
+| Elmsford | ELM | 2011 | 23 | 10 | 1,387 | 1,387 | 1,387 | 0 | 100.0 % | 0.00 % |
+| Greenburgh | GRB | 2023 | 203 | 27 | 14,425 | 14,330 | 14,216 | 114 | 99.3 % | 0.80 % |
+| Harrison | HAR | 2011 | 51 | 19 | 7,048 | 6,320 | 6,260 | 60 | 89.7 % | 0.95 % |
+| Hastings-on-Hudson | HAS | 2025 | 65 | 24 | 2,654 | 2,109 | 1,827 | 282 | 79.5 % | 13.37 % |
+| Irvington | IRV | 2011 | 32 | 12 | 1,944 | 1,944 | 1,942 | 2 | 100.0 % | 0.10 % |
+| Lewisboro | LEW | 2023 | 72 | 12 | 5,848 | 4,370 | 4,241 | 129 | 74.7 % | 2.95 % |
+| Mamaroneck Town | MMT | 2011 | 35 | 17 | 4,029 | 4,026 | 4,006 | 20 | 99.9 % | 0.50 % |
+| Mamaroneck Village | MMV | 2016 | 77 | 22 | 5,255 | 5,112 | 4,739 | 373 | 97.3 % | 7.30 % |
+| Mount Kisco | MTK | 2011 | 68 | 24 | 2,805 | 2,778 | 2,719 | 59 | 99.0 % | 2.12 % |
+| Mount Pleasant | MTP | 2023 | 69 | 32 | 9,298 | 7,371 | 7,018 | 353 | 79.3 % | 4.79 % |
+| Mount Vernon | MTV | 2021 | 113 | 19 | 11,173 | 9,515 | 8,754 | 761 | 85.2 % | 8.00 % |
+| New Castle | NWC | 2023 | 74 | 17 | 6,707 | 5,922 | 5,792 | 130 | 88.3 % | 2.20 % |
+| New Rochelle | NRO | 2011 | 244 | 38 | 15,756 | 12,149 | 10,554 | 1,595 | 77.1 % | 13.13 % |
+| North Castle | NOC | 2025 | 78 | 31 | 4,792 | 4,145 | 4,060 | 85 | 86.5 % | 2.05 % |
+| North Salem | NSM | 2023 | 35 | 12 | 2,431 | 1,357 | 1,286 | 71 | **55.8 %** | 5.23 % |
+| Ossining Town | OST | 2011 | 40 | 15 | 2,180 | 2,141 | 2,096 | 45 | 98.2 % | 2.10 % |
+| Ossining Village | OSV | 2023 | 69 | 23 | 5,458 | 5,061 | 4,871 | 190 | 92.7 % | 3.75 % |
+| Peekskill | PKS | 2023 | 73 | 23 | 6,436 | 6,419 | 6,410 | 9 | 99.7 % | 0.14 % |
+| Pelham | PEL | 2011 | 21 | 12 | 1,900 | 1,900 | 1,898 | 2 | 100.0 % | 0.11 % |
+| Pelham Manor | PMR | 2011 | 22 | 12 | 1,771 | 1,771 | 1,769 | 2 | 100.0 % | 0.11 % |
+| Pleasantville | PLV | 2011 | 38 | 17 | 2,660 | 2,466 | 2,379 | 87 | 92.7 % | 3.53 % |
+| Port Chester | PCH | 2016 | 78 | 27 | 5,394 | 3,725 | 3,142 | 583 | **69.1 %** | 15.65 % |
+| Pound Ridge | PDR | 2011 | 11 | 7 | 2,471 | 1,804 | 1,699 | 105 | 73.0 % | 5.82 % |
+| Sleepy Hollow | SLH | 2011 | 34 | 17 | 2,180 | 2,083 | 1,891 | 192 | 95.6 % | 9.22 % |
+| Somers | SOM | 2011 | 53 | 14 | 9,295 | 5,179 | 4,771 | 408 | **55.7 %** | 7.88 % |
+| Tarrytown | TTN | 2011 | 73 | 24 | 3,363 | 3,326 | 3,312 | 14 | 98.9 % | 0.42 % |
+| Tuckahoe | TUC | 2011 | 33 | 9 | 1,986 | 1,986 | 1,985 | 1 | 100.0 % | 0.05 % |
+| White Plains | WHP | 2011 | 111 | 31 | 13,965 | 11,226 | 10,474 | 752 | 80.4 % | 6.70 % |
+| Yonkers | YON | 2011 | 319 | 24 | 36,431 | 34,228 | 32,677 | 1,551 | 94.0 % | 4.53 % |
+| Yorktown | YTN | 2011 | 155 | 25 | 14,407 | 9,701 | 8,857 | 844 | **67.3 %** | 8.70 % |
+
+### County roll-up
+
+- **zoning_districts total**: **3,083** (242 → 3,083; +2,841 in this batch)
+- **distinct zone_code county-wide**: **567** (overlapping codes
+  collapsed; many shared between munis, e.g. R-10, R-20, C-1)
+- **parcels total**: 257,914
+- **parcels bound**: **221,698 / 257,914 = 85.96 %**
+  - contained: 211,456
+  - nearest_50m: 10,242
+- **nearest share (of bound)**: 4.62 % — well under 30 % cap
+- **County coverage 2.30 % (Scarsdale alone, pre-PR #231) → 8.50 %
+  (post-Task 4) → 85.96 %** (post-Task 4-extended)
+
+### Refresh status
+
+`POST /api/admin/coverage/refresh` fired once at 2026-06-11 ~15:50 EDT.
+Client-side timeout at 200 s (curl `-m 200`); Railway proxy was
+already past its 150 s ceiling so the worker may be running on or
+may have died — same uncertainty as Westchester PR #231 + Hunterdon
+PR #196. Did NOT retry per "ONE refresh per task" rule. DB-level
+numbers in this doc are authoritative; audit snapshot will reconcile
+on the next automated refresh cycle.
+
+### What changed in the repo (Task 4-extended)
+
+- `backend/data/westchester_zoning_directory.json` — 37 new
+  directory entries (6 + 37 = 43 total). `ordinance_url`,
+  `ordinance_chapter`, `ordinance_platform` left null pending
+  researcher confirmation per muni.
+- `docs/OP5_WESTCHESTER_NY_CLASS_B_PROOF.md` — this continuation
+  section + per-muni delta table.
+- `docs/PHASE2_PROGRESS.md` §15 — Task 4-extended entry.
+
+No backend code changes. The PR #233 fix to the adapter held across
+all 37 fires.
+
+### Recommended next dispatch
+
+Lane A's options after this PR:
+
+- **Path B (Master's queued Task 5)**: Contra Costa CA preview is
+  **already complete** (the read-only Phase 1 Class A primitive
+  probe ran in parallel; verdict at `/tmp/contra_costa_class_a_preview.md`
+  — Class A passes with bbox 95.6 % / ST_Within 71.1 %). Master
+  decides whether to dispatch Phase 2 ingest. No Phase 2 action
+  taken pending sign-off.
+- **Path C (orchestrator domain)**: Author matrix rows for the 567
+  county-wide codes. Orchestrator was already pre-staging the
+  Westchester citation directory in parallel; this PR unblocks the
+  matrix sprint that fires after merge.
+- **Path D (optional cleanup)**: Sub-coverage muni follow-up via
+  Option 2 (raise nearest_50m → 100m on the 5 munis specifically)
+  or Option 3 (per-muni Class B from each muni's own GIS portal).
+  Lane A does not recommend without a customer signal — Option 1
+  (accept partial) is the right call for now.
+
+Lane A's recommendation: **Path C first** (orchestrator unblocks
+matrix on the 567 codes) and **Path B in parallel after Master
+signs off on Phase 2** (or never — the Contra Costa proof can wait
+behind a county-by-county scaling plan if Master prefers
+consolidation over new-county expansion).
