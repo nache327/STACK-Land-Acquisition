@@ -8,11 +8,23 @@ Question: before Lane A builds ingestion adapters, what is the parcel-source acq
 
 ## Executive Read
 
-Three conclusions matter for sprint planning:
+Three conclusions matter for sprint planning after the MassGIS halt in
+`docs/OP5_MASSGIS_INGEST_SPRINT.md`:
 
-1. **MassGIS is the highest-leverage statewide parcel source.** It covers Plymouth MA now and also covers the already-partial 57-list Massachusetts counties Middlesex MA and Norfolk MA. It is the only source in this batch that clearly unlocks three 57-list counties from one state-level parcel acquisition path.
-2. **Most Phase 6 rows have good county parcel portals.** Maricopa, King, Cook, Oakland, Allegheny, Contra Costa, and Miami-Dade are not blocked on public parcel geometry. They are blocked on registering the county, loading parcels, then joining city/town zoning.
-3. **Zoning is usually the long pole.** Except for narrow cases where a county/city parcel viewer exposes a zoning layer, target zoning is municipal. That means parcel ingest is usually days, but operational readiness is days-to-weeks depending on how many municipal zoning layers/directories are needed.
+1. **No remaining non-MA source cleanly unlocks >=3 57-list counties.**
+   The best regional leverage is Oregon's PortlandMaps/RLIS taxlot
+   source for Multnomah + Clackamas, but that is two counties and one
+   Lake Oswego target area. MetroGIS covers seven Twin Cities counties,
+   but only Hennepin is in this 57-list batch.
+2. **Most Phase 6 rows have good parcel geometry sources.** Maricopa,
+   King, Cook, Hennepin, Oakland, Allegheny, Contra Costa, and
+   Miami-Dade are not blocked on public parcel geometry. They are
+   blocked on registering/loading parcels, then joining city/town zoning.
+3. **Zoning is still the long pole.** Live field probes did not verify
+   any embedded county parcel `zoning_code` source, and the county-level
+   zoning layers found are unincorporated-only or not applicable to the
+   target incorporated municipalities. Treat every non-MA row here as
+   Class B until a municipality-specific zoning layer proves otherwise.
 
 Source-class legend:
 
@@ -30,19 +42,55 @@ Zoning-source legend follows Lane A's `docs/INGESTION_PIPELINE_PLAN.md`:
 
 Polygon impact is an estimate from `docs/TARGET_MARKETS.md` representative centers, not a parsed KMZ count. The KMZ remains authoritative.
 
-## State-Aggregator Unlocks First
+## State-Aggregator / Regional Unlocks First
 
 | Source | URL | Counties covered in this target map | Recommendation |
 |---|---|---|---|
-| MassGIS Property Tax Parcels | `https://www.mass.gov/info-details/massgis-data-property-tax-parcels` and ArcGIS item `https://hub.arcgis.com/maps/b5f19318e90841d4bcf15e97b55851b7` | Plymouth MA plus Middlesex MA and Norfolk MA partial rows | **HIGH. First ingestion sprint candidate.** One statewide parcel adapter can serve three MA 57-list counties. |
-| Oregon ORMAP / PortlandMaps regional taxlots | ORMAP `https://ormap.net/`; PortlandMaps taxlots metadata `https://www.portlandmaps.com/metadata/index.cfm?LayerID=52065&action=DisplayLayer` | Multnomah OR and Clackamas OR; PortlandMaps also covers Washington County OR, not a current 57-list county | **MEDIUM-HIGH.** One regional source can cover the Lake Oswego split if raw download/API access is confirmed. |
-| MetroGIS / Minnesota Geospatial Commons regional parcels | `https://metrogis.org/how-do-i-get/parcel-data/`; Geospatial Commons dataset `https://gisdata.mn.gov/dataset/us-mn-state-metrogis-plan-regional-parcels` | Hennepin MN only in the current 57 list; seven Twin Cities metro counties in the source | **MEDIUM.** Good source, but only one 57-list county in this batch. |
-| Washington State Parcels Project | `https://geo.wa.gov/maps/2b603a599a0842a3b2284c04c8927f35` | King WA only in the current 57 list | **LOWER THAN KING COUNTY PORTAL.** Use King County's own parcel layer first unless the statewide feed already matches existing adapters. |
-| Florida Statewide Parcels | `https://geodata.floridagio.gov/datasets/FGIO::florida-statewide-parcels/about` | Miami-Dade FL only in the current 57 list | **LOWER THAN MIAMI-DADE PORTAL.** County feed is weekly and more direct. |
+| MassGIS Property Tax Parcels | `https://www.mass.gov/info-details/massgis-data-property-tax-parcels` and ArcGIS item `https://hub.arcgis.com/maps/b5f19318e90841d4bcf15e97b55851b7` | Plymouth MA plus Middlesex MA and Norfolk MA partial rows | **DEFER.** Parcel source remains useful, but PR #222 found no clean statewide MA zoning source. Operationalization is per-muni/per-region, not a one-shot MA ingest. |
+| Oregon ORMAP / PortlandMaps / RLIS regional taxlots | ORMAP `https://ormap.net/`; PortlandMaps metadata `https://www.portlandmaps.com/metadata/index.cfm?LayerID=52065&action=DisplayLayer`; RLIS taxlots `https://rlisdiscovery.oregonmetro.gov/datasets/9d3c396ffad44649bc7451465aa300f0` | Multnomah OR and Clackamas OR; source also includes Washington County OR, not a current 57-list county | **BEST REGIONAL UNLOCK.** One source can cover the Lake Oswego county split if raw access and license are acceptable. |
+| MetroGIS / Minnesota Geospatial Commons regional parcels | `https://metrogis.org/how-do-i-get/parcel-data/`; `https://gisdata.mn.gov/dataset/us-mn-state-metrogis-plan-regional-parcels`; live layer `https://arcgis.metc.state.mn.us/data1/rest/services/parcels/Parcels_2025/FeatureServer/3` | Hennepin MN only in the current 57 list; seven Twin Cities metro counties in source | **GOOD SOURCE, LOW TARGET-MAP LEVERAGE.** Use for Hennepin, but it does not unlock other 57-list counties today. |
+| Washington State Parcels Project | `https://geo.wa.gov/maps/2b603a599a0842a3b2284c04c8927f35` | King WA only in this 57-list batch | **LOWER THAN KING COUNTY PORTAL.** Use direct King County parcel layer first. |
+| Florida Statewide Parcels | `https://geodata.floridagio.gov/datasets/FGIO::florida-statewide-parcels/about` | Miami-Dade FL only in this 57-list batch | **LOWER THAN MIAMI-DADE PORTAL.** County feed is direct and current. |
+| PASDA county parcel catalog | `https://www.pasda.psu.edu/uci/SearchResults.aspx?Keyword=parcel` | Allegheny PA plus Montgomery PA partial row | **USEFUL FALLBACK, NOT >=3.** WPRDC/Allegheny county source is still cleaner for this row. |
+| California statewide parcel boundary collection | `https://hub.arcgis.com/documents/baaf8251bfb94d3984fb58cb5fd93258` | Contra Costa CA only in this 57-list batch | **LOWER THAN COUNTY SOURCE.** Contra Costa publishes monthly assessor parcel shapefiles directly. |
+| Michigan Geographic Framework tax parcels | `https://www.michigan.gov/dtmb/services/maps/mgf-data-hub/boundaries-and-mgf/tax-parcels` | Oakland MI only in this 57-list batch | **NOT A PUBLIC STATE UNLOCK.** Michigan says the statewide parcel layer is internal and public parcel layers live on county websites. |
 
-No other source found in this batch clearly unlocks three or more 57-list counties at once.
+No non-MA source found in this batch clearly unlocks three or more
+57-list counties at once.
+
+## Strengthened-Gate Addendum
+
+Applied Lane A's newer rules from the Montgomery PA and MassGIS halt
+loops:
+
+- **No Class A claim without spatial proof.** County zoning layers found
+  here are either unincorporated-only (Cook County, Contra Costa County)
+  or not enough for incorporated target cities. Because they fail source
+  scope before geometry, no bbox / 1,000-parcel `ST_Within` dry-run was
+  run and no county is classified as Class A.
+- **No Class C claim without live field proof.** Live parcel metadata /
+  row probes checked likely candidates and did not verify embedded
+  municipal zoning:
+  - Cook `Current Parcel`: `Pin10`, `PIN14`, `City`, `Town`, assessment
+    fields; no zoning-code field.
+  - King `King County parcels`: `MAJOR`, `MINOR`, `PIN`, geometry only.
+  - Hennepin MetroGIS `Hennepin County Parcels`: `CTU_NAME`, tax/use and
+    valuation fields; no zoning-code field.
+  - Oakland `Tax Parcel Plus`: `KEYPIN`, `CVTTAXCODE`, `CLASSCODE`,
+    address/value fields; no municipal zoning-code field.
+  - Miami-Dade `Parcel_poly`: `PID`, `FOLIO`, `PARCEL_STRAP`, edit fields;
+    no zoning-code field.
+- **Per-municipality zoning remains the default.** Every operational path
+  below needs a directory keyed to the target city/town, with parcel
+  ingest first and zoning-map/ordinance adapter second.
 
 ## Plymouth County, MA
+
+**Post-PR #222 status:** **DEFER for this non-MA follow-up.** MassGIS
+remains the parcel source, but `docs/OP5_MASSGIS_INGEST_SPRINT.md`
+accepted the zoning-source halt: no clean statewide MA zoning aggregator
+with usable county coverage was found. Plymouth needs parcel
+registration plus per-muni/per-region zoning work.
 
 Parcel source: **public statewide parcel layer with reliable geometry.**
 
@@ -75,7 +123,8 @@ Effort estimate:
 
 57-list polygon impact: **1 estimated polygon** for Hingham/Plymouth County, plus indirect source leverage for Middlesex MA and Norfolk MA.
 
-Priority recommendation: **HIGH** because MassGIS is the only >=3-county 57-list parcel unlock found here.
+Priority recommendation: **DEFER / PER-MUNI.** Parcel source is clean,
+but operationalization is not a one-shot statewide zoning sprint.
 
 ## Cook County, IL
 
@@ -89,6 +138,7 @@ Primary parcel source:
 - Cook Central ArcGIS Hub: `https://hub-cookcountyil.opendata.arcgis.com/`
 - Property open data page: `https://hub-cookcountyil.opendata.arcgis.com/pages/property-open-data`
 - CookViewer: `https://maps.cookcountyil.gov/cookviewer/`
+- Current Parcel REST layer: `https://gis.cookcountyil.gov/traditional/rest/services/cookVwrDynmc/MapServer/44`
 
 Source notes:
 
@@ -98,7 +148,7 @@ Source notes:
 
 Zoning source class: **Per-municipality ordinance/GIS / Class B-like**, with a small county-zoning exception.
 
-- Cook County publishes unincorporated zoning districts, e.g. `https://hub-cookcountyil.opendata.arcgis.com/datasets/cookcountyil::unincorporated-zoning-districts/explore`.
+- Cook County publishes unincorporated zoning districts, e.g. `https://hub-cookcountyil.opendata.arcgis.com/datasets/cookcountyil::unincorporated-zoning-districts/explore` and REST layer `https://gis.cookcountyil.gov/traditional/rest/services/unincZoneRules/FeatureServer/0`.
 - BTAA metadata explicitly notes those boundaries are only for unincorporated areas and users should contact municipalities for incorporated zoning.
 - Winnetka/Wilmette/Glencoe need municipal zoning code/map adapters, not a county-wide zoning layer.
 
@@ -144,7 +194,7 @@ Effort estimate:
 
 57-list polygon impact: **2 estimated polygons** for Scottsdale and Paradise Valley.
 
-Priority recommendation: **HIGH-MEDIUM**. Not a multi-county unlock, but strong parcel source and high-value two-center impact.
+Priority recommendation: **HIGH**. Not a multi-county unlock, but strong parcel source and high-value two-center impact.
 
 ## King County, WA
 
@@ -156,6 +206,7 @@ Primary parcel source:
 
 - King County GIS Open Data: `https://gis-kingcounty.opendata.arcgis.com/`
 - Parcel layer: `https://gis-kingcounty.opendata.arcgis.com/datasets/kingcounty::parcel/about`
+- Parcel REST layer: `https://gismaps.kingcounty.gov/arcgis/rest/services/Property/KingCo_Parcels/MapServer/0`
 - Parcel Viewer: `https://gismaps.kingcounty.gov/parcelviewer2/`
 - iMap: `https://kingcounty.gov/en/dept/kcit/data-information-services/gis-center/maps-apps/imap`
 
@@ -213,7 +264,7 @@ Effort estimate:
 
 57-list polygon impact: **0-1 estimated polygon**. Treat as an edge/overflow county for the Lake Oswego polygon until KMZ proves otherwise.
 
-Priority recommendation: **LOW-MEDIUM** independently; **MEDIUM-HIGH** only as part of a joint Oregon taxlot sprint with Clackamas.
+Priority recommendation: **LOW** independently; **MEDIUM** only as part of a joint Oregon taxlot sprint with Clackamas.
 
 ## Clackamas County, OR
 
@@ -248,7 +299,7 @@ Effort estimate:
 
 57-list polygon impact: **1 estimated polygon** for Lake Oswego, primary county.
 
-Priority recommendation: **MEDIUM-HIGH**. Best done with Multnomah as one Oregon regional taxlot sprint.
+Priority recommendation: **HIGH** if Lake Oswego is next. Best done with Multnomah as one Oregon regional taxlot sprint.
 
 ## Hennepin County, MN
 
@@ -260,6 +311,7 @@ Primary parcel sources:
 
 - MetroGIS Regional Parcel Dataset: `https://metrogis.org/how-do-i-get/parcel-data/`
 - Minnesota Geospatial Commons dataset: `https://gisdata.mn.gov/dataset/us-mn-state-metrogis-plan-regional-parcels`
+- MetroGIS Hennepin parcel REST layer: `https://arcgis.metc.state.mn.us/data1/rest/services/parcels/Parcels_2025/FeatureServer/3`
 - Hennepin GIS Open Data: `https://gis-hennepin.hub.arcgis.com/pages/open-data`
 - Hennepin County Parcels ArcGIS Hub item: `https://hub.arcgis.com/maps/hennepin::county-parcels`
 
@@ -294,12 +346,17 @@ Primary parcel sources:
 
 - Oakland County GIS maps/data page: `https://www.oakgov.com/government/information-technology/enterprise-gis/maps-data`
 - Access Oakland / Open Data: `https://accessoakland-oakgov.opendata.arcgis.com/search?tags=property`
+- Public tax parcel REST layer: `https://gisservices.oakgov.com/arcgis/rest/services/Enterprise/EnterpriseOpenParcelDataMapService/MapServer/1`
 - Property Gateway: `https://www.oakgov.com/government/property-gateway`
 - Public tax parcels metadata via BTAA: `https://geo.btaa.org/catalog/e2910cc3a8f84549ab7f0f8e8f99817b_1`
 
 Source notes:
 
 - Oakland open data includes a public tax-parcel spatial representation keyed by `KeyPIN`.
+- Michigan's state tax-parcel page says the MGF stores a statewide
+  parcel layer, but it is internal-only and public parcel layers are
+  available on individual county websites. That confirms
+  `SINGLE-COUNTY-PORTAL`, not a statewide public unlock.
 - Property Gateway provides maps and land/property information, but some reports/products may be fee-based and availability varies by city/village/township.
 - The public ArcGIS layer should be tested before relying on Property Gateway exports.
 
@@ -353,7 +410,7 @@ Effort estimate:
 
 57-list polygon impact: **1 estimated polygon** for Fox Chapel.
 
-Priority recommendation: **MEDIUM-HIGH** despite one polygon, because parcel source is clean and zoning scope is narrow.
+Priority recommendation: **HIGH** despite one polygon, because parcel source is clean and zoning scope is narrow.
 
 ## Contra Costa County, CA
 
@@ -387,7 +444,7 @@ Effort estimate:
 
 57-list polygon impact: **2 estimated polygons** for Lafayette and Walnut Creek.
 
-Priority recommendation: **MEDIUM-HIGH** because the county parcel source is strong and Walnut Creek has an explicit zoning web map.
+Priority recommendation: **HIGH** because the county parcel source is strong and Walnut Creek has an explicit zoning web map.
 
 ## Miami-Dade County, FL
 
@@ -399,6 +456,7 @@ Primary parcel sources:
 
 - Miami-Dade Open Data Hub: `https://gis-mdc.opendata.arcgis.com/`
 - Miami-Dade parcel dataset: `https://gis-mdc.opendata.arcgis.com/datasets/MDC::parcel/about`
+- Parcel polygon REST layer: `https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services/Parcelpoly_gdb/FeatureServer/0`
 - GIS online services: `https://www.miamidade.gov/global/service.page?Mduid_service=ser1495571905689513`
 - Property Appraiser search: `https://www.miamidadepa.gov/pa/real-estate/property-search.page`
 
@@ -426,23 +484,42 @@ Priority recommendation: **MEDIUM**. Good source, one polygon, no multi-county l
 
 ## Recommended Dispatch Order
 
-1. **MassGIS parcel adapter first.** This is the only source here that clearly covers three 57-list counties: Plymouth MA, Middlesex MA, and Norfolk MA. Even though this doc's not-loaded scope only includes Plymouth, the same adapter should reduce risk for the two partial MA lanes.
-2. **Oregon regional taxlot sprint second if Lake Oswego matters now.** Confirm raw access to PortlandMaps/RLIS taxlots or county exports, then load Clackamas first and Multnomah only if the KMZ crosses county lines.
-3. **Fast single-county wins:** Allegheny PA, Contra Costa CA, Maricopa AZ, and Miami-Dade FL. Each has a clean county parcel source and relatively small target-municipality scope.
-4. **Defer lower-leverage clean sources:** King WA, Hennepin MN, Oakland MI, and Cook IL are viable but need municipal zoning work and do not unlock multiple 57-list counties.
+1. **Oregon regional taxlot sprint if Lake Oswego matters now.** Confirm
+   raw access/licensing for PortlandMaps/RLIS taxlots, then load
+   Clackamas first and Multnomah only if the KMZ crosses county lines.
+   This is the only remaining source that covers more than one target
+   county in this batch.
+2. **Fast single-county wins:** Allegheny PA, Contra Costa CA, Maricopa
+   AZ, and Miami-Dade FL. Each has a clean county parcel source and a
+   small target-municipality zoning scope.
+3. **High-value but heavier municipal zoning:** King WA, Hennepin MN, and
+   Oakland MI. Parcel sources are good; operationalization depends on
+   Bellevue/Mercer Island, Edina/Wayzata, and Birmingham/Bloomfield Hills
+   zoning map adapters.
+4. **Cook IL after parcel-shell repair decision.** Cook has a useful
+   county parcel layer and a jurisdiction shell, but the North Shore
+   target remains municipal zoning work. No Illinois statewide source was
+   found that also explains DuPage; treat Cook and DuPage as separate
+   county-source lanes.
+5. **Plymouth MA deferred.** PR #222 / `docs/OP5_MASSGIS_INGEST_SPRINT.md`
+   accepted the halt: no clean MA statewide zoning aggregator. Plymouth
+   remains per-muni/per-region after parcel registration.
 
 ## Bottom-Line Table
 
 | County | Parcel source class | Zoning source class | Effort estimate | Polygons unlocked | Priority recommendation |
 |---|---|---|---|---:|---|
-| Plymouth MA | SINGLE-STATE-AGGREGATOR | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 3-5 days to 1-2 weeks operational | 1 direct; 3-county MA source leverage | HIGH |
 | Cook IL | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-3 days parcel repair; 1-2 weeks operational | 1 | MEDIUM |
-| Maricopa AZ | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 3-6 days to 1-2 weeks operational | 2 | HIGH-MEDIUM |
+| Maricopa AZ | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 3-6 days to 1-2 weeks operational | 2 | HIGH |
 | King WA | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 4-8 days to 1-2 weeks operational | 2 | MEDIUM |
-| Multnomah OR | SINGLE-STATE-AGGREGATOR | Per-municipality ordinance/GIS / Class B-like | 2-4 days shared parcel; 1-2 weeks if target confirmed | 0-1 | LOW-MEDIUM |
-| Clackamas OR | SINGLE-STATE-AGGREGATOR | Per-municipality ordinance/GIS / Class B-like | 2-4 days shared parcel; 4-8 days to 1-2 weeks operational | 1 | MEDIUM-HIGH |
+| Multnomah OR | SINGLE-STATE-AGGREGATOR | Per-municipality ordinance/GIS / Class B-like | 2-4 days shared parcel; 1-2 weeks if target confirmed | 0-1 | MEDIUM, only paired with Clackamas |
+| Clackamas OR | SINGLE-STATE-AGGREGATOR | Per-municipality ordinance/GIS / Class B-like | 2-4 days shared parcel; 4-8 days to 1-2 weeks operational | 1 | HIGH |
 | Hennepin MN | SINGLE-STATE-AGGREGATOR | Per-municipality ordinance/GIS / Class B-like | 1-3 days parcel; 4-8 days to 1-2 weeks operational | 2 | MEDIUM |
 | Oakland MI | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 2-4 days parcel validation; 1-2 weeks operational | 2 | MEDIUM |
-| Allegheny PA | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 3-5 days to 1 week operational | 1 | MEDIUM-HIGH |
-| Contra Costa CA | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 4-8 days to 1-2 weeks operational | 2 | MEDIUM-HIGH |
+| Allegheny PA | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 3-5 days to 1 week operational | 1 | HIGH |
+| Contra Costa CA | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 4-8 days to 1-2 weeks operational | 2 | HIGH |
 | Miami-Dade FL | SINGLE-COUNTY-PORTAL | Per-municipality ordinance/GIS / Class B-like | 1-2 days parcel; 3-6 days to 1 week operational | 1 | MEDIUM |
+
+Active non-MA polygon impact: **14-15 polygons** depending on whether
+Multnomah owns a separate Lake Oswego edge polygon. No active non-MA
+county is classified Class A or Class C under the strengthened gates.
