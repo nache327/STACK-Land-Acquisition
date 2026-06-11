@@ -2,7 +2,24 @@
 
 **Sprint date:** 2026-06-12
 **Target:** Flip Westchester County, NY from `partial` (single blocker `low_matrix_match_pct`) → `operational` via county-wide Bergen-pattern matrix completion across 41 munis.
-**Outcome:** **536 rows authored + applied (100% verified-citation coverage); audit refresh pending.**
+**Outcome:** **536 rows authored + applied (100% verified-citation coverage); CONFIRMED FLIP to operational. Operational count 17 → 18.**
+
+---
+
+## ✅ AUDITED RESULT (post-refresh, 2026-06-11T23:11:23Z)
+
+| field | BEFORE | AFTER (confirmed) |
+|---|---|---|
+| operational_readiness | partial | **operational** ✓ |
+| matrix_zone_count | 18 | **518** (500 main + 18 Scarsdale prior; the 36 follow-up stragglers landed post-refresh-fire so will pick up on next refresh) |
+| parcel_zoning_code_coverage_pct | 86.0% | 86.0% (above 70% gate AND 80% exception threshold) |
+| self_storage_classified_parcel_pct | 100.0% | 100.0% ✓ |
+| blocking_gaps | `['low_matrix_match_pct']` | **`[]`** ✓ |
+| captured_at | 2026-06-11T22:14:53 | **2026-06-11T23:11:23** |
+
+Refresh fired at sprint end; audit committed in ~7 min wall-clock — faster than Hunterdon/Monmouth precedent. Clean single-blocker flip; no residual gaps.
+
+**Operational count: 18 → 19** (Middlesex MA's PR #223 was the 18th; this is the 19th). First Phase 2 NY/CT 57-list polygon flipped. Class B adapter chain validated end-to-end at county scale.
 
 ---
 
