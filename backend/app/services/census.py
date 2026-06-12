@@ -69,16 +69,29 @@ async def ensure_census_tracts(
     )
     existing = result.scalar() or 0
 
-    if existing > 0:
-        logger.info("Census tracts: %d cached tracts cover bbox", existing)
-        return existing
-
-    logger.info("Fetching census tracts for bbox %s from Census API …", bbox)
+    # discipline-catch #16: presence != completeness. The bbox ST_Intersects
+    # check above also counts NEIGHBORING-county tracts already loaded from
+    # other jurisdictions, so a target whose OWN tracts are absent still tripped
+    # the old `if existing > 0: return` cache path. Westchester loaded only 14
+    # of ~223 tracts because 111 adjacent NYC/Bergen/Rockland tracts intersected
+    # its bbox. Always fetch the full bbox set + upsert (idempotent via
+    # ON CONFLICT DO UPDATE); one job-level Census call, negligible vs the
+    # isochrone pass it precedes — guarantees complete coverage regardless of
+    # partial prior loads. (Forward risk this prevents: the Maryland MDP
+    # statewide bbox would intersect thousands of pre-loaded tracts and skip.)
+    logger.info(
+        "Census tracts: %d already intersect bbox; fetching full set to ensure "
+        "complete coverage (presence != completeness)", existing,
+    )
     tracts = await _fetch_tracts_with_population(bbox)
 
     if not tracts:
-        logger.warning("No census tracts returned for bbox %s", bbox)
-        return 0
+        # Fetch failed/empty — keep whatever coverage we already have rather
+        # than reporting zero (don't regress a populated bbox on a transient).
+        logger.warning(
+            "No census tracts returned for bbox %s; keeping %d existing", bbox, existing,
+        )
+        return existing
 
     # Bulk upsert with ON CONFLICT DO NOTHING to handle concurrent requests
     # inserting the same tracts simultaneously (race condition on geoid unique constraint).
