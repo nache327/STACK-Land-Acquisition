@@ -188,6 +188,11 @@ _CITY_FIELDS = [
     "TOWN", "Town", "TOWN_NAME", "TOWNSHIP", "PLACE_NAME",
     # NYS ITS county schema
     "MUNI_NAME_FULL",
+    # Contra Costa CCMAP — situs (site address) city. ALL-CAPS in source
+    # (e.g. "WALNUT CREEK"); ingest script normalises to title case before
+    # building the GeoDataFrame so prod_city_value matches the CA Statewide
+    # Zoning North layer's `Jurisdiction` field convention.
+    "s_city",
 ]
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
