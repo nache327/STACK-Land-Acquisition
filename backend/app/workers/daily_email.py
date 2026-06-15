@@ -156,6 +156,10 @@ async def _top_parcels_for_filter(
 ) -> list[DigestParcel]:
     filter_json = f.filter_json or {}
     require_listed = bool(filter_json.get("requireListed"))
+    # Opt-in: drop unpriced listings instead of surfacing them behind the
+    # `soft_no_price` flag. Off by default — Worth a Look still surfaces
+    # no-price listings until a filter sets {"requirePriced": true}.
+    require_priced = bool(filter_json.get("requirePriced"))
     # Hot Deals v2: optional hard filters. NULL = no filter, pass through.
     min_acres = filter_json.get("minAcres")
     max_acres = filter_json.get("maxAcres")
@@ -344,6 +348,11 @@ async def _top_parcels_for_filter(
         -- Listing-dependent filters stay here: they need lst, which only
         -- exists after the LATERAL join above.
         WHERE (NOT :require_listed OR lst.source IS NOT NULL)
+          -- Opt-in: drop unpriced listings entirely (sale_price NULL or 0).
+          -- Off by default; gate is a no-op until a filter sets
+          -- {"requirePriced": true}.
+          AND (NOT :require_priced
+               OR (lst.sale_price IS NOT NULL AND lst.sale_price > 0))
           -- Price-per-acre cap fires only when both price and acres
           -- are populated. Unpriced listings pass through and surface
           -- as the "no asking price" soft flag instead.
@@ -388,6 +397,7 @@ async def _top_parcels_for_filter(
             "min_score": _MIN_SCORE_LISTED if require_listed else _MIN_SCORE,
             "lim": f.daily_email_top_n,
             "require_listed": require_listed,
+            "require_priced": require_priced,
             "min_acres": min_acres,
             "max_acres": max_acres,
             "max_price_per_acre": max_price_per_acre,
