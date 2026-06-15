@@ -1,0 +1,106 @@
+[
+  {
+    "muni_name": "Bellevue",
+    "muni_type": "city",
+    "prod_city_value": "Bellevue",
+    "county_jurisdiction_name": "King County, WA",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+      "filter_query": "Jurisdiction='Bellevue'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZoneID",
+        "zone_name": "ZoneName"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Jurisdiction",
+        "COUNTYNAME",
+        "ZoneID",
+        "ZoneName",
+        "WAZAZoneGeneral",
+        "WAZAZoneSpecific",
+        "Info",
+        "ReferenceURL"
+      ]
+    },
+    "fallback_zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services1.arcgis.com/EYzEZbDhXZjURPbP/arcgis/rest/services/Zoning/FeatureServer/7",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "Zoning",
+        "zone_name": "ZoningDescription"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Zoning",
+        "ZoningDescription",
+        "ZoningAlias",
+        "ZoningAliasDescription",
+        "ZONING_PreCodeAmendment2017",
+        "ORDNUM",
+        "ORDBOTH"
+      ],
+      "notes": "Bellevue city zoning source-of-record. Use if Phase 6A.2 WAZA preview underperforms or if current Bellevue codes (LDR-2/MU-H/etc) are required over WAZA's frozen R-10/GC. Per spec PR #248 Diagnostic: WAZA shows R-10/GC; current city zoning shows LDR-2/MU-H."
+    },
+    "ordinance_url": "https://bellevue.municipal.codes/LUC",
+    "ordinance_chapter": "Land Use Code (LUC) Title 20",
+    "ordinance_platform": "municipal.codes",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "WAZA primary per spec. Phase 1 verdict: WAZA bbox ~80 % overlap vs raw Bellevue situs-city parcel bbox; 991 WAZA Bellevue zones, 1,009 Bellevue city zoning polygons, 33,217 parcels. Phase 6A.2 dispatch decides whether to use WAZA or city fallback after live ST_Within preview."
+  },
+  {
+    "muni_name": "Mercer Island",
+    "muni_type": "city",
+    "prod_city_value": "Mercer Island",
+    "county_jurisdiction_name": "King County, WA",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+      "filter_query": "Jurisdiction='Mercer Island'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZoneID",
+        "zone_name": "ZoneName"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Jurisdiction",
+        "COUNTYNAME",
+        "ZoneID",
+        "ZoneName",
+        "WAZAZoneGeneral",
+        "WAZAZoneSpecific",
+        "Info",
+        "ReferenceURL"
+      ]
+    },
+    "fallback_zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services3.arcgis.com/bJ3kuL5CJAvqKrUn/arcgis/rest/services/Mercer_Island_Planning_Layers/FeatureServer/2",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONING",
+        "zone_name": "ZoningDescription"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "ZONING",
+        "ZoningDescription",
+        "ACRES"
+      ],
+      "notes": "Mercer Island city source-of-record. 82 polygons (vs WAZA's 48); fewer but with clearer local descriptions. Use if Phase 6A.2 WAZA preview underperforms."
+    },
+    "ordinance_url": "https://library.municode.com/wa/mercer_island/codes/city_code?nodeId=CICOOR_TIT19UNLADECO",
+    "ordinance_chapter": "Title 19 Unified Land Development Code",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "WAZA primary per spec. Phase 1 verdict: WAZA bbox effectively matches Mercer Island parcel bbox; 48 WAZA zones, 82 city zoning polygons, 7,448 parcels."
+  }
+]
