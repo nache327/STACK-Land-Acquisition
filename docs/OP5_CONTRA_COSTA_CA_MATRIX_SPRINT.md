@@ -2,7 +2,26 @@
 
 **Sprint date:** 2026-06-15
 **Target:** Flip Contra Costa County, CA from `partial` (multi-blocker) → `operational` via county-wide Bergen-pattern matrix completion across 32 jurisdictions.
-**Outcome:** **554 rows authored + applied (100% verified-citation coverage); audit refresh pending. First non-NY/NJ/MA matrix sprint of the campaign.**
+**Outcome:** **554 rows authored + applied (100% verified-citation coverage); CONFIRMED partial-flip — 3 of 4 firing blockers cleared, `missing_bbox` residual. First non-NY/NJ/MA matrix sprint of the campaign.**
+
+---
+
+## ✅ AUDITED RESULT (post-refresh, 2026-06-15T21:18:52Z)
+
+| field | BEFORE | AFTER (confirmed) |
+|---|---|---|
+| operational_readiness | partial | **partial** (residual `missing_bbox`) |
+| matrix_zone_count | 0 | **499** (55 stragglers landed post-refresh-fire; will appear next refresh) |
+| self_storage_classified_parcel_pct | 0% | **100.0%** ✓ |
+| parcel_zoning_code_coverage_pct | 71.4% | 71.4% (above 70% gate ✓) |
+| blocking_gaps | `[no_zone_use_matrix, no_matrix_matches_for_parcel_zones, low_matrix_match_pct, missing_bbox]` | **`[missing_bbox]`** (3 of 4 cleared ✓) |
+| captured_at | 2026-06-15T20:43:48 | **2026-06-15T21:18:52** |
+
+Refresh committed in ~10 min wall-clock. Clean partial-flip as projected — matrix gates ALL cleared (no_zone_use_matrix, no_matrix_matches_for_parcel_zones, low_matrix_match_pct); `missing_bbox` stays as separate non-matrix blocker requiring Lane A jurisdictions.bbox population.
+
+**Operational count: stays 19.** Contra Costa lands as partial-with-residual. Matrix substrate now fully in place — when Lane A populates bbox, county flips → 20.
+
+CA Bergen pattern validated: 5-platform diversity (Code Publishing / Municode / American Legal / EncodePlus / eCode360) handled cleanly with bias-against-unclear catchall.
 
 ---
 
