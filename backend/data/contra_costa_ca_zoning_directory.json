@@ -1,0 +1,34 @@
+[
+  {
+    "county_jurisdiction_name": "Contra Costa County, CA",
+    "scope": "county_wide_class_a",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services8.arcgis.com/Xr1lDrwMv89PhjD9/arcgis/rest/services/California_Statewide_Zoning_North/FeatureServer/1",
+      "filter_query": "County='CCO'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "Code",
+        "zone_name": "Description"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "County",
+        "Jurisdiction",
+        "Code",
+        "Description",
+        "Classkey",
+        "Class_Group",
+        "Source",
+        "Date",
+        "Version"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "county_aggregated_local_codes",
+    "vintage": "2024-10-17",
+    "notes": "California Statewide Zoning North layer aggregates local-government-published zoning across 535 of CA's 539 jurisdictions. Filtered to County='CCO' returns ~9,934 features covering all 20 Contra Costa jurisdictions (Antioch, Brentwood, CCO unincorporated, Clayton, Concord, Danville, El Cerrito, Hercules, Lafayette, Martinez, Moraga, Oakley, Orinda, Pinole, Pittsburg, Pleasant Hill, Richmond, San Pablo, San Ramon, Walnut Creek) with their local `Code` values (~578 distinct). Phase 1 verdict (PR #238): bbox 95.6%, 1,000-row ST_Within sample 71.1%. Class A primitive PASSES. Per-jurisdiction matrix coverage is the gating issue for operational flip — 20 distinct jurisdictions means matrix breadth must span all 20 to clear the 90% match_pct gate."
+  }
+]
