@@ -540,6 +540,45 @@ async def precompute_ring_metrics_worker(
 
 
 @router.post(
+    "/jurisdictions/{jurisdiction_id}/_match-listings-worker",
+    status_code=202,
+)
+async def match_listings_worker(
+    jurisdiction_id: uuid.UUID,
+    source: str = "costar",
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Enqueue the listing match+alert cascade via the Dramatiq WORKER path.
+
+    Canonical for county-sized CoStar ingests. The upload endpoint
+    (`POST /listings/upload`) and `_debug-rematch` run the same cascade in a
+    FastAPI BackgroundTask on the WEB dyno — which web restart / dyno contention
+    kills silently, leaving listings ingested but unmatched (observed: Montgomery
+    MD, 224 listings, 0 geocoded/matched for 8+ min under load even after a
+    rematch). This variant enqueues to the Dramatiq worker service, built for long
+    jobs and immune to web-dyno churn. See discipline-catch #25 (same family as
+    #12 precompute, new job class).
+
+    Fire-and-forget: no Redis job-state, so monitor via the matched_parcel_id /
+    geocoded_lat counts on forsale_listings. Idempotent (matches only NULL
+    match_method rows)."""
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    from app.services.job_queue import enqueue_listing_match
+
+    enqueue_listing_match(jurisdiction_id, source)
+    return {
+        "status": "enqueued",
+        "path": "worker",
+        "jurisdiction_id": str(jurisdiction_id),
+        "jurisdiction_name": j.name,
+        "source": source,
+    }
+
+
+@router.post(
     "/jurisdictions/{jurisdiction_id}/_backfill-has-structure-from-lir",
     status_code=202,
 )

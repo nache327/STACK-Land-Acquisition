@@ -64,6 +64,7 @@ from app.models.zone_use_matrix import (
     UsePermission,
     ZoneUseMatrix,
 )
+from app.services.zone_matrix_write import blocks_human_overwrite
 logger = logging.getLogger(__name__)
 
 # Router prefix matches `jurisdictions.router` (no prefix on the router
@@ -168,6 +169,9 @@ class UploadMatrixResponse(BaseModel):
     updated: int
     undeleted: int
     skipped: int
+    # Rows skipped because they would have overwritten a live human_reviewed
+    # verdict with a non-human (factory) row (catch #13 protection).
+    skipped_human: int = 0
     errors: list[UploadRowError] = []
 
 
@@ -207,6 +211,7 @@ async def upload_matrix_rows(
     updated = 0
     undeleted = 0
     skipped = 0
+    skipped_human = 0
 
     for idx, row in enumerate(payload.rows):
         try:
@@ -243,6 +248,15 @@ async def upload_matrix_rows(
                 continue
 
             # Row exists and is live.
+            # Catch #13 chokepoint: a factory / non-human row must NEVER
+            # overwrite a human-grounded verdict, regardless of
+            # replace_existing. Single canonical rule lives in
+            # zone_matrix_write.blocks_human_overwrite (same protection
+            # factory_safe_write enforces structurally).
+            if blocks_human_overwrite(existing.human_reviewed, row.human_reviewed):
+                skipped_human += 1
+                continue
+
             if not payload.replace_existing:
                 skipped += 1
                 continue
@@ -264,13 +278,14 @@ async def upload_matrix_rows(
 
     logger.info(
         "op5-matrix upload jurisdiction=%s received=%d inserted=%d "
-        "updated=%d undeleted=%d skipped=%d replace_existing=%s",
+        "updated=%d undeleted=%d skipped=%d skipped_human=%d replace_existing=%s",
         jurisdiction_id,
         len(payload.rows),
         inserted,
         updated,
         undeleted,
         skipped,
+        skipped_human,
         payload.replace_existing,
     )
 
@@ -281,6 +296,7 @@ async def upload_matrix_rows(
         updated=updated,
         undeleted=undeleted,
         skipped=skipped,
+        skipped_human=skipped_human,
         errors=[],
     )
 

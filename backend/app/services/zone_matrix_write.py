@@ -56,6 +56,23 @@ def _norm(code: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", (code or "").upper())
 
 
+def blocks_human_overwrite(existing_human_reviewed: bool, incoming_human_reviewed: bool) -> bool:
+    """Canonical Op-5 protection rule (the single chokepoint predicate).
+
+    Returns True when a write MUST be skipped because it would overwrite a
+    human-grounded verdict with a non-human (factory/heuristic) row. The rule:
+    a live ``human_reviewed=true`` row is truth and is only ever replaced by
+    another human-reviewed row — never by a factory row, regardless of any
+    ``replace_existing`` flag.
+
+    `factory_safe_write` enforces this structurally (it skips human zone_codes
+    before INSERT-DO-NOTHING). Any OTHER matrix-write path (e.g. the
+    ``_upload-matrix-rows`` admin endpoint's UPDATE branch) must call this so
+    there is ONE rule, not duplicated guards (catch #13 — hand-verdict-over-
+    factory direction). See module docstring."""
+    return bool(existing_human_reviewed) and not bool(incoming_human_reviewed)
+
+
 async def factory_safe_write(
     conn,  # asyncpg.Connection
     jurisdiction_id: str,

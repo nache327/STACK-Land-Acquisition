@@ -138,3 +138,68 @@ def process_ring_metrics_precompute(jurisdiction_id: str) -> None:
 
 def enqueue_ring_metrics_precompute(jurisdiction_id: uuid.UUID) -> None:
     process_ring_metrics_precompute.send(str(jurisdiction_id))
+
+
+@dramatiq.actor(
+    # Geocode + spatial-match for a county CoStar export (~200-1000 listings)
+    # is a few minutes; 20-min ceiling gives headroom for big counties.
+    max_retries=1,
+    min_backoff=30_000,
+    max_backoff=120_000,
+    time_limit=20 * 60 * 1000,
+)
+def process_listing_match(jurisdiction_id: str, source: str = "costar") -> None:
+    """Worker actor: match pending listings for (jurisdiction, source), then fire alerts.
+
+    Canonical for county-sized CoStar ingests. The upload endpoint runs the same
+    cascade in a web BackgroundTask (app/api/listings.py::_bg_match_and_alert), which a
+    web restart / dyno contention kills silently — observed on the Montgomery MD ingest
+    (224 listings, 0 geocoded/matched for 8+ min under load, even after _debug-rematch).
+    This actor runs on the Dramatiq worker, which is built for long jobs and survives
+    web-dyno churn. See discipline-catch #25 (same family as #12, new job class).
+    Idempotent: match_pending_listings only touches rows where match_method IS NULL."""
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+    from app.db import make_engine
+    from app.services.listing_matcher import match_pending_listings
+    from app.workers.listing_alerts import fire_alerts_for_upload
+
+    async def _run() -> None:
+        # Fresh engine per asyncio.run() — see process_zoning_ingest for why the
+        # shared engine doesn't work from a Dramatiq worker thread.
+        engine = make_engine()
+        sessionmaker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        jid = uuid.UUID(jurisdiction_id)
+        try:
+            async with sessionmaker() as db:
+                try:
+                    counts = await match_pending_listings(jid, source, db)
+                    logger.info(
+                        "listing_match worker: matched %s for %s/%s",
+                        counts, jurisdiction_id, source,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception(
+                        "listing_match worker: match failed for %s/%s: %s",
+                        jurisdiction_id, source, exc,
+                    )
+                    return
+                # Alerts are non-fatal — a matched-listing dataset is still valuable
+                # even if the alert pass errors.
+                try:
+                    alerts = await fire_alerts_for_upload(jid, db)
+                    logger.info(
+                        "listing_match worker: alerts %s for %s", alerts, jurisdiction_id,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "listing_match worker: alerts failed (non-fatal) for %s: %s",
+                        jurisdiction_id, exc,
+                    )
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_run())
+
+
+def enqueue_listing_match(jurisdiction_id: uuid.UUID, source: str = "costar") -> None:
+    process_listing_match.send(str(jurisdiction_id), source)
