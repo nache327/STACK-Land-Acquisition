@@ -449,17 +449,10 @@ async def test_upload_protects_human_row_from_factory_overwrite(
     assert body["skipped_human"] == 1
     assert body["updated"] == 0
 
-    row = (
-        await db_session.execute(
-            select(ZoneUseMatrix).where(
-                ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
-                ZoneUseMatrix.zone_code == "I-1",
-            )
-        )
-    ).scalar_one()
-    assert row.self_storage.value == "permitted"  # unchanged
-    assert row.human_reviewed is True
-    assert row.notes == "HAND VERDICT"
+    await db_session.refresh(pre)
+    assert pre.self_storage.value == "permitted"  # unchanged
+    assert pre.human_reviewed is True
+    assert pre.notes == "HAND VERDICT"
 
 
 async def test_upload_human_may_update_human_row(client, db_session, jurisdiction_id):
