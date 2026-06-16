@@ -99,6 +99,21 @@ BEFORE ranking. The at-scale audit (`_57_pocket_alignment_audit.md`) also surfac
 jurisdictions, NYC (857k), extra NJ counties, Philadelphia, WA spillover — data stays, but
 recommendations anchor on the 57. Next in-plan action ≠ biggest in-system number.
 
+## #26 — `git checkout main -- .` to stage off a STALE local main = silent code loss + teammate-file deletion
+**Layer:** git/release hygiene. Several PRs this session were committed with a
+`git checkout main -- .` prefix (intended to "clean the tree" before `git add`) while **local main
+was 31 commits behind origin/main**. Two failures: (a) it **reverted the actual code edits** to
+tracked files (jurisdictions.py + job_queue.py) *before* `git add`, so the listing-matcher PR merged
+**EMPTY** — only its new test file + ledger doc landed, leaving a **red CI on origin/main** (test
+imports an endpoint that doesn't exist) and the prod endpoint 404ing; (b) the stale base meant the
+branch's diff vs origin/main showed **7,470 deletions of Adam's files** (WA/Contra Costa ingest,
+census.py, OP5 docs) — a merge would have wiped teammate work. **Would have shipped wrong:** broken
+main + deleted coordination work, masked as "PR merged." **Fix:** NEVER `git checkout <ref> -- .` to
+stage; `git add` only the specific files you edited. **Base every branch on `origin/main`**
+(`git fetch && git checkout -b X origin/main`), not stale local HEAD. Verify `git diff --cached --stat
+origin/main` shows ONLY your files + zero unexpected deletions before pushing. Recovery: re-applied the
+matcher endpoint+actor + factory chokepoint on a fresh origin/main branch (6 files, +293/-1).
+
 ## #25 — Web-dyno BackgroundTask wrong mode generalizes beyond precompute (→ listing_matcher)
 **Layer:** execution mode (same family as #12, new job class). The listing match+alert cascade runs
 in a FastAPI `BackgroundTask` on the WEB dyno (`listings.py::_bg_match_and_alert`). On the Montgomery

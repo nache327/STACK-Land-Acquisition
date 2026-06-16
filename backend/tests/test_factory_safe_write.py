@@ -109,3 +109,17 @@ def test_audit_muni_gap_flags_uncovered_codes():
     assert set(res["gap_codes"]) == {"I-1", "M-1"}
     assert res["parcel_codes"] == 4
     assert res["matrix_codes"] == 2
+
+
+# ── blocks_human_overwrite: the canonical single-chokepoint predicate (catch #13) ──
+from app.services.zone_matrix_write import blocks_human_overwrite
+
+
+def test_blocks_human_overwrite_rule():
+    # existing human + incoming non-human => BLOCK (protect the hand verdict)
+    assert blocks_human_overwrite(True, False) is True
+    # existing human + incoming human => allow (operator re-dispatch)
+    assert blocks_human_overwrite(True, True) is False
+    # existing non-human => never blocks (factory may upsert factory/heuristic)
+    assert blocks_human_overwrite(False, False) is False
+    assert blocks_human_overwrite(False, True) is False
