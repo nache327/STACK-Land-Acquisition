@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-16T22:35:00Z",
+  "updated_at": "2026-06-16T23:15:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "RECONCILED 2026-06-06 — honest baseline is 15 per prod API (will drop to 13 on Essex+Draper stale-anomaly refresh, then +2 confirmed = 15). See docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md.",
@@ -15,13 +15,13 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_wa_wave_24_per_muni_4_of_5_flipped_gig_harbor_pending",
+  "mode": "op5_wa_wave_complete_25_5_of_5_per_muni_flipped_next_dispatch_hennepin_mn",
   "honest_operational_count": {
-    "current_api_truth": 24,
+    "current_api_truth": 25,
     "baseline_pre_this_week": 13,
-    "confirmed_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)", "Somerset recovery (PR #190)", "Allentown auto-promote (PR #193 + #194 refresh wave)", "Hunterdon (PR #196)", "Monmouth (PR #199 + supplemental)", "Middlesex MA (PR #223)", "Westchester NY (PR #240 — first Phase 2 NY/CT 57-list polygon flipped)", "Contra Costa CA (PR #258 matrix sprint + Lane A bbox metadata fix — first Phase 2 CA county flipped)", "Bellevue WA (Phase 6B-PIVOT — first per-muni re-jurisdictioning flip from massive-county wealth-pocket pattern)", "Mercer Island WA (Lane A Task E city-fallback ingest lifted cov 63.2% → 79.6%; my 11 PR #266 matrix rows transparently followed PATH 1)", "Bainbridge Island WA (PR #281 Kitsap per-muni ingest + 15-row pre-staged matrix apply from commit f99fb2c; cov 70.9% clears 70% gate by 0.9pp)", "Mill Creek WA (PR #28X Snohomish per-muni ingest + 11-row matrix authoring from MCMC Title 17 per-district narrative pattern; cov 97.1% clears gate by 27pp; BP/INDHVY flagged for verdict-truth cleanup)"],
+    "confirmed_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)", "Somerset recovery (PR #190)", "Allentown auto-promote (PR #193 + #194 refresh wave)", "Hunterdon (PR #196)", "Monmouth (PR #199 + supplemental)", "Middlesex MA (PR #223)", "Westchester NY (PR #240 — first Phase 2 NY/CT 57-list polygon flipped)", "Contra Costa CA (PR #258 matrix sprint + Lane A bbox metadata fix — first Phase 2 CA county flipped)", "Bellevue WA (Phase 6B-PIVOT — first per-muni re-jurisdictioning flip from massive-county wealth-pocket pattern)", "Mercer Island WA (Lane A Task E city-fallback ingest lifted cov 63.2% → 79.6%; my 11 PR #266 matrix rows transparently followed PATH 1)", "Bainbridge Island WA (PR #281 Kitsap per-muni ingest + 15-row pre-staged matrix apply from commit f99fb2c; cov 70.9% clears 70% gate by 0.9pp)", "Mill Creek WA (PR #28X Snohomish per-muni ingest + 11-row matrix authoring from MCMC Title 17 per-district narrative pattern; cov 97.1% clears gate by 27pp; BP/INDHVY flagged for verdict-truth cleanup)", "Gig Harbor WA (PR #287 Pierce per-muni ingest after Task E spatial join; 19-row matrix apply from pre-stage 156b0ed dropped PCD-NB; cov 82.4% clears 70% gate by 12.4pp; ED/INDLHT flagged; WA WAVE COMPLETE)"],
     "confirmed_regressions_this_week": ["Essex NJ (stale anomaly, cov 23.8% < 70% gate)", "Draper UT (stale anomaly, cov 65.9% < 70% gate)"],
-    "net": "13 + 13 - 2 = 24",
+    "net": "13 + 14 - 2 = 25",
     "prior_master_tracker_was": "47 (DEPRECATED — based on pre-PR-#98 rules)",
     "reckoning_doc": "docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md"
   },
