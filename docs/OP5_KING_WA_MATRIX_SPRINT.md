@@ -152,3 +152,71 @@ Awaiting:
 4. Confirm spot-check follow-ups for Bellevue LI (Light Industrial) verdict — deferred Somerset-style cleanup if needed
 
 Standing by for refresh commit.
+
+---
+
+## ADDENDUM — PATH 1 outcome (2026-06-16 post-pivot)
+
+Lane A landed the Phase 6B.2 PIVOT (per-muni re-jurisdictioning + parcel/matrix UPDATE) and chose **PATH 1** (transparent UPDATE of `jurisdiction_id` on parcels + matrix rows). Outcome confirmed via post-pivot audit pull:
+
+### Bellevue, WA — FLIPPED OPERATIONAL ✓
+
+| metric | value | gate | status |
+|---|---:|---:|---|
+| jurisdiction_id | `71a53bba-8697-4b8d-93e9-e3de091b8706` | — | new per-muni jurisdiction |
+| captured_at | 2026-06-16T18:14:37 | — | post-pivot |
+| parcel_count | 33,217 | — | per-muni Bellevue boundary |
+| parcel_with_zoning_code_count | 28,315 | — | — |
+| parcel_zoning_code_coverage_pct | **85.2%** | ≥70% | ✓ matches Lane A's per-muni ingest target exactly |
+| zoning_district_count | 991 | — | — |
+| matrix_zone_count | **51** | — | all 51 PR #266 Bellevue codes followed via PATH 1 transparent UPDATE |
+| self_storage_classified_parcel_pct | **100%** | — | ✓ classification firing |
+| operational_readiness | **operational** | — | ✓ flipped from partial |
+| blocking_gaps | **[]** | — | ✓ all gates cleared |
+
+**Net: operational count 20 → 21 (Bellevue is the +1).**
+
+One small follow-up: post-pivot uncovered_count was 1 (R-15, 102 parcels) — a NEW code Lane A's per-muni adapter surfaced (NOT a PR #266 row that dropped; original Bellevue R-15 never existed — only Mercer's R-15 at 2,447 parcels was in PR #266). Authored + applied 1 R-15 Bergen catchall row at ~18:15 to close uncovered to 0. matrix_zone_count reflects 51 because the operational audit fired at 18:14:37, ~2 min before the R-15 insert; next refresh will show 52.
+
+### Mercer Island, WA — PATH 1 CLEAN; partial pending Lane A city-fallback ✓
+
+| metric | value | gate | status |
+|---|---:|---:|---|
+| jurisdiction_id | `bdf769db-4150-45da-baa5-529995e7246f` | — | new per-muni jurisdiction |
+| captured_at | 2026-06-16T17:54:33 | — | post-pivot |
+| parcel_count | 7,448 | — | per-muni Mercer boundary |
+| parcel_with_zoning_code_count | 4,707 | — | — |
+| parcel_zoning_code_coverage_pct | 63.2% | ≥70% | ⚠️ below gate (expected per Master's brief — pending Lane A city-fallback re-fire) |
+| matrix_zone_count | **11** | — | all 11 PR #266 Mercer codes followed via PATH 1 transparent UPDATE |
+| self_storage_classified_parcel_pct | **100%** | — | ✓ classification firing |
+| operational_readiness | partial | — | held by 70% cov gate; all matrix gates clean |
+| blocking_gaps | **[]** | — | NO matrix gates failing |
+
+**Net: matrix substrate clean; awaiting Lane A's Mercer Island city-fallback re-fire to lift cov ≥ 70% for operational flip.**
+
+### King County, WA — residual jurisdiction (parcels moved away)
+
+| metric | value | note |
+|---|---:|---|
+| captured_at | 2026-06-16T17:57:33 | post-pivot |
+| parcel_count | 594,521 | down from 635,186 (-40,665 = ~33k Bellevue + ~7.4k Mercer + small overlap) |
+| parcel_with_zoning_code_count | 0 | all bound parcels moved to per-muni jurisdictions |
+| parcel_zoning_code_coverage_pct | 0% | residual — King is now an "umbrella" jurisdiction with no bound data |
+| matrix_zone_count | 0 | matrix rows transparently moved to per-muni jurisdictions |
+| operational_readiness | partial | reason: `no_zoning_districts` |
+| blocking_gaps | `['no_parcel_zoning_codes', 'no_zone_use_matrix', 'no_zoning_polygons']` | expected residual |
+
+### PATH 1 verdict
+
+**62 of 62 PR #266 rows followed transparently** (51 Bellevue + 11 Mercer Island). NO PATH 2 re-fire needed. Lane A's UPDATE-based pivot worked end-to-end:
+- jurisdiction_id UPDATE on parcels: ✓
+- jurisdiction_id UPDATE on matrix rows: ✓
+- bbox metadata: ✓ (both new jurisdictions have valid bbox at creation time — codified post-Contra Costa PR #261 lesson)
+
+The one "missing" code (Bellevue R-15) was a new code Lane A's finer-grained per-muni adapter surfaced, not a PATH 1 row drop.
+
+### Playbook addition (codified)
+
+**Massive-county-with-tiny-wealth-pocket targets require per-muni jurisdiction registration, not county-level.** PR #98's 70% `parcel_zoning_code_coverage_pct` gate uses county-wide denominator. A 5-7% county-wide cov from a wealth-pocket ingest gets blocked by the gate; per-muni registration sidesteps it by applying the gate at muni-wide denominator (where 85.2% cov is feasible).
+
+Wider plan signals 5 Tier 2/3 counties with this wedge: Maricopa AZ, Oakland MI, Hennepin MN, Fairfield CT, Allegheny PA. King WA Phase 6B.2 PIVOT validates the approach. Pierce/Snohomish/Kitsap follow per Lane A's queue. Citation pre-staged in PR #270.
