@@ -47,7 +47,7 @@ INSERT INTO zone_use_matrix
  (jurisdiction_id, zone_code, zone_name, municipality, self_storage, mini_warehouse,
   light_industrial, luxury_garage_condo, citations, cited_subsection, confidence,
   human_reviewed, classification_source, notes, created_at, updated_at)
-VALUES ($1,$2,$3,$8,'prohibited'::use_permission_enum,'prohibited'::use_permission_enum,
+VALUES ($1,$2,$3,$7,'prohibited'::use_permission_enum,'prohibited'::use_permission_enum,
   'unclear','unclear',$4::jsonb,$5,0.9,true,'human',$6,now(),now())
 ON CONFLICT (jurisdiction_id, zone_code, COALESCE(municipality,'')) WHERE deleted_at IS NULL
 DO UPDATE SET self_storage=EXCLUDED.self_storage, mini_warehouse=EXCLUDED.mini_warehouse,
