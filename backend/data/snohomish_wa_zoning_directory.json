@@ -1,0 +1,68 @@
+[
+  {
+    "muni_name": "Mukilteo",
+    "muni_type": "city",
+    "prod_city_value": "Mukilteo",
+    "county_jurisdiction_name": "Snohomish County, WA",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+      "filter_query": "Jurisdiction='Mukilteo'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZoneID",
+        "zone_name": "ZoneName"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Jurisdiction",
+        "COUNTYNAME",
+        "ZoneID",
+        "ZoneName",
+        "WAZAZoneGeneral",
+        "WAZAZoneSpecific",
+        "Info",
+        "ReferenceURL"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Seattle metro wealth suburb on Puget Sound. 70 WAZA features."
+  },
+  {
+    "muni_name": "Mill Creek",
+    "muni_type": "city",
+    "prod_city_value": "Mill Creek",
+    "county_jurisdiction_name": "Snohomish County, WA",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+      "filter_query": "Jurisdiction='Mill Creek'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZoneID",
+        "zone_name": "ZoneName"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Jurisdiction",
+        "COUNTYNAME",
+        "ZoneID",
+        "ZoneName",
+        "WAZAZoneGeneral",
+        "WAZAZoneSpecific",
+        "Info",
+        "ReferenceURL"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Seattle metro wealth suburb. 5,406 WAZA features — anomalously high count for city size (~20k pop); likely WAZA publishes parcel-level polygons here. Phase 6B.2 spot-check recommended."
+  }
+]

@@ -1,0 +1,35 @@
+[
+  {
+    "muni_name": "Bainbridge Island",
+    "muni_type": "city",
+    "prod_city_value": "Bainbridge Island",
+    "county_jurisdiction_name": "Kitsap County, WA",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+      "filter_query": "Jurisdiction='Bainbridge Island'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZoneID",
+        "zone_name": "ZoneName"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Jurisdiction",
+        "COUNTYNAME",
+        "ZoneID",
+        "ZoneName",
+        "WAZAZoneGeneral",
+        "WAZAZoneSpecific",
+        "Info",
+        "ReferenceURL"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Seattle ferry-commute wealth pocket. 76 WAZA features. Kitsap's only 57-list candidate per Master's brief; the rest of Kitsap is unincorporated."
+  }
+]

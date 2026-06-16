@@ -1,0 +1,35 @@
+[
+  {
+    "muni_name": "Gig Harbor",
+    "muni_type": "city",
+    "prod_city_value": "Gig Harbor",
+    "county_jurisdiction_name": "Pierce County, WA",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "https://services6.arcgis.com/tboeqGwETr5ppr5Q/arcgis/rest/services/WAZA_Prototype_Layers/FeatureServer/0",
+      "filter_query": "Jurisdiction='Gig Harbor'",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZoneID",
+        "zone_name": "ZoneName"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "Jurisdiction",
+        "COUNTYNAME",
+        "ZoneID",
+        "ZoneName",
+        "WAZAZoneGeneral",
+        "WAZAZoneSpecific",
+        "Info",
+        "ReferenceURL"
+      ]
+    },
+    "ordinance_url": null,
+    "ordinance_chapter": null,
+    "ordinance_platform": null,
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Tacoma-adjacent wealth pocket per Master's Phase 6B.1 dispatch. 20 WAZA features. Phase 6B.2 dispatch will fire WAZA backfill with the same Class A primitive validated for King County (PR #264 bonus probe: Pierce bbox overlap 96.3%). PR #248 Bellevue WAZA-vintage caveat may apply here too — verify post-ingest."
+  }
+]
