@@ -48,6 +48,10 @@ _ZONE_CODE_FIELDS = [
     # Montgomery County, PA — 180420_zoning_districts FeatureServer/1
     # publishes the short code as `Districts` (e.g. "R-A", "C-1").
     "Districts",
+    # Chester County, PA — Zoning_Edit_Working FeatureServer/0 publishes the
+    # short district code as `ZONE_ABBR` (e.g. "PIP", "LI", "O", "R1"); the
+    # long name lives in `ZONE_DISTRICT` (added to _ZONE_NAME_FIELDS below).
+    "ZONE_ABBR",
     # NJ municipal layers (Paramus Zoning, etc.) — short code lives in
     # `CLASS` ("R-100", "CR", "C-1") or its duplicate `Label`. Trailing
     # entries so jurisdictions with proper ZONEDIST keep priority.
@@ -82,6 +86,7 @@ _ZONE_NAME_FIELDS = [
     "MUNZonDef",   # Bergen   e.g. "Single Family Residential"
     "MUN_ZONE",    # Hunterdon e.g. "Highway Business" (long name; MUN_SYMBOL is code)
     "ZoneLabel",   # Morris    e.g. "TH - Townhouse Residence Zone"
+    "ZONE_DISTRICT",  # Chester County PA — long district name (ZONE_ABBR is the code)
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",

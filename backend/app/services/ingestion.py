@@ -342,6 +342,7 @@ def _map_row(
     row: Any,
     jurisdiction_id: uuid.UUID,
     state: str | None = None,
+    city_override: str | None = None,
 ) -> dict | None:
     """
     Convert a single GeoDataFrame row to a dict ready for Parcel bulk insert.
@@ -409,7 +410,11 @@ def _map_row(
         "jurisdiction_id": jurisdiction_id,
         "apn": apn,
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
-        "city": str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None,
+        # city_override stamps a fixed municipality when the source parcel
+        # layer carries no city/muni-NAME field (e.g. PA county assessor layers
+        # that expose only an integer MUNI code). Used with a muni-scoped
+        # where_clause so every pulled parcel belongs to that one muni.
+        "city": (str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None) or city_override,
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
         "zone_class": zone_class_val,
@@ -436,6 +441,7 @@ async def ingest_parcels(
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
     progress_callback: Any = None,
+    city_override: str | None = None,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -462,7 +468,7 @@ async def ingest_parcels(
     columns = list(gdf.columns)
     for idx, values in enumerate(gdf.itertuples(index=False, name=None), start=1):
         row = dict(zip(columns, values))
-        mapped = _map_row(row, jurisdiction_id, state=state)
+        mapped = _map_row(row, jurisdiction_id, state=state, city_override=city_override)
         if mapped is not None:
             apn = mapped["apn"]
             if apn in rows_by_apn:
