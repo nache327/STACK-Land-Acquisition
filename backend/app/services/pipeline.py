@@ -212,6 +212,11 @@ class JurisdictionConfig:
     ordinance_url: str | None = None
     where_clause: str | None = None   # SQL WHERE clause for filtered endpoints
     zoning_where_clause: str | None = None
+    # Stamp a fixed municipality onto every ingested parcel when the source
+    # parcel layer has no city/muni-NAME field (e.g. PA county assessor layers
+    # that expose only an integer MUNI code). Pair with a muni-scoped
+    # where_clause so all pulled parcels belong to that one muni. Catch #33.
+    city_override: str | None = None
 
 
 # UGRC county-specific parcel layers (services1.arcgis.com, org 99lidPhWCzftIe9K)
@@ -442,6 +447,20 @@ _PA_MONTGOMERY_PARCELS = (
     "/Montgomery_County_Parcels/FeatureServer/10"
 )
 
+# Chester County PA — countywide assessor parcels (194,341) in the county AGOL org.
+# Layer carries `UPI` + integer `MUNI` (no city-NAME field) → needs city_override +
+# a muni-scoped where_clause (catch #33). Tredyffrin Township = MUNI 43 (9,933 parcels).
+_PA_CHESTER_PARCELS = (
+    "https://services.arcgis.com/G4S1dGvn7PIgYd6Y/arcgis/rest/services"
+    "/Parcels_owners/FeatureServer/0"
+)
+# Chester countywide zoning polygons; short code in `ZONE_ABBR` (e.g. PIP/LI/O),
+# long name in `ZONE_DISTRICT`. `MUNI` matches the parcel layer's muni code.
+_PA_CHESTER_ZONING = (
+    "https://services.arcgis.com/G4S1dGvn7PIgYd6Y/arcgis/rest/services"
+    "/Zoning_Edit_Working/FeatureServer/0"
+)
+
 
 def _pa_county(
     county_name: str,
@@ -449,11 +468,17 @@ def _pa_county(
     parcel_endpoint: str,
     zoning_endpoint: str | None = None,
     where_clause: str | None = None,
+    zoning_where_clause: str | None = None,
+    city_override: str | None = None,
 ) -> JurisdictionConfig:
     """Build a PA county-backed JurisdictionConfig (single-county FeatureServer).
 
     Distinct from the Philadelphia OPA / Allentown City_Landuse city services
     since these are county-wide assessor layers covering many municipalities.
+
+    ``city_override`` + ``where_clause``/``zoning_where_clause`` support PA county
+    assessor layers that expose only an integer MUNI code (no city-NAME field): a
+    muni-scoped pull + a fixed city stamp keeps the per-muni model intact (catch #33).
     """
     return JurisdictionConfig(
         name=full_name,
@@ -463,6 +488,8 @@ def _pa_county(
         parcel_endpoint=parcel_endpoint,
         where_clause=where_clause,
         zoning_polygon_endpoint=zoning_endpoint,
+        zoning_where_clause=zoning_where_clause,
+        city_override=city_override,
     )
 
 
@@ -905,6 +932,25 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # there is *no* PA statewide composite; PASDA only mirrors per-county
     # uploads. Owner/address/zoning/value are not on this REST endpoint.
     "montgomery county, pa": _pa_county("Montgomery", "Montgomery County, PA", _PA_MONTGOMERY_PARCELS),
+    # Chester County PA — registered Tredyffrin-SCOPED (MUNI=43) for the Main Line
+    # validation anchor: the parcel layer has no city-NAME field, so city_override
+    # stamps 'Tredyffrin Township' and where_clause/zoning_where_clause limit the
+    # pull to that one muni (catch #33). Scale to all 73 munis later via a
+    # MUNI→name crosswalk. Both keys route to the same scoped config.
+    "chester county, pa": _pa_county(
+        "Chester", "Chester County, PA", _PA_CHESTER_PARCELS,
+        zoning_endpoint=_PA_CHESTER_ZONING,
+        where_clause="MUNI=43",
+        zoning_where_clause="MUNI=43",
+        city_override="Tredyffrin Township",
+    ),
+    "tredyffrin township, pa": _pa_county(
+        "Chester", "Chester County, PA", _PA_CHESTER_PARCELS,
+        zoning_endpoint=_PA_CHESTER_ZONING,
+        where_clause="MUNI=43",
+        zoning_where_clause="MUNI=43",
+        city_override="Tredyffrin Township",
+    ),
 }
 
 
@@ -1422,6 +1468,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
             jurisdiction.id,
             db,
             progress_callback=_ingest_progress,
+            city_override=cfg.city_override,
         )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
