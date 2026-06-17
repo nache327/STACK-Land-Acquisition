@@ -71,6 +71,11 @@ _APN_FIELDS = [
     "PA_MCPI",
     # Montgomery County, PA — TAXPIN is the 12-digit county-unique tax PIN.
     "TAXPIN",
+    # Chester County, PA — UPI (Uniform Parcel Identifier, e.g. "43-9-1.7") is the
+    # county-unique parcel key. The layer's PIN_MAP/PIN_COMMON/PIN_ASMNT are NOT
+    # bare "PIN" so they don't match the generic candidate above — without UPI here
+    # every Chester row maps to no APN and is dropped (0 parcels). (catch #34)
+    "UPI",
 ]
 _ADDRESS_FIELDS = [
     "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS",
