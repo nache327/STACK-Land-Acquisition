@@ -1,10 +1,29 @@
-# Target Markets — 57 Wealth Pockets (KMZ) + Priority Queue
+# Target Markets — 58 Wealth Pockets (KMZ) + Priority Queue
 
-**Source.** A KMZ map of **57 wealth-pocket polygons** across the US, with a coworker analysis (geographic rollup + 6-phase priority queue). Recorded here 2026-06-01 so it stops living only in chat. The KMZ polygon count (57) is authoritative; see the [count reconciliation](#count-reconciliation) note for a +1 discrepancy in the prose rollup.
+**CANONICAL — Nache-approved priority, 2026-06-16 (count reconciled 57 → 58).** This doc is the
+single source of truth for the target universe (catch #24). The +1 vs the original KMZ rollup is the
+**Burlington NJ wealth-tail (Moorestown / Medford / Mount Laurel), added to Phase 1**.
 
-**Coverage column.** `operational_readiness` / `parcel_zoning_code_coverage_pct` are pulled from Adam's May-31 close audit (`backend/tmp/audit_may31_close.json`, on `origin/main`). "— not ingested" = the county does not appear in that audit at all.
+## Approved priority order — 58 wealth pockets
+| Phase | States / metros | Polys | Why |
+|---|---|---|---|
+| **1** (now — NJ work) | NJ: Bergen, Morris, Somerset, Hunterdon, Monmouth, **Burlington** | 7 | Pilot region; Burlington wealth-tail (Moorestown/Medford/Mount Laurel) added |
+| **2** (NJ-adjacent, same lat band) | Westchester NY, Fairfield CT, Nassau NY | 11 | Same drive-time catchment as NJ, ~1hr away |
+| **3** (DC / Mid-Atlantic) | Loudoun VA, Fairfax VA, Montgomery MD, Howard MD, Montgomery PA | 8 | High polygon density, single regional team |
+| **4** (Boston + Chicago North Shore) | Middlesex MA, Norfolk MA, Lake IL, Cook IL, DuPage IL | 10 | Two large metros; independent of NE-Corridor pipeline |
+| **5** (South + Mountain West) | Williamson TN, Fulton GA, Mecklenburg NC, Wake NC, Douglas/Arapahoe CO | 10 | Growth markets, faster entitlement |
+| **6** (Western + outliers) | Maricopa AZ, King WA, Multnomah OR, Hennepin MN, Oakland MI, Allegheny PA, Salt Lake UT, Contra Costa CA, Miami-Dade FL | 12 | One-offs; finish the map |
+| | | **58** | |
 
-**Footprint.** 57 polygons · 22 distinct metros · ~17 states. Northeast Corridor is the heaviest cluster (NY metro + NJ = ~17 polygons). The strategy has a real second half beyond the East Coast (Detroit, Twin Cities, Phoenix, Raleigh, Charlotte, Miami, Seattle, Portland, SF Bay, Park City).
+**Coverage column** (below): `operational_readiness` / `parcel_zoning_code_coverage_pct` from Adam's May-31 close audit. "— not ingested" = not in that audit.
+
+**Footprint.** 58 polygons · ~22 metros · ~17 states. Northeast Corridor is the heaviest cluster.
+
+---
+
+> The phase tables below predate the 2026-06-16 reconciliation and are kept for the per-county status
+> detail; where they disagree with the approved order above (Burlington in Phase 1; Plymouth MA /
+> Jefferson CO / Summit UT folded out of the named lists), **the approved table is authoritative.**
 
 ---
 
@@ -12,7 +31,7 @@
 
 Polygon-density-first, NJ-first per the pilot. Phase totals as stated in the source.
 
-### Phase 1 — NJ (pilot site, Adam active) · 6 polygons
+### Phase 1 — NJ (pilot site, Adam active) · 7 polygons
 | County | Centers | Status (May-31 audit) |
 |---|---|---|
 | Bergen, NJ | Saddle River | partial · 3.1% |
@@ -20,6 +39,7 @@ Polygon-density-first, NJ-first per the pilot. Phase totals as stated in the sou
 | Somerset, NJ | — | **operational** · 100% |
 | Hunterdon, NJ | — | partial · 0% |
 | Monmouth, NJ | Marlboro, Holmdel | partial · 5.7% |
+| **Burlington, NJ** | **Moorestown, Medford, Mount Laurel** | ingested + ringed (174,852 parcels); wealth-tail munis UNVERDICTED (0 per-muni rows) — verdict pass pending |
 
 ### Phase 2 — NJ-adjacent, same lat band (~1hr drive) · 11 polygons
 | County | Centers | Status |
@@ -91,6 +111,9 @@ Polygon-density-first, NJ-first per the pilot. Phase totals as stated in the sou
 - **Partial / needs matrix or coverage work:** Bergen/Morris/Monmouth/Hunterdon NJ, Westchester/Nassau NY, Fairfield CT, Loudoun VA, Montgomery PA, Middlesex/Norfolk MA, DuPage IL, Fulton GA, Mecklenburg/Wake NC, Douglas/Arapahoe CO.
 - **Not loaded / not ingested:** Cook IL, Williamson TN, Plymouth MA, Jefferson CO, Oakland MI, Hennepin MN, Maricopa AZ, Allegheny PA, King WA, Multnomah/Clackamas OR, Contra Costa CA, Miami-Dade FL, Summit UT.
 
-## Count reconciliation
+## Count reconciliation — RESOLVED 2026-06-16
 
-The KMZ is **57 polygons** (authoritative). The prose geographic rollup sums to **58** (likely one double-counted polygon — e.g., a Hinsdale-type pocket split across Cook/DuPage). The phase queue as written totals 57 (Phase 6 stated as 12; the county list above enumerates 13 — same ±1 ambiguity). Treat metro-level counts as ±1 until reconciled against the raw KMZ. **TODO:** parse the KMZ directly to get the exact 57 polygon names + centroids and replace the representative-center estimates here.
+The count is **58 polygons** (Nache-approved, see the table at the top). The original "57 vs 58 ±1"
+ambiguity is resolved: the +1 is the **Burlington NJ wealth-tail (Moorestown / Medford / Mount Laurel),
+now in Phase 1**. Phase totals: 1=7, 2=11, 3=8, 4=10, 5=10, 6=12 → **58**. The "parse the raw KMZ"
+TODO is superseded by the approved priority table; treat that table as canonical.

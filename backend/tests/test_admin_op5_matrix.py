@@ -401,3 +401,137 @@ async def test_upload_404_for_unknown_jurisdiction(client):
     )
     assert r.status_code == 404, r.text
     assert "not found" in r.json()["detail"].lower()
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# 8. catch #13 — factory row must NOT overwrite a live human_reviewed verdict
+# ────────────────────────────────────────────────────────────────────────────
+
+
+async def test_upload_protects_human_row_from_factory_overwrite(
+    client, db_session, jurisdiction_id
+):
+    """Even with replace_existing=true, a non-human (factory) row is skipped
+    when it would overwrite a live human_reviewed=true verdict."""
+    pre = ZoneUseMatrix(
+        jurisdiction_id=jurisdiction_id,
+        zone_code="I-1",
+        municipality="Fort Lee borough",
+        self_storage="permitted",
+        mini_warehouse="permitted",
+        light_industrial="permitted",
+        luxury_garage_condo="unclear",
+        confidence=0.95,
+        notes="HAND VERDICT",
+        classification_source="human",
+        human_reviewed=True,
+    )
+    db_session.add(pre)
+    await db_session.flush()
+
+    r = await client.post(
+        f"/api/jurisdictions/{jurisdiction_id}/_upload-matrix-rows",
+        json={
+            "rows": [
+                _row_payload(
+                    zone_code="I-1",
+                    self_storage="prohibited",
+                    notes="factory catchall",
+                    classification_source="op5_factory_catchall",
+                    human_reviewed=False,
+                )
+            ],
+            "replace_existing": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["skipped_human"] == 1
+    assert body["updated"] == 0
+
+    await db_session.refresh(pre)
+    assert pre.self_storage.value == "permitted"  # unchanged
+    assert pre.human_reviewed is True
+    assert pre.notes == "HAND VERDICT"
+
+
+async def test_upload_human_may_update_human_row(client, db_session, jurisdiction_id):
+    """The guard blocks only NON-human overwrites — a human-reviewed incoming
+    row may still update an existing human row (operator re-dispatch)."""
+    pre = ZoneUseMatrix(
+        jurisdiction_id=jurisdiction_id,
+        zone_code="I-2",
+        municipality="Fort Lee borough",
+        self_storage="conditional",
+        mini_warehouse="conditional",
+        light_industrial="conditional",
+        luxury_garage_condo="unclear",
+        confidence=0.9,
+        notes="v1",
+        classification_source="human",
+        human_reviewed=True,
+    )
+    db_session.add(pre)
+    await db_session.flush()
+
+    r = await client.post(
+        f"/api/jurisdictions/{jurisdiction_id}/_upload-matrix-rows",
+        json={
+            "rows": [
+                _row_payload(
+                    zone_code="I-2",
+                    self_storage="permitted",
+                    notes="v2",
+                    classification_source="human",
+                    human_reviewed=True,
+                )
+            ],
+            "replace_existing": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["updated"] == 1
+    assert body["skipped_human"] == 0
+
+
+async def test_upload_factory_still_upserts_non_human_rows(
+    client, db_session, jurisdiction_id
+):
+    """Preserve existing behavior: a factory row CAN update a non-human
+    (e.g. llm/heuristic) live row with replace_existing=true."""
+    pre = ZoneUseMatrix(
+        jurisdiction_id=jurisdiction_id,
+        zone_code="C-1",
+        municipality="Fort Lee borough",
+        self_storage="unclear",
+        mini_warehouse="unclear",
+        light_industrial="unclear",
+        luxury_garage_condo="unclear",
+        confidence=0.4,
+        notes="heuristic",
+        classification_source="llm",
+        human_reviewed=False,
+    )
+    db_session.add(pre)
+    await db_session.flush()
+
+    r = await client.post(
+        f"/api/jurisdictions/{jurisdiction_id}/_upload-matrix-rows",
+        json={
+            "rows": [
+                _row_payload(
+                    zone_code="C-1",
+                    self_storage="conditional",
+                    notes="factory grounded",
+                    classification_source="op5_factory",
+                    human_reviewed=False,
+                )
+            ],
+            "replace_existing": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["updated"] == 1
+    assert body["skipped_human"] == 0
