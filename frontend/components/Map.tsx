@@ -71,6 +71,10 @@ interface MapProps {
   // the Map's current viewport / parcelCollection. Falls through to
   // the flyTrigger path when null.
   flyToOverride?: { centroid: [number, number]; nonce: number } | null;
+  // Email deep-link focus: parcel centroid {lng,lat}. When set, the map flies
+  // straight to the site at close zoom on load and the county-centroid fit is
+  // suppressed (faster load, lands on the parcel). Read once.
+  initialFocus?: { lng: number; lat: number } | null;
   // Drive-time isochrone props
   driveTimeMode?: DriveTimeMode;
   isochronePolygons?: IsochronePolygons | null;
@@ -308,6 +312,7 @@ export default function Map({
   flyTrigger,
   zoomOutTrigger,
   flyToOverride,
+  initialFocus,
   driveTimeMode = "off",
   isochronePolygons,
   isochroneWealth,
@@ -452,6 +457,15 @@ export default function Map({
     const map = mapRef.current;
     if (!map || !bounds || hasFitRef.current === jurisdictionId) return;
 
+    // Email deep-link: when an initialFocus centroid is present, the dedicated
+    // focus effect below flies straight to the parcel at close zoom. Skip the
+    // county-centroid fit entirely (and mark it done) so we don't load the
+    // wide county window first — that detour is the slow part.
+    if (initialFocus) {
+      hasFitRef.current = jurisdictionId;
+      return;
+    }
+
     // Phase 2: open at the jurisdiction centroid at zoom 13 (~5 sq mi
     // window) rather than fit-to-county. The bbox-filtered search
     // returns ~5k parcels for a window of this size in ~3 s on Bergen,
@@ -470,6 +484,22 @@ export default function Map({
 
     hasFitRef.current = jurisdictionId;
   }, [bounds, jurisdictionId]);
+
+  // Email deep-link: fly straight to the parcel centroid at close zoom (17 —
+  // building/site visible) as soon as the map exists, without waiting for the
+  // jurisdiction bounds or the parcel detail. The small viewport means the
+  // bbox parcel fetch loads only the site's neighborhood → fast. Fires once.
+  const initialFocusDoneRef = useRef(false);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !initialFocus || initialFocusDoneRef.current) return;
+    initialFocusDoneRef.current = true;
+    map.flyTo({
+      center: [initialFocus.lng, initialFocus.lat],
+      zoom: 17,
+      duration: 800,
+    });
+  }, [initialFocus]);
 
   // Fly to parcel + guarantee ring is drawn when "◎ 3-mi Ring" button pressed
   useEffect(() => {

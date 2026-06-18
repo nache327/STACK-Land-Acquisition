@@ -83,6 +83,11 @@ class DigestParcel:
     # None when no ready job exists yet (rare; fallback link uses
     # jurisdiction_id and the UX is the same broken state as before).
     dashboard_job_id: str | None = None
+    # Parcel centroid (lng/lat, SRID 4326) — passed in the deep-link so the
+    # dashboard map flies straight to the site at close zoom instead of fitting
+    # the whole county first (faster load, lands on the parcel).
+    lat: float | None = None
+    lng: float | None = None
     # Hot Deals v2 soft flags — surfaced in the email as warnings, not
     # selection filters. Each is a (emoji, short_label) pair so the
     # renderer can iterate without re-mapping. Empty list means the
@@ -208,6 +213,8 @@ async def _top_parcels_for_filter(
                 p.address         AS address,
                 p.owner_name      AS owner_name,
                 p.acres           AS acres,
+                ST_Y(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) AS lat,
+                ST_X(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) AS lng,
                 p.has_structure   AS has_structure,
                 p.improvement_value AS improvement_value,
                 p.in_flood_zone   AS in_flood_zone,
@@ -280,6 +287,8 @@ async def _top_parcels_for_filter(
             e.address       AS address,
             e.owner_name    AS owner_name,
             e.acres         AS acres,
+            e.lat           AS lat,
+            e.lng           AS lng,
             e.score         AS score,
             e.tier          AS tier,
             e.factors       AS factors,
@@ -432,6 +441,8 @@ async def _top_parcels_for_filter(
                 dashboard_job_id=(
                     str(m["dashboard_job_id"]) if m["dashboard_job_id"] else None
                 ),
+                lat=float(m["lat"]) if m["lat"] is not None else None,
+                lng=float(m["lng"]) if m["lng"] is not None else None,
                 soft_flags=_soft_flags_from_row(m),
             )
         )
@@ -479,8 +490,13 @@ def _parcel_link(p: DigestParcel) -> str:
     # ?parcel_id=… on mount, opens the drawer, and flies to the
     # parcel's centroid. APN-based deep links don't resolve without
     # a backend lookup; parcel_id matches the /api/parcels/:id route
-    # the drawer already uses.
-    return f"{base}/dashboard/{segment}?parcel_id={p.parcel_id}"
+    # the drawer already uses. lat/lng (centroid) let the map fly
+    # straight to the site at close zoom instead of fitting the county
+    # first — faster load, lands on the parcel.
+    url = f"{base}/dashboard/{segment}?parcel_id={p.parcel_id}"
+    if p.lat is not None and p.lng is not None:
+        url += f"&lat={p.lat:.6f}&lng={p.lng:.6f}"
+    return url
 
 
 def _top_factors(p: DigestParcel, n: int = 5) -> list[dict]:
