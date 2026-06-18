@@ -1641,10 +1641,15 @@ async def _run(db: AsyncSession, job: Job) -> None:
         )
         # Skip the ArcGIS download if districts are already cached — even if some
         # parcels are still unzoned (backfill runs separately below regardless).
-        _skip_zd_download = (_zd_count or 0) > 0
+        # EXCEPT on a forced re-run: force intends fresh data (e.g. a scope change
+        # like Chester Tredyffrin-only → full-county), so re-download + replace.
+        # Mirrors the parcel-cache bypass at the top of this pipeline (job.force).
+        # Without this, a re-run after widening the muni scope keeps the stale
+        # narrow-scope districts and the new munis never bind (catch #36).
+        _skip_zd_download = (_zd_count or 0) > 0 and not job.force
         logger.info(
-            "Zoning districts cache check: cached=%d unzoned=%d skip_download=%s",
-            _zd_count or 0, _unzoned or 0, _skip_zd_download,
+            "Zoning districts cache check: cached=%d unzoned=%d force=%s skip_download=%s",
+            _zd_count or 0, _unzoned or 0, job.force, _skip_zd_download,
         )
     if zoning_endpoint and not _skip_zd_download:
         zoning_started = _stage_started(job, "zoning_fetch", endpoint=zoning_endpoint)
