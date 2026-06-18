@@ -236,6 +236,23 @@ def _safe_float(val: Any) -> float | None:
         return None
 
 
+def _resolve_muni_name(
+    row: Any, muni_field: str | None, muni_name_map: dict[int, str] | None
+) -> str | None:
+    """Map a numeric muni code (e.g. PA county assessor MUNI=43) to its muni name
+    via a baked code→name map sourced from the county boundary layer (catch #33
+    scale-up). Returns None when not configured or the code doesn't resolve."""
+    if not muni_field or not muni_name_map:
+        return None
+    code = _first(row, [muni_field])
+    if code is None or str(code).strip() == "":
+        return None
+    try:
+        return muni_name_map.get(int(float(str(code).strip())))
+    except (ValueError, TypeError):
+        return muni_name_map.get(str(code).strip())  # type: ignore[arg-type]
+
+
 def _row_geometry(row: Any) -> Any:
     if isinstance(row, dict):
         return row.get("geometry")
@@ -348,6 +365,8 @@ def _map_row(
     jurisdiction_id: uuid.UUID,
     state: str | None = None,
     city_override: str | None = None,
+    muni_field: str | None = None,
+    muni_name_map: dict[int, str] | None = None,
 ) -> dict | None:
     """
     Convert a single GeoDataFrame row to a dict ready for Parcel bulk insert.
@@ -415,13 +434,15 @@ def _map_row(
         "jurisdiction_id": jurisdiction_id,
         "apn": apn,
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
-        # city_override stamps a fixed municipality when the source parcel
-        # layer carries no usable city-NAME field (e.g. PA county assessor
-        # layers expose only an integer MUNI code, which `_CITY_FIELDS`'s "MUNI"
-        # candidate would otherwise capture as a bogus city="43"). It takes
-        # PRECEDENCE over the source field: an operator only sets it with a
-        # muni-scoped where_clause, knowing the source city field is unreliable.
-        "city": city_override or (str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None),
+        # City resolution precedence (catch #35 / #33 chain):
+        #   1. city_override — fixed muni, the "scope to one muni" shortcut.
+        #   2. muni_name_map[MUNI] — the "scale to all munis" crosswalk: PA county
+        #      assessor layers expose only an integer MUNI code; resolve it to the
+        #      muni name via the baked boundary-layer map (else `_CITY_FIELDS`'s
+        #      "MUNI" candidate would capture a bogus city="43").
+        #   3. native _CITY_FIELDS — layers that carry a real city/muni NAME.
+        "city": city_override or _resolve_muni_name(row, muni_field, muni_name_map)
+        or (str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None),
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
         "zone_class": zone_class_val,
@@ -449,6 +470,8 @@ async def ingest_parcels(
     db: AsyncSession,
     progress_callback: Any = None,
     city_override: str | None = None,
+    muni_field: str | None = None,
+    muni_name_map: dict[int, str] | None = None,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -475,7 +498,8 @@ async def ingest_parcels(
     columns = list(gdf.columns)
     for idx, values in enumerate(gdf.itertuples(index=False, name=None), start=1):
         row = dict(zip(columns, values))
-        mapped = _map_row(row, jurisdiction_id, state=state, city_override=city_override)
+        mapped = _map_row(row, jurisdiction_id, state=state, city_override=city_override,
+                          muni_field=muni_field, muni_name_map=muni_name_map)
         if mapped is not None:
             apn = mapped["apn"]
             if apn in rows_by_apn:

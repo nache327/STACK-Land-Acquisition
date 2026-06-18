@@ -217,6 +217,13 @@ class JurisdictionConfig:
     # that expose only an integer MUNI code). Pair with a muni-scoped
     # where_clause so all pulled parcels belong to that one muni. Catch #33.
     city_override: str | None = None
+    # Scale-up crosswalk (catch #33 Option 2): when the parcel layer carries only
+    # a numeric muni code, `muni_field` names that field and `muni_name_map` maps
+    # code(int) -> muni name (baked from the county boundary layer). Resolves
+    # parcels.city across ALL munis (vs city_override's single-muni scope). The
+    # _map_row precedence is city_override -> muni_name_map -> native _CITY_FIELDS.
+    muni_field: str | None = None
+    muni_name_map: dict[int, str] | None = None
 
 
 # UGRC county-specific parcel layers (services1.arcgis.com, org 99lidPhWCzftIe9K)
@@ -460,6 +467,36 @@ _PA_CHESTER_ZONING = (
     "https://services.arcgis.com/G4S1dGvn7PIgYd6Y/arcgis/rest/services"
     "/Zoning_Edit_Working/FeatureServer/0"
 )
+# Chester County MUNI code -> municipality name (catch #33 Option 2 crosswalk).
+# Baked from the boundary layer Municipal_Boundary__Parcel_Based_ (Muni_Num/Muni_Name);
+# int keys match the parcel layer's integer MUNI field. Main Line wealth cluster:
+# 27/35/42/43/53/54/55/67. See _chester_muni_crosswalk_source.md.
+_PA_CHESTER_MUNI_NAMES = {
+    1: "West Chester Borough", 2: "Malvern Borough", 3: "Kennett Square Borough",
+    4: "Avondale Borough", 5: "West Grove Borough", 6: "Oxford Borough", 7: "Atglen Borough",
+    8: "Parkesburg Borough", 9: "South Coatesville Borough", 10: "Modena Borough",
+    11: "Downingtown Borough", 12: "Honey Brook Borough", 13: "Elverson Borough",
+    14: "Spring City Borough", 15: "Phoenixville Borough", 16: "City of Coatesville",
+    17: "North Coventry Township", 18: "East Coventry Township", 19: "Warwick Township",
+    20: "South Coventry Township", 21: "East Vincent Township", 22: "Honey Brook Township",
+    23: "West Nantmeal Township", 24: "East Nantmeal Township", 25: "West Vincent Township",
+    26: "East Pikeland Township", 27: "Schuylkill Township", 28: "West Caln Township",
+    29: "West Brandywine Township", 30: "East Brandywine Township", 31: "Wallace Township",
+    32: "Upper Uwchlan Township", 33: "Uwchlan Township", 34: "West Pikeland Township",
+    35: "Charlestown Township", 36: "West Sadsbury Township", 37: "Sadsbury Township",
+    38: "Valley Township", 39: "Caln Township", 40: "East Caln Township",
+    41: "West Whiteland Township", 42: "East Whiteland Township", 43: "Tredyffrin Township",
+    44: "West Fallowfield Township", 45: "Highland Township", 46: "Londonderry Township",
+    47: "East Fallowfield Township", 48: "West Marlborough Township", 49: "Newlin Township",
+    50: "West Bradford Township", 51: "East Bradford Township", 52: "West Goshen Township",
+    53: "East Goshen Township", 54: "Willistown Township", 55: "Easttown Township",
+    56: "Lower Oxford Township", 57: "Upper Oxford Township", 58: "Penn Township",
+    59: "London Grove Township", 60: "New Garden Township", 61: "East Marlborough Township",
+    62: "Kennett Township", 63: "Pocopson Township", 64: "Pennsbury Township",
+    65: "Birmingham Township", 66: "Thornbury Township", 67: "Westtown Township",
+    68: "West Nottingham Township", 69: "East Nottingham Township", 70: "Elk Township",
+    71: "New London Township", 72: "Franklin Township", 73: "London Britain Township",
+}
 
 
 def _pa_county(
@@ -470,6 +507,8 @@ def _pa_county(
     where_clause: str | None = None,
     zoning_where_clause: str | None = None,
     city_override: str | None = None,
+    muni_field: str | None = None,
+    muni_name_map: dict[int, str] | None = None,
 ) -> JurisdictionConfig:
     """Build a PA county-backed JurisdictionConfig (single-county FeatureServer).
 
@@ -490,6 +529,8 @@ def _pa_county(
         zoning_polygon_endpoint=zoning_endpoint,
         zoning_where_clause=zoning_where_clause,
         city_override=city_override,
+        muni_field=muni_field,
+        muni_name_map=muni_name_map,
     )
 
 
@@ -932,24 +973,24 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # there is *no* PA statewide composite; PASDA only mirrors per-county
     # uploads. Owner/address/zoning/value are not on this REST endpoint.
     "montgomery county, pa": _pa_county("Montgomery", "Montgomery County, PA", _PA_MONTGOMERY_PARCELS),
-    # Chester County PA — registered Tredyffrin-SCOPED (MUNI=43) for the Main Line
-    # validation anchor: the parcel layer has no city-NAME field, so city_override
-    # stamps 'Tredyffrin Township' and where_clause/zoning_where_clause limit the
-    # pull to that one muni (catch #33). Scale to all 73 munis later via a
-    # MUNI→name crosswalk. Both keys route to the same scoped config.
+    # Chester County PA — FULL COUNTY (all 73 munis) via the catch #33 Option 2
+    # MUNI->name crosswalk. The parcel layer has no city-NAME field (only integer
+    # MUNI), so muni_field='MUNI' + muni_name_map resolve parcels.city per muni
+    # (Tredyffrin=43, Easttown=55, ...). Replaces the Tredyffrin-scoped MUNI=43 +
+    # city_override anchor. Zoning binds spatially across all munis.
+    # NOTE (thesis): needles concentrate in the ~8 Main Line wealth munis
+    # (27/35/42/43/53/54/55/67); the other 65 ingest but fail the $475k HV gate.
     "chester county, pa": _pa_county(
         "Chester", "Chester County, PA", _PA_CHESTER_PARCELS,
         zoning_endpoint=_PA_CHESTER_ZONING,
-        where_clause="MUNI=43",
-        zoning_where_clause="MUNI=43",
-        city_override="Tredyffrin Township",
+        muni_field="MUNI",
+        muni_name_map=_PA_CHESTER_MUNI_NAMES,
     ),
     "tredyffrin township, pa": _pa_county(
         "Chester", "Chester County, PA", _PA_CHESTER_PARCELS,
         zoning_endpoint=_PA_CHESTER_ZONING,
-        where_clause="MUNI=43",
-        zoning_where_clause="MUNI=43",
-        city_override="Tredyffrin Township",
+        muni_field="MUNI",
+        muni_name_map=_PA_CHESTER_MUNI_NAMES,
     ),
 }
 
@@ -1469,6 +1510,8 @@ async def _run(db: AsyncSession, job: Job) -> None:
             db,
             progress_callback=_ingest_progress,
             city_override=cfg.city_override,
+            muni_field=cfg.muni_field,
+            muni_name_map=cfg.muni_name_map,
         )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
