@@ -68,6 +68,11 @@ class AlertRow:
     # Most-recent ready job_id for the jurisdiction. See DigestParcel
     # in daily_email.py for the full rationale — same bug, same fix.
     dashboard_job_id: str | None = None
+    # Parcel centroid (lng/lat, SRID 4326). Passed in the dashboard deep-link
+    # so the map flies STRAIGHT to the site at close zoom instead of fitting
+    # the whole county first (faster load, lands on the parcel).
+    lat: float | None = None
+    lng: float | None = None
 
 
 async def _eligible_filters_for_jurisdiction(
@@ -116,6 +121,8 @@ async def _alert_rows_for_filter(
             p.apn             AS apn,
             p.address         AS address,
             p.owner_name      AS owner_name,
+            ST_Y(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) AS lat,
+            ST_X(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) AS lng,
             j.id              AS jurisdiction_id,
             j.name            AS jurisdiction_name,
             pbs.score         AS score,
@@ -213,6 +220,8 @@ async def _alert_rows_for_filter(
             dashboard_job_id=(
                 str(m["dashboard_job_id"]) if m["dashboard_job_id"] else None
             ),
+            lat=float(m["lat"]) if m["lat"] is not None else None,
+            lng=float(m["lng"]) if m["lng"] is not None else None,
         ))
     return out
 
@@ -224,8 +233,13 @@ def _parcel_link(row: AlertRow) -> str:
     # rationale.
     segment = row.dashboard_job_id or row.jurisdiction_id
     # See daily_email._parcel_link — parcel_id is the dashboard's
-    # deep-link param; APN cannot be resolved client-side.
-    return f"{base}/dashboard/{segment}?parcel_id={row.parcel_id}"
+    # deep-link param; APN cannot be resolved client-side. lat/lng (parcel
+    # centroid) let the map fly straight to the site at close zoom instead of
+    # fitting the county first — faster load + lands on the parcel.
+    url = f"{base}/dashboard/{segment}?parcel_id={row.parcel_id}"
+    if row.lat is not None and row.lng is not None:
+        url += f"&lat={row.lat:.6f}&lng={row.lng:.6f}"
+    return url
 
 
 def _render_alert_subject(filter_name: str, rows: list[AlertRow]) -> str:

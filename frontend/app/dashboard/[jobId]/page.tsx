@@ -164,6 +164,12 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   const [flyToOverride, setFlyToOverride] = useState<
     { centroid: [number, number]; nonce: number } | null
   >(null);
+  // Email deep-link focus: parcel centroid [lng,lat] read from ?lat=&lng= on
+  // mount. When present, the Map flies STRAIGHT to the site at close zoom and
+  // skips the county-centroid fit — faster load, lands on the parcel.
+  const [initialFocus, setInitialFocus] = useState<
+    { lng: number; lat: number } | null
+  >(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [verifierOpen, setVerifierOpen] = useState(false);
@@ -373,6 +379,14 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     setSelectedParcelId(id);
     setDrawerOpen(true);
     setZoomedParcelId(id);
+    // If the link carries the parcel centroid (?lat=&lng=), focus the map there
+    // immediately so it flies straight to the site instead of fitting the county
+    // first. Falls back to the parcelDetail-geom fly below when absent.
+    const latRaw = Number(sp.get("lat"));
+    const lngRaw = Number(sp.get("lng"));
+    if (Number.isFinite(latRaw) && Number.isFinite(lngRaw) && (latRaw !== 0 || lngRaw !== 0)) {
+      setInitialFocus({ lat: latRaw, lng: lngRaw });
+    }
   }, []);
 
   // Once parcelDetail loads for the deep-linked parcel, fly to it.
@@ -1123,6 +1137,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             flyTrigger={flyTrigger}
             zoomOutTrigger={zoomOutTrigger}
             flyToOverride={flyToOverride}
+            initialFocus={initialFocus}
             driveTimeMode={driveTimeMode}
             isochronePolygons={isochroneData?.polygons ?? null}
             isochroneWealth={isochroneWealth}
