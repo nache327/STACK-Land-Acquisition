@@ -76,6 +76,9 @@ _APN_FIELDS = [
     # bare "PIN" so they don't match the generic candidate above — without UPI here
     # every Chester row maps to no APN and is dropped (0 parcels). (catch #34)
     "UPI",
+    # Bucks County, PA — PARCEL_NUM (e.g. "54-010-001-914"; first 2 digits = muni
+    # code). Distinct from the generic "PARCEL" candidate. (catch #34 inheritance)
+    "PARCEL_NUM",
 ]
 _ADDRESS_FIELDS = [
     "PROP_LOC", "ST_ADDRESS", "SITUS", "SITUS_ADDRESS", "ADDRESS", "FULL_ADDRESS",

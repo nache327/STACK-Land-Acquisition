@@ -498,6 +498,20 @@ _PA_CHESTER_MUNI_NAMES = {
     71: "New London Township", 72: "Franklin Township", 73: "London Britain Township",
 }
 
+# Bucks County PA — CLEANER than Chester: both parcel + zoning layers carry the
+# municipality NAME string directly (parcel `MUNICIPALITY`, zoning `Municipality`),
+# so no muni crosswalk is needed — standard name-based binding via _CITY_FIELDS.
+# Parcel id = `PARCEL_NUM` (added to _APN_FIELDS); zoning code = `ZoningAbbr` /
+# name `Zoning` (added to the zoning candidate lists). Catch #33/#34 inheritance.
+_PA_BUCKS_PARCELS = (
+    "https://services3.arcgis.com/SP47Tddf7RK32lBU/arcgis/rest/services"
+    "/Bucks_County_Parcels/FeatureServer/0"
+)
+_PA_BUCKS_ZONING = (
+    "https://services3.arcgis.com/SP47Tddf7RK32lBU/arcgis/rest/services"
+    "/Municipal_Zoning/FeatureServer/0"
+)
+
 
 def _pa_county(
     county_name: str,
@@ -991,6 +1005,14 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
         zoning_endpoint=_PA_CHESTER_ZONING,
         muni_field="MUNI",
         muni_name_map=_PA_CHESTER_MUNI_NAMES,
+    ),
+    # Bucks County PA — full county (54 munis). No crosswalk: parcel `MUNICIPALITY`
+    # + zoning `Municipality` name strings bind directly (catch #33 N/A here).
+    # Wealth+industrial targets: Doylestown Borough (CI/PI), Solebury (LI),
+    # Newtown Twp (LI/O-LI), Doylestown Twp (LI). 256 CoStar listings pre-loaded.
+    "bucks county, pa": _pa_county(
+        "Bucks", "Bucks County, PA", _PA_BUCKS_PARCELS,
+        zoning_endpoint=_PA_BUCKS_ZONING,
     ),
 }
 
