@@ -182,6 +182,7 @@ def _build_audit_sql(schema: SchemaProfile):
                 COUNT(*)::bigint AS zoning_district_count,
                 COUNT(*) FILTER (WHERE zd.geom IS NOT NULL)::bigint AS zoning_district_with_geom_count
             FROM zoning_districts zd
+            WHERE zd.jurisdiction_id IN (SELECT id FROM target_jurisdictions)
             GROUP BY zd.jurisdiction_id
         ),
         """
@@ -196,9 +197,25 @@ def _build_audit_sql(schema: SchemaProfile):
         ),
         """
     )
+    # PR #277 fix — every heavy CTE was scanning + grouping the full
+    # `parcels` and `zone_use_matrix` tables before the final SELECT's
+    # `j.name` filter kicked in. For targeted refreshes that means
+    # walking ~5M parcels just to update Mercer's snapshot, and the
+    # plan often blew past the Railway proxy ceiling with no upstream
+    # response (the 2026-06-16 Mercer 502 storm). Resolution: a
+    # `target_jurisdictions` CTE up front, and every heavy CTE pushes
+    # `p.jurisdiction_id IN (SELECT id FROM target_jurisdictions)` (or
+    # `zum.jurisdiction_id IN (...)`) into its WHERE. When
+    # `:jurisdiction_name` is NULL this matches every jurisdiction —
+    # identical behavior to the pre-fix path for full sweeps.
     return text(
         f"""
-        WITH parcel_stats AS (
+        WITH target_jurisdictions AS (
+            SELECT id FROM jurisdictions
+            WHERE CAST(:jurisdiction_name AS text) IS NULL
+               OR lower(name) = lower(CAST(:jurisdiction_name AS text))
+        ),
+        parcel_stats AS (
             SELECT
                 p.jurisdiction_id,
                 COUNT(*)::bigint AS parcel_count,
@@ -210,6 +227,7 @@ def _build_audit_sql(schema: SchemaProfile):
                 COUNT(*) FILTER (WHERE p.in_flood_zone IS TRUE)::bigint AS flood_parcel_count,
                 COUNT(*) FILTER (WHERE p.in_wetland IS TRUE)::bigint AS wetland_parcel_count
             FROM parcels p
+            WHERE p.jurisdiction_id IN (SELECT id FROM target_jurisdictions)
             GROUP BY p.jurisdiction_id
         ),
         distinct_parcel_zones AS (
@@ -217,7 +235,8 @@ def _build_audit_sql(schema: SchemaProfile):
                 p.jurisdiction_id,
                 COUNT(DISTINCT p.zoning_code)::bigint AS parcel_distinct_zone_count
             FROM parcels p
-            WHERE p.zoning_code IS NOT NULL
+            WHERE p.jurisdiction_id IN (SELECT id FROM target_jurisdictions)
+              AND p.zoning_code IS NOT NULL
               AND btrim(p.zoning_code) <> ''
             GROUP BY p.jurisdiction_id
         ),
@@ -239,7 +258,8 @@ def _build_audit_sql(schema: SchemaProfile):
                 COUNT(*) FILTER (WHERE zum.self_storage = 'unclear')::bigint AS matrix_self_storage_unclear_count,
                 COUNT(*) FILTER (WHERE zum.human_reviewed IS TRUE)::bigint AS matrix_human_reviewed_count
             FROM zone_use_matrix zum
-            WHERE zum.deleted_at IS NULL
+            WHERE zum.jurisdiction_id IN (SELECT id FROM target_jurisdictions)
+              AND zum.deleted_at IS NULL
             GROUP BY zum.jurisdiction_id
         ),
         parcel_zone_matrix AS (
@@ -293,6 +313,7 @@ def _build_audit_sql(schema: SchemaProfile):
               ON zum.jurisdiction_id = p.jurisdiction_id
              AND zum.zone_code = p.zoning_code
              AND zum.deleted_at IS NULL
+            WHERE p.jurisdiction_id IN (SELECT id FROM target_jurisdictions)
             GROUP BY p.jurisdiction_id
         ),
         unmatched_zone_samples AS (
@@ -319,7 +340,8 @@ def _build_audit_sql(schema: SchemaProfile):
                   ON zum.jurisdiction_id = p.jurisdiction_id
                  AND zum.zone_code = p.zoning_code
                  AND zum.deleted_at IS NULL
-                WHERE p.zoning_code IS NOT NULL
+                WHERE p.jurisdiction_id IN (SELECT id FROM target_jurisdictions)
+                  AND p.zoning_code IS NOT NULL
                   AND btrim(p.zoning_code) <> ''
                   AND zum.zone_code IS NULL
                 GROUP BY p.jurisdiction_id, p.zoning_code
@@ -368,10 +390,7 @@ def _build_audit_sql(schema: SchemaProfile):
         LEFT JOIN matrix_stats ms ON ms.jurisdiction_id = j.id
         LEFT JOIN parcel_zone_matrix pzm ON pzm.jurisdiction_id = j.id
         LEFT JOIN unmatched_zone_samples uzs ON uzs.jurisdiction_id = j.id
-        WHERE (
-            CAST(:jurisdiction_name AS text) IS NULL
-            OR lower(j.name) = lower(CAST(:jurisdiction_name AS text))
-        )
+        WHERE j.id IN (SELECT id FROM target_jurisdictions)
         ORDER BY j.name
         """
     )
