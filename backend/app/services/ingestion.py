@@ -416,10 +416,12 @@ def _map_row(
         "apn": apn,
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
         # city_override stamps a fixed municipality when the source parcel
-        # layer carries no city/muni-NAME field (e.g. PA county assessor layers
-        # that expose only an integer MUNI code). Used with a muni-scoped
-        # where_clause so every pulled parcel belongs to that one muni.
-        "city": (str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None) or city_override,
+        # layer carries no usable city-NAME field (e.g. PA county assessor
+        # layers expose only an integer MUNI code, which `_CITY_FIELDS`'s "MUNI"
+        # candidate would otherwise capture as a bogus city="43"). It takes
+        # PRECEDENCE over the source field: an operator only sets it with a
+        # muni-scoped where_clause, knowing the source city field is unreliable.
+        "city": city_override or (str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None),
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
         "zone_class": zone_class_val,
