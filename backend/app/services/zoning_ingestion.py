@@ -35,6 +35,11 @@ logger = logging.getLogger(__name__)
 # ── Candidate field-name lists (first match wins) ───────────────────────────
 
 _ZONE_CODE_FIELDS = [
+    # Bucks County, PA — Municipal_Zoning FeatureServer/0 short code = `ZoningAbbr`
+    # (e.g. "LI", "PI", "M-1"); the long name lives in `Zoning`. MUST precede the
+    # generic "ZONING" below — _first() case-normalizes both to "zoning", so without
+    # this first-match Bucks would pick the long name ("Light Industrial") as the code.
+    "ZoningAbbr",
     "ZONEDIST", "ZONE_DIST", "ZONING", "ZONINGCODE", "TYPE", "ZONE", "CODE",
     "ZONE_CODE", "ZONING_CODE", "zoning", "zonecode",
     "LONG_CODE", "ZONE_CODE_LABEL", "BASEZONE",
@@ -87,6 +92,7 @@ _ZONE_NAME_FIELDS = [
     "MUN_ZONE",    # Hunterdon e.g. "Highway Business" (long name; MUN_SYMBOL is code)
     "ZoneLabel",   # Morris    e.g. "TH - Townhouse Residence Zone"
     "ZONE_DISTRICT",  # Chester County PA — long district name (ZONE_ABBR is the code)
+    "Zoning",         # Bucks County PA — long district name (ZoningAbbr is the code)
 ]
 _ZONE_CLASS_FIELDS = [
     "ZONE_CLASS", "CATEGORY", "ZONE_TYPE", "CLASS", "ZONE_CATEGORY",
