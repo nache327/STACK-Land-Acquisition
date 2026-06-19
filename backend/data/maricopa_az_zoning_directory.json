@@ -1,0 +1,114 @@
+[
+  {
+    "muni_name": "Scottsdale",
+    "muni_type": "city",
+    "prod_city_value": "SCOTTSDALE",
+    "county_jurisdiction_name": "Maricopa County, AZ",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://maps.scottsdaleaz.gov/arcgis/rest/services/OpenData/MapServer/24",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "full_zoning",
+        "zone_name": "full_zoning"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "comparable_zoning",
+        "full_zoning"
+      ],
+      "notes": "Per PR #232 spec — 1,937 polygons, layer 'Zoning'. full_zoning carries overlays/suffixes (R1-18 PCD ESL); comparable_zoning is the simplified base. Path A HIGH per orchestrator's 249-row pre-stage (commit 20dacfc). Phase 7B.3 ingest authoritative."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/az/scottsdale/codes/code_of_ordinances?nodeId=VOLII_APXBBAZOOR",
+    "ordinance_chapter": "Article XI — Land Use Tables",
+    "ordinance_platform": "municode",
+    "use_structure": "land_use_tables",
+    "vintage": "2026",
+    "notes": "57-list wealth pocket #1. Per PR #232 risk register: PropertyCity='SCOTTSDALE' bbox FAILS 50% primitive (postal-city noise extends well beyond actual limits). REQUIRES ingest_maricopa_az_city_limits.py prefilter run before Phase 7B.2 per-muni registration. Source: Maricopa County Reference/ParcelCityCounty/MapServer/1 CityName='SCOTTSDALE'. 150,207 parcels expected (raw PropertyCity); post-prefilter count expected lower."
+  },
+  {
+    "muni_name": "Paradise Valley",
+    "muni_type": "town",
+    "prod_city_value": "PARADISE VALLEY",
+    "county_jurisdiction_name": "Maricopa County, AZ",
+    "zoning_district_source": {
+      "kind": "arcgis_map_server",
+      "url": "https://gis.paradisevalleyaz.gov/arcgis/rest/services/Community_Development/Planning_and_Zoning/MapServer/7",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "ZONECLASS",
+        "zone_name": "ZONECLASS"
+      },
+      "raw_attributes_passthrough": [
+        "OBJECTID",
+        "ZONECLASS",
+        "GlobalID"
+      ],
+      "notes": "Per PR #232 spec — 464 polygons / 427 nonblank ZONECLASS. Bbox primitive PASSES (no prefilter needed). Codes carry descriptive labels (e.g. 'OSP-Open Space Reserve', 'Public School', 'R-10'). Path A simple."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://www.paradisevalleyaz.gov/281/Town-Code",
+    "ordinance_chapter": "Town Code Title XV (Land Usage)",
+    "ordinance_platform": "civicplus",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "57-list wealth pocket #2. Bbox PASSES per PR #232 — no prefilter required. 10,071 parcels per PropertyCity='PARADISE VALLEY'. Smaller / cleaner than Scottsdale; second proof candidate."
+  },
+  {
+    "muni_name": "Cave Creek",
+    "muni_type": "town",
+    "prod_city_value": "CAVE CREEK",
+    "county_jurisdiction_name": "Maricopa County, AZ",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.cavecreekaz.gov/220/Zoning-Ordinance",
+      "notes": "Per PR #262 spec — Cave Creek's public GIS app is parcel-only, not zoning. Per orchestrator's 10-row Path B pre-stage (commit 9af5827) — ordinance/code workflow only. Lane A may need to author per-zone polygons from PDF zoning map if applicable; otherwise rely on orchestrator's matrix-only flip pattern."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/az/cave_creek/codes/code_of_ordinances",
+    "ordinance_chapter": "Land Development Code",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "57-list adjacent wealth pocket. Path B LOW per orchestrator. ~5,300 parcels expected. No zoning GIS — defer Phase 7B.3 to ordinance/PDF derived after Scottsdale/Paradise Valley flip."
+  },
+  {
+    "muni_name": "Fountain Hills",
+    "muni_type": "town",
+    "prod_city_value": "FOUNTAIN HILLS",
+    "county_jurisdiction_name": "Maricopa County, AZ",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.fh.az.gov/308/Zoning",
+      "notes": "Per orchestrator's 24-row Path B pre-stage (commit 9af5827) — ordinance/PDF source. Lane A discovery during Phase 7B.3 fire may identify a separate ArcGIS publisher; fallback is ordinance-only."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/az/fountain_hills/codes/zoning_ordinance",
+    "ordinance_chapter": "Zoning Ordinance",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "57-list adjacent wealth pocket. Path B LOW. ~10,400 parcels expected. Largest of the 3 LOW-confidence munis."
+  },
+  {
+    "muni_name": "Carefree",
+    "muni_type": "town",
+    "prod_city_value": "CAREFREE",
+    "county_jurisdiction_name": "Maricopa County, AZ",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.codepublishing.com/AZ/Carefree/",
+      "notes": "Per orchestrator's 8-row Path B pre-stage (commit 9af5827) — American Legal / Code Publishing ordinance source. No zoning GIS expected."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://www.codepublishing.com/AZ/Carefree/",
+    "ordinance_chapter": "Carefree Town Code",
+    "ordinance_platform": "code_publishing",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "57-list adjacent wealth pocket. Path B LOWEST. ~2,000 parcels expected — smallest in cohort. Likely matrix-only flip via orchestrator's pre-stage; Lane A polygon authoring deferred."
+  }
+]
