@@ -1,0 +1,92 @@
+[
+  {
+    "muni_name": "Fox Chapel",
+    "muni_type": "borough",
+    "prod_city_value": "Fox Chapel Borough",
+    "county_jurisdiction_name": "Allegheny County, PA",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.fox-chapel.pa.us/zoning",
+      "notes": "Per Allegheny acquisition spec — no public countywide zoning FeatureServer. Fox Chapel borough zoning is online but machine-readable polygons not found in time box. Phase 7F.3 fires via orchestrator d7a0c7a pre-stage (LOW Path B ordinance-derived)."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/pa/fox_chapel/codes/code_of_ordinances",
+    "ordinance_chapter": "Zoning Ordinance",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "57-list PRIMARY wealth pocket. 2,179 parcels per Diagnostic spec (MUNICODE=868). Path B authoring at apply-time."
+  },
+  {
+    "muni_name": "O'Hara",
+    "muni_type": "township",
+    "prod_city_value": "O Hara Township",
+    "county_jurisdiction_name": "Allegheny County, PA",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.ohara.pa.us/zoning",
+      "notes": "Apostrophe-stripped per Allegheny LABEL convention. Path B per orchestrator's d7a0c7a pre-stage."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://www.ohara.pa.us/zoning-ordinance",
+    "ordinance_chapter": "Zoning Ordinance",
+    "ordinance_platform": "municipal_site",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "Adjacent Fox Chapel wealth band. MUNICODE=931. apostrophe-stripped LABEL convention preserved (O Hara not O'Hara per Master directive)."
+  },
+  {
+    "muni_name": "Aspinwall",
+    "muni_type": "borough",
+    "prod_city_value": "Aspinwall Borough",
+    "county_jurisdiction_name": "Allegheny County, PA",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.aspinwallpa.gov/zoning",
+      "notes": "Path B per orchestrator's d7a0c7a pre-stage."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://ecode360.com/AS1135",
+    "ordinance_chapter": "Zoning Ordinance",
+    "ordinance_platform": "ecode360",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "Adjacent wealth band — small borough (MUNICODE=801)."
+  },
+  {
+    "muni_name": "Sewickley",
+    "muni_type": "borough",
+    "prod_city_value": "Sewickley Borough",
+    "county_jurisdiction_name": "Allegheny County, PA",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.sewickleyborough.org/zoning",
+      "notes": "Path B per orchestrator's d7a0c7a pre-stage."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://ecode360.com/SE0857",
+    "ordinance_chapter": "Zoning Ordinance",
+    "ordinance_platform": "ecode360",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "Ohio River corridor wealth (MUNICODE=851)."
+  },
+  {
+    "muni_name": "Sewickley Heights",
+    "muni_type": "borough",
+    "prod_city_value": "Sewickley Heights Borough",
+    "county_jurisdiction_name": "Allegheny County, PA",
+    "zoning_district_source": {
+      "kind": "ordinance_only",
+      "url": "https://www.sewickleyheights.gov/zoning",
+      "notes": "Path B per orchestrator's d7a0c7a pre-stage. Ordinance No. 294 PDF flagged by orchestrator for Phase 7F.3 authoring."
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://www.sewickleyheights.gov/ordinance-no-294",
+    "ordinance_chapter": "Zoning Ordinance No. 294",
+    "ordinance_platform": "pdf",
+    "use_structure": "district_narrative",
+    "vintage": "2026",
+    "notes": "Smallest of 5 cohort munis (MUNICODE=869), very high-value. Ordinance No. 294 PDF source per orchestrator."
+  }
+]
