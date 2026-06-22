@@ -113,8 +113,8 @@ COUNTY_FILTER = "1=1"
 JUR_NAME = "Allegheny County, PA"
 JUR_STATE = "PA"
 JUR_COUNTY = "Allegheny"
-PAGE_SIZE = 1000
-BATCH_SIZE = 50_000
+PAGE_SIZE = 200  # Reduced from 1000 — Allegheny source returned partial batches at large offsets
+BATCH_SIZE = 10_000  # Reduced from 50k to align with smaller PAGE_SIZE
 
 _RAW_PASSTHROUGH = (
     "PIN", "MAPBLOCKLOT", "MUNICODE", "CALCACREAGE",
