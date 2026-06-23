@@ -23,15 +23,27 @@
 
 Top: R1-35 598 / Rural-70 476 / Rural-43 405 / R-3 349 / R1-18 304
 
-## Fountain Hills HALT @ 55.9 % cov
+## Fountain Hills HALT @ 63.9 % cov (post-100m fallback)
 
 | Gate | Result |
 |------|-------:|
-| GATE 1 cov% | **55.9 %** (8,831 / 15,810) — **SUB — Master HALT trigger** |
-| GATE 2 near% | 8.8 % (1,384 / 15,810) — PASS |
+| GATE 1 cov% | **63.9 %** (10,102 / 15,810) — **SUB — substrate-armed-cov-gate-blocked** |
+| GATE 2 near% | 16.8 % (2,655 / 15,810; 1,384 n50 + 1,271 n100) — PASS |
 | GATE 3 raw empty | 0 — PASS |
 | GATE 4 districts | 118 — PASS |
 | GATE 5 bbox | `[-111.79, 33.57, -111.59, 33.73]` — PASS |
+
+Initial 50m fire: 55.9 % cov (8,831 bound). 100m fallback (Pierce
+Task E pattern) bound an additional 1,271 still-NULL parcels. Net
++8.0 pp lift, lands in Master's middle-case verdict (60-69 % = still
+gate-blocked, document new ceiling, stand down). 5,708 parcels remain
+unbound — they fall in source polygons whose TEXTSTRING is metadata,
+not zoning (whitelist-rejected noise).
+
+**Pattern codification:** 9th apply-time pattern —
+substrate-armed-cov-gate-blocked. Orchestrator has 32 real zoning
+codes bound to 10,102 parcels; county audit can consume the substrate
+but the per-muni doesn't formally pass the 5/5 gate.
 
 ### QA whitelist results
 
@@ -100,7 +112,7 @@ Master's prior directive: "if >10% noise, halt and surface". 88 % noise triggers
 - Paradise Valley ✗ (token-gate, PR #319)
 - Cave Creek ✗ (no source per Diagnostic PR #324)
 - Carefree ✓ (this PR — promoted from defer)
-- Fountain Hills ⚠ (this PR — HALT awaiting Master verdict)
+- Fountain Hills ⚠ (this PR — 63.9 % cov post-100m, substrate-armed-cov-gate-blocked, Lane A stands down at wedge ceiling 38)
 
 If Master accepts (a): Maricopa = 3/5. If (b): Maricopa = 2/5.
 
