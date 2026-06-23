@@ -16,6 +16,7 @@ import re
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -102,13 +103,27 @@ async def fetch_from_url(url: str) -> list[OrdinanceSection]:
     Raises RuntimeError if the URL cannot be fetched.
     """
     source = detect_source_type(url)
-    if source in ("municipal_codes", "municode", "american_legal"):
-        # JS SPAs / Cloudflare-protected — need a real browser.
-        return await _fetch_with_playwright(url)
-    elif source == "ecode360":
-        return await _fetch_generic(url)
-    else:
-        return await _fetch_generic(url)
+    if source == "code_publishing":
+        # Code Publishing publishes static chapter HTML. Use direct fetch first;
+        # Jina remains a fallback for chapters protected by Cloudflare.
+        try:
+            return await _fetch_generic(url)
+        except RuntimeError as exc:
+            return await _fetch_jina_or_raise(url, exc)
+    if source in ("municipal_codes", "municode", "american_legal", "encodeplus"):
+        # JS SPAs / Cloudflare-protected — prefer the existing real-browser path
+        # when available. If Chromium is not installed or a host serves an
+        # anti-bot challenge, fall back to Jina Reader's public rendered text.
+        try:
+            return await _fetch_with_playwright(url)
+        except RuntimeError as exc:
+            return await _fetch_jina_or_raise(url, exc)
+    if source == "ecode360":
+        try:
+            return await _fetch_generic(url)
+        except RuntimeError as exc:
+            return await _fetch_jina_or_raise(url, exc)
+    return await _fetch_generic(url)
 
 
 async def fetch_from_pdf(pdf_path: Path) -> list[OrdinanceSection]:
@@ -143,6 +158,10 @@ def detect_source_type(url: str) -> str:
         return "municipal_codes"
     if "amlegal.com" in u or "american-legal.com" in u:
         return "american_legal"
+    if "codepublishing.com" in u:
+        return "code_publishing"
+    if "encodeplus.com" in u:
+        return "encodeplus"
     # All other known JS SPA / Cloudflare-protected municipal code platforms
     _JS_SPA_DOMAINS = (
         "municode.com",
@@ -153,10 +172,35 @@ def detect_source_type(url: str) -> str:
         "codexonline.com",
         "ecode360.com",
         "codelibrary.amlegal.com",
+        "encodeplus.com",
     )
     if any(d in u for d in _JS_SPA_DOMAINS):
         return "municode"  # all routed through _fetch_with_playwright
     return "generic"
+
+
+async def _fetch_jina_or_raise(url: str, previous_error: Exception) -> list[OrdinanceSection]:
+    """Fetch rendered text through Jina Reader or re-raise a useful error.
+
+    This is intentionally a retrieval fallback, not an anti-bot defeat:
+    municipal.codes and Municode frequently block non-browser HTML fetches, but
+    Jina Reader returns public rendered text with the source URL preserved in
+    the payload. If Jina cannot retrieve real ordinance text, callers get a
+    hard failure rather than silent empty content.
+    """
+    try:
+        sections = await _fetch_via_jina_reader(url)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"Cannot fetch ordinance URL via direct/browser path ({previous_error}) "
+            f"or Jina Reader fallback ({exc})."
+        ) from exc
+    if sections:
+        return sections
+    raise RuntimeError(
+        f"Cannot fetch ordinance URL via direct/browser path ({previous_error}) "
+        "or Jina Reader fallback (no parseable ordinance sections)."
+    )
 
 
 # ─── Source-specific fetchers ────────────────────────────────────────────────
@@ -870,6 +914,66 @@ async def _fetch_generic(url: str) -> list[OrdinanceSection]:
         return sections
 
 
+async def _fetch_via_jina_reader(url: str) -> list[OrdinanceSection]:
+    """Fetch public rendered page text through Jina Reader.
+
+    Host behavior verified during the verdict-truth HALT investigation:
+      - municipal.codes direct HTTP returns a Cloudflare managed challenge.
+      - library.municode.com ``/api`` returns 401 for unauthenticated clients,
+        while rendered ``nodeId`` URLs are available through Jina.
+      - Code Publishing is usually static HTML, but Jina is a viable fallback.
+
+    The returned text includes Jina's ``URL Source:`` header. We preserve it in
+    the parsed text so downstream reports can audit the canonical ordinance URL.
+    """
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        raise RuntimeError(f"Invalid URL for Jina Reader: {url!r}")
+
+    jina_urls = [
+        f"https://r.jina.ai/{url}",
+        # Jina occasionally times out on the direct path for Cloudflare-fronted
+        # ordinance hosts, while the nested reader URL resolves from cache.
+        f"https://r.jina.ai/http://r.jina.ai/http://{url}",
+    ]
+    last_error: Exception | None = None
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=60.0,
+        headers={
+            "Accept": "text/plain",
+            "X-Return-Format": "text",
+            "X-Timeout": "30",
+        },
+    ) as client:
+        for jina_url in jina_urls:
+            try:
+                resp = await client.get(jina_url)
+                resp.raise_for_status()
+                text = _normalize_text(resp.text)
+                if _looks_like_ordinance_text(text):
+                    break
+                last_error = RuntimeError("Jina Reader returned no ordinance-like text")
+            except (httpx.HTTPError, RuntimeError) as exc:
+                last_error = exc
+        else:
+            raise RuntimeError(f"Jina Reader fetch failed: {last_error}") from last_error
+
+    if not _looks_like_ordinance_text(text):
+        raise RuntimeError("Jina Reader returned no ordinance-like text")
+
+    sections = _split_into_sections(text)
+    if sections:
+        return sections
+
+    return [OrdinanceSection(
+        section_id="jina_rendered_text",
+        heading="Rendered Ordinance Text",
+        text=text[:_MAX_ORDINANCE_CHARS],
+        district_codes=_find_district_codes(text),
+    )]
+
+
 # ─── HTML / text extraction helpers ─────────────────────────────────────────
 
 def _table_to_markdown(table) -> str:
@@ -957,6 +1061,34 @@ def _extract_zoning_sections_from_soup(soup: BeautifulSoup) -> list[OrdinanceSec
         return []
 
     return _split_into_sections(text)
+
+
+def _normalize_text(text: str) -> str:
+    """Normalize whitespace while preserving line-based section parsing."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _looks_like_ordinance_text(text: str) -> bool:
+    """Reject anti-bot shells and empty SPA chrome."""
+    if len(text.strip()) < 200:
+        return False
+    lower = text.lower()
+    blocked_markers = (
+        "just a moment",
+        "enable javascript and cookies",
+        "content not found",
+        "could not fetch this url",
+    )
+    if any(marker in lower for marker in blocked_markers):
+        return False
+    return bool(re.search(
+        r"\b(code|ordinance|chapter|section|zoning|district|permitted|conditional)\b",
+        text,
+        re.I,
+    ))
 
 
 def _split_into_sections(text: str) -> list[OrdinanceSection]:
