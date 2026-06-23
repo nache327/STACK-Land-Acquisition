@@ -45,10 +45,12 @@ LAYER = "https://ags.gisconsortium.org/arcgis/rest/services/VWN/AGOL_VWN_Project
 ZCODE = "ZONED"
 RAW_KEYS = ("OBJECTID", "ZONED", "ZONINGDESCRIPTION", "ZONINGDOCUMENT", "DATEMODIFIED",
             "Shape__Area", "Shape__Length")
-# Winnetka village bbox (cross-check the parcels after backfill).
-# Coordinates from probe doc + Cook IL extent for Winnetka subset.
-BBOX_LON = (-87.78, -87.71)
-BBOX_LAT = (42.10, 42.13)
+# Winnetka village bbox sanity envelope. Actual extent observed via
+# PATH 1 re-jurisdictioning dry-run on 2026-06-23:
+# [-87.78986, 42.08486, -87.71090, 42.12839]. Envelope catches
+# gross errors (wrong-county ingest), not tight-fit.
+BBOX_LON = (-87.80, -87.69)
+BBOX_LAT = (42.07, 42.14)
 # Refuse to fire if parcel count is below this — guard against
 # firing before headless Cook IL ingest + per-muni registration landed.
 MIN_PARCELS_FOR_FIRE = 100
