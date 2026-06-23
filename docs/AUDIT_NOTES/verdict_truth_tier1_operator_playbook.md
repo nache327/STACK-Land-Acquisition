@@ -20,6 +20,90 @@
 
 ---
 
+## Anti-bot fallback paths (per-platform + per-muni)
+
+**Critical distinction:** 403 to **WebFetch / curl / orchestrator** ≠ 403 to **human browser**. Most platforms below serve content fine to standard Chrome with default User-Agent; they fingerprint and block automated requests. If the operator hits a 403 in their normal browser, that's the unusual case — try fallbacks below.
+
+### Universal platform reference table
+
+| Platform | WebFetch status | Human browser status | Notes |
+|---|---|---|---|
+| **codepublishing.com** | 403 confirmed (Bainbridge BIMC / Mill Creek MCMC / Gig Harbor GHMC) | Usually OK | Stable URLs; snapshotted on Wayback Machine reliably |
+| **amlegal / codelibrary.amlegal.com** | 403 confirmed (Carefree / Franklin / Sewickley / Winnetka) | Usually OK | Strong anti-bot; even browser may need cookies set |
+| **municipal.codes** | 403 confirmed (Bellevue LUC) | Usually OK | Newer platform; static HTML often cached on Wayback |
+| **library.municode.com** | Likely 403 (per halt doc — Beverly Hills MI / Stamford / Mercer Island WA / Edina MN) | Usually OK | Most common municipal-code platform; reliable backup via village PDF |
+| **encodeplus.com** | Likely 403 (Birmingham MI / Westport CT) | Usually OK | Returns HTML on browser; export PDF option often available in UI |
+| **ecode360.com** | Anti-bot strict per halt doc | Usually OK after CAPTCHA | May require operator to solve CAPTCHA first time per session |
+| **stamfordct.gov / village .gov sites** | Usually OK | OK | Direct municipal sites generally no anti-bot; PDF downloads work |
+
+### Universal backup-path hierarchy (try in order)
+
+1. **Direct platform URL in operator's normal Chrome browser** (works ~90% of time)
+2. **Direct platform URL in Chrome incognito mode** (clears any anti-bot cookies; works ~95%)
+3. **Village municipal website backup** — most villages host a PDF mirror of their zoning ordinance under /planning/ or /community-development/ paths (works ~70% for full ordinance; ~95% for zoning map)
+4. **Wayback Machine snapshot**: `https://web.archive.org/web/*/{original_url}` — shows all snapshots; pick a recent one (note: may not reflect latest amendments)
+5. **Direct village planning department contact** — email or phone (1-day delay; reliable last resort)
+
+**DO NOT use:**
+- Google's "cached" feature — retired by Google in early 2024
+- Random PDF mirrors on third-party real-estate sites — citation provenance unverifiable; violates Bergen hard-rule
+- ChatGPT/LLM summaries of ordinances — same provenance issue
+
+### Per-muni anti-bot fallback notes
+
+#### Stamford, CT (codes 1, 2 = M-G, M-L)
+
+| Path | URL | Notes |
+|---|---|---|
+| Primary | https://www.stamfordct.gov/government/boards-commissions/zoning-board/zoning-regulations | Municipal site; usually no anti-bot |
+| Backup 1 | Stamford regs PDF (linked from primary page) | Direct PDF download; full Section 4 + Section 5 + Appendix A |
+| Backup 2 | https://www.stamfordct.gov/government/boards-commissions/zoning-board/zoning-map | Zoning map PDF (for district code confirmation, NOT use rules) |
+| Backup 3 | Wayback: `https://web.archive.org/web/*/https://www.stamfordct.gov/government/boards-commissions/zoning-board/zoning-regulations` | High snapshot frequency expected |
+| Backup 4 | Stamford Zoning Board planning office: zoning@stamfordct.gov | Last resort; 1-day response typical |
+| Risk | Recent amendments may move use rules to Appendix A (per Hennepin/Fairfield citation directory) — check both Section 5 district section AND Appendix A | |
+
+#### Plymouth, MN (codes 3, 4, 5 = I-1, I-2, I-3)
+
+| Path | URL | Notes |
+|---|---|---|
+| Primary | https://library.municode.com/mn/plymouth/codes/code_of_ordinances?nodeId=CICO_CHXXIZOOR | Municode platform — likely 403 to WebFetch; usually OK to browser |
+| Backup 1 | https://www.plymouthmn.gov/departments/community-economic-development/planning/zoning-ordinance | Municipal site; per Hennepin citation directory — may host PDF backup |
+| Backup 2 | Plymouth `link-backed zoning map layer` URLs (per Hennepin directory) | The link-backed ZoningMap/MapServer/4 returns 16 values with direct Municode URLs per district — may have different cache behavior than chapter overview URL |
+| Backup 3 | Wayback Machine snapshot of Municode chapter URL | Reliable for non-amendment-sensitive sections |
+| Backup 4 | Plymouth Community & Economic Development: planning@plymouthmn.gov | Last resort |
+| Risk | I-1 / I-2 / I-3 chapter section numbers were not captured in pre-stage research (citation directory says "Sec 21680-21690 range") — operator must navigate Chapter XXI index to find exact section per code | |
+
+#### Eden Prairie, MN (codes 6, 7, 8 = I-GEN, I-2, I-5)
+
+| Path | URL | Notes |
+|---|---|---|
+| Primary | https://library.municode.com/mn/eden_prairie/codes/code_of_ordinances?nodeId=CH11LAUSREZO | Municode — likely 403 to WebFetch; usually OK to browser |
+| Backup 1 | Eden Prairie city zoning page (linked from edenprairie.org Community Development) | Specific URL TBD; may have PDF mirror of Chapter 11 |
+| Backup 2 | https://gis.edenprairie.org/CommDev/Zoning.pdf | This is the zoning MAP PDF (district boundaries) — NOT use rules; only useful for confirming district code spelling (I-GEN vs IGEN etc.) |
+| Backup 3 | Wayback snapshot of Municode chapter URL | |
+| Backup 4 | Eden Prairie Community Development: communitydev@edenprairiemn.gov | Last resort |
+| Risk | Chapter 11 is large (covers all districts); operator must use page search for "I-GEN", "I-2", "I-5" to find district sections quickly. Eden Prairie may have non-contiguous district numbering (I-5 without I-3/I-4). | |
+
+#### Mill Creek, WA (code 9 = BP)
+
+| Path | URL | Notes |
+|---|---|---|
+| Primary | https://www.codepublishing.com/WA/MillCreek/html/MillCreek17/MillCreek17.html | Code Publishing — 403 confirmed to WebFetch; usually OK to browser per WA platform pattern |
+| Backup 1 | https://www.cityofmillcreek.com/ (Community Development / Planning / Zoning) | Municipal site likely hosts PDF backup of MCMC Title 17 (check menu) |
+| Backup 2 | Wayback snapshot of Code Publishing URL — HIGH probability of recent snapshot since WA platform sites get regular crawls | `https://web.archive.org/web/*/https://www.codepublishing.com/WA/MillCreek/html/MillCreek17/MillCreek17.html` |
+| Backup 3 | Snohomish County library or Mill Creek City Hall: 425-921-5740 (planning) | Hard-copy reference; last resort |
+| Risk | MCMC Title 17 is per-district narrative (not master use table per `mill_creek_citation_anchors_prestaged.md`) — operator must find the specific BP chapter number (Chapter 17.16-17.20 range expected; not yet confirmed). Pre-stage doc flags this as TBD. | |
+| Special note | If Code Publishing browser-block is unusual: 5,406 WAZA polygons per Mill Creek suggests heavy parcel-level traffic — site likely whitelists Snohomish-region IPs but blocks others. Try VPN to Pacific Northwest if standard browser fails. | |
+
+### Wayback Machine usage tips
+
+- Wayback URL pattern: `https://web.archive.org/web/{timestamp}/{original_url}` where `{timestamp}` is `YYYYMMDDHHMMSS` or `*` for wildcard
+- For latest snapshot: visit `https://web.archive.org/web/2026/{original_url}` (year-only timestamp uses latest snapshot in year)
+- **Amendment risk**: Wayback snapshot may be older than current ordinance amendments. Always note the snapshot date in citation: "(per Wayback snapshot 2026-MM-DD; verify against current amendments)"
+- **Bergen hard-rule compatibility**: Wayback citations are acceptable per "real ordinance citations" rule IF the snapshot URL is included alongside the original URL. Format: `url: "https://web.archive.org/web/2026XXXX/{original_url}"` with note in `section` field that this is a Wayback snapshot.
+
+---
+
 ## Per-cell decision matrix (universal, applies across all 9 codes)
 
 | Cell | PERMITTED if district use list contains | CONDITIONAL if | PROHIBITED if (catchall default) |
