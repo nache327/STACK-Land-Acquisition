@@ -1,0 +1,278 @@
+[
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "RR-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code RR-A enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 RR-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RR-A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "SH PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code SH PUD enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD,\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 SH PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SH PUD district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "A-E",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code A-E enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A-\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 A-E district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A-E district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "A-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code A-1 enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A-\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 A-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "R-1A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code R-1A enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 R-1A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "R-1B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code R-1B enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 R-1B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1B district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "R-2A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code R-2A enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 R-2A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "R-2B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code R-2B enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 R-2B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2B district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "R-3A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code R-3A enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 R-3A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "R-3B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code R-3B enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 R-3B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3B district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code PUD enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A-\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PUD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  },
+  {
+    "municipality": "Cherry Hills Village",
+    "zone_code": "C-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cherry Hills Village zoning \u2014 public source enumeration (Arapahoe County ArcGIS AC_WSS_Arapahoe_County_Zoning/FeatureServer/89 (1,236 polygons, ZONING field))",
+        "quote": "Zone code C-1 enumerated from public ArcGIS source. Cherry Hills Village uses Arapahoe County zoning aggregator (county publishes municipal zones). Sample codes from Arapahoe ZONING: RR-A, SH PUD, A-\u2026",
+        "url": "https://services2.arcgis.com/OSbOBWdLkmvu5I9F/arcgis/rest/services/AC_WSS_Arapahoe_County_Zoning/FeatureServer/89"
+      },
+      {
+        "section": "Cherry Hills Village zoning ordinance \u2014 C-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cherryhillsvillage.com/392/Zoning-District-Maps"
+      }
+    ]
+  }
+]

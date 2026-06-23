@@ -1,0 +1,301 @@
+[
+  {
+    "municipality": "Golden",
+    "zone_code": "R-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code R-1 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 R-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code PUD enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PUD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "AG",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code AG enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cove\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 AG district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "C-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code C-2 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 C-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "R-1A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code R-1A enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate co\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 R-1A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "R-1B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code R-1B enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate co\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 R-1B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1B district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "R-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code R-2 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 R-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "R-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code R-3 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 R-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "C-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code C-1 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 C-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "I-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code I-1 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 I-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "I-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code I-2 enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cov\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 I-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "MX",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code MX enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cove\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 MX district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MX district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  },
+  {
+    "municipality": "Golden",
+    "zone_code": "OS",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Golden zoning \u2014 public source enumeration (City of Golden ArcGIS Zoning/FeatureServer/0 (180 polygons, Zone_Code/Zone_Description fields))",
+        "quote": "Zone code OS enumerated from public ArcGIS source. Golden CO observed sample codes: R-1 Residential Standard Lot, PUD Planned Unit Development, AG Agricultural, C-2 General Commercial. Substrate cove\u2026",
+        "url": "https://services1.arcgis.com/FP2GwMAr4SrmXGhq/arcgis/rest/services/Zoning/FeatureServer/0"
+      },
+      {
+        "section": "Golden zoning ordinance \u2014 OS district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OS district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.cityofgolden.gov/business/land_use_development/zoning_criteria_guide.php"
+      }
+    ]
+  }
+]

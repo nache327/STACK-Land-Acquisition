@@ -1,0 +1,370 @@
+[
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "R-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code R-4 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; L\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 R-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "R-10",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code R-10 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 R-10 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-10 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "R-6",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code R-6 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; L\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 R-6 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "R-10-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code R-10-CU enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 R-10-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-10-CU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "OX-3-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code OX-3-CU enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 OX-3-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-3-CU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "R-6-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code R-6-CU enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 R-6-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6-CU district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "OX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code OX-3 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 OX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "RX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code RX-3 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 RX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "RX-3-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code RX-3-CU enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 RX-3-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-3-CU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "CX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code CX-3 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 CX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "NX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code NX-3 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 NX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "NX-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code NX-4 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 NX-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NX-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "OX-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code OX-5 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 OX-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "RX-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code RX-4 enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 RX-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "CMP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code CMP enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; L\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 CMP district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CMP district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "North Raleigh",
+    "zone_code": "PD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "North Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh zoning authority (3,561 polygons), filtered to North Raleigh market subarea)",
+        "quote": "Zone code PD enumerated from public ArcGIS source. North Raleigh is a Raleigh sub-area / wealth-pocket (NOT an incorporated place). Per Wake spec: 'No single official North Raleigh polygon found'; La\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "North Raleigh zoning ordinance \u2014 PD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  }
+]

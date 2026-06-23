@@ -1,0 +1,1152 @@
+[
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MUDD-O",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MUDD-O enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MUDD-O district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MUDD-O district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "I-2(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code I-2(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 I-2(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-2(CD) district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MUDD(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MUDD(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (C\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MUDD(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MUDD(CD) district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N1-B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N1-B enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N1-B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N1-B district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "NS",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code NS enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) suf\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 NS district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NS district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "OFC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code OFC enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 OFC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OFC district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "B-1(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code B-1(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 B-1(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-1(CD) district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N2-A(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N2-A(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (C\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N2-A(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N2-A(CD) district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "INST(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code INST(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (C\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 INST(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the INST(CD) district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "UR-2(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code UR-2(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (C\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 UR-2(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the UR-2(CD) district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "CG",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code CG enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) suf\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 CG district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CG district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "ML-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code ML-1 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 ML-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the ML-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "TOD-NC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code TOD-NC enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 TOD-NC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TOD-NC district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-3 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-4 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-5 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-5 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-6",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-6 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-6 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-8",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-8 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-8 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-8 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-12MF",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-12MF enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-12MF district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-12MF district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-17MF",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-17MF enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-17MF district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-17MF district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "R-22MF",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code R-22MF enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 R-22MF district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-22MF district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "B-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code B-1 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 B-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "B-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code B-2 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 B-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "I-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code I-1 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 I-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "I-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code I-2 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 I-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MUDD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MUDD enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MUDD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MUDD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "INST",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code INST enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 INST district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the INST district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "CC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code CC enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) suf\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 CC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "TS",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code TS enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) suf\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 TS district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TS district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "TOD-UC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code TOD-UC enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 TOD-UC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TOD-UC district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "TOD-CC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code TOD-CC enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD)\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 TOD-CC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TOD-CC district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MX-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MX-1 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MX-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MX-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MX-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MX-2 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MX-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MX-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MX-3 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "UR-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code UR-1 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 UR-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the UR-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "UR-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code UR-2 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 UR-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the UR-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "UR-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code UR-3 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 UR-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the UR-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "UR-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code UR-C enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 UR-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the UR-C district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N1-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N1-A enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N1-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N1-A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N1-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N1-C enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N1-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N1-C district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N1-D",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N1-D enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N1-D district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N1-D district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N1-E",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N1-E enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N1-E district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N1-E district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N1-F",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N1-F enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N1-F district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N1-F district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N2-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N2-A enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N2-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N2-A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N2-B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N2-B enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N2-B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N2-B district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "N2-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code N2-C enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 N2-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N2-C district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "PED",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code PED enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) su\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 PED district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PED district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "MUDD-CD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code MUDD-CD enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 MUDD-CD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MUDD-CD district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "I-1(CD)",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code I-1(CD) enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 I-1(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-1(CD) district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  },
+  {
+    "municipality": "Charlotte",
+    "zone_code": "RE-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (5,664 polygons, ZoneDes field \u2014 5,664/5,664 nonblank))",
+        "quote": "Zone code RE-1 enumerated from public ArcGIS source. Charlotte UDO modernization (post-2023) introduces N1-A/B/C/D/E/F + N2-A/B/C neighborhood codes; legacy R-3/4/5/6/8 + R-12/17/22MF coexist. (CD) s\u2026",
+        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
+      },
+      {
+        "section": "Charlotte zoning ordinance \u2014 RE-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RE-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://charlotteudo.org/"
+      }
+    ]
+  }
+]
