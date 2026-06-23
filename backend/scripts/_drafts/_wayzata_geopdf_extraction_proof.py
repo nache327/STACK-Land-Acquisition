@@ -32,6 +32,7 @@ from typing import Any
 import pdfplumber
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
+from shapely.strtree import STRtree
 
 
 SOURCE_URL = (
@@ -70,6 +71,7 @@ EXPECTED_LEGEND_ORDER = [
 ]
 
 ZONE_CODE_RE = re.compile(r"\b(?:C|R)-\d[A-Z]?\b|\b(?:INS|PUD|P)\b")
+PEN_RE = re.compile(r"PEN\(c:(#[0-9A-Fa-f]{6})\)")
 BRUSH_RE = re.compile(r"BRUSH\(fc:(#[0-9A-Fa-f]{6})\)")
 
 
@@ -200,6 +202,15 @@ def brush_fill(style: str | None) -> str | None:
     return match.group(1).upper()
 
 
+def pen_color(style: str | None) -> str | None:
+    if not style:
+        return None
+    match = PEN_RE.search(style)
+    if not match:
+        return None
+    return match.group(1).upper()
+
+
 def valid_polygon(geom: BaseGeometry) -> BaseGeometry:
     if geom.is_valid:
         return geom
@@ -211,7 +222,22 @@ def sample_polygons(geojson_path: Path, fill_to_codes: dict[str, list[str]]) -> 
     feature_counts_by_geometry = Counter()
     polygon_counts_by_fill: Counter[str] = Counter()
     polygon_area_by_fill: Counter[str] = Counter()
+    overlay_line_length_by_fill: dict[str, Counter[str]] = defaultdict(Counter)
     samples: list[dict[str, Any]] = []
+    line_records: list[tuple[BaseGeometry, str]] = []
+
+    for feature in data["features"]:
+        geometry = feature.get("geometry")
+        if not geometry or "LineString" not in geometry["type"]:
+            continue
+        color = pen_color(feature.get("properties", {}).get("OGR_STYLE"))
+        if not color or color == "#000000":
+            continue
+        geom = shape(geometry)
+        if not geom.is_empty:
+            line_records.append((geom, color))
+
+    line_tree = STRtree([record[0] for record in line_records]) if line_records else None
 
     for idx, feature in enumerate(data["features"]):
         geometry = feature.get("geometry")
@@ -229,8 +255,11 @@ def sample_polygons(geojson_path: Path, fill_to_codes: dict[str, list[str]]) -> 
         geom = valid_polygon(shape(geometry))
         if geom.is_empty or geom.area <= 0:
             continue
+        overlay_lengths = overlay_lengths_for_polygon(geom, line_records, line_tree)
         polygon_counts_by_fill[fill] += 1
         polygon_area_by_fill[fill] += geom.area
+        for color, length in overlay_lengths.items():
+            overlay_line_length_by_fill[fill][color] += length
         if len(samples) < 10:
             simplified = geom.simplify(2.0, preserve_topology=True)
             samples.append(
@@ -239,6 +268,7 @@ def sample_polygons(geojson_path: Path, fill_to_codes: dict[str, list[str]]) -> 
                     "ogr_style": style,
                     "fill": fill,
                     "zone_code_candidates": fill_to_codes.get(fill, []),
+                    "overlay_line_lengths": overlay_lengths,
                     "area_square_hennepin_feet": round(geom.area, 2),
                     "bounds_hennepin_feet": [round(v, 2) for v in geom.bounds],
                     "geometry_wkt_hennepin_feet": simplified.wkt,
@@ -249,8 +279,33 @@ def sample_polygons(geojson_path: Path, fill_to_codes: dict[str, list[str]]) -> 
         "feature_counts_by_geometry": dict(feature_counts_by_geometry),
         "polygon_counts_by_fill": dict(polygon_counts_by_fill),
         "polygon_area_by_fill": {k: round(v, 2) for k, v in polygon_area_by_fill.items()},
+        "overlay_line_length_by_fill": {
+            fill: {color: round(length, 2) for color, length in lengths.items()}
+            for fill, lengths in overlay_line_length_by_fill.items()
+        },
         "sample_polygons": samples,
     }
+
+
+def overlay_lengths_for_polygon(
+    polygon: BaseGeometry,
+    line_records: list[tuple[BaseGeometry, str]],
+    line_tree: STRtree | None,
+) -> dict[str, float]:
+    """Measure non-boundary overlay/hatch lines inside a zoning polygon."""
+    if line_tree is None:
+        return {}
+
+    lengths: Counter[str] = Counter()
+    for hit in line_tree.query(polygon):
+        geom, color = line_records[int(hit)]
+        intersection = geom.intersection(polygon)
+        if intersection.is_empty:
+            continue
+        length = intersection.length
+        if length > 1:
+            lengths[color] += length
+    return {color: round(length, 2) for color, length in lengths.items()}
 
 
 def build_proof(url: str, pdf_override: str | None = None) -> dict[str, Any]:
@@ -298,7 +353,9 @@ def build_proof(url: str, pdf_override: str | None = None) -> dict[str, Any]:
         "style_resolution_note": (
             "The GeoPDF exposes polygon geometries and styles, but no semantic zone-code "
             "attribute. Some legend entries share a base fill and require hatch/overlay QA "
-            "before production parcel backfill."
+            "before production parcel backfill. The proof reports overlay line lengths by "
+            "polygon/fill to make that QA bounded, but it does not auto-resolve shared-fill "
+            "districts."
         ),
         "ambiguous_fill_to_zone_code_candidates": ambiguous_fills,
     }
