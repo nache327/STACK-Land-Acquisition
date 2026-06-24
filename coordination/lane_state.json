@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-24T18:47:12Z",
+  "updated_at": "2026-06-24T18:55:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "RECONCILED 2026-06-06 — honest baseline is 15 per prod API (will drop to 13 on Essex+Draper stale-anomaly refresh, then +2 confirmed = 15). See docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md.",
@@ -15,15 +15,15 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_wave_a_continuous_loop_3_more_flips_44_to_47_snyderville_pend",
+  "mode": "op5_wave_a_complete_10_flips_total_3_partials_blocked_substrate_owner_lane",
   "honest_operational_count": {
-    "current_api_truth": 47,
-    "current_api_truth_verified_at": "2026-06-24T18:37:24Z",
-    "current_api_truth_verified_via": "/api/admin/coverage/progression — 9 polygons operational: Winnetka IL (02:00 cov 94.2%), Wilton CT (03:52 cov 100%), Westport CT (03:52 cov 99.9%), Brentwood TN (04:03 cov 100%), Franklin TN (04:07 cov 100%), Pinecrest FL (04:08 cov 99.3%), New Canaan CT (04:15 cov 100%), Hingham MA (18:36 cov 100%), Lake Oswego OR (18:37 cov 100%)",
-    "wave_a_partials_low_matrix_match_pct": ["Atlanta-Buckhead GA (cov 100% matrix 26 rows — substrate code names misaligned with parcels.zoning_code)", "Sandy Springs GA (cov 100% matrix 19 rows — same)", "South Charlotte NC (cov 100% matrix 20 rows — re-author PR #388 landed @ 13:59:24Z but still PARTIAL — re-author wasn't sufficient or audit match-pct calc uses different join key)"],
-    "wave_a_partials_owner_lane": "Substrate-owner agents (5/6) — re-author may need different join-key alignment beyond just code spelling",
-    "wave_a_refresh_pending": ["Snyderville/Promontory UT (24k/78/16)"],
-    "wave_a_refresh_pending_action": "Lane A re-fired Snyderville at 18:47Z; expected to flip on next snapshot persist",
+    "current_api_truth": 48,
+    "current_api_truth_verified_at": "2026-06-24T18:46:54Z",
+    "current_api_truth_verified_via": "/api/admin/coverage/progression — 10 polygons operational: Winnetka IL, Wilton CT, Westport CT, Brentwood TN, Franklin TN, Pinecrest FL, New Canaan CT, Hingham MA, Lake Oswego OR, Snyderville/Promontory UT",
+    "wave_a_partials_low_matrix_match_pct": ["Atlanta-Buckhead GA (cov 100% matrix 26 rows — substrate code names misaligned)", "Sandy Springs GA (cov 100% matrix 19 rows — same)", "South Charlotte NC (cov 100% matrix 20 rows — PR #388 re-author insufficient; substrate-owner needs deeper investigation)"],
+    "wave_a_partials_owner_lane": "Substrate-owner agents — re-author may need different join-key alignment beyond just code spelling",
+    "wave_a_refresh_pending": [],
+    "wave_a_refresh_pending_action": "PEND queue cleared at 18:46:54Z (Snyderville flipped). Lane A loop now waiting on new agent fires.",
     "previous_api_truth": 39,
     "previous_api_truth_at": "2026-06-22 (wedge cohort closed)",
     "baseline_pre_this_week": 13,
