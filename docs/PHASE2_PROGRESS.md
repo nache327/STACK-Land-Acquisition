@@ -331,6 +331,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-24
 
+- **FLIP (confirmed)** Snyderville/Promontory, UT → operational. **Operational count 47 → 48.** Lane A refresh fire @ 18:47:12Z (after multiple PEND retries during continuous-loop role). Snapshot persisted @ 18:46:54Z: `operational_readiness=operational`, `blocking_gaps=[]`, `parcel_count=24,864`, **`parcel_zoning_code_coverage_pct=100.0%`**. Closes the Wave-A PEND queue — all originally-armed cohort polygons now either operational (10) or partial-blocked on substrate-owner matrix-alignment (3).
 - **FLIP WAVE (confirmed)** Wave-A continuous-loop landed **3 more flips. Operational count 44 → 47.** Refresh-loop role per Master's continuous dispatch:
   - **New Canaan CT** → operational @ 04:15:29Z, cov 100.0% (7,386 parcels), 65 districts, matrix=16. Free flip discovered during loop scan (sibling agent fire pre-Lane A re-arm). +1.
   - **Lake Oswego OR** → operational @ 18:37:24Z, cov 100.0% (16,091), 268 districts, matrix=29. Lane A refresh fire @ 18:37 after 14h PEND (PR #383 substrate apply landed mid-window). +1.
