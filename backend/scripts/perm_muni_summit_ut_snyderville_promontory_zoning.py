@@ -95,8 +95,9 @@ PAGE_SIZE = 2000
 SOURCE_DATE = "2026-06-24"
 NEAREST_FALLBACK_METERS = 50.0
 
-# Loose Summit County sanity envelope.
-BBOX_LON = (-111.85, -110.65)
+# Loose Summit County sanity envelope. East edge runs to the UT-WY border
+# (~-110.00) because the Eastern Summit County Planning District reaches it.
+BBOX_LON = (-111.85, -109.95)
 BBOX_LAT = (40.45, 41.30)
 
 _STAGE_COLUMNS = [
