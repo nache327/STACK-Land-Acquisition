@@ -1,0 +1,807 @@
+[
+  {
+    "municipality": "Westport",
+    "zone_code": "A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code A enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW; \u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "AA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code AA enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW;\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 AA district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AA district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "AAA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code AAA enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 AAA district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AAA district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code B enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW; \u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "BCD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code BCD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 BCD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the BCD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "BCD/H",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code BCD/H enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RH\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 BCD/H district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the BCD/H district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "BCRR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code BCRR enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHO\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 BCRR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the BCRR district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "BPD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code BPD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 BPD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the BPD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "CPD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code CPD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 CPD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CPD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DDD2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DDD2 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHO\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DDD2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DDD2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DDD3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DDD3 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHO\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DDD3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DDD3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DDD4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DDD4 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHO\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DDD4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DDD4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DOSRD 2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DOSRD 2 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DOSRD 2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DOSRD 2 district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DOSRD 3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DOSRD 3 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DOSRD 3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DOSRD 3 district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DOSRD1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DOSRD1 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-R\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DOSRD1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DOSRD1 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "DOSRD3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code DOSRD3 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-R\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 DOSRD3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DOSRD3 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "GBD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code GBD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 GBD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GBD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "GBD/S",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code GBD/S enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RH\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 GBD/S district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GBD/S district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "GBD/SM",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code GBD/SM enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-R\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 GBD/SM district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GBD/SM district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "HDD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code HDD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 HDD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HDD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "HSD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code HSD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 HSD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HSD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "IHZ",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code IHZ enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 IHZ district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the IHZ district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "MHP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code MHP enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 MHP district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MHP district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "MHZ",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code MHZ enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 MHZ district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MHZ district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "OSRD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code OSRD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHO\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 OSRD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OSRD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "PRD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code PRD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 PRD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PRD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "R-AHZ",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code R-AHZ enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RH\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 R-AHZ district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-AHZ district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "R-AHZ / W",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code R-AHZ / W enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + \u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 R-AHZ / W district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-AHZ / W district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "RBD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code RBD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 RBD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RBD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "RORD1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code RORD1 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RH\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 RORD1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RORD1 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "RORD2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code RORD2 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RH\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 RORD2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RORD2 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "RORD3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code RORD3 enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RH\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 RORD3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RORD3 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "RPOD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code RPOD enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHO\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 RPOD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RPOD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "R-RHOW",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code R-RHOW enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-R\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 R-RHOW district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-RHOW district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  },
+  {
+    "municipality": "Westport",
+    "zone_code": "SV",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Westport zoning \u2014 public source enumeration (Westport AxisGIS Zoning/FeatureServer/58 (127 polygons, ZONE_ field) \u2014 full distinct list 35 codes queried 2026-06-23 per Phase 2 NY/CT structural probe v\u2026",
+        "quote": "Zone code SV enumerated from public ArcGIS source. Westport CT (Fairfield) \u2014 35 distinct zone codes confirmed via live FeatureServer (Agent 9 Phase 2 probe v2). Residential A/AA/AAA + R-AHZ + R-RHOW;\u2026",
+        "url": "https://services5.arcgis.com/lxjwLyi2Sx6yHvMJ/arcgis/rest/services/Zoning/FeatureServer/58"
+      },
+      {
+        "section": "Westport zoning ordinance \u2014 SV district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SV district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://online.encodeplus.com/regs/westport-ct/doc-viewer.aspx"
+      }
+    ]
+  }
+]
