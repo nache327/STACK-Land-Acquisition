@@ -57,6 +57,7 @@ POLYGONS = [
     ("_apply_sandy_springs_ga.py",    "Sandy Springs",        "GA", "fulton_sandy_springs.json",        "Sandy Springs, GA (per-muni under Fulton County)",        "orchestrator"),
     ("_apply_atlanta_buckhead_ga.py", "Buckhead",             "GA", "fulton_buckhead.json",             "Buckhead, GA (sub-AOI under Atlanta city under Fulton)",  "orchestrator"),
     ("_apply_charlotte_nc.py",        "Charlotte",            "NC", "mecklenburg_charlotte.json",       "Charlotte, NC (per-muni under Mecklenburg County)",       "orchestrator"),
+    ("_apply_south_charlotte_nc.py",  "South Charlotte",      "NC", "mecklenburg_south_charlotte.json", "South Charlotte, NC (sub-AOI under Charlotte under Mecklenburg)", "orchestrator"),
     ("_apply_pinecrest_fl.py",        "Pinecrest",            "FL", "miami_dade_pinecrest.json",        "Pinecrest, FL (per-muni under Miami-Dade County)",        "orchestrator"),
     ("_apply_westport_ct.py",         "Westport",             "CT", "fairfield_westport.json",          "Westport, CT (per-muni under Fairfield County)",          "orchestrator"),
     ("_apply_new_canaan_ct.py",       "New Canaan",           "CT", "fairfield_new_canaan.json",        "New Canaan, CT (per-muni under Fairfield County)",        "orchestrator"),
