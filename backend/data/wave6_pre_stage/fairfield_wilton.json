@@ -1,0 +1,278 @@
+[
+  {
+    "municipality": "Wilton",
+    "zone_code": "CRA-10",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code CRA-10 enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A \u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 CRA-10 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CRA-10 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "DE-10",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code DE-10 enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 DE-10 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DE-10 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "DE-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code DE-5 enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 DE-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DE-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "DRB",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code DRB enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8)\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 DRB district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DRB district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "DRD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code DRD enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8)\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 DRD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DRD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "GB",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code GB enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8) \u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 GB district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GB district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "HOD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code HOD enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8)\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 HOD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HOD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "R-1A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code R-1A enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 R-1A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "R-2A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code R-2A enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 R-2A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2A district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "SFAAHD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code SFAAHD enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A \u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 SFAAHD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SFAAHD district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "THRD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code THRD enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8\u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 THRD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the THRD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Wilton",
+    "zone_code": "WC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Wilton zoning \u2014 public source enumeration (Wilton CT QDSGIS CT_Wilton_Adv_Viewer_Layers/FeatureServer/13 (47 polygons, Description field) \u2014 full distinct list 12 codes queried 2026-06-23 per Phase 2 \u2026",
+        "quote": "Zone code WC enumerated from public ArcGIS source. Wilton CT (Fairfield) \u2014 12 distinct zone codes confirmed via live FeatureServer (zoning effective 10/29/2018 per layer name). Residential: R-1A (8) \u2026",
+        "url": "https://services1.arcgis.com/j6iFLXhyiD3XTMyD/arcgis/rest/services/CT_Wilton_Adv_Viewer_Layers/FeatureServer/13"
+      },
+      {
+        "section": "Wilton zoning ordinance \u2014 WC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the WC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.wiltonct.org/planning-zoning"
+      }
+    ]
+  }
+]

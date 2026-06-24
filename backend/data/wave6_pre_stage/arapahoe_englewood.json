@@ -1,0 +1,347 @@
+[
+  {
+    "municipality": "Englewood",
+    "zone_code": "I-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code I-1 enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family + R\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 I-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "I-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code I-2 enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family + R\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 I-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "M-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code M-1 enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family + R\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 M-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the M-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "M-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code M-2 enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family + R\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 M-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the M-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "MU-B-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code MU-B-1 enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family \u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 MU-B-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MU-B-1 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "MU-B-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code MU-B-2 enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family \u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 MU-B-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MU-B-2 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "MU-R-3-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code MU-R-3-A enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-famil\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 MU-R-3-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MU-R-3-A district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "MU-R-3-B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code MU-R-3-B enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-famil\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 MU-R-3-B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MU-R-3-B district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "MU-R-3-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code MU-R-3-C enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-famil\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 MU-R-3-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MU-R-3-C district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code PUD enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family + R\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PUD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "R-1-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code R-1-A enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family +\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 R-1-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1-A district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "R-1-B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code R-1-B enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family +\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 R-1-B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1-B district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "R-1-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code R-1-C enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family +\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 R-1-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1-C district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "R-2-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code R-2-A enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family +\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 R-2-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2-A district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Englewood",
+    "zone_code": "R-2-B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Englewood zoning \u2014 public source enumeration (Englewood CO ArcGIS BaseZoningDistrictBoundaries/MapServer/0 (94 polygons, NEWZONE field) \u2014 full distinct list 15 codes queried 2026-06-23 per Phase 6 se\u2026",
+        "quote": "Zone code R-2-B enumerated from public ArcGIS source. Englewood CO (Arapahoe; Phase 6 secondary rank 1 \u2014 VIABLE). 15 distinct codes confirmed via live MapServer. Residential R-1-A/B/C single-family +\u2026",
+        "url": "https://agiso.englewoodco.gov/public/rest/services/LandUsePlanning/BaseZoningDistrictBoundaries/MapServer/0"
+      },
+      {
+        "section": "Englewood zoning ordinance \u2014 R-2-B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2-B district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.englewoodco.gov/government/city-departments/community-development/planning-zoning"
+      }
+    ]
+  }
+]

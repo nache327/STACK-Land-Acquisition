@@ -27,8 +27,17 @@ Per Master 2026-06-23 dispatch (ACTION 1): orchestrator claims substrate apply o
 | **Cherry Hills Village CO** | `arapahoe_cherry_hills.json` | #355 OPEN | — | 🟡 adapter PREP not yet merged | WAIT |
 | **Golden CO** | `jefferson_golden.json` | #355 OPEN | — | 🟡 adapter PREP not yet merged | WAIT |
 | **Miami-Dade Pinecrest** | `miami_dade_pinecrest.json` | #351 MERGED | — | 🟡 PREP merged, fire PR pending | WAIT for Agent 11 fire signal |
-| **Lake Oswego OR** | `clackamas_lake_oswego.json` | (Agent TBD — Phase 6 outlier rank 3) | — | 🔴 no adapter PR yet | WAIT |
+| **Lake Oswego OR** | `clackamas_lake_oswego.json` | **#358 MERGED** | — | 🟡 PREP merged, fire PR pending | WAIT for fire signal |
 | **Summit UT Park City corridor** | `summit_park_city_corridor.json` | (Agent TBD — Phase 6 outlier rank 2) | — | 🔴 no adapter PR yet | WAIT + POLYGON CONFIRMATION GATE |
+| **Westport CT** | `fairfield_westport.json` | (Agent 9 Phase 2 probe v2 PR #361 MERGED) | — | 🟢 source verified — Lane A ready to fire | WAIT for Lane A Westport fire signal |
+| **New Canaan CT** | `fairfield_new_canaan.json` | (Agent 9 Phase 2 probe v2 PR #361 MERGED) | — | 🟢 source verified — Lane A ready to fire | WAIT for Lane A New Canaan fire signal |
+| **Wilton CT** | `fairfield_wilton.json` | (Agent 9 Phase 2 probe v2 PR #361 MERGED) | — | 🟢 source verified — Lane A ready to fire | WAIT for Lane A Wilton fire signal (Master approval on Wilton as 58-list/wealth-band first) |
+| **Englewood CO** | `arapahoe_englewood.json` | (Agent — Phase 6 secondary PR #360 MERGED) | — | 🟢 source verified — VIABLE per probe | WAIT for Lane A Englewood fire signal |
+| **Greenwood Village CO** | `arapahoe_greenwood_village.json` | (Agent — Phase 6 secondary PR #360 MERGED) | — | 🟡 PIVOT — authority QA needed on Urban "existing zoning" service | WAIT for authority QA + fire signal |
+
+**Refreshed substrates (live distinct list verification post-adapter merge, 2026-06-23):**
+- `williamson_brentwood.json`: 10 → **21 codes** (case fix R1→R-1; added 11 codes including /SR Special Review variants + AR-IP/OSRD-IP/SI-3/SI-4)
+- `williamson_franklin.json`: 8 → **22 codes** (added 14 codes including R1/R2/R3/R4/R6 + RC4/RC6/RC12 + OR/MR/NC/HI/1ST/5TH)
 
 **Legend:** 🟢 fire-signal received | 🟡 partial (PREP merged or adapter open) | 🔴 no adapter activity yet
 

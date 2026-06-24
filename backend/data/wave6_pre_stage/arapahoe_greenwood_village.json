@@ -1,0 +1,623 @@
+[
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code A enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Resident\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-1 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-1 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-1 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Re\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-1 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-1 PUD district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-2 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-2 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-2 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Re\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-2 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-2 PUD district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-3 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-3 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-3 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Re\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-3 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-3 PUD district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-4 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "B-4 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code B-4 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Re\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 B-4 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B-4 PUD district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "L-I",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code L-I enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 L-I district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the L-I district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "M-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code M-C enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 M-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the M-C district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "O-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code O-1 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 O-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the O-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "O-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code O-2 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Reside\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 O-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the O-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-.05 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-.05 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-.05 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-.05 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-.1 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-.1 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). R\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-.1 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-.1 PUD district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-.25",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-.25 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Resi\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-.25 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-.25 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-.25 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-.25 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-.25 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-.25 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-.5 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-.5 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). R\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-.5 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-.5 PUD district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-.75 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-.75 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-.75 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-.75 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-1.0",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-1.0 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Resi\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-1.0 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1.0 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-1.0 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-1.0 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-1.0 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1.0 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-1.5 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-1.5 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-1.5 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1.5 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-2.0",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-2.0 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Resi\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-2.0 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2.0 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-2.0 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-2.0 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-2.0 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2.0 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-2.5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-2.5 enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Resi\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-2.5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2.5 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "R-2.5 PUD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code R-2.5 PUD enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). \u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 R-2.5 PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2.5 PUD district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Greenwood Village",
+    "zone_code": "T.C.",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Greenwood Village zoning \u2014 public source enumeration (Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) \u2014 27 distinct codes queried 2026-06-23 per Ph\u2026",
+        "quote": "Zone code T.C. enumerated from public ArcGIS source. Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 \u2014 PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Resid\u2026",
+        "url": "https://services.arcgis.com/LrtiPsdDQYj3b4gp/arcgis/rest/services/b16e6a436dc24550b521986d2a71f11a_public_view_1593194820169/FeatureServer/1"
+      },
+      {
+        "section": "Greenwood Village zoning ordinance \u2014 T.C. district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the T.C. district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://greenwoodvillage.com/249/Zoning"
+      }
+    ]
+  }
+]

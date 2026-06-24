@@ -1,0 +1,370 @@
+[
+  {
+    "municipality": "New Canaan",
+    "zone_code": "A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code A enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code B enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code C enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "D",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code D enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 D district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the D district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "E",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code E enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 E district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the E district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "F",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code F enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 F district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the F district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "G",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code G enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 G district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the G district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "H",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code H enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 H district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the H district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "I",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code I enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 I district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "J",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code J enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 J district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the J district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "K",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code K enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 K district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the K district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "L",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code L enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 L district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the L district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "M",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code M enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 M district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the M district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "O",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code O enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 O district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the O district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "P",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code P enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 P district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the P district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  },
+  {
+    "municipality": "New Canaan",
+    "zone_code": "Q",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "New Canaan zoning \u2014 public source enumeration (New Canaan Tighe & Bond NewCanaanDynamic MapServer/89 (69 polygons; ZONING + Code fields) \u2014 16 distinct Code values + 17 distinct (Code, ZONING) tuples \u2026",
+        "quote": "Zone code Q enumerated from public ArcGIS source. New Canaan CT (Fairfield) \u2014 16 distinct zone Codes confirmed via live MapServer. Code is single-letter primary key; ZONING field maps to long name. R\u2026",
+        "url": "https://hostingdata3.tighebond.com/arcgis/rest/services/NewCanaanCT/NewCanaanDynamic/MapServer/89"
+      },
+      {
+        "section": "New Canaan zoning ordinance \u2014 Q district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the Q district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ecode360.com/NE0075"
+      }
+    ]
+  }
+]
