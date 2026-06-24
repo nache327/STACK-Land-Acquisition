@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-24T02:00:10Z",
+  "updated_at": "2026-06-24T04:40:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "RECONCILED 2026-06-06 — honest baseline is 15 per prod API (will drop to 13 on Essex+Draper stale-anomaly refresh, then +2 confirmed = 15). See docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md.",
@@ -15,12 +15,16 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_wave_6_cascade_in_flight_winnetka_il_first_cook_il_per_muni_flip_38_to_39",
+  "mode": "op5_wave_a_5_flips_landed_3_partial_matrix_alignment_2_refresh_pending",
   "honest_operational_count": {
-    "current_api_truth": 39,
-    "current_api_truth_verified_at": "2026-06-24T02:00:10Z",
-    "current_api_truth_verified_via": "/api/admin/coverage/progression?jurisdiction_id=d1c50553-1ec0-49b8-9e52-46186c200221 — operational_readiness=operational, blockers=[], parcel_count=5194, parcel_with_zoning_code_count=4893 (94.2%), zoning_district_count=64",
-    "previous_api_truth": 38,
+    "current_api_truth": 44,
+    "current_api_truth_verified_at": "2026-06-24T04:08:23Z",
+    "current_api_truth_verified_via": "/api/admin/coverage/progression — 6 polygons operational: Winnetka IL (02:00 cov 94.2%), Wilton CT (03:52 cov 100%), Westport CT (03:52 cov 99.9%), Brentwood TN (04:03 cov 100%), Franklin TN (04:07 cov 100%), Pinecrest FL (04:08 cov 99.3%)",
+    "wave_a_partials_low_matrix_match_pct": ["Atlanta-Buckhead GA (cov 100% matrix 26 rows — substrate code names misaligned with parcels.zoning_code)", "Sandy Springs GA (cov 100% matrix 19 rows — same)", "South Charlotte NC (cov 100% matrix 20 rows — same)"],
+    "wave_a_partials_owner_lane": "Agents 5/6 — re-author matrix against SELECT zoning_code, COUNT(*) FROM parcels WHERE jurisdiction_id=<jid> GROUP BY 1",
+    "wave_a_refresh_pending": ["Lake Oswego OR (16k/268/29)", "Snyderville/Promontory UT (24k/78/16)"],
+    "wave_a_refresh_pending_action": "Lane A re-fired both at 04:38Z; expected to flip on next snapshot persist (~3-10 min)",
+    "previous_api_truth": 39,
     "previous_api_truth_at": "2026-06-22 (wedge cohort closed)",
     "baseline_pre_this_week": 13,
     "confirmed_flips_this_week": ["Bergen (PR #184)", "Morris (PR #186)", "Somerset recovery (PR #190)", "Allentown auto-promote (PR #193 + #194 refresh wave)", "Hunterdon (PR #196)", "Monmouth (PR #199 + supplemental)", "Middlesex MA (PR #223)", "Westchester NY (PR #240 — first Phase 2 NY/CT 57-list polygon flipped)", "Contra Costa CA (PR #258 matrix sprint + Lane A bbox metadata fix — first Phase 2 CA county flipped)", "Bellevue WA (Phase 6B-PIVOT — first per-muni re-jurisdictioning flip from massive-county wealth-pocket pattern)", "Mercer Island WA (Lane A Task E city-fallback ingest lifted cov 63.2% → 79.6%; my 11 PR #266 matrix rows transparently followed PATH 1)", "Bainbridge Island WA (PR #281 Kitsap per-muni ingest + 15-row pre-staged matrix apply from commit f99fb2c; cov 70.9% clears 70% gate by 0.9pp)", "Mill Creek WA (PR #283 Snohomish per-muni ingest + 11-row matrix authoring from MCMC Title 17 per-district narrative pattern; cov 97.1% clears gate by 27pp; BP/INDHVY flagged for verdict-truth cleanup)", "Gig Harbor WA (PR #287 Pierce per-muni ingest after Task E spatial join; 19-row matrix apply from pre-stage 156b0ed dropped PCD-NB; cov 82.4% clears 70% gate by 12.4pp; ED/INDLHT flagged; WA WAVE COMPLETE)", "Winnetka IL (PR #356 Wave-6 Cook IL per-muni cascade — first Cook IL per-muni flip; PATH 1 re-jurisdictioning 5,194 parcels via raw->>'CITYNAME'='WINNETKA' workaround for NULL parcels.city; Class B GIS Consortium adapter 64 districts 10 codes; 10-row matrix POSTed via _upload-matrix-rows HTTP 200; cov 94.2% clears 70% gate by 24.2pp; D Light Industrial flagged for verdict-truth queue)"],
