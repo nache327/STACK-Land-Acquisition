@@ -1,0 +1,370 @@
+[
+  {
+    "municipality": "Summit County",
+    "zone_code": "RR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code RR enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 RR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "RC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code RC enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 RC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "TC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code TC enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 TC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "CC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code CC enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 CC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "NC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code NC enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 NC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "HS",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code HS enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 HS district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HS district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "MR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code MR enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 MR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "SC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code SC enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 SC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "AG-10",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code AG-10 enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time p\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 AG-10 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG-10 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "AG-20",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code AG-20 enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time p\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 AG-20 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG-20 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "AG-40",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code AG-40 enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time p\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 AG-40 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG-40 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "AG-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code AG-5 enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time pe\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 AG-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "AG-80",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code AG-80 enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time p\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 AG-80 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG-80 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code C enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per A\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "INDUS",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code INDUS enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time p\u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 INDUS district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the INDUS district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  },
+  {
+    "municipality": "Summit County",
+    "zone_code": "LI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Summit County zoning \u2014 public source enumeration (Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Sum\u2026",
+        "quote": "Zone code LI enumerated from public ArcGIS source. Summit County UT (unincorporated Park City corridor \u2014 Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per \u2026",
+        "url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer"
+      },
+      {
+        "section": "Summit County zoning ordinance \u2014 LI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the LI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.summitcountyutah.gov/235/Planning-Division"
+      }
+    ]
+  }
+]

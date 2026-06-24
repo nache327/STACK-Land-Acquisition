@@ -1,0 +1,922 @@
+[
+  {
+    "municipality": "Raleigh",
+    "zone_code": "R-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code R-4 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stor\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 R-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "R-10",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code R-10 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 R-10 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-10 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "R-6",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code R-6 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stor\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 R-6 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "R-10-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code R-10-CU enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 R-10-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-10-CU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "OX-3-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code OX-3-CU enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 OX-3-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-3-CU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "R-6-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code R-6-CU enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 s\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 R-6-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6-CU district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CM",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CM enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stori\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CM district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CM district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "OX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code OX-3 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 OX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "RX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code RX-3 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 RX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "RX-3-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code RX-3-CU enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 RX-3-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-3-CU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "IX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code IX-3 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 IX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the IX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CX-3 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "IX-3-PK",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code IX-3-PK enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 \u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 IX-3-PK district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the IX-3-PK district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "MH",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code MH enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stori\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 MH district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MH district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "OX-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code OX-5 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 OX-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "OX-7",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code OX-7 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 OX-7 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-7 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "OX-12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code OX-12 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 OX-12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OX-12 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "RX-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code RX-4 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 RX-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "RX-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code RX-5 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 RX-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "RX-7",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code RX-7 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 RX-7 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-7 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "RX-12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code RX-12 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 RX-12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RX-12 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CX-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CX-4 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CX-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CX-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CX-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CX-5 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CX-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CX-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CX-7",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CX-7 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CX-7 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CX-7 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CX-12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CX-12 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CX-12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CX-12 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "NX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code NX-3 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 NX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "NX-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code NX-4 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 NX-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NX-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "NX-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code NX-5 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 NX-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NX-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-3 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-4 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-5 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-5 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-7",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-7 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 sto\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-7 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-7 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-12 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-12 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-20",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-20 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-20 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-20 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "DX-40",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code DX-40 enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 DX-40 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DX-40 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "MH-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code MH-CU enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 st\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 MH-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MH-CU district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "AP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code AP enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stori\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 AP district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AP district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "PD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code PD enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stori\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 PD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CMP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CMP enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 stor\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CMP district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CMP district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  },
+  {
+    "municipality": "Raleigh",
+    "zone_code": "CMP-CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Raleigh zoning \u2014 public source enumeration (Wake iMAPS Planning/Zoning/MapServer/0 \u2014 Raleigh layer (3,561 polygons, ZONING field))",
+        "quote": "Zone code CMP-CU enumerated from public ArcGIS source. Raleigh UDO codes use {District}-{Height}[-{Frontage}][-CU] pattern (e.g., OX-3 = Office Mixed Use 3 stories; IX-3-PK = Industrial Mixed Use 3 s\u2026",
+        "url": "https://maps.raleighnc.gov/arcgis/rest/services/Planning/Zoning/MapServer/0"
+      },
+      {
+        "section": "Raleigh zoning ordinance \u2014 CMP-CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CMP-CU district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://udo.raleighnc.gov/sec-614-allowed-principal-use-table"
+      }
+    ]
+  }
+]

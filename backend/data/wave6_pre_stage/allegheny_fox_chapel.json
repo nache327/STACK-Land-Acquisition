@@ -1,0 +1,117 @@
+[
+  {
+    "municipality": "Fox Chapel Borough",
+    "zone_code": "A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Fox Chapel Borough zoning \u2014 public source enumeration (FoxChapelAC ArcGIS Zoning_District FeatureServer (72 polygons, ZONECLASS field))",
+        "quote": "Zone code A enumerated from public ArcGIS source. Fox Chapel Borough has 5 distinct zoning districts (A/B/C/D residential + I-O Institutional/Open Space). Bergen catchall \u00d7 4 prohibited substrate app\u2026",
+        "url": "https://services6.arcgis.com/JjJzcTHADvUflwt9/arcgis/rest/services/Zoning_District/FeatureServer/0"
+      },
+      {
+        "section": "Fox Chapel Borough zoning ordinance \u2014 A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://ecode360.com/attachment/FO2332/FO2332-400b%20Zoning%20District%20Map.pdf"
+      }
+    ]
+  },
+  {
+    "municipality": "Fox Chapel Borough",
+    "zone_code": "B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Fox Chapel Borough zoning \u2014 public source enumeration (FoxChapelAC ArcGIS Zoning_District FeatureServer (72 polygons, ZONECLASS field))",
+        "quote": "Zone code B enumerated from public ArcGIS source. Fox Chapel Borough has 5 distinct zoning districts (A/B/C/D residential + I-O Institutional/Open Space). Bergen catchall \u00d7 4 prohibited substrate app\u2026",
+        "url": "https://services6.arcgis.com/JjJzcTHADvUflwt9/arcgis/rest/services/Zoning_District/FeatureServer/0"
+      },
+      {
+        "section": "Fox Chapel Borough zoning ordinance \u2014 B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://ecode360.com/attachment/FO2332/FO2332-400b%20Zoning%20District%20Map.pdf"
+      }
+    ]
+  },
+  {
+    "municipality": "Fox Chapel Borough",
+    "zone_code": "C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Fox Chapel Borough zoning \u2014 public source enumeration (FoxChapelAC ArcGIS Zoning_District FeatureServer (72 polygons, ZONECLASS field))",
+        "quote": "Zone code C enumerated from public ArcGIS source. Fox Chapel Borough has 5 distinct zoning districts (A/B/C/D residential + I-O Institutional/Open Space). Bergen catchall \u00d7 4 prohibited substrate app\u2026",
+        "url": "https://services6.arcgis.com/JjJzcTHADvUflwt9/arcgis/rest/services/Zoning_District/FeatureServer/0"
+      },
+      {
+        "section": "Fox Chapel Borough zoning ordinance \u2014 C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://ecode360.com/attachment/FO2332/FO2332-400b%20Zoning%20District%20Map.pdf"
+      }
+    ]
+  },
+  {
+    "municipality": "Fox Chapel Borough",
+    "zone_code": "D",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Fox Chapel Borough zoning \u2014 public source enumeration (FoxChapelAC ArcGIS Zoning_District FeatureServer (72 polygons, ZONECLASS field))",
+        "quote": "Zone code D enumerated from public ArcGIS source. Fox Chapel Borough has 5 distinct zoning districts (A/B/C/D residential + I-O Institutional/Open Space). Bergen catchall \u00d7 4 prohibited substrate app\u2026",
+        "url": "https://services6.arcgis.com/JjJzcTHADvUflwt9/arcgis/rest/services/Zoning_District/FeatureServer/0"
+      },
+      {
+        "section": "Fox Chapel Borough zoning ordinance \u2014 D district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the D district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://ecode360.com/attachment/FO2332/FO2332-400b%20Zoning%20District%20Map.pdf"
+      }
+    ]
+  },
+  {
+    "municipality": "Fox Chapel Borough",
+    "zone_code": "I-O",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Fox Chapel Borough zoning \u2014 public source enumeration (FoxChapelAC ArcGIS Zoning_District FeatureServer (72 polygons, ZONECLASS field))",
+        "quote": "Zone code I-O enumerated from public ArcGIS source. Fox Chapel Borough has 5 distinct zoning districts (A/B/C/D residential + I-O Institutional/Open Space). Bergen catchall \u00d7 4 prohibited substrate a\u2026",
+        "url": "https://services6.arcgis.com/JjJzcTHADvUflwt9/arcgis/rest/services/Zoning_District/FeatureServer/0"
+      },
+      {
+        "section": "Fox Chapel Borough zoning ordinance \u2014 I-O district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-O district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://ecode360.com/attachment/FO2332/FO2332-400b%20Zoning%20District%20Map.pdf"
+      }
+    ]
+  }
+]

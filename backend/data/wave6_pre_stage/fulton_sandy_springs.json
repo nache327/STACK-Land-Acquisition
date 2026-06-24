@@ -1,0 +1,439 @@
+[
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RD-18",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RD-18 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Ad\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RD-18 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RD-18 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RT-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RT-3 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RT-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RT-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RM-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RM-3 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RM-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RM-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RD-27",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RD-27 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Ad\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RD-27 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RD-27 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RE-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RE-2 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RE-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RE-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RE-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RE-1 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RE-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RE-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RM-3/8",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RM-3/8 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). A\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RM-3/8 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RM-3/8 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RD-12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RD-12 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Ad\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RD-12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RD-12 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RD-7.5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RD-7.5 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). A\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RD-7.5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RD-7.5 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "AG-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code AG-1 enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 AG-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AG-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "CC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code CC enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Addit\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 CC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "CC-O",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code CC-O enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 CC-O district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC-O district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "OI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code OI enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Addit\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 OI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "OI-T",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code OI-T enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 OI-T district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OI-T district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "OD-S",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code OD-S enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 OD-S district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OD-S district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "TR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code TR enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Addit\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 TR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "TR-O",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code TR-O enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Add\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 TR-O district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TR-O district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RSA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RSA enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Addi\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RSA district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RSA district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  },
+  {
+    "municipality": "Sandy Springs",
+    "zone_code": "RSL",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Sandy Springs zoning \u2014 public source enumeration (Sandy Springs ArcGIS General_Reference/FeatureServer/127 (27,711 polygons, Zoning/ZoningDistrict fields))",
+        "quote": "Zone code RSL enumerated from public ArcGIS source. Sandy Springs GA top codes: RD-18 (6,821), RT-3 (3,920), RM-3 (3,810), RD-27 (3,337), RE-2 (1,832), RE-1 (1,754), RM-3/8 (1,018), RD-12 (851). Addi\u2026",
+        "url": "https://gis2.sandyspringsga.gov/arcgis/rest/services/OpenData/General_Reference/FeatureServer/127"
+      },
+      {
+        "section": "Sandy Springs zoning ordinance \u2014 RSL district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RSL district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/sandy_springs/codes/development_code"
+      }
+    ]
+  }
+]

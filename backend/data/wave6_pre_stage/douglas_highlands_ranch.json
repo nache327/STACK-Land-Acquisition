@@ -1,0 +1,209 @@
+[
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "PD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code PD enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Deve\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 PD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "A1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code A1 enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Deve\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 A1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the A1 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "LI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code LI enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Deve\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 LI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the LI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "RR-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code RR-1 enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned De\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 RR-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RR-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "RR-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code RR-2 enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned De\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 RR-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RR-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "R-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code R-1 enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Dev\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 R-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "R-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code R-2 enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Dev\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 R-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "C-A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code C-A enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Dev\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 C-A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-A district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  },
+  {
+    "municipality": "Highlands Ranch",
+    "zone_code": "C-G",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Highlands Ranch zoning \u2014 public source enumeration (Douglas County ArcGIS Landuse/MapServer/1 ZONING layer (933 polygons, ZONE_TYPE/FIRST_DESC/PD_Name fields))",
+        "quote": "Zone code C-G enumerated from public ArcGIS source. Highlands Ranch is a Douglas County CDP (NOT a separate municipality) \u2014 uses Douglas County zoning authority. Observed sample codes: PD Planned Dev\u2026",
+        "url": "https://apps.douglas.co.us/gisod/rest/services/Landuse/MapServer/1"
+      },
+      {
+        "section": "Highlands Ranch zoning ordinance \u2014 C-G district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-G district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.douglasco.gov/planning/development-review-regulations/zoning/"
+      }
+    ]
+  }
+]
