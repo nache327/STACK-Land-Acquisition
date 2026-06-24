@@ -1,0 +1,232 @@
+[
+  {
+    "municipality": "Brentwood",
+    "zone_code": "AR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code AR enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 AR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "R1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code R1 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 R1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R1 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "R2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code R2 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 R2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R2 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "OSRD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code OSRD enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, \u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 OSRD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OSRD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "C1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code C1 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 C1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C1 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "C2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code C2 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 C2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C2 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "C3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code C3 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 C3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C3 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "C4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code C4 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, C2\u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 C4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C4 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "SI-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code SI-1 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, \u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 SI-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SI-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  },
+  {
+    "municipality": "Brentwood",
+    "zone_code": "SI-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Brentwood zoning \u2014 public source enumeration (Brentwood ArcGIS AdministrativeAreas/MapServer/9 (1,046 polygons, Zoning field))",
+        "quote": "Zone code SI-2 enumerated from public ArcGIS source. Brentwood TN observed renderer labels: AR Agricultural/Res. Estate, R1 Large Lot Res, R2 Suburban Res, OSRD Open Space Res, C1 Commercial Office, \u2026",
+        "url": "https://maps.brentwoodtn.gov/arcgis/rest/services/Datasets/AdministrativeAreas/MapServer/9"
+      },
+      {
+        "section": "Brentwood zoning ordinance \u2014 SI-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SI-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.brentwoodtn.gov/Departments/Planning-and-Codes"
+      }
+    ]
+  }
+]

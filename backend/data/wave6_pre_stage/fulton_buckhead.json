@@ -1,0 +1,600 @@
+[
+  {
+    "municipality": "Buckhead",
+    "zone_code": "C-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code C-1 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 C-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "PD-H",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code PD-H enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 PD-H district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD-H district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "RG-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code RG-3 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 RG-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RG-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "C-1-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code C-1-C enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (1\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 C-1-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-1-C district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "RG-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code RG-2 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 RG-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RG-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "I-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code I-1 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 I-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "RG-3-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code RG-3-C enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 RG-3-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RG-3-C district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "R-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code R-4 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 R-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "R-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code R-5 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 R-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-5 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "R-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code R-3 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 R-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "RG-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code RG-1 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 RG-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RG-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "RG-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code RG-4 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 RG-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RG-4 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "C-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code C-2 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 C-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "C-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code C-3 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 C-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "C-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code C-4 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 C-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the C-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "MR-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code MR-1 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 MR-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MR-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "MR-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code MR-2 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 MR-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MR-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "MR-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code MR-3 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (15\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 MR-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MR-3 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "PD-MU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code PD-MU enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (1\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 PD-MU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD-MU district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "PD-OC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code PD-OC enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (1\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 PD-OC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD-OC district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "HC-20A SA5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code HC-20A SA5 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 HC-20A SA5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HC-20A SA5 district at substrate-authoring time; bias-against-unclea\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "HC-20A SA4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code HC-20A SA4 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 HC-20A SA4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HC-20A SA4 district at substrate-authoring time; bias-against-unclea\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "HC-20A SA1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code HC-20A SA1 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 HC-20A SA1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HC-20A SA1 district at substrate-authoring time; bias-against-unclea\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "BL",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code BL enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (155)\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 BL district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the BL district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "MRC-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code MRC-1 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (1\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 MRC-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MRC-1 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  },
+  {
+    "municipality": "Buckhead",
+    "zone_code": "MRC-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Buckhead zoning \u2014 public source enumeration (Atlanta ArcGIS ZoningHosted/FeatureServer/0 (2,404 polygons, ZONECLASS field) + Buckhead neighborhood spatial filter (NPU A+B or named '%BUCKHEAD%'))",
+        "quote": "Zone code MRC-2 enumerated from public ArcGIS source. Buckhead is Atlanta sub-neighborhood (NOT a separate municipality). Zone codes drawn from Atlanta City Part 16 \u2014 top observed: C-1 (184), PD-H (1\u2026",
+        "url": "https://services5.arcgis.com/5RxyIIJ9boPdptdo/arcgis/rest/services/ZoningHosted/FeatureServer/0"
+      },
+      {
+        "section": "Buckhead zoning ordinance \u2014 MRC-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MRC-2 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://library.municode.com/ga/atlanta/codes/code_of_ordinances"
+      }
+    ]
+  }
+]

@@ -1,0 +1,508 @@
+[
+  {
+    "municipality": "Cary",
+    "zone_code": "PDDMajor",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code PDDMajor enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 PDDMajor district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PDDMajor district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R12 enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R12 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R40",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R40 enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R40 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R40 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R8CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R8CU enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fr\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R8CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R8CU district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "TRCU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code TRCU enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fr\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 TRCU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TRCU district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R20",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R20 enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R20 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R20 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R8",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R8 enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (from\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R8 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R8 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R/R",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R/R enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R/R district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R/R district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "ORD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code ORD enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 ORD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the ORD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "TC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code TC enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (from\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 TC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "R12CU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code R12CU enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (f\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 R12CU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R12CU district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "OICU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code OICU enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fr\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 OICU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OICU district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "OI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code OI enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (from\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 OI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "GC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code GC enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (from\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 GC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "GCCU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code GCCU enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fr\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 GCCU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GCCU district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "MXD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code MXD enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 MXD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MXD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "PDDMinor",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code PDDMinor enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 PDDMinor district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PDDMinor district at substrate-authoring time; bias-against-unclear \u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "TR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code TR enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (from\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 TR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "RMF",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code RMF enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fro\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 RMF district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RMF district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "ORDCU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code ORDCU enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (f\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 ORDCU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the ORDCU district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "CT",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code CT enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (from\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 CT district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CT district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Cary",
+    "zone_code": "CT-C",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Cary zoning \u2014 public source enumeration (Town of Cary ArcGIS LandUse/Zoning/FeatureServer/11 (2,829 polygons, ZONECLASS field))",
+        "quote": "Zone code CT-C enumerated from public ArcGIS source. Cary TN observed top codes: PDDMajor + R12/R40/R8CU/TRCU + R20/R8/R/R + ORD/TC + R12CU/OICU/OI + GC/GCCU + MXD/PDDMinor/TR/RMF/ORDCU + CT/CT-C (fr\u2026",
+        "url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/FeatureServer/11"
+      },
+      {
+        "section": "Cary zoning ordinance \u2014 CT-C district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CT-C district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.carync.gov/business-development/developing-in-cary/development-regulations/land-development-ordinance"
+      }
+    ]
+  }
+]

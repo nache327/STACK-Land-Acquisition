@@ -1,0 +1,117 @@
+[
+  {
+    "municipality": "Pinecrest",
+    "zone_code": "EU-M",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Pinecrest zoning \u2014 public source enumeration (Village of Pinecrest ArcGIS Zoning/FeatureServer/1 (Pinecrest_Zoning_JAN2025_Updt; ZONE/ACRES fields))",
+        "quote": "Zone code EU-M enumerated from public ArcGIS source. Pinecrest FL observed sample codes: EU-M, EU-1, EU-S, BU-2, PS. Substrate covers 5 verified codes per Agent 11 Phase 6 outliers probe. Pinecrest i\u2026",
+        "url": "https://services3.arcgis.com/0IbOaQdCzMiaAcDv/arcgis/rest/services/Zoning/FeatureServer/1"
+      },
+      {
+        "section": "Pinecrest zoning ordinance \u2014 EU-M district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the EU-M district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.pinecrest-fl.gov/our-village/departments/planning-zoning-building"
+      }
+    ]
+  },
+  {
+    "municipality": "Pinecrest",
+    "zone_code": "EU-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Pinecrest zoning \u2014 public source enumeration (Village of Pinecrest ArcGIS Zoning/FeatureServer/1 (Pinecrest_Zoning_JAN2025_Updt; ZONE/ACRES fields))",
+        "quote": "Zone code EU-1 enumerated from public ArcGIS source. Pinecrest FL observed sample codes: EU-M, EU-1, EU-S, BU-2, PS. Substrate covers 5 verified codes per Agent 11 Phase 6 outliers probe. Pinecrest i\u2026",
+        "url": "https://services3.arcgis.com/0IbOaQdCzMiaAcDv/arcgis/rest/services/Zoning/FeatureServer/1"
+      },
+      {
+        "section": "Pinecrest zoning ordinance \u2014 EU-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the EU-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.pinecrest-fl.gov/our-village/departments/planning-zoning-building"
+      }
+    ]
+  },
+  {
+    "municipality": "Pinecrest",
+    "zone_code": "EU-S",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Pinecrest zoning \u2014 public source enumeration (Village of Pinecrest ArcGIS Zoning/FeatureServer/1 (Pinecrest_Zoning_JAN2025_Updt; ZONE/ACRES fields))",
+        "quote": "Zone code EU-S enumerated from public ArcGIS source. Pinecrest FL observed sample codes: EU-M, EU-1, EU-S, BU-2, PS. Substrate covers 5 verified codes per Agent 11 Phase 6 outliers probe. Pinecrest i\u2026",
+        "url": "https://services3.arcgis.com/0IbOaQdCzMiaAcDv/arcgis/rest/services/Zoning/FeatureServer/1"
+      },
+      {
+        "section": "Pinecrest zoning ordinance \u2014 EU-S district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the EU-S district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.pinecrest-fl.gov/our-village/departments/planning-zoning-building"
+      }
+    ]
+  },
+  {
+    "municipality": "Pinecrest",
+    "zone_code": "BU-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Pinecrest zoning \u2014 public source enumeration (Village of Pinecrest ArcGIS Zoning/FeatureServer/1 (Pinecrest_Zoning_JAN2025_Updt; ZONE/ACRES fields))",
+        "quote": "Zone code BU-2 enumerated from public ArcGIS source. Pinecrest FL observed sample codes: EU-M, EU-1, EU-S, BU-2, PS. Substrate covers 5 verified codes per Agent 11 Phase 6 outliers probe. Pinecrest i\u2026",
+        "url": "https://services3.arcgis.com/0IbOaQdCzMiaAcDv/arcgis/rest/services/Zoning/FeatureServer/1"
+      },
+      {
+        "section": "Pinecrest zoning ordinance \u2014 BU-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the BU-2 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.pinecrest-fl.gov/our-village/departments/planning-zoning-building"
+      }
+    ]
+  },
+  {
+    "municipality": "Pinecrest",
+    "zone_code": "PS",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Pinecrest zoning \u2014 public source enumeration (Village of Pinecrest ArcGIS Zoning/FeatureServer/1 (Pinecrest_Zoning_JAN2025_Updt; ZONE/ACRES fields))",
+        "quote": "Zone code PS enumerated from public ArcGIS source. Pinecrest FL observed sample codes: EU-M, EU-1, EU-S, BU-2, PS. Substrate covers 5 verified codes per Agent 11 Phase 6 outliers probe. Pinecrest is \u2026",
+        "url": "https://services3.arcgis.com/0IbOaQdCzMiaAcDv/arcgis/rest/services/Zoning/FeatureServer/1"
+      },
+      {
+        "section": "Pinecrest zoning ordinance \u2014 PS district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PS district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.pinecrest-fl.gov/our-village/departments/planning-zoning-building"
+      }
+    ]
+  }
+]
