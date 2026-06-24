@@ -1,0 +1,362 @@
+[
+  {
+    "municipality": "Hingham",
+    "zone_code": "131BA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw BA (Business A); use desc: commercial, professional offices, retail.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131BA enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Business A district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131BA (Business A): commercial, professional offices, retail. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as perm\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131BB",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw BB (Business B); use desc: commercial, professional offices, retail.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131BB enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Business B district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131BB (Business B): commercial, professional offices, retail. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as perm\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131BR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw BR (Business Recreation); use desc: restaurant, commercial amusement (by\u2026",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131BR enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Business Recreation district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131BR (Business Recreation): restaurant, commercial amusement (by special permit only). Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses \u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131I",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw I (Industrial); use desc: manufacturing, marina, freight terminal, motor\u2026",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131I enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Industrial district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131I (Industrial): manufacturing, marina, freight terminal, motor vehicle repair, business office. Self-storage, mini-warehouse, light industrial, and luxury garage condom\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131IP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw IP (Industrial Park); use desc: manufacturing, freight terminal, busines\u2026",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131IP enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Industrial Park district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131IP (Industrial Park): manufacturing, freight terminal, business office. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enume\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131LIP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw LIP (Limited Industrial Park); use desc: business office, bank, light in\u2026",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131LIP enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Limited Industrial Park district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131LIP (Limited Industrial Park): business office, bank, light industrial. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enume\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131OO",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw OO (Official and Open Space); use desc: conservation, recreation.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131OO enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Official and Open Space district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131OO (Official and Open Space): conservation, recreation. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitt\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131OP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw OP (Office Park); use desc: professional office.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131OP enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Office Park district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131OP (Office Park): professional office. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate-a\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131RA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw RA (Residence A); use desc: Multi Family.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131RA enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Residence A district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131RA (Residence A): Multi Family. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate-authorin\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131RB",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw RB (Residence B); use desc: Two Family Conversion.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131RB enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Residence B district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131RB (Residence B): Two Family Conversion. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131RC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw RC (Residence C); use desc: Two Family Conversion.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131RC enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Residence C district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131RC (Residence C): Two Family Conversion. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131RD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw RD (Residence D); use desc: Multi Family.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131RD enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Residence D district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131RD (Residence D): Multi Family. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate-authorin\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131RE",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw RE (Residence E); use desc: Garden Apartment.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131RE enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Residence E district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131RE (Residence E): Garden Apartment. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate-auth\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131WB",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw WB (Waterfront Business); use desc: marina.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131WB enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Waterfront Business district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131WB (Waterfront Business): marina. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate-author\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  },
+  {
+    "municipality": "Hingham",
+    "zone_code": "131WR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.82,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "notes": "Bergen catchall x4 prohibited per substrate-first halt rule. Source MAPC Zoning Atlas v0.2 (2020-08-03 vintage). Hingham bylaw WR (Waterfront Recreation); use desc: marina.",
+    "citations": [
+      {
+        "section": "Hingham zoning \u2014 MAPC source enumeration (Zoning_Atlas_v01/MapServer/2 muni='Hingham' \u2014 15 base districts queried 2026-06-24)",
+        "quote": "Zone code 131WR enumerated from MAPC public regional service. Hingham MA (Plymouth) \u2014 15 distinct zone codes confirmed via live MapServer (zoning vintage 2020-08-03 per service description).",
+        "url": "https://geo.mapc.org/server/rest/services/gisdata/Zoning_Atlas_v01/MapServer/2"
+      },
+      {
+        "section": "Hingham Zoning By-Law \u2014 Waterfront Recreation district reference (citation pending verdict-truth)",
+        "quote": "Per MAPC use_desc field for 131WR (Waterfront Recreation): marina. Self-storage, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted at substrate-auth\u2026",
+        "url": "https://www.hingham-ma.gov/376/Zoning-By-laws-PDF"
+      }
+    ]
+  }
+]
