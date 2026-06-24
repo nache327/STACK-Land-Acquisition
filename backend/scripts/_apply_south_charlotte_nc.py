@@ -129,6 +129,10 @@ def adapt_codes(prestage_rows: list[dict], prod_codes: set[str]) -> tuple[list[d
         new_row = dict(row)
         new_row["zone_code"] = match
         new_row = hardcap_row_quotes(new_row)
+        # Dedupe: skip if (zone_code, municipality) already in adapted
+        key = (new_row["zone_code"], new_row.get("municipality"))
+        if any((r["zone_code"], r.get("municipality")) == key for r in adapted):
+            continue
         adapted.append(new_row)
         matched_prod.add(match)
     unused = sorted(prod_codes - matched_prod)
