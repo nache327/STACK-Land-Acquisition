@@ -43,6 +43,29 @@ Per Master 2026-06-23 dispatch (ACTION 1): orchestrator claims substrate apply o
 
 ---
 
+## HAND-OFF substrates for nache (Burlington NJ Phase 1 — DO NOT apply via orchestrator)
+
+Per Master 2026-06-23 ACTION 2 dispatch: Burlington NJ Phase 1 closer-out substrates are HAND-OFF artifacts. nache owns Burlington execution; substrate sits ready for him to single-POST when his adapter fires.
+
+| Polygon | Pre-stage file | Owner | Source PR | Apply gate |
+|---|---|---|---|---|
+| **Medford township NJ** | `burlington_nj_medford.json` (3 codes: GD/CC/PD) | **nache** | #369 Burlington NJ probe MERGED | Matrix-near-ready; nache completes 3 missing rows then per-muni registration + audit |
+| **Mount Laurel township NJ** | `burlington_nj_mount_laurel.json` (23 codes) | **nache** | #369 Burlington NJ probe MERGED | nache verifies GovPilot adapter (parcel-detail ZONING or ZM polygons), then matrix sprint |
+| **Moorestown township NJ** | `burlington_nj_moorestown.json` (16 codes) | **nache** | #369 Burlington NJ probe MERGED | nache verifies GovPilot polygon adapter + bbox/parcel-match preflight, then matrix sprint |
+
+**Orchestrator does NOT apply Burlington substrates.** They are pre-staged for nache's domain only.
+
+---
+
+## Updated combined totals (2026-06-23 post-Burlington extension)
+
+- **24 polygons** in `backend/data/wave6_pre_stage/`
+- **472 matrix rows / 1,888 use-cell decisions** all `prohibited` (Bergen catchall × 4)
+- **3 Burlington NJ substrates** (hand-off for nache)
+- **21 orchestrator-owned substrates** (Winnetka already applied via PR #367 → count 38 → 39; remaining 20 awaiting Lane A signals)
+
+---
+
 ## Apply procedure (when signal arrives per polygon)
 
 ```bash

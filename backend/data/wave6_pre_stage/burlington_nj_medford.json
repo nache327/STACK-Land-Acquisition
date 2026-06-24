@@ -1,0 +1,71 @@
+[
+  {
+    "municipality": "Medford township",
+    "zone_code": "GD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Medford township zoning \u2014 public source enumeration (Medford ZoningHub ME0295_ZoningDistricts_04282023/FeatureServer/0 (94 polygons, Layer field) \u2014 22 of 25 parcel-exposed codes already matrix-covere\u2026",
+        "quote": "Zone code GD enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Medford Township Burlington NJ Phase 1 closer-out. Per probe: matrix has 22 rows / 22 distinct codes already human_reviewed; 3 \u2026",
+        "url": "https://services8.arcgis.com/MkUfAWaYm2SQf4Qa/arcgis/rest/services/ME0295_ZoningDistricts_04282023/FeatureServer/0"
+      },
+      {
+        "section": "Medford township zoning ordinance \u2014 GD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GD district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.medfordtownship.com/189/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Medford township",
+    "zone_code": "CC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Medford township zoning \u2014 public source enumeration (Medford ZoningHub ME0295_ZoningDistricts_04282023/FeatureServer/0 (94 polygons, Layer field) \u2014 22 of 25 parcel-exposed codes already matrix-covere\u2026",
+        "quote": "Zone code CC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Medford Township Burlington NJ Phase 1 closer-out. Per probe: matrix has 22 rows / 22 distinct codes already human_reviewed; 3 \u2026",
+        "url": "https://services8.arcgis.com/MkUfAWaYm2SQf4Qa/arcgis/rest/services/ME0295_ZoningDistricts_04282023/FeatureServer/0"
+      },
+      {
+        "section": "Medford township zoning ordinance \u2014 CC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.medfordtownship.com/189/Zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Medford township",
+    "zone_code": "PD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Medford township zoning \u2014 public source enumeration (Medford ZoningHub ME0295_ZoningDistricts_04282023/FeatureServer/0 (94 polygons, Layer field) \u2014 22 of 25 parcel-exposed codes already matrix-covere\u2026",
+        "quote": "Zone code PD enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Medford Township Burlington NJ Phase 1 closer-out. Per probe: matrix has 22 rows / 22 distinct codes already human_reviewed; 3 \u2026",
+        "url": "https://services8.arcgis.com/MkUfAWaYm2SQf4Qa/arcgis/rest/services/ME0295_ZoningDistricts_04282023/FeatureServer/0"
+      },
+      {
+        "section": "Medford township zoning ordinance \u2014 PD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.medfordtownship.com/189/Zoning"
+      }
+    ]
+  }
+]

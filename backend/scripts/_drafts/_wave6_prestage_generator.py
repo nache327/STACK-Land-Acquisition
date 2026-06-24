@@ -270,6 +270,33 @@ POLYGONS = [
         "source_section": "Greenwood Village CO city-owned ArcGIS Urban service Zones layer 1 (6,024 polygons, CustomID field) — 27 distinct codes queried 2026-06-23 per Phase 6 secondary munis probe PR #360 (excludes 'Unknown' placeholder)",
         "jurisdiction_note": "Greenwood Village CO (Arapahoe; Phase 6 secondary rank 2 — PIVOT/authority QA pending). 27 distinct codes (excluding 'Unknown' placeholder). Residential R-.05/R-.1/R-.25/R-.5/R-.75/R-1.0/R-1.5/R-2.0/R-2.5 series with PUD variants (lot-size-based); commercial B-1/B-2/B-3/B-4 Business + PUD variants; office O-1/O-2; mixed M-C; light industrial L-I (1 polygon, flagged for verdict-truth queue); T.C. Town Center. Source caveat per probe: service is 'Urban planning-model' layer not plainly-named 'zoning districts' — authority confirmation needed before production backfill. PlanningMethod='zoning' + PlanningHorizon='existing' in sample rows suggests it IS the authoritative source.",
     },
+    {
+        "filename": "burlington_nj_medford.json",
+        "muni": "Medford township",
+        "codes": ["GD", "CC", "PD"],
+        "source_url": "https://services8.arcgis.com/MkUfAWaYm2SQf4Qa/arcgis/rest/services/ME0295_ZoningDistricts_04282023/FeatureServer/0",
+        "ordinance_url": "https://www.medfordtownship.com/189/Zoning",
+        "source_section": "Medford ZoningHub ME0295_ZoningDistricts_04282023/FeatureServer/0 (94 polygons, Layer field) — 22 of 25 parcel-exposed codes already matrix-covered per Burlington NJ structural probe PR #369; 3 MISSING substrate-only",
+        "jurisdiction_note": "HAND-OFF FOR NACHE — Medford Township Burlington NJ Phase 1 closer-out. Per probe: matrix has 22 rows / 22 distinct codes already human_reviewed; 3 parcel-exposed codes missing (GD 3,226 parcels / CC 158 / PD 30). Bergen catchall × 4 substrate-first holds for these 3 placeholders pending verdict-truth review. Verify district names at apply-time — placeholder names used (GD likely General Development; CC likely Community Commercial; PD likely Planned Development). NO existing matrix conflict expected since these codes are missing from current matrix per probe. Apply via _upload-matrix-rows replace_existing=False / factory_safe_write contract.",
+    },
+    {
+        "filename": "burlington_nj_mount_laurel.json",
+        "muni": "Mount Laurel township",
+        "codes": ["B", "FR-MX", "I", "MCD", "MH-MF", "NC", "O-2", "O-3", "ORC", "R-1", "R-2", "R-3", "R-4", "R-8", "R1D", "SAAD", "SRI", "CHRC", "CSFA", "R3", "RAMW", "SGVE", "TARA"],
+        "source_url": "https://map.govpilot.com/map/NJ/mountlaurel",
+        "ordinance_url": "https://www.mountlaurelnj.gov/departments/planning_zoning",
+        "source_section": "Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) — layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parcel-detail API /api/v1/cmd/get/025S — 23 distinct codes union of polygon sample (17 codes) + parcel-detail sample (7 codes; I duplicate) per PR #369",
+        "jurisdiction_note": "HAND-OFF FOR NACHE — Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 18,518 prod parcels / 0 zoned currently. Existing matrix has only 1 row (I). 23 substrate placeholders covering BOTH GovPilot polygon zone names (B/FR-MX/I/MCD/MH-MF/NC/O-2/O-3/ORC/R-1/R-2/R-3/R-4/R-8/R1D/SAAD/SRI) AND parcel-detail ZONING values (CHRC/CSFA/R3/RAMW/SGVE/TARA — note R3 not R-3, parcel-detail may use different code spelling than polygons). I flagged for verdict-truth queue. Verify which code spelling Lane A's GovPilot adapter populates parcels.zoning_code with — may need apply-time consolidation if both sources active. Bergen catchall × 4 prohibited substrate-first per halt rule.",
+    },
+    {
+        "filename": "burlington_nj_moorestown.json",
+        "muni": "Moorestown township",
+        "codes": ["AR-1", "L-MR", "LTC", "R-3-TH", "R1", "R1-Aa", "R1A", "R2", "R3", "RLC", "RLC-2", "SC-1", "SRC", "SRC-1", "SRC-2", "SRI"],
+        "source_url": "https://map.govpilot.com/map/NJ/moorestown",
+        "ordinance_url": "https://www.moorestown.nj.us/planning",
+        "source_section": "Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) — layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 — 16 distinct codes from polygon sample per PR #369 (parcel-detail ZONING blank 0/50, polygon source-of-record)",
+        "jurisdiction_note": "HAND-OFF FOR NACHE — Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 prod parcels / 0 zoned currently. Existing matrix has 4 rows (BP-1, BP-2, LTC, SRC) — LTC + SRC overlap with substrate codes and should be skipped by factory_safe_write (replace_existing=False); BP-1 + BP-2 may be legacy/unused. 16 substrate placeholders covering full polygon distinct list. Source vintage signal: Map_date 08/27/2008, LastUpdate 20140715-20090901 — preview gate must validate against current Moorestown ordinance before production write. RLC = Residential Low-Density Cluster; SRC = Suburban Res Cluster; LTC = Local Town Center (existing matrix names); verify all at apply-time. Bergen catchall × 4 prohibited substrate-first per halt rule.",
+    },
 ]
 
 
