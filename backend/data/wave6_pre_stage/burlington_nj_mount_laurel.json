@@ -1,0 +1,531 @@
+[
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "B",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code B enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 18,\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 B district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the B district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "FR-MX",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code FR-MX enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path).\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 FR-MX district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the FR-MX district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "I",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code I enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 18,\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 I district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "MCD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code MCD enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 MCD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MCD district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "MH-MF",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code MH-MF enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path).\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 MH-MF district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MH-MF district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "NC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code NC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 18\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 NC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "O-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code O-2 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 O-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the O-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "O-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code O-3 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 O-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the O-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "ORC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code ORC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 ORC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the ORC district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R-1 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-1 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R-2 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R-3 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R-4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R-4 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R-4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R-8",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R-8 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R-8 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-8 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R1D",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R1D enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R1D district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R1D district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "SAAD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code SAAD enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). \u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 SAAD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SAAD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "SRI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code SRI enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 1\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 SRI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SRI district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "CHRC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code CHRC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). \u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 CHRC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CHRC district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "CSFA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code CSFA enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). \u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 CSFA district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CSFA district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "R3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code R3 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). 18\u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 R3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R3 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "RAMW",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code RAMW enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). \u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 RAMW district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RAMW district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "SGVE",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code SGVE enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). \u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 SGVE district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SGVE district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  },
+  {
+    "municipality": "Mount Laurel township",
+    "zone_code": "TARA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Mount Laurel township zoning \u2014 public source enumeration (Mount Laurel Township NJ GovPilot public map (uid=6968, GMID=136, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 + parc\u2026",
+        "quote": "Zone code TARA enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Mount Laurel Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot anonymous public path). \u2026",
+        "url": "https://map.govpilot.com/map/NJ/mountlaurel"
+      },
+      {
+        "section": "Mount Laurel township zoning ordinance \u2014 TARA district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the TARA district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.mountlaurelnj.gov/departments/planning_zoning"
+      }
+    ]
+  }
+]

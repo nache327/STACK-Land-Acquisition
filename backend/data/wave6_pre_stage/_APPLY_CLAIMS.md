@@ -2,9 +2,44 @@
 
 **Date:** 2026-06-23
 **Status:** Active — substrate ready for Path A apply per Lane A signals
-**Updated:** 2026-06-23 (Lake Oswego + Summit added; Winnetka MATRIX SIGNAL received)
+**Updated:** 2026-06-23 (Lake Oswego + Summit added; Winnetka MATRIX SIGNAL received; Burlington hand-offs added; VERIFIED PROD STATE per 2026-06-23 probe)
 
 Per Master 2026-06-23 dispatch (ACTION 1): orchestrator claims substrate apply ownership for each pre-staged polygon. Fire Path A apply when corresponding Lane A adapter PR merges + fire-signal arrives + cov gate clears 70%.
+
+---
+
+## ⚠️ VERIFIED PROD STATE (2026-06-23 live probe of /api/admin/coverage)
+
+Live probe of all wave-6 polygons confirms **NO Wave A/B/C polygon has had its Class B zoning adapter actually fire against prod yet**. All adapter PRs are PREP-stage merged, but the prod state is:
+
+| Polygon | Prod registration | Parcels | Zoning cov% | Status |
+|---|---|---:|---:|---|
+| Williamson County TN (parent) | ✓ registered | 0 | 0% | not_loaded |
+| Fulton County GA (parent) | ✓ registered | 0 | 0% | not_loaded |
+| Wake County NC (parent) | ✓ registered | 0 | 0% | not_loaded |
+| Westport CT (under Fairfield) | ✓ registered | 9,947 | 0% | partial |
+| New Canaan CT (under Fairfield) | ✓ registered | 7,386 | 0% | partial |
+| Wilton CT (under Fairfield) | ✓ registered | 2,561 | 0% | partial |
+| Fox Chapel PA | ✓ registered | 1,485 | 0% | partial |
+| Brentwood / Franklin (Williamson per-muni) | ✗ NOT registered | — | — | adapter not fired |
+| Sandy Springs / Buckhead (Fulton per-muni) | ✗ NOT registered | — | — | adapter not fired |
+| Mecklenburg + Charlotte + South Charlotte | ✗ NOT registered | — | — | adapter not fired |
+| Pinecrest FL | ✗ NOT registered | — | — | adapter not fired |
+| Greenwood Village CO | ✗ NOT registered | — | — | adapter not fired |
+| Englewood CO | ✗ NOT registered | — | — | adapter not fired |
+| Lake Oswego OR | ✗ NOT registered | — | — | adapter not fired |
+| Summit County UT | ✗ NOT registered | — | — | adapter not fired |
+| Cary / Raleigh / North Raleigh | ✗ NOT registered | — | — | adapter not fired |
+| Highlands Ranch / Cherry Hills / Golden CO | ✗ NOT registered | — | — | adapter not fired |
+
+**Implication for substrate apply:**
+- Where jurisdiction is NOT registered: `_upload-matrix-rows` POST will 404 / fail. Cannot apply.
+- Where jurisdiction IS registered but at 0% cov: applying matrix rows is a no-op (no parcels to match). Substrate would sit unbound until zoning_code populated.
+- Only **Winnetka IL** has actually had its full pipeline complete (PR #356 fire → #367 tracker flip 38→39).
+
+**Standing-ready posture continues.** Lane A's Class B zoning adapter scripts (e.g., `backend/scripts/perm_muni_*_zoning.py`) need to be RUN against prod (not just merged) before substrate apply becomes possible. The Winnetka pattern: `_apply_winnetka_il.py` was authored + executed AFTER Lane A's adapter completed Class B ingest. Same dependency holds for wave-6.
+
+**Recommended dispatch update for Master:** Wave A/B/C "apply substrate" actions are blocked on Lane A's adapter RUN step (not the PR merge step). Either Lane A runs the adapter in scheduled job / manually invoked, OR Master triggers Lane A to fire. Once parcels.zoning_code is populated + cov ≥ 70%, orchestrator can author per-polygon apply scripts (like _apply_winnetka_il.py) using the pre-stage substrate as input, with apply-time code-spelling adaptation (Winnetka taught us: pre-stage R-1 → prod R1).
 
 ---
 
@@ -27,10 +62,42 @@ Per Master 2026-06-23 dispatch (ACTION 1): orchestrator claims substrate apply o
 | **Cherry Hills Village CO** | `arapahoe_cherry_hills.json` | #355 OPEN | — | 🟡 adapter PREP not yet merged | WAIT |
 | **Golden CO** | `jefferson_golden.json` | #355 OPEN | — | 🟡 adapter PREP not yet merged | WAIT |
 | **Miami-Dade Pinecrest** | `miami_dade_pinecrest.json` | #351 MERGED | — | 🟡 PREP merged, fire PR pending | WAIT for Agent 11 fire signal |
-| **Lake Oswego OR** | `clackamas_lake_oswego.json` | (Agent TBD — Phase 6 outlier rank 3) | — | 🔴 no adapter PR yet | WAIT |
+| **Lake Oswego OR** | `clackamas_lake_oswego.json` | **#358 MERGED** | — | 🟡 PREP merged, fire PR pending | WAIT for fire signal |
 | **Summit UT Park City corridor** | `summit_park_city_corridor.json` | (Agent TBD — Phase 6 outlier rank 2) | — | 🔴 no adapter PR yet | WAIT + POLYGON CONFIRMATION GATE |
+| **Westport CT** | `fairfield_westport.json` | (Agent 9 Phase 2 probe v2 PR #361 MERGED) | — | 🟢 source verified — Lane A ready to fire | WAIT for Lane A Westport fire signal |
+| **New Canaan CT** | `fairfield_new_canaan.json` | (Agent 9 Phase 2 probe v2 PR #361 MERGED) | — | 🟢 source verified — Lane A ready to fire | WAIT for Lane A New Canaan fire signal |
+| **Wilton CT** | `fairfield_wilton.json` | (Agent 9 Phase 2 probe v2 PR #361 MERGED) | — | 🟢 source verified — Lane A ready to fire | WAIT for Lane A Wilton fire signal (Master approval on Wilton as 58-list/wealth-band first) |
+| **Englewood CO** | `arapahoe_englewood.json` | (Agent — Phase 6 secondary PR #360 MERGED) | — | 🟢 source verified — VIABLE per probe | WAIT for Lane A Englewood fire signal |
+| **Greenwood Village CO** | `arapahoe_greenwood_village.json` | (Agent — Phase 6 secondary PR #360 MERGED) | — | 🟡 PIVOT — authority QA needed on Urban "existing zoning" service | WAIT for authority QA + fire signal |
+
+**Refreshed substrates (live distinct list verification post-adapter merge, 2026-06-23):**
+- `williamson_brentwood.json`: 10 → **21 codes** (case fix R1→R-1; added 11 codes including /SR Special Review variants + AR-IP/OSRD-IP/SI-3/SI-4)
+- `williamson_franklin.json`: 8 → **22 codes** (added 14 codes including R1/R2/R3/R4/R6 + RC4/RC6/RC12 + OR/MR/NC/HI/1ST/5TH)
 
 **Legend:** 🟢 fire-signal received | 🟡 partial (PREP merged or adapter open) | 🔴 no adapter activity yet
+
+---
+
+## HAND-OFF substrates for nache (Burlington NJ Phase 1 — DO NOT apply via orchestrator)
+
+Per Master 2026-06-23 ACTION 2 dispatch: Burlington NJ Phase 1 closer-out substrates are HAND-OFF artifacts. nache owns Burlington execution; substrate sits ready for him to single-POST when his adapter fires.
+
+| Polygon | Pre-stage file | Owner | Source PR | Apply gate |
+|---|---|---|---|---|
+| **Medford township NJ** | `burlington_nj_medford.json` (3 codes: GD/CC/PD) | **nache** | #369 Burlington NJ probe MERGED | Matrix-near-ready; nache completes 3 missing rows then per-muni registration + audit |
+| **Mount Laurel township NJ** | `burlington_nj_mount_laurel.json` (23 codes) | **nache** | #369 Burlington NJ probe MERGED | nache verifies GovPilot adapter (parcel-detail ZONING or ZM polygons), then matrix sprint |
+| **Moorestown township NJ** | `burlington_nj_moorestown.json` (16 codes) | **nache** | #369 Burlington NJ probe MERGED | nache verifies GovPilot polygon adapter + bbox/parcel-match preflight, then matrix sprint |
+
+**Orchestrator does NOT apply Burlington substrates.** They are pre-staged for nache's domain only.
+
+---
+
+## Updated combined totals (2026-06-23 post-Burlington extension)
+
+- **24 polygons** in `backend/data/wave6_pre_stage/`
+- **472 matrix rows / 1,888 use-cell decisions** all `prohibited` (Bergen catchall × 4)
+- **3 Burlington NJ substrates** (hand-off for nache)
+- **21 orchestrator-owned substrates** (Winnetka already applied via PR #367 → count 38 → 39; remaining 20 awaiting Lane A signals)
 
 ---
 

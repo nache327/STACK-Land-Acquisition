@@ -1,0 +1,370 @@
+[
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "AR-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code AR-1 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 p\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 AR-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the AR-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "L-MR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code L-MR enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 p\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 L-MR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the L-MR district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "LTC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code LTC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pr\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 LTC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the LTC district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "R-3-TH",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code R-3-TH enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 R-3-TH district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3-TH district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "R1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code R1 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pro\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 R1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R1 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "R1-Aa",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code R1-Aa enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 \u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 R1-Aa district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R1-Aa district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "R1A",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code R1A enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pr\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 R1A district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R1A district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "R2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code R2 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pro\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 R2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R2 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "R3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code R3 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pro\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 R3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R3 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "RLC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code RLC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pr\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 RLC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RLC district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "RLC-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code RLC-2 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 \u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 RLC-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RLC-2 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "SC-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code SC-1 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 p\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 SC-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SC-1 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "SRC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code SRC enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pr\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 SRC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SRC district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "SRC-1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code SRC-1 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 \u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 SRC-1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SRC-1 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "SRC-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code SRC-2 enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 \u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 SRC-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SRC-2 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  },
+  {
+    "municipality": "Moorestown township",
+    "zone_code": "SRI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Moorestown township zoning \u2014 public source enumeration (Moorestown Township NJ GovPilot public map (uid=7555, GMID=139, GCID=14) \u2014 layer code ZM Zoning Map; polygon API /api/v1/cmd/get/015 \u2014 16 disti\u2026",
+        "quote": "Zone code SRI enumerated from public ArcGIS source. HAND-OFF FOR NACHE \u2014 Moorestown Township Burlington NJ Phase 1 (source + matrix blocked, source now viable via GovPilot polygon backfill). 7,575 pr\u2026",
+        "url": "https://map.govpilot.com/map/NJ/moorestown"
+      },
+      {
+        "section": "Moorestown township zoning ordinance \u2014 SRI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the SRI district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.moorestown.nj.us/planning"
+      }
+    ]
+  }
+]

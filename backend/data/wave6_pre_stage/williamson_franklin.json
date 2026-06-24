@@ -11,8 +11,8 @@
     "human_reviewed": false,
     "citations": [
       {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code AG enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code AG enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
         "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
       },
       {
@@ -34,128 +34,13 @@
     "human_reviewed": false,
     "citations": [
       {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code ER enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code ER enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
         "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
       },
       {
         "section": "Franklin zoning ordinance \u2014 ER district reference (citation pending verdict-truth)",
         "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the ER district at substrate-authoring time; bias-against-unclear defaul\u2026",
-        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
-      }
-    ]
-  },
-  {
-    "municipality": "Franklin",
-    "zone_code": "CC",
-    "self_storage": "prohibited",
-    "mini_warehouse": "prohibited",
-    "light_industrial": "prohibited",
-    "luxury_garage_condo": "prohibited",
-    "confidence": 0.86,
-    "classification_source": "human",
-    "human_reviewed": false,
-    "citations": [
-      {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code CC enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
-        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
-      },
-      {
-        "section": "Franklin zoning ordinance \u2014 CC district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC district at substrate-authoring time; bias-against-unclear defaul\u2026",
-        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
-      }
-    ]
-  },
-  {
-    "municipality": "Franklin",
-    "zone_code": "CI",
-    "self_storage": "prohibited",
-    "mini_warehouse": "prohibited",
-    "light_industrial": "prohibited",
-    "luxury_garage_condo": "prohibited",
-    "confidence": 0.86,
-    "classification_source": "human",
-    "human_reviewed": false,
-    "citations": [
-      {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code CI enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
-        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
-      },
-      {
-        "section": "Franklin zoning ordinance \u2014 CI district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CI district at substrate-authoring time; bias-against-unclear defaul\u2026",
-        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
-      }
-    ]
-  },
-  {
-    "municipality": "Franklin",
-    "zone_code": "DD",
-    "self_storage": "prohibited",
-    "mini_warehouse": "prohibited",
-    "light_industrial": "prohibited",
-    "luxury_garage_condo": "prohibited",
-    "confidence": 0.86,
-    "classification_source": "human",
-    "human_reviewed": false,
-    "citations": [
-      {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code DD enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
-        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
-      },
-      {
-        "section": "Franklin zoning ordinance \u2014 DD district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DD district at substrate-authoring time; bias-against-unclear defaul\u2026",
-        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
-      }
-    ]
-  },
-  {
-    "municipality": "Franklin",
-    "zone_code": "GO",
-    "self_storage": "prohibited",
-    "mini_warehouse": "prohibited",
-    "light_industrial": "prohibited",
-    "luxury_garage_condo": "prohibited",
-    "confidence": 0.86,
-    "classification_source": "human",
-    "human_reviewed": false,
-    "citations": [
-      {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code GO enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
-        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
-      },
-      {
-        "section": "Franklin zoning ordinance \u2014 GO district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GO district at substrate-authoring time; bias-against-unclear defaul\u2026",
-        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
-      }
-    ]
-  },
-  {
-    "municipality": "Franklin",
-    "zone_code": "LI",
-    "self_storage": "prohibited",
-    "mini_warehouse": "prohibited",
-    "light_industrial": "prohibited",
-    "luxury_garage_condo": "prohibited",
-    "confidence": 0.86,
-    "classification_source": "human",
-    "human_reviewed": false,
-    "citations": [
-      {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code LI enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
-        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
-      },
-      {
-        "section": "Franklin zoning ordinance \u2014 LI district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the LI district at substrate-authoring time; bias-against-unclear defaul\u2026",
         "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
       }
     ]
@@ -172,13 +57,450 @@
     "human_reviewed": false,
     "citations": [
       {
-        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (24,168 polygons, ZONECLASS field))",
-        "quote": "Zone code PD enumerated from public ArcGIS source. Franklin TN observed distinct codes: AG Agriculture (31), ER Estate Residential (124), CC Central Commercial (185), CI Civic & Institutional (198), \u2026",
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code PD enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
         "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
       },
       {
         "section": "Franklin zoning ordinance \u2014 PD district reference (citation pending verdict-truth)",
         "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PD district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "CI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code CI enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 CI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "CC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code CC enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 CC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "R1",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code R1 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 R1 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R1 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "R2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code R2 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 R2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R2 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "OR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code OR enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 OR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "GO",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code GO enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 GO district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GO district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "RC6",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code RC6 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 p\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 RC6 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RC6 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "LI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code LI enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 LI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the LI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "RC12",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code RC12 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 \u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 RC12 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RC12 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "RC4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code RC4 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 p\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 RC4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the RC4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "MR",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code MR enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 MR district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MR district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "R4",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code R4 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 R4 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R4 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "R3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code R3 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 R3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R3 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "NC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code NC enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 NC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "HI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code HI enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 HI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "R6",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code R6 enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 R6 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R6 district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "1ST",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code 1ST enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 p\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 1ST district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the 1ST district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "5TH",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code 5TH enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 p\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 5TH district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the 5TH district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
+      }
+    ]
+  },
+  {
+    "municipality": "Franklin",
+    "zone_code": "DD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Franklin zoning \u2014 public source enumeration (Franklin publicmaps ZoningWebMercator/MapServer/9 (23,869 polygons, ZONECLASS field) \u2014 full distinct list 22 codes queried 2026-06-23 post-Williamson adap\u2026",
+        "quote": "Zone code DD enumerated from public ArcGIS source. Franklin TN \u2014 22 distinct zone codes confirmed via live FeatureServer query (post-Agent 4 adapter PR #359). PD Planned District dominates (14,876 po\u2026",
+        "url": "https://publicmaps.franklintn.gov/arcgis/rest/services/Maps/ZoningWebMercator/MapServer/9"
+      },
+      {
+        "section": "Franklin zoning ordinance \u2014 DD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the DD district at substrate-authoring time; bias-against-unclear defaul\u2026",
         "url": "https://www.franklintn.gov/government/departments-k-z/planning-and-sustainability/zoning-ordinance"
       }
     ]
