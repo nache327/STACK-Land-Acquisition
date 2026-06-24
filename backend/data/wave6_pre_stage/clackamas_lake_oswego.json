@@ -1,0 +1,669 @@
+[
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "CI",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code CI enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 CI district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CI district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "CI/OC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code CI/OC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neig\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 CI/OC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CI/OC district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "CR&D",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code CR&D enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neigh\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 CR&D district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the CR&D district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "EC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code EC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 EC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the EC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "EC/R-0",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code EC/R-0 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove nei\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 EC/R-0 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the EC/R-0 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "GC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code GC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 GC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the GC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "HC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code HC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 HC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the HC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "I",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code I enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbor\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 I district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the I district at substrate-authoring time; bias-against-unclear default\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "IP",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code IP enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 IP district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the IP district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "MC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code MC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 MC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the MC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "NC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code NC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 NC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "NC/R-0",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code NC/R-0 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove nei\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 NC/R-0 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the NC/R-0 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "OC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code OC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 OC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OC district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "OC/R-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code OC/R-3 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove nei\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 OC/R-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the OC/R-3 district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "PF",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code PF enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighbo\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 PF district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PF district at substrate-authoring time; bias-against-unclear defaul\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "PNA",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code PNA enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 PNA district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PNA district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-0",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-0 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-0 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-0 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-10",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-10 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neigh\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-10 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-10 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-15",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-15 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neigh\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-15 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-15 district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-2",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-2 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-2 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-2 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-3",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-3 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-3 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-5 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-5 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-6",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-6 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-6 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-7.5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-7.5 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neig\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-7.5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-7.5 district at substrate-authoring time; bias-against-unclear def\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-DD",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-DD enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neigh\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-DD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-DD district at substrate-authoring time; bias-against-unclear defa\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "R-W",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code R-W enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighb\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 R-W district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-W district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "WLG OC",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code WLG OC enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove nei\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 WLG OC district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the WLG OC district at substrate-authoring time; bias-against-unclear de\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "WLG R-2.5",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code WLG R-2.5 enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove \u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 WLG R-2.5 district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the WLG R-2.5 district at substrate-authoring time; bias-against-unclear\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  },
+  {
+    "municipality": "Lake Oswego",
+    "zone_code": "WLG RMU",
+    "self_storage": "prohibited",
+    "mini_warehouse": "prohibited",
+    "light_industrial": "prohibited",
+    "luxury_garage_condo": "prohibited",
+    "confidence": 0.86,
+    "classification_source": "human",
+    "human_reviewed": false,
+    "citations": [
+      {
+        "section": "Lake Oswego zoning \u2014 public source enumeration (City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) \u2014 full distinct list 29 codes queried 2026-06-23)",
+        "quote": "Zone code WLG RMU enumerated from public ArcGIS source. Lake Oswego OR (Multnomah/Clackamas) \u2014 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove ne\u2026",
+        "url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150"
+      },
+      {
+        "section": "Lake Oswego zoning ordinance \u2014 WLG RMU district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the WLG RMU district at substrate-authoring time; bias-against-unclear d\u2026",
+        "url": "https://www.ci.oswego.or.us/planning/zoning-information"
+      }
+    ]
+  }
+]

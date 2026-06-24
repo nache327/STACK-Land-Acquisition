@@ -207,6 +207,24 @@ POLYGONS = [
         "source_section": "Village of Pinecrest ArcGIS Zoning/FeatureServer/1 (Pinecrest_Zoning_JAN2025_Updt; ZONE/ACRES fields)",
         "jurisdiction_note": "Pinecrest FL observed sample codes: EU-M, EU-1, EU-S, BU-2, PS. Substrate covers 5 verified codes per Agent 11 Phase 6 outliers probe. Pinecrest is small village; 5 may be near-exhaustive but verify full distinct list at apply-time.",
     },
+    {
+        "filename": "clackamas_lake_oswego.json",
+        "muni": "Lake Oswego",
+        "codes": ["CI", "CI/OC", "CR&D", "EC", "EC/R-0", "GC", "HC", "I", "IP", "MC", "NC", "NC/R-0", "OC", "OC/R-3", "PF", "PNA", "R-0", "R-10", "R-15", "R-2", "R-3", "R-5", "R-6", "R-7.5", "R-DD", "R-W", "WLG OC", "WLG R-2.5", "WLG RMU"],
+        "source_url": "https://maps.ci.oswego.or.us/server/rest/services/Zoning_cache/MapServer/150",
+        "ordinance_url": "https://www.ci.oswego.or.us/planning/zoning-information",
+        "source_section": "City of Lake Oswego ArcGIS Zoning_cache/MapServer/150 (393 polygons, LAYER field) — full distinct list 29 codes queried 2026-06-23",
+        "jurisdiction_note": "Lake Oswego OR (Multnomah/Clackamas) — 29 distinct zone codes confirmed via live FeatureServer query. WLG-prefixed codes are West Lake Grove neighborhood overlays. R-0/R-2/R-3/R-5/R-6/R-7.5/R-10/R-15/R-DD/R-W = residential; CI/CR&D/GC/HC/MC/NC/OC = commercial; EC = East End Commercial; I/IP = industrial; PF = Public Functions; PNA = Park & Natural Area. I/IP flagged for verdict-truth queue (industrial; high permit probability). Agent 11 verdict: VIABLE via city zoning (HALT on DLCD-as-zoning regional source).",
+    },
+    {
+        "filename": "summit_park_city_corridor.json",
+        "muni": "Summit County",
+        "codes": ["RR", "RC", "TC", "CC", "NC", "HS", "MR", "SC", "AG-10", "AG-20", "AG-40", "AG-5", "AG-80", "C", "INDUS", "LI"],
+        "source_url": "https://services2.arcgis.com/gyfpgFh2Wj2gglYD/arcgis/rest/services/Zoning_Service/FeatureServer",
+        "ordinance_url": "https://www.summitcountyutah.gov/235/Planning-Division",
+        "source_section": "Summit County ArcGIS Zoning_Service/FeatureServer layer 2 (Snyderville Basin Planning District, 34 polygons, Zone_Abbre field) + layer 3 (Eastern Summit Planning District, 44 polygons, Label field)",
+        "jurisdiction_note": "Summit County UT (unincorporated Park City corridor — Promontory/Snyderville Basin/Eastern Summit). POLYGON CONFIRMATION REQUIRED at apply-time per Agent 11 Phase 6 outliers probe: Park City proper is already loaded/operational; substrate only useful if polygon is unincorporated Summit. Covers BOTH planning districts (16 codes): Snyderville Basin (RR/RC/TC/CC/NC/HS/MR/SC) + Eastern Summit (AG-10/AG-20/AG-40/AG-5/AG-80/C/INDUS/LI). INDUS/LI flagged for verdict-truth queue. If polygon = Park City proper, ABORT apply (use existing Park City matrix authoring instead).",
+    },
 ]
 
 
