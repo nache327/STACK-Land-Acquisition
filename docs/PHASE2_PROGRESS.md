@@ -331,6 +331,12 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-24
 
+- **FLIP WAVE (confirmed)** Wave-A continuous-loop landed **3 more flips. Operational count 44 → 47.** Refresh-loop role per Master's continuous dispatch:
+  - **New Canaan CT** → operational @ 04:15:29Z, cov 100.0% (7,386 parcels), 65 districts, matrix=16. Free flip discovered during loop scan (sibling agent fire pre-Lane A re-arm). +1.
+  - **Lake Oswego OR** → operational @ 18:37:24Z, cov 100.0% (16,091), 268 districts, matrix=29. Lane A refresh fire @ 18:37 after 14h PEND (PR #383 substrate apply landed mid-window). +1.
+  - **Hingham MA** → operational @ 18:36:34Z, cov 100.0% (7,610), 15 districts, matrix=15. Lane A refresh fire @ 18:36 (PR #386 fire + substrate apply landed earlier today). +1.
+  Wedge cohort + Wave-A ceiling now 47.
+- **[PARTIAL — South Charlotte NC re-apply landed but still partial]** PR #388 orchestrator's matrix re-author to DB-actual code spellings landed (snapshot @ 13:59:24Z post-re-apply) but `operational_readiness` stayed `partial` with `blocking_gaps=['low_matrix_match_pct']`. The 13:59:19Z matrix update did NOT lift the gate — re-author wasn't sufficient OR audit's match-pct calc uses a different join key than substrate-owner expected. Not a Lane A refresh action; surfaced for substrate-owner lane. Buckhead + Sandy Springs still in same PARTIAL state with no re-apply attempted yet.
 - **FLIP WAVE (confirmed)** Wave-A cascade refresh landed **5 new flips + 1 free flip = +5 net**. **Operational count 39 → 44.** Lane A's audit-refresh-serial-gate role per Master's Wave-6 dispatch. Per-polygon post-refresh state (DB snapshot truth):
   - **Wilton CT** → operational @ 03:52:58Z, cov 100.0% (2,561/2,561), 47 districts, matrix=12. Free flip (pre-deploy refresh by sibling agent).
   - **Westport CT** → operational @ 03:52:52Z, cov 99.9% (9,941/9,947), 107 districts, matrix=35. Free flip (pre-deploy).
