@@ -169,15 +169,19 @@ async def phase3_zoning(cherry_jid: str) -> int:
         await conn.close()
 
 
-async def phase4_prune_backfill_bbox(cherry_jid: str) -> dict:
+async def phase4_prune_backfill_bbox(cherry_jid: str, *, skip_prune: bool = False) -> dict:
     conn = await _open()
     try:
         async with conn.transaction():
             await conn.execute("SET LOCAL statement_timeout = 0;")
             cherry_muni = _cherry_muni()
-            pruned = await standalone._prune_muni_zoning(
-                conn, jurisdiction_id=cherry_jid, muni=cherry_muni
-            )
+            if skip_prune:
+                print("[phase4] PRUNE SKIPPED — Arapahoe layer 89 covers wider area than CHV; preserve all districts under JID")
+                pruned = 0
+            else:
+                pruned = await standalone._prune_muni_zoning(
+                    conn, jurisdiction_id=cherry_jid, muni=cherry_muni
+                )
             backfill = await standalone._backfill_muni_zoning(
                 conn, jurisdiction_id=cherry_jid, muni=cherry_muni
             )
@@ -195,6 +199,8 @@ async def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--i-know-this-writes-to-prod", action="store_true")
     p.add_argument("--phase", choices=["1", "2", "3", "4", "all"], default="all")
+    p.add_argument("--skip-prune", action="store_true",
+                   help="Phase 4: skip prune; preserve all zoning_districts even if outside CHV bbox")
     args = p.parse_args()
 
     if not args.i_know_this_writes_to_prod:
@@ -229,7 +235,7 @@ async def main() -> None:
                 cherry_jid = await _find_cherry_jid(conn)
             finally:
                 await conn.close()
-        await phase4_prune_backfill_bbox(cherry_jid)
+        await phase4_prune_backfill_bbox(cherry_jid, skip_prune=args.skip_prune)
     print("=== done ===")
 
 
