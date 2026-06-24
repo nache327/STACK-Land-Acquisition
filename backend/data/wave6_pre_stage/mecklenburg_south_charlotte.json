@@ -162,7 +162,7 @@
   },
   {
     "municipality": "South Charlotte",
-    "zone_code": "R-3",
+    "zone_code": "R-3(CD)",
     "self_storage": "prohibited",
     "mini_warehouse": "prohibited",
     "light_industrial": "prohibited",
@@ -173,19 +173,19 @@
     "citations": [
       {
         "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code R-3 enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
+        "quote": "Zone code R-3(CD) enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
         "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
       },
       {
-        "section": "South Charlotte zoning ordinance \u2014 R-3 district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "section": "South Charlotte zoning ordinance \u2014 R-3(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-3(CD) district at substrate-authoring time; bias-against-unclear defau\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]
   },
   {
     "municipality": "South Charlotte",
-    "zone_code": "R-4",
+    "zone_code": "R-4(CD)",
     "self_storage": "prohibited",
     "mini_warehouse": "prohibited",
     "light_industrial": "prohibited",
@@ -196,19 +196,19 @@
     "citations": [
       {
         "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code R-4 enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
+        "quote": "Zone code R-4(CD) enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
         "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
       },
       {
-        "section": "South Charlotte zoning ordinance \u2014 R-4 district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "section": "South Charlotte zoning ordinance \u2014 R-4(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-4(CD) district at substrate-authoring time; bias-against-unclear defau\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]
   },
   {
     "municipality": "South Charlotte",
-    "zone_code": "R-5",
+    "zone_code": "R-5(CD)",
     "self_storage": "prohibited",
     "mini_warehouse": "prohibited",
     "light_industrial": "prohibited",
@@ -219,19 +219,19 @@
     "citations": [
       {
         "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code R-5 enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
+        "quote": "Zone code R-5(CD) enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
         "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
       },
       {
-        "section": "South Charlotte zoning ordinance \u2014 R-5 district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-5 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "section": "South Charlotte zoning ordinance \u2014 R-5(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-5(CD) district at substrate-authoring time; bias-against-unclear defau\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]
   },
   {
     "municipality": "South Charlotte",
-    "zone_code": "R-6",
+    "zone_code": "R-6PUD",
     "self_storage": "prohibited",
     "mini_warehouse": "prohibited",
     "light_industrial": "prohibited",
@@ -242,19 +242,19 @@
     "citations": [
       {
         "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code R-6 enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
+        "quote": "Zone code R-6PUD enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
         "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
       },
       {
-        "section": "South Charlotte zoning ordinance \u2014 R-6 district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "section": "South Charlotte zoning ordinance \u2014 R-6PUD district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-6PUD district at substrate-authoring time; bias-against-unclear defau\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]
   },
   {
     "municipality": "South Charlotte",
-    "zone_code": "R-8",
+    "zone_code": "R-8(CD)",
     "self_storage": "prohibited",
     "mini_warehouse": "prohibited",
     "light_industrial": "prohibited",
@@ -265,19 +265,19 @@
     "citations": [
       {
         "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code R-8 enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
+        "quote": "Zone code R-8(CD) enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
         "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
       },
       {
-        "section": "South Charlotte zoning ordinance \u2014 R-8 district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-8 district at substrate-authoring time; bias-against-unclear defau\u2026",
+        "section": "South Charlotte zoning ordinance \u2014 R-8(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-8(CD) district at substrate-authoring time; bias-against-unclear defau\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]
   },
   {
     "municipality": "South Charlotte",
-    "zone_code": "R-12MF",
+    "zone_code": "R-12MF(CD)",
     "self_storage": "prohibited",
     "mini_warehouse": "prohibited",
     "light_industrial": "prohibited",
@@ -288,12 +288,12 @@
     "citations": [
       {
         "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code R-12MF enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket p\u2026",
+        "quote": "Zone code R-12MF(CD) enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket p\u2026",
         "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
       },
       {
-        "section": "South Charlotte zoning ordinance \u2014 R-12MF district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-12MF district at substrate-authoring time; bias-against-unclear de\u2026",
+        "section": "South Charlotte zoning ordinance \u2014 R-12MF(CD) district reference (citation pending verdict-truth)",
+        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the R-12MF(CD) district at substrate-authoring time; bias-against-unclear de\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]
@@ -432,29 +432,6 @@
       {
         "section": "South Charlotte zoning ordinance \u2014 N2-B district reference (citation pending verdict-truth)",
         "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the N2-B district at substrate-authoring time; bias-against-unclear defa\u2026",
-        "url": "https://charlotteudo.org/"
-      }
-    ]
-  },
-  {
-    "municipality": "South Charlotte",
-    "zone_code": "PED",
-    "self_storage": "prohibited",
-    "mini_warehouse": "prohibited",
-    "light_industrial": "prohibited",
-    "luxury_garage_condo": "prohibited",
-    "confidence": 0.86,
-    "classification_source": "human",
-    "human_reviewed": false,
-    "citations": [
-      {
-        "section": "South Charlotte zoning \u2014 public source enumeration (Charlotte ArcGIS PLN/Zoning/MapServer/0 (rough South Charlotte AOI subset: 1,575 polygons))",
-        "quote": "Zone code PED enumerated from public ArcGIS source. South Charlotte is a sub-neighborhood AOI inside Charlotte (NOT a separate municipality). Per Master Phase 5 'South Charlotte' = wealth-pocket poly\u2026",
-        "url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer/0"
-      },
-      {
-        "section": "South Charlotte zoning ordinance \u2014 PED district reference (citation pending verdict-truth)",
-        "quote": "Self-storage facility, mini-warehouse, light industrial, and luxury garage condominium uses are not enumerated as permitted in the PED district at substrate-authoring time; bias-against-unclear defau\u2026",
         "url": "https://charlotteudo.org/"
       }
     ]

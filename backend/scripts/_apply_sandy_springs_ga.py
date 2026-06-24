@@ -92,6 +92,23 @@ def spelling_variants(code: str) -> list[str]:
     return result
 
 
+def hardcap_quote(s: str, cap: int = 199) -> str:
+    """API enforces max_length 200 strictly — cap at 199 for safety margin."""
+    if not s or len(s) <= cap:
+        return s
+    return s[: cap - 1] + "…"
+
+
+def hardcap_row_quotes(row: dict) -> dict:
+    """In-place hardcap of citation quotes + sections to safe API limits."""
+    for c in row.get("citations", []):
+        if "quote" in c and c["quote"]:
+            c["quote"] = hardcap_quote(c["quote"], 199)
+        if "section" in c and c["section"]:
+            c["section"] = hardcap_quote(c["section"], 199)
+    return row
+
+
 def adapt_codes(prestage_rows: list[dict], prod_codes: set[str]) -> tuple[list[dict], list[str], list[str]]:
     """Adapt pre-stage rows to match prod code spellings.
     Returns (adapted_rows, missing_pre_codes, unused_prod_codes).
@@ -111,6 +128,7 @@ def adapt_codes(prestage_rows: list[dict], prod_codes: set[str]) -> tuple[list[d
             continue
         new_row = dict(row)
         new_row["zone_code"] = match
+        new_row = hardcap_row_quotes(new_row)
         adapted.append(new_row)
         matched_prod.add(match)
     unused = sorted(prod_codes - matched_prod)
