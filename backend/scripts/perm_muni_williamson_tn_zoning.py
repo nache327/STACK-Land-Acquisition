@@ -69,7 +69,7 @@ logger = logging.getLogger("williamson_tn_zoning")
 ADAPTER_ID = "perm_muni_williamson_tn_zoning"
 WILLIAMSON_JURISDICTION_NAME = "Williamson County, TN"
 MIN_PARCELS_FOR_FIRE = 100
-ARCGIS_PAGE_SIZE = 1000
+ARCGIS_PAGE_SIZE = 750
 
 PARCEL_LAYER_URL = (
     "https://services8.arcgis.com/hkhKI6Qq7rjvBjZU/arcgis/rest/services/"
@@ -747,26 +747,60 @@ async def _clear_and_insert_zoning(
         muni_jid,
     )
     print(f"[idempotency] cleared {cleared.split()[-1]} prior zoning_districts for {muni_jid}")
-    for row in rows:
-        await conn.execute(
-            """
+    await conn.execute(
+        """
+        CREATE TEMP TABLE IF NOT EXISTS _stage_williamson_zoning (
+            jurisdiction_id uuid,
+            zone_code text,
+            zone_name text,
+            geom_wkt text,
+            raw_attributes text
+        ) ON COMMIT DROP
+        """
+    )
+    await conn.execute("TRUNCATE _stage_williamson_zoning")
+    await conn.copy_records_to_table(
+        "_stage_williamson_zoning",
+        records=[
+            (
+                muni_jid,
+                row.zone_code,
+                row.zone_name,
+                row.geom_wkt,
+                row.raw_attributes,
+            )
+            for row in rows
+        ],
+        columns=[
+            "jurisdiction_id",
+            "zone_code",
+            "zone_name",
+            "geom_wkt",
+            "raw_attributes",
+        ],
+    )
+    inserted = await conn.fetchval(
+        """
+        WITH ins AS (
             INSERT INTO zoning_districts (
                 jurisdiction_id, zone_code, zone_name, zone_class,
                 geom, raw_attributes, source
             )
-            VALUES (
-                $1::uuid, $2, $3, 'unknown'::zone_class_enum,
-                ST_Multi(ST_MakeValid(ST_GeomFromText($4, 4326))),
-                $5::jsonb, 'arcgis'::zone_source_enum
-            )
-            """,
-            muni_jid,
-            row.zone_code,
-            row.zone_name,
-            row.geom_wkt,
-            row.raw_attributes,
+            SELECT
+                s.jurisdiction_id,
+                s.zone_code,
+                s.zone_name,
+                'unknown'::zone_class_enum,
+                ST_Multi(ST_MakeValid(ST_GeomFromText(s.geom_wkt, 4326))),
+                s.raw_attributes::jsonb,
+                'arcgis'::zone_source_enum
+            FROM _stage_williamson_zoning s
+            RETURNING 1
         )
-    return len(rows)
+        SELECT COUNT(*) FROM ins
+        """
+    )
+    return int(inserted or 0)
 
 
 async def _spatial_backfill(
