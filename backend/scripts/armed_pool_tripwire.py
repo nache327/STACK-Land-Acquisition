@@ -56,7 +56,18 @@ WHERE v.self_storage IN ('permitted','conditional')
   AND r.median_home_value >= 475000 AND r.population >= 50000
   AND (l.sale_price IS NULL OR l.sale_price <= 7500000)
   AND (l.sale_price IS NULL OR p.acres = 0 OR l.sale_price / p.acres <= 2000000)
-  AND (pbs.notified_at IS NULL)              -- not yet alerted (by tripwire OR digest)
+  -- Match the digest's exact dedup + floor (catch #39). The digest applies
+  -- _MIN_SCORE_LISTED=70 for requireListed filters even when minScore is null,
+  -- and dedups via BOTH parcel_buybox_scores.notified_at (digest path) AND the
+  -- notified_listings table (real-time-alert path). Checking only notified_at
+  -- false-flags below-floor + already-real-time-alerted listings.
+  AND pbs.score >= 70
+  AND pbs.notified_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM notified_listings nl
+      WHERE nl.filter_id = $1 AND nl.listing_id = l.id
+        AND nl.notified_at > now() - interval '14 days'
+  )
 ORDER BY pbs.score DESC NULLS LAST, l.sale_price
 """
 
