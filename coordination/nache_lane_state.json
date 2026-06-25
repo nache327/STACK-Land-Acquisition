@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-06-25",
+  "note": "Partner-team (Nache / Claude Code) lane. SEPARATE from adam's coordination/lane_state.json (NOT a replacement) to avoid clobbering his live op5 state. Read both together for the full picture.",
+  "complements": "coordination/lane_state.json (adam — factory substrate + op5 Class-B adapters)",
+  "lanes": {
+    "factory_substrate": {
+      "owner": "adam",
+      "scope": "55 operational jurisdictions; Tier-2/3 catchall baseline + op5 Class-B per-muni adapters",
+      "metric": "operational_gate_pass_rate / current_api_truth polygon count",
+      "source_of_truth": "coordination/lane_state.json + docs/PHASE2_PROGRESS.md"
+    },
+    "tier_1_verdict_truth": {
+      "owner": "nache",
+      "scope": "hand-grounded operator verdicts on industrial needle zones (over the factory substrate, protected by factory_safe_write) + broker-conversion on live needles",
+      "metric": "live_needles_count + broker_conversations",
+      "current_munis_grounded": [
+        "Tredyffrin Township (Chester County PA)",
+        "East Whiteland Township (Chester County PA)",
+        "Willistown Township (Chester County PA)",
+        "Newtown Township (Bucks County PA)",
+        "Doylestown Borough (Bucks County PA)"
+      ],
+      "live_needles": [
+        "14 Industrial Blvd — Willistown Twp (I conditional)",
+        "2 Pheasant Run — Newtown Twp (LI permitted)",
+        "109 Pheasant Run — Newtown Twp (LI permitted)"
+      ],
+      "queue": [
+        "Stamford industrial (Fairfield CT)",
+        "Plymouth I-1/2/3 (Norfolk MA)",
+        "Eden Prairie industrial (MN)",
+        "Mill Creek BP (WA)",
+        "Westport / New Canaan / Wilton (CT)",
+        "Fox Chapel (PA)"
+      ],
+      "deferred_to_adam_lane": ["Burlington NJ trio (Medford / Mt Laurel / Moorestown) — adapter hand-off"]
+    }
+  },
+  "shared_infra": {
+    "factory_safe_write": "protects human_reviewed rows under the factory substrate (verified non-destructive on Chester/Bucks)",
+    "discipline_catch_ledger": "docs/discipline_catch_ledger.md — institutional catches #33-#39",
+    "crosswalk_mechanism": "city_override + muni_name_map for PA county_gis nameless-parcel layers (Chester + Bucks shipped; reusable for future PA counties)",
+    "dedup_stores_note": "TWO independent notified stores: parcel_buybox_scores.notified_at (digest) + notified_listings (real-time alerts). Any 'already fired?' check must consult both (catch #39)."
+  },
+  "open_cross_lane_items": {
+    "catch_39_digest_freshness": "SN digest last_email_sent_at frozen 2026-06-23; 2 eligible Tier-1 needles (Fort Lee I-1 88, Montgomery MD IM25 83) unfired. Likely ops-cron stale (catch #10 family) — needs adam D1 Railway log access to confirm/restart."
+  }
+}
