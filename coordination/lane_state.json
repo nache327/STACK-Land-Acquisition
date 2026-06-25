@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-24T23:15:00Z",
+  "updated_at": "2026-06-25T17:33:00Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "RECONCILED 2026-06-06 — honest baseline is 15 per prod API (will drop to 13 on Essex+Draper stale-anomaly refresh, then +2 confirmed = 15). See docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md.",
@@ -15,12 +15,12 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_wave_b_fulton_re_apply_landed_50_partials_remaining_s_charlotte_fox_chapel",
+  "mode": "op5_post_worker_fix_3_flips_53_s_charlotte_partial_persists",
   "honest_operational_count": {
-    "current_api_truth": 50,
-    "current_api_truth_verified_at": "2026-06-24T23:11:48Z",
-    "current_api_truth_verified_via": "/api/admin/coverage/progression — 12 polygons operational (10 Wave-A + Sandy Springs GA @ 23:08 cov 100% + Atlanta-Buckhead GA @ 23:11 cov 100% post Fulton re-apply matrix expansion 19→57 / 26→67 rows)",
-    "wave_b_partials_remaining": ["South Charlotte NC (cov 100% matrix 26 rows — PR #388 re-author insufficient; deeper substrate-owner fix needed)", "Fox Chapel PA (cov 0% per stale 2-day-old snapshot; Lane A re-fired refresh @ 15:56Z to pick up new ARM state)"],
+    "current_api_truth": 53,
+    "current_api_truth_verified_at": "2026-06-25T17:32:06Z",
+    "current_api_truth_verified_via": "/api/admin/coverage/progression — 15 polygons operational post Agent 12 refresh-worker fix (12 prior + HR CO @ 17:30 cov 100% + Englewood CO @ 17:31 cov 100% + Fox Chapel PA @ 17:32 cov 100%)",
+    "wave_b_partials_remaining": ["South Charlotte NC (cov 100% matrix 26 rows — PR #388 re-author still insufficient; substrate-owner deeper fix outstanding)"],
     "wave_a_refresh_pending": [],
     "wave_a_refresh_pending_action": "Wave-A complete. Wave-B: Sandy Springs + Buckhead flipped via Fulton orchestrator re-apply. Fox Chapel awaiting fresh snapshot; S.Charlotte still substrate-owner-blocked.",
     "previous_api_truth": 39,
