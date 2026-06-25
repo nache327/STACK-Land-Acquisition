@@ -125,7 +125,10 @@ async def _refresh_all_snapshots_inner(
     try:
         result = await conn.execute(
             az._build_audit_sql(schema),
-            {"jurisdiction_name": jurisdiction_name},
+            {
+                "jurisdiction_id": str(jurisdiction_id) if jurisdiction_id is not None else None,
+                "jurisdiction_name": jurisdiction_name,
+            },
         )
         audits = [az._build_audit(row, schema) for row in result]
     except Exception as exc:

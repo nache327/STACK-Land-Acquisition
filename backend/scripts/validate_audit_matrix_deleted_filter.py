@@ -116,7 +116,10 @@ async def _run_audit(conn, schema, *, old_behavior: bool) -> list[Any]:
     sql_str = str(sql_obj)
     if old_behavior:
         sql_str = _strip_deleted_at_filter(sql_str)
-    rows = await conn.execute(text(sql_str), {"jurisdiction_name": None})
+    rows = await conn.execute(
+        text(sql_str),
+        {"jurisdiction_id": None, "jurisdiction_name": None},
+    )
     return [_build_audit(r, schema) for r in rows]
 
 
