@@ -5,9 +5,14 @@ verdict AND clears the SN size/wealth gates is "armed." When a current CoStar li
 parcel and it hasn't been alerted yet, fire a focused tripwire email.
 
 DESIGN NOTES (deliberate, vs the original spec):
-- DEDUP via the EXISTING `parcel_buybox_scores.notified_at` — NOT a new `tripwire_notifications` table.
-  Reason: the daily Storage-Needles digest also reads/stamps notified_at. Sharing it means the tripwire
-  and the digest never DOUBLE-email the same needle. A separate table would let both fire. (No migration.)
+- ALIGNED TO THE DIGEST (catch #41): the query mirrors daily_email `_top_parcels_for_filter` eligibility
+  exactly so it never raises a signal the digest wouldn't act on. The three gates the digest applies are
+  enforced here too: `l.match_confidence >= 0.85` (listing↔parcel trust floor), `pbs.score >= 70`
+  (`_MIN_SCORE_LISTED`), and a `notified_listings` 14-day cross-channel dedup (real-time alerts).
+- DEDUP via the EXISTING `parcel_buybox_scores.notified_at` PLUS `notified_listings` (catch #41) — NOT a
+  new `tripwire_notifications` table. Reason: the daily Storage-Needles digest also reads/stamps
+  notified_at and consults notified_listings. Sharing both means the tripwire and the digest never
+  DOUBLE-email the same needle. A separate table would let both fire. (No migration.)
 - ARMED POOL IS DYNAMIC, not a hardcoded 186-parcel snapshot: any (jurisdiction, muni, zone) with a
   human_reviewed perm/conditional verdict auto-joins the pool as future pastes land. No edit needed to extend.
 - OVERLAP: this is functionally a faster-cadence, armed-pool-scoped version of `_top_parcels_for_filter` /
@@ -41,6 +46,7 @@ SELECT j.name jurisdiction, p.id parcel_id, p.city, p.zoning_code, p.apn,
 FROM parcels p
 JOIN jurisdictions j ON j.id = p.jurisdiction_id
 JOIN forsale_listings l ON l.matched_parcel_id = p.id AND l.is_current = true
+                       AND l.match_confidence >= 0.85   -- catch #41: digest trust floor
 JOIN parcel_ring_metrics r ON r.parcel_id = p.id AND r.drive_time_minutes = 10
 LEFT JOIN parcel_buybox_scores pbs ON pbs.parcel_id = p.id AND pbs.buybox_filter_id = $1
 JOIN LATERAL (
@@ -57,6 +63,12 @@ WHERE v.self_storage IN ('permitted','conditional')
   AND (l.sale_price IS NULL OR l.sale_price <= 7500000)
   AND (l.sale_price IS NULL OR p.acres = 0 OR l.sale_price / p.acres <= 2000000)
   AND (pbs.notified_at IS NULL)              -- not yet alerted (by tripwire OR digest)
+  AND pbs.score >= 70                        -- catch #41: digest _MIN_SCORE_LISTED floor
+  AND NOT EXISTS (                           -- catch #41: cross-channel (real-time alert) dedup
+        SELECT 1 FROM notified_listings nl
+         WHERE nl.filter_id = $1 AND nl.parcel_id = p.id
+           AND nl.notified_at > now() - INTERVAL '14 days'
+  )
 ORDER BY pbs.score DESC NULLS LAST, l.sale_price
 """
 
