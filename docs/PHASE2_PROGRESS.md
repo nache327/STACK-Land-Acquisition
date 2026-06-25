@@ -329,6 +329,14 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ## 15. Daily Changelog
 
+### 2026-06-25
+
+- **FLIP WAVE (confirmed)** Post-worker-fix re-fire on Wave-B Master-4 batch landed **+3 flips. Operational count 50 → 53.** Agent 12's refresh-worker fix (scope CTEs by jurisdiction_id, no more silent persist drops on broad timeouts) deployed. Lane A re-fired 4 refreshes @ 17:30-17:32Z — HTTP responses now include `snapshots_written:1` immediately, confirming worker is committing snapshots:
+  - **Highlands Ranch, CO** → operational @ 17:30:57Z, cov 100.0% (30,699 parcels), matrix=9. +1.
+  - **Englewood, CO** → operational @ 17:31:31Z, cov 100.0% (11,978 parcels), matrix=15. +1.
+  - **Fox Chapel, PA** → operational @ 17:32:06Z, cov 100.0% (1,485 parcels), matrix=5. +1.
+  South Charlotte NC remained PARTIAL @ 17:32:40Z (substrate-owner re-apply post PR #388 still outstanding; matrix=26 rows unchanged since 13:59 yesterday). Worker fix confirmed end-to-end: Lane A's 4h+ refresh-loop silent-failure (yesterday's NO-FLIP report) cleared in one re-fire post-deploy. Wedge ceiling now 53.
+
 ### 2026-06-24
 
 - **[NO-FLIP — Wave-B Master-4 batch surfaces refresh-worker silent-failure + insufficient HR matrix]** Lane A audit-refresh-serial-gate per Master's "verify 4 JIDs regardless of clean signals" dispatch @ 16:23-16:37Z. Probed Highlands Ranch CO + Englewood CO + Fox Chapel PA + South Charlotte NC, fired 3 refreshes (16:23-16:25Z) + 2 retries (16:32-16:33Z). **No new snapshots persisted across 14 min.** Detailed state: **Highlands Ranch CO** ARM but only **matrix=2 rows** for 30,699 parcels (Agent 8 substrate apply incomplete — matrix landed @ 16:23Z with 2 codes; will land partial-via-low_matrix_match_pct even when snapshot does persist). **Englewood CO** matrix=0 (half-state; 11,978 parcels + 94 districts but Agent 8 hasn't applied any zone_use_matrix rows yet — can't flip until substrate apply). **Fox Chapel PA** ARM (1,485 / 72 / 5) but snapshot stuck at 2-day-old partial @ 2026-06-22T19:57:50Z cov 0% — refresh worker silently dropping persistence; 5 fires across 4h have produced 0 new snapshots. **South Charlotte NC** still PARTIAL @ 18:39:04Z; same matrix=26 rows since PR #388 re-author at 13:59 — substrate-owner re-apply hasn't landed yet. **Count unchanged at 50.** Lane A surfacing refresh-worker silent-failure as a regression: HTTP 500 + 25s timeouts return but no snapshot rows commit serverside (verified by polling progression for 4 JIDs across 14 min). May need backend lane intervention to inspect worker logs / connection pool.
