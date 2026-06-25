@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-06-25T19:20:40Z",
+  "updated_at": "2026-06-25T19:27:30Z",
   "source": {
     "progress_doc": "docs/PHASE2_PROGRESS.md",
     "progress_doc_last_audit": "RECONCILED 2026-06-06 — honest baseline is 15 per prod API (will drop to 13 on Essex+Draper stale-anomaly refresh, then +2 confirmed = 15). See docs/OP5_AUDIT_RECONCILIATION_2026_06_06.md.",
@@ -15,11 +15,11 @@
     "matrix_endpoint_pr": "PR #182 (84bf652) — POST /_upload-matrix-rows",
     "uncovered_endpoint_pr": "PR #183 (cc87dc2) — GET /_uncovered-zone-codes"
   },
-  "mode": "op5_agent6_deep_fix_lands_s_charlotte_flip_54",
+  "mode": "op5_gv_co_flips_55_matrix_landing_auto_fire_pattern_proven",
   "honest_operational_count": {
-    "current_api_truth": 54,
-    "current_api_truth_verified_at": "2026-06-25T19:20:39Z",
-    "current_api_truth_verified_via": "/api/admin/coverage/progression — South Charlotte NC @ 19:20:39Z cov 100% operational post Agent 6 deep substrate fix bumped matrix 26 → 73 rows",
+    "current_api_truth": 55,
+    "current_api_truth_verified_at": "2026-06-25T19:27:27Z",
+    "current_api_truth_verified_via": "/api/admin/coverage/progression — Greenwood Village CO @ 19:27:27Z cov 100% operational (Orchestrator matrix 27 rows landed; Lane A monitor auto-fired refresh within 60s)",
     "wave_b_partials_remaining": ["South Charlotte NC (cov 100% matrix 26 rows — PR #388 re-author still insufficient; substrate-owner deeper fix outstanding)"],
     "wave_a_refresh_pending": [],
     "wave_a_refresh_pending_action": "Wave-A complete. Wave-B: Sandy Springs + Buckhead flipped via Fulton orchestrator re-apply. Fox Chapel awaiting fresh snapshot; S.Charlotte still substrate-owner-blocked.",
