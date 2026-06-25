@@ -51,9 +51,99 @@ all four stages warm; Bergen confirmed it end-to-end.
 
 ---
 
-## Where we are today (2026-06-25)
+## Historical context (project inception → May 29, 2026)
 
-*(Phases 1–6: port the pre-2026-05-29 narrative from Nache's local memo here.)*
+*Ported verbatim from the canonical May 29 memo (catch #24 final port). The original WHY/HOW below is the
+project's founding framing; the current WHY/HOW and the 4-stage pipeline framework above supersede it for
+day-to-day work, but this is the authoritative record of how the system was built.*
+
+### The WHY (original) — what this whole thing is for
+
+You are Nache Nielson at Stack Storage. You are building premium storage condo developments modeled on LuxeLocker, targeting Northeast and Mid-Atlantic wealth pockets specifically.
+
+The strategic anchor is the 14-year plan:
+- **115 sites by 2040**
+- **~$3.1B cumulative revenue**
+- **~$885M cumulative profit**
+
+This is a single-customer enterprise (you) building a tool to feed your own development pipeline. Every architectural choice in ParcelLogic exists to surface buildable land that fits this thesis — vacant parcels in wealth-dense corridors where a storage condo development can be entitled, built, and operated profitably under the LuxeLocker premium positioning.
+
+The 57 KMZ wealth pockets are the geographic targeting universe. Northeast / Mid-Atlantic. Anything outside that is Phase D, deferred.
+
+### The HOW — the original architecture (the four-layer system)
+
+ParcelLogic was designed as a layered system, each layer feeding the next:
+
+**Layer 1 — Parcels + Zoning.** Per-parcel zoning classification. Parcels ingested from county ArcGIS / NJOGIS / state cadastral services. Zoning verdicts via spatial join of zoning polygons + per-jurisdiction zone-use matrix. The matrix maps zone codes to self-storage permission (permitted / conditional / prohibited / unclear).
+
+**Layer 2 — Market Saturation.** Storage square footage per capita in drive-time isochrones. Flags oversupplied markets. Census ACS tracts + Mapbox drive-time isochrones produce per-parcel rings at 2/5/10/15-min drive times with population, median HHI, home values, HNW household counts.
+
+**Layer 3 — Buy-Box Scoring.** Server-side scoring against configurable filters. Parcels pass through hard filters (acres, price, demographics) and get a composite score. Hard filters are non-negotiable; scoring is continuous.
+
+**Layer 4 — For-Sale Listings.** CoStar / LoopNet / Crexi listings matched to parcels via address normalization. Hot Deals digest sends top-10 buy-box matches daily at 12:00 UTC to your inbox. Two-tier output: Actionable (clean) and Worth a Look (soft-flagged).
+
+The strategic insight: zoning is the bottleneck. Parcels are cheap to ingest at scale (ArcGIS feeds). Demographics are free (Census). Listings are commercial (CoStar pulls). But zoning is per-municipality, often PDF-only, and every new jurisdiction means matrix adjudication work. That bottleneck is why the matrix-sprint cadence dominated the first month of work.
+
+### The arc — what we shipped, in order (Phases 1–6)
+
+**Phase 1: Tactical deal unblock.** A specific Westampton parcel (`0337_201_10` at Rancocas Bypass) needed zoning resolution. Discovered the polygon-only PDF problem (Westampton's zoning map has zones drawn but no machine-readable boundaries). Manual SQL override unblocked the deal. Surfaced the architectural problem: per-jurisdiction zoning matrix needed real infrastructure, not deal-by-deal patching.
+
+**Phase 2: Architecture primitives.** NJDCA Municipal Zoning Directory ingested as `zoning_sources` seed (1,092 rows across all 565 NJ munis — ordinance URLs, map URLs, contacts). Established the registry pattern: per-jurisdiction source of truth before any matrix work.
+
+**Phase 3: Matrix sprint cadence.** Operationalized three jurisdictions in sequence, each refining the playbook:
+
+- **Howard MD (P0)** → 96.3% operational. Established the brief→verify→promote three-pass QA chain. Added overlay schema (`base_zone_code` + `overlay_codes TEXT[]`), `cited_subsection`, `conditions_json` (B-2 indoor-only conditional rule with 5ac + public utilities requirement). Built the alias_mappings table for 72 typo aliases.
+- **Loudoun VA (P0)** → 85.4% then 100% via 1993 ordinance crosswalk. Reused all Howard MD primitives. Added `sub_areas_eligible` (TRC Outer Core, TC Fringe, PD-RV Commercial/Workplace). 88K legacy 1993-ordinance parcels recovered via the official Loudoun crosswalk PDF. Vocabulary differs: Loudoun calls it "Mini-Warehouse."
+- **Allentown PA (P1)** → 100%. Three-witness moment for vocabulary normalization ("Self-Service Storage" vs Howard's "Self-Storage Facilities" vs Loudoun's "Mini-Warehouse"). Spawned the `vocabulary_aliases` table. Surfaced that the 2025 LCZO is materially more restrictive than the 2015 ordinance.
+
+**Phase 4: Pipeline correctness.** May 25 audit revealed the matrix work wasn't translating to digest output:
+- 48.6% violation rate across digest deals (sub-floor acres, over-ceiling prices)
+- Zero deals from Howard / Loudoun / Allentown in 14 days despite ~241K operational parcels
+- Dedupe broken — same deals re-appearing across alerts and daily digests
+- Tier system inconsistent across days
+
+Four fixes shipped and verified end-to-end: cron timeout (`long_running_session_maker`), `listing_alerts.py` guardrail bypass, 14-day dedupe rule, NULL flood-flag coercion. CTE rewrite gave 78x query speedup (69s → 0.9s). Hot Deals digest confirmed working — Loudoun deal landed May 23, Howard MD May 26.
+
+**Phase 5: Per-city architecture pivot.** The structural breakthrough. A county becomes a single jurisdiction (SLCo's 397k parcels, Burlington's 175k) with `parcels.city` carrying the actual municipality. The matrix is municipality-aware end-to-end via `zone_matrix_crosswalk` service. This retroactively solves Loudoun's 19K TOWNS parcels, NJ's 565 munis (via NJDCA seed), and the whole "many small jurisdictions" overhead.
+
+Combined with the server-side ring precompute (998k rows in 2:15 for SLCo, auto-fires on county ingest, math parity locked with 12 regression tests), the user-facing surface became materially faster. Dashboard loads instantly for cached counties.
+
+**Phase 6: Coverage reconciliation + data quality.** Asking the right strategic questions:
+- Where are we against the 57 KMZ wealth pockets?
+- The Worth-a-Look digest produces zero matches because `has_structure` is NULL on every SLCo parcel — data quality issue, not thesis problem
+- LIR PROP_CLASS backfill is the fix (same source already powers zoning fallback)
+
+### Architectural primitives shipped — the toolbox built along the way
+
+This is the inventory of generalizable infrastructure that compounds with every future jurisdiction:
+
+1. `zone_use_matrix` with `municipality` column — supports per-city verdicts inside a county
+2. `zone_matrix_crosswalk` service — copies sibling jurisdictions' matrices into county under municipality tags
+3. `alias_mappings` table + `propose_aliases.py` heuristic helper — handles typos, hyphen-strips, ordinance-era variants
+4. `vocabulary_aliases` table — same use class, jurisdiction-specific terminology (Mini-Warehouse / Self-Storage Facilities / Self-Service Storage / etc.)
+5. `conditions_json` JSONB — structured conditional rules (min_acres, public_utilities, indoor_only, approval_path, sub_areas_eligible)
+6. `sub_areas_eligible TEXT[]` — for zones with sub-zone restrictions (TRC Outer Core only, TC Fringe only)
+7. `overlay_codes TEXT[]` — for overlay districts that modify base zone verdicts
+8. `inherits_from` field — for ordinance cross-references ("M-2 inherits all M-1 by-right uses")
+9. `parcel_ring_metrics` server-side cache with 90-day TTL — eliminates client-side Mapbox/Census fan-out
+10. CTE-pre-narrowed daily_email query — drives from forsale_listings (~600 rows) instead of parcel_buybox_scores (~354K rows)
+11. NJ MCD TIGER city backfill — populates `parcels.city` for all NJ MOD-IV jurisdictions
+12. `last_email_sent_at` 14-day cooldown — prevents same-deal re-surfacing
+13. Two-tier digest output — Actionable vs Worth a Look with structured soft flags (🏢 building, 💸 no price, ⚖️ conditional, ❓ low-confidence verdict, 📐 acres unverified)
+
+### What changed about how we work (founding behavioral patterns)
+
+Three behavioral patterns the system supported by May 29 that didn't exist at the start:
+
+- **Audit-to-fix-to-verify cycle** as a known-good loop. Gmail audit → DB reconcile → ship → verify via fresh digest. Used twice (May 25 audit, May 27 cron verification), both produced real fixes.
+- **Chrome reviewer pass** for ambiguous matrix verdicts. Three jurisdictions verified via direct Chrome reads against Municode / encodeplus (Howard MD §131.0, Loudoun §4.06.06 + Land Use Lookup tool, Allentown §660-37 Use Table). Catches PDF-parser ambiguities that batch ingest misses.
+- **Per-city pattern via crosswalk service.** Single jurisdiction holds all parcels, matrix is municipality-tagged, ingest doesn't proliferate small jurisdictions. Solves the worst structural problem of the original architecture.
+
+These three patterns are now institutional. Every future jurisdiction inherits them. (They have since been joined by the ingress/egress/meta validation discipline — see the catch ledger below.)
+
+---
+
+## Where we are today (2026-06-25)
 
 ### Phase 7 — PA county_gis scale-up
 - Built the **PA county_gis crosswalk** (`JurisdictionConfig.city_override` + `muni_field`/`muni_name_map`)
