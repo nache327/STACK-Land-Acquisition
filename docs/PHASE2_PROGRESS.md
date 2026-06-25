@@ -331,6 +331,7 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-25
 
+- **FLIP (confirmed)** South Charlotte, NC → operational. **Operational count 53 → 54.** Agent 6's deep substrate fix applied @ 18:56Z bumped matrix 26 → 73 rows (per Master signal). Lane A single refresh fire @ 19:20:40Z returned `snapshots_written:1 operational_count=1 partial_count=0`. Snapshot persisted @ 19:20:39Z: `operational_readiness=operational`, cov 100.0% (4,768 parcels). Closes the Mecklenburg-NC per-muni partial that had blocked Lane A across two prior wave refreshes (PR #388 surface re-author insufficient; PR #392 confirmed still partial post-refresh). Validates Agent 6 deep-fix beyond code-spelling alignment.
 - **FLIP WAVE (confirmed)** Post-worker-fix re-fire on Wave-B Master-4 batch landed **+3 flips. Operational count 50 → 53.** Agent 12's refresh-worker fix (scope CTEs by jurisdiction_id, no more silent persist drops on broad timeouts) deployed. Lane A re-fired 4 refreshes @ 17:30-17:32Z — HTTP responses now include `snapshots_written:1` immediately, confirming worker is committing snapshots:
   - **Highlands Ranch, CO** → operational @ 17:30:57Z, cov 100.0% (30,699 parcels), matrix=9. +1.
   - **Englewood, CO** → operational @ 17:31:31Z, cov 100.0% (11,978 parcels), matrix=15. +1.
