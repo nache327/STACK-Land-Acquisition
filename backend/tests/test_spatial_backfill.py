@@ -231,7 +231,7 @@ async def test_audit_output_splits_coverage_by_binding_method(
 
     result = await conn.execute(
         _build_audit_sql(schema),
-        {"jurisdiction_name": None},
+        {"jurisdiction_id": None, "jurisdiction_name": None},
     )
     audits = [_build_audit(r, schema) for r in result]
     audit = next(a for a in audits if uuid.UUID(a.id) == jid)
