@@ -331,6 +331,10 @@ _Lane A: append new clusters here. Remove resolved clusters (move to section 15 
 
 ### 2026-06-24
 
+- **FLIP WAVE (confirmed)** Wave-B Fulton re-apply (post PR #389) landed **+2 flips. Operational count 48 → 50.** Lane A audit-refresh-serial-gate per Master's 30-min deadline dispatch. Orchestrator re-authored matrix substrate to fix the `low_matrix_match_pct` block:
+  - **Sandy Springs, GA** → operational @ 23:08:38Z, cov 100.0% (29,775 parcels), 27,710 districts, matrix expanded 19 → **57 rows**. Lane A refresh fire @ 15:47Z. +1.
+  - **Atlanta-Buckhead, GA** → operational @ 23:11:48Z, cov 100.0% (25,261 parcels), 344 districts, matrix expanded 26 → **67 rows**. Lane A refresh fire @ 15:48Z. +1.
+  South Charlotte NC still PARTIAL (PR #388 re-author still insufficient; substrate-owner needs deeper fix). Fox Chapel PA refresh re-fired @ 15:56Z (prior snapshot was 2-day-old stale partial; armed now at 1,485 / 72 / 5).
 - **FLIP (confirmed)** Snyderville/Promontory, UT → operational. **Operational count 47 → 48.** Lane A refresh fire @ 18:47:12Z (after multiple PEND retries during continuous-loop role). Snapshot persisted @ 18:46:54Z: `operational_readiness=operational`, `blocking_gaps=[]`, `parcel_count=24,864`, **`parcel_zoning_code_coverage_pct=100.0%`**. Closes the Wave-A PEND queue — all originally-armed cohort polygons now either operational (10) or partial-blocked on substrate-owner matrix-alignment (3).
 - **FLIP WAVE (confirmed)** Wave-A continuous-loop landed **3 more flips. Operational count 44 → 47.** Refresh-loop role per Master's continuous dispatch:
   - **New Canaan CT** → operational @ 04:15:29Z, cov 100.0% (7,386 parcels), 65 districts, matrix=16. Free flip discovered during loop scan (sibling agent fire pre-Lane A re-arm). +1.
