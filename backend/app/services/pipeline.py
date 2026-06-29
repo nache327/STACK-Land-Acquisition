@@ -54,6 +54,7 @@ from app.services.job_tracking import (
 from app.services.buybox_scoring import auto_score_jurisdiction
 from app.services.matrix_bootstrap import bootstrap_zone_use_matrix
 from app.services.spatial_backfill import (
+    backfill_parcel_city_from_districts,
     backfill_parcel_zoning_from_districts,
     refresh_jurisdiction_bbox,
     refresh_jurisdiction_coverage_level,
@@ -1781,6 +1782,32 @@ async def _run(db: AsyncSession, job: Job) -> None:
             await db.commit()
             _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
             await complete_job_step(db, zoning_backfill_step, {"parcels_updated": updated})
+
+            # City-stamp from the zoning polygon's municipality (catch #33/#35
+            # family). For county_gis jurisdictions whose PARCEL layer has no muni
+            # field but whose ZONING layer is name-native (Montgomery County PA),
+            # this fills parcels.city so muni-specific Stage-4 verdicts can resolve.
+            # No-op + non-clobbering: only stamps WHERE city IS NULL, and only when
+            # a district carries a Municipality value (so Bucks/Chester are untouched).
+            city_stamp_started = _stage_started(
+                job, "parcel_city_stamp", jurisdiction_id=str(jurisdiction.id)
+            )
+            try:
+                city_stamped = await backfill_parcel_city_from_districts(jurisdiction.id, db)
+                await db.commit()
+                logger.info("parcel city-stamp set city on %d parcels", city_stamped)
+                _stage_completed(
+                    job, "parcel_city_stamp", city_stamp_started, parcels_stamped=city_stamped
+                )
+            except Exception as exc:
+                logger.warning("parcel city-stamp failed (non-fatal): %s", exc)
+                try:
+                    async with asyncio.timeout(5):
+                        await db.rollback()
+                        await db.refresh(job)
+                        await db.refresh(jurisdiction)
+                except Exception:
+                    pass
 
             # Populate zoning_overlays so per-parcel scoring + frontend
             # storage_permission look-ups have an authoritative ZoningRule.
