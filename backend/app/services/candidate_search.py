@@ -235,8 +235,12 @@ async def search_candidate_parcels(
             _PERMISSION_LABEL.label("storage_permission"),
             _GARAGE_PERM_LABEL.label("garage_permission"),
             has_listing_expr,
+            # OOM quick-win: 0.00001 deg (~1m) left polygons near full-resolution,
+            # so each of the (capped) map-page parcels carried hundreds of vertices
+            # and was copied 3-4x in the browser. 0.0003 deg (~30m) cuts vertex count
+            # an order of magnitude while staying visually faithful at map zoom.
             func.ST_AsGeoJSON(
-                func.ST_SimplifyPreserveTopology(Parcel.geom, 0.00001)
+                func.ST_SimplifyPreserveTopology(Parcel.geom, 0.0003)
             ).label("geom"),
         )
         .select_from(Parcel)
