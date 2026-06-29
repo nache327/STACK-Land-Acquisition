@@ -6,7 +6,7 @@ import uuid
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import BackgroundTasks
@@ -29,30 +29,78 @@ from app.services.jurisdiction_match import strip_state_suffix_lower
 router = APIRouter(tags=["jobs"])
 
 
+_STRIP_STATE_SQL = "LOWER(regexp_replace(name, ',\\s*[A-Za-z]{2}$', '')) = :n"
+
+
+async def resolve_existing_jurisdiction(
+    jurisdiction_input: str, db: AsyncSession
+) -> Jurisdiction | None:
+    """Resolve an already-indexed Jurisdiction for a user-supplied name.
+
+    State-suffix-aware. A user typing "Salt Lake County, UT" must hit a
+    Jurisdiction.name of "Salt Lake County, UT" (we store the suffix, but old
+    data + some discovery paths may store the bare name).
+
+    Catch #46: same-name counties in different states (Montgomery PA vs MD; the
+    Franklin/Washington/Lincoln/Madison/Jefferson family) both strip to the same
+    bare name. Once BOTH are ingested, a stripped-suffix match returns >1 row and
+    ``scalar_one_or_none()`` raises ``MultipleResultsFound`` → 500. So:
+      • input WITH a ", XX" suffix → match the FULL name exactly (PA vs MD
+        disambiguated); fall back to a stripped match only when it's unambiguous.
+      • input WITHOUT a suffix → stripped match; if it's ambiguous (>1 state),
+        raise a clear 409 telling the caller to add a state suffix.
+    Returns None when nothing matches (caller then runs a fresh ingest).
+    """
+    input_lower = jurisdiction_input.strip().lower()
+    suffix = input_lower.rsplit(",", 1)
+    has_state = (
+        len(suffix) == 2 and suffix[1].strip().isalpha() and len(suffix[1].strip()) == 2
+    )
+
+    if has_state:
+        exact = await db.execute(
+            select(Jurisdiction).where(func.lower(Jurisdiction.name) == input_lower)
+        )
+        jurisdiction = exact.scalar_one_or_none()
+        if jurisdiction is not None:
+            return jurisdiction
+        # Legacy rows may be stored without the suffix; accept a stripped match
+        # only when it is unambiguous.
+        rows = (
+            await db.execute(
+                select(Jurisdiction).where(text(_STRIP_STATE_SQL)).params(n=suffix[0].strip())
+            )
+        ).scalars().all()
+        return rows[0] if len(rows) == 1 else None
+
+    name_query = strip_state_suffix_lower(jurisdiction_input)
+    rows = (
+        await db.execute(
+            select(Jurisdiction).where(text(_STRIP_STATE_SQL)).params(n=name_query)
+        )
+    ).scalars().all()
+    if len(rows) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Ambiguous jurisdiction '{jurisdiction_input}' matches "
+                + ", ".join(sorted(j.name for j in rows))
+                + " — re-submit with a state suffix (e.g. 'Montgomery County, PA')."
+            ),
+        )
+    return rows[0] if rows else None
+
+
 @router.post("/jobs", response_model=JobRead, status_code=201)
 async def create_job(
     payload: JobCreate,
     db: AsyncSession = Depends(get_db),
 ) -> Job:
-    # If the jurisdiction name matches an already-indexed city, return the most
-    # recent ready job for it rather than re-running the full pipeline.
-    #
-    # Match is state-suffix-aware on both sides: a user typing "Salt Lake
-    # County, UT" must hit a Jurisdiction.name of "Salt Lake County, UT" or
-    # the bare "Salt Lake County" (we store the former, but old data + some
-    # discovery paths may produce either). Previous version split on comma
-    # and dropped the suffix from the input ONLY — so "salt lake county"
-    # compared against LOWER(name)="salt lake county, ut" never matched
-    # and every repeat search spawned a brand-new ingest of an
-    # already-cached jurisdiction. Now we strip ", XX" from both sides
-    # before comparing.
-    name_query = strip_state_suffix_lower(payload.jurisdiction)
-    existing_jur = await db.execute(
-        select(Jurisdiction).where(
-            text("LOWER(regexp_replace(name, ',\\s*[A-Za-z]{2}$', '')) = :n")
-        ).params(n=name_query)
-    )
-    jurisdiction = existing_jur.scalar_one_or_none()
+    # If the jurisdiction name matches an already-indexed jurisdiction, return
+    # the most recent ready job for it rather than re-running the full pipeline.
+    # Resolution is state-suffix-aware and same-name-collision-safe (catch #46) —
+    # see resolve_existing_jurisdiction.
+    jurisdiction = await resolve_existing_jurisdiction(payload.jurisdiction, db)
 
     if not payload.force and jurisdiction is not None and jurisdiction.last_indexed_at is not None:
         # Find the most recent ready job for this jurisdiction
