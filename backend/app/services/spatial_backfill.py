@@ -215,6 +215,101 @@ async def backfill_parcel_zoning_from_districts(
     return contained_updated + nearest_updated
 
 
+async def backfill_parcel_city_from_districts(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession,
+    *,
+    municipality_keys: tuple[str, ...] = ("Municipality", "MUNICIPALITY", "municipality"),
+) -> int:
+    """Stamp ``parcels.city`` from the containing zoning district's municipality name.
+
+    For county_gis jurisdictions whose PARCEL layer carries no municipality field
+    (Montgomery County PA: the parcel layer is TAXPIN + acreage only) but whose
+    ZONING layer is name-native — the municipality name lives in
+    ``zoning_districts.raw_attributes`` (e.g. the ``Municipality`` key, Bucks/Mont PA).
+
+    Catch #33/#35 family: stamps via ST_Within(centroid, district) **only WHERE
+    parcels.city IS NULL**, so jurisdictions that already resolved city at ingest
+    (Bucks native ``MUNICIPALITY`` field, Chester ``muni_name_map`` crosswalk) are
+    never clobbered. No-op when no district in the jurisdiction carries a
+    municipality value, so it is safe to run unconditionally for every county_gis
+    ingest (the common case writes nothing).
+
+    Same raw-asyncpg execution profile as ``backfill_parcel_zoning_from_districts``
+    (session-mode 5432, statement_timeout=0, LATERAL + LIMIT 1, centroid containment)
+    so Supabase doesn't cancel mid-flight on 300k+ parcel counties.
+    """
+    logger = logging.getLogger(__name__)
+    # COALESCE the candidate JSONB keys into one municipality expression. The keys
+    # are fixed code constants (not user input), so interpolation is injection-safe.
+    muni_expr = "COALESCE(" + ", ".join(
+        f"NULLIF(zd.raw_attributes->>'{k}', '')" for k in municipality_keys
+    ) + ")"
+
+    # Bail when no district carries a municipality value — avoids a full parcel
+    # scan on the (majority) jurisdictions whose zoning layer has no muni field.
+    has_muni = await db.execute(
+        text(
+            f"SELECT EXISTS(SELECT 1 FROM zoning_districts zd "
+            f"WHERE zd.jurisdiction_id = :jid AND {muni_expr} IS NOT NULL)"
+        ),
+        {"jid": jurisdiction_id},
+    )
+    if not bool(has_muni.scalar()):
+        logger.info(
+            "backfill_parcel_city_from_districts skipping %s — "
+            "no zoning_districts carry a municipality value",
+            jurisdiction_id,
+        )
+        return 0
+
+    session_url = settings.database_url.replace(":6543/", ":5432/").replace(
+        "postgresql+asyncpg://", "postgresql://"
+    )
+    conn = await asyncpg.connect(
+        session_url, statement_cache_size=0, command_timeout=7200
+    )
+    updated = 0
+    try:
+        await conn.execute("SET statement_timeout = 0")
+        status = await conn.execute(
+            f"""
+            UPDATE parcels target
+            SET city = sub.muni
+            FROM (
+                SELECT p.id AS parcel_id, m.muni
+                FROM parcels p,
+                LATERAL (
+                    SELECT {muni_expr} AS muni
+                    FROM zoning_districts zd
+                    WHERE zd.jurisdiction_id = $1
+                      AND zd.geom IS NOT NULL
+                      AND {muni_expr} IS NOT NULL
+                      AND ST_Within(ST_Centroid(p.geom), zd.geom)
+                    ORDER BY zd.id
+                    LIMIT 1
+                ) m
+                WHERE p.jurisdiction_id = $1
+                  AND p.geom IS NOT NULL
+                  AND p.city IS NULL
+            ) sub
+            WHERE target.id = sub.parcel_id
+            """,
+            jurisdiction_id,
+        )
+        try:
+            updated = int(status.split()[-1])
+        except (ValueError, IndexError):
+            updated = 0
+    finally:
+        await conn.close()
+    logger.info(
+        "backfill_parcel_city_from_districts %s: stamped city on %d parcels",
+        jurisdiction_id, updated,
+    )
+    return updated
+
+
 async def refresh_jurisdiction_coverage_level(
     jurisdiction: Jurisdiction,
     db: AsyncSession,
