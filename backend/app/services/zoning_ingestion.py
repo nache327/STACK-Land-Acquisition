@@ -40,7 +40,14 @@ _ZONE_CODE_FIELDS = [
     # generic "ZONING" below — _first() case-normalizes both to "zoning", so without
     # this first-match Bucks would pick the long name ("Light Industrial") as the code.
     "ZoningAbbr",
-    "ZONEDIST", "ZONE_DIST", "ZONING", "ZONINGCODE", "TYPE", "ZONE", "CODE",
+    "ZONEDIST", "ZONE_DIST", "ZONING", "ZONINGCODE", "ZONE", "CODE",
+    # "TYPE" is a weak/generic fallback and MUST stay AFTER the specific code
+    # fields (specific-field-first convention — catch #34 family, cf. the Bucks
+    # ZoningAbbr-before-Zoning fix above). Montgomery County PA's
+    # Municipal_Zoning/FeatureServer/11 carries a constant Type="District" field
+    # alongside the real district code in `Code`; with "TYPE" ahead of "CODE"
+    # _first() would bind every Montgomery parcel to zone_code "District".
+    "TYPE",
     "ZONE_CODE", "ZONING_CODE", "zoning", "zonecode",
     "LONG_CODE", "ZONE_CODE_LABEL", "BASEZONE",
     "ZONINGCODE", "ZONECLASS", "ZONE_OR_LABEL",

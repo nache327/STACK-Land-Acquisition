@@ -447,11 +447,23 @@ def _md(
 # ── Pennsylvania counties outside Philadelphia (Phase 3) ──────────────────
 # PA has no statewide composite — each county hosts its own assessor service.
 # Montgomery County PA's Parcels FeatureServer/10 publishes only TAXPIN +
-# CALCACREAGE; address/owner/zoning/value are not on any public REST endpoint
-# (the assessor exposes them only through propertyrecords.montcopa.org).
+# CALCACREAGE (address/owner/value are not on this layer — the assessor exposes
+# them only through propertyrecords.montcopa.org / the non-spatial GIS_BOA_LAND
+# table). Zoning, however, IS available as a separate countywide polygon layer
+# (Municipal_Zoning/11 below) — bind it via spatial PIP like Chester/Bucks.
 _PA_MONTGOMERY_PARCELS = (
     "https://gis.montcopa.org/arcgis/rest/services/Parcels"
     "/Montgomery_County_Parcels/FeatureServer/10"
+)
+# Montgomery County PA countywide municipal zoning polygons (layer id 11, NOT 0).
+# Bucks pattern — name-native `Municipality` (full town name) so NO muni_name_map
+# crosswalk is needed. Short district code = `Code` (e.g. LI/HI/IP/BP/TC1/VC);
+# long name = `Name`; broad bucket = `Category`. NOTE the layer also carries a
+# constant `Type`="District" field — handled by the _ZONE_CODE_FIELDS reorder
+# (CODE/ZONE now precede TYPE). 62 municipalities. See _montgomery_pa_source_manifest.md.
+_PA_MONTGOMERY_ZONING = (
+    "https://gis.montcopa.org/arcgis/rest/services/Zoning"
+    "/Montgomery_County_Municipal_Zoning/FeatureServer/11"
 )
 
 # Chester County PA — countywide assessor parcels (194,341) in the county AGOL org.
@@ -983,10 +995,17 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "howard county, md":     _md("Howard",     "Howard County, MD",     "HOWA"),
 
     # ── Pennsylvania (Phase 3) ────────────────────────────────────────────────
-    # Montgomery County PA — county-hosted Parcels FeatureServer/10. Note
-    # there is *no* PA statewide composite; PASDA only mirrors per-county
-    # uploads. Owner/address/zoning/value are not on this REST endpoint.
-    "montgomery county, pa": _pa_county("Montgomery", "Montgomery County, PA", _PA_MONTGOMERY_PARCELS),
+    # Montgomery County PA — county-hosted Parcels FeatureServer/10 (TAXPIN +
+    # acreage only) + a SEPARATE countywide municipal-zoning polygon layer
+    # (Municipal_Zoning/11) bound via spatial PIP. Bucks pattern: zoning is
+    # name-native (`Municipality`), so no muni_name_map crosswalk. The parcel
+    # layer carries no muni field, so parcels.city stays NULL — muni-specific
+    # Stage-4 verdicts need a later city-stamp backfill (from the zoning polygon
+    # Municipality or BOA MUNI_CODE); the zoning_code bind here does not.
+    "montgomery county, pa": _pa_county(
+        "Montgomery", "Montgomery County, PA", _PA_MONTGOMERY_PARCELS,
+        zoning_endpoint=_PA_MONTGOMERY_ZONING,
+    ),
     # Chester County PA — FULL COUNTY (all 73 munis) via the catch #33 Option 2
     # MUNI->name crosswalk. The parcel layer has no city-NAME field (only integer
     # MUNI), so muni_field='MUNI' + muni_name_map resolve parcels.city per muni
