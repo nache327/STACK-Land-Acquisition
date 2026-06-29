@@ -62,7 +62,11 @@ interface Props {
 type MapBBox = [number, number, number, number] | null;
 
 const TABLE_PAGE_SIZE = 100;
-const MAP_PAGE_SIZE = 5000;
+// OOM quick-win: 5000 full-resolution parcel polygons per viewport, held in 3-4
+// in-memory copies (React state -> Map.tsx parcelCollection memo -> MapLibre source
+// clone -> heat points) blew up the tab on dense large counties (Bucks ~237k). A
+// smaller page caps the per-viewport polygon count. Durable fix = vector tiles.
+const MAP_PAGE_SIZE = 1000;
 
 export default function DashboardPage({ params }: Props) {
   const { jobId } = params;
@@ -361,7 +365,10 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   );
 
   const parcels = parcelList?.items ?? [];
-  const mapParcels = mapResults?.items ?? [];
+  // OOM quick-win: stabilize identity so the many downstream memos/effects keyed
+  // on mapParcels (saturation, parcelCollection rebuild, setData, setFeatureState)
+  // don't re-run + re-upload the whole GeoJSON on every unrelated render during a pan.
+  const mapParcels = useMemo(() => mapResults?.items ?? [], [mapResults]);
 
   // Deep-link from email digest: ?parcel_id=<id> selects the parcel,
   // opens the drawer, and flies to its centroid. Read once on mount.
