@@ -9,7 +9,12 @@ from app.models.job import Job, JobStatus
 from app.services.job_queue import enqueue_pipeline_job
 from app.services.job_tracking import ACTIVE_JOB_STATUSES, now_utc, truncate_error
 
-STALE_AFTER_SECONDS = 25 * 60
+# Aligned with the Dramatiq pipeline actor's time_limit (60 min, job_queue.py)
+# plus a heartbeat margin. Catch #12 fix: the old 25-min cutoff was SHORTER than
+# the 60-min job budget, so recover_stale_jobs re-enqueued a still-running
+# pipeline from discover_layers (Montgomery PA pass-1->pass-2; Bergen 65min/0-row
+# stall). A job is not "dead" until Dramatiq itself kills it at 60 min.
+STALE_AFTER_SECONDS = 70 * 60
 MAX_ATTEMPTS = 3
 
 
