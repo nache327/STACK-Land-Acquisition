@@ -9,6 +9,7 @@ PROP_LOC, ZONING, etc.).  Future jurisdictions add their own field maps below.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
@@ -508,6 +509,13 @@ async def ingest_parcels(
             if apn in rows_by_apn:
                 duplicate_apns += 1
             rows_by_apn[apn] = mapped
+        # Catch #12: this mapping loop is a long synchronous CPU block (shapely
+        # make_valid per row) — on a 300-420k-parcel county it can run for minutes
+        # without yielding. The locked_at heartbeat coroutine shares this event
+        # loop, so without an explicit yield it gets starved, locked_at freezes,
+        # and the watchdog re-claims the live job. sleep(0) always yields control.
+        if idx % 500 == 0:
+            await asyncio.sleep(0)
         if progress_callback is not None and idx % 1000 == 0:
             await progress_callback("mapping", idx, len(gdf))
 

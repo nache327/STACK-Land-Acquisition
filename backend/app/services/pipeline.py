@@ -1190,19 +1190,45 @@ async def _raw_status_update(
 
 
 async def _heartbeat_locked_at(job_id: uuid.UUID, interval: int = 60) -> None:
-    """Refresh locked_at every interval seconds so the watchdog never kills an active job."""
-    while True:
-        await asyncio.sleep(interval)
-        try:
-            async with async_session_maker() as hb_db:
-                result = await hb_db.execute(select(Job).where(Job.id == job_id))
-                hb_job = result.scalar_one_or_none()
-                if hb_job and hb_job.locked_at is not None:
-                    hb_job.locked_at = now_utc()
-                    await hb_db.commit()
-                    logger.debug("Heartbeat refreshed locked_at for job %s", job_id)
-        except Exception as exc:
-            logger.debug("Heartbeat failed for job %s: %s", job_id, exc)
+    """Refresh locked_at every interval seconds so the watchdog never kills an active job.
+
+    Catch #12: use a FRESH make_engine() rather than the shared async_session_maker.
+    The shared engine's asyncio internals get bound to the (destroyed/recreated)
+    Dramatiq-worker event loop — exactly why every other worker actor builds its own
+    engine (see job_queue.py process_zoning_ingest). If the heartbeat's commit silently
+    threw on the shared engine, locked_at would freeze and the watchdog would re-claim a
+    live job. We also escalate persistent failures to WARNING so a frozen heartbeat is
+    visible instead of silent.
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+    from app.db import make_engine
+
+    hb_engine = make_engine()
+    hb_session = async_sessionmaker(hb_engine, class_=AsyncSession, expire_on_commit=False)
+    consecutive_failures = 0
+    try:
+        while True:
+            await asyncio.sleep(interval)
+            try:
+                async with hb_session() as hb_db:
+                    result = await hb_db.execute(select(Job).where(Job.id == job_id))
+                    hb_job = result.scalar_one_or_none()
+                    if hb_job and hb_job.locked_at is not None:
+                        hb_job.locked_at = now_utc()
+                        await hb_db.commit()
+                        logger.debug("Heartbeat refreshed locked_at for job %s", job_id)
+                consecutive_failures = 0
+            except Exception as exc:
+                consecutive_failures += 1
+                # First miss can be transient; a run of misses means locked_at is
+                # frozen and the watchdog will steal the job — make that loud.
+                log = logger.warning if consecutive_failures >= 2 else logger.debug
+                log(
+                    "Heartbeat failed (%d in a row) for job %s: %s",
+                    consecutive_failures, job_id, exc,
+                )
+    finally:
+        await hb_engine.dispose()
 
 
 # ─── Public entry point ──────────────────────────────────────────────────────
