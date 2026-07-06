@@ -1,9 +1,10 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.api._auth import require_secret
 from app.version import get_pipeline_version
 from app.api import (
     admin_backfill,
@@ -88,7 +89,8 @@ app.add_middleware(
 )
 
 app.include_router(competition.router, prefix="/api")
-app.include_router(debug.router, prefix="/api")
+# Operator/CLI-only routers — gated by the shared-secret (frontend never calls these).
+app.include_router(debug.router, prefix="/api", dependencies=[Depends(require_secret)])
 app.include_router(jobs.router, prefix="/api")
 app.include_router(jurisdictions.router, prefix="/api")
 app.include_router(ordinances.router, prefix="/api")
@@ -99,9 +101,9 @@ app.include_router(zoning_districts.router, prefix="/api")
 app.include_router(buybox.router, prefix="/api")
 app.include_router(census_proxy.router, prefix="/api")
 app.include_router(listings.router, prefix="/api")
-app.include_router(admin_backfill.router, prefix="/api")
+app.include_router(admin_backfill.router, prefix="/api", dependencies=[Depends(require_secret)])
 app.include_router(admin_op5.router, prefix="/api")
-app.include_router(admin_op5_matrix.router, prefix="/api")
+app.include_router(admin_op5_matrix.router, prefix="/api", dependencies=[Depends(require_secret)])
 app.include_router(admin_op5_uncovered.router, prefix="/api")
 
 

@@ -40,6 +40,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api._auth import require_secret
 from app.config import settings
 from app.db import get_db
 from app.models.job import Job
@@ -330,7 +331,10 @@ async def soft_delete_zone(
     return None
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_crosswalk-cities")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_crosswalk-cities",
+    dependencies=[Depends(require_secret)],
+)
 async def crosswalk_cities_into_county(
     jurisdiction_id: uuid.UUID,
     seed_stubs: bool = False,
@@ -372,6 +376,7 @@ async def crosswalk_cities_into_county(
 @router.post(
     "/jurisdictions/{jurisdiction_id}/_precompute-ring-metrics",
     status_code=202,
+    dependencies=[Depends(require_secret)],
 )
 async def precompute_ring_metrics(
     jurisdiction_id: uuid.UUID,
@@ -492,6 +497,7 @@ async def precompute_ring_metrics_status(job_id: str) -> dict:
 @router.post(
     "/jurisdictions/{jurisdiction_id}/_precompute-ring-metrics-worker",
     status_code=202,
+    dependencies=[Depends(require_secret)],
 )
 async def precompute_ring_metrics_worker(
     jurisdiction_id: uuid.UUID,
@@ -542,6 +548,7 @@ async def precompute_ring_metrics_worker(
 @router.post(
     "/jurisdictions/{jurisdiction_id}/_match-listings-worker",
     status_code=202,
+    dependencies=[Depends(require_secret)],
 )
 async def match_listings_worker(
     jurisdiction_id: uuid.UUID,
@@ -581,6 +588,7 @@ async def match_listings_worker(
 @router.post(
     "/jurisdictions/{jurisdiction_id}/_backfill-has-structure-from-lir",
     status_code=202,
+    dependencies=[Depends(require_secret)],
 )
 async def backfill_has_structure_from_lir(
     jurisdiction_id: uuid.UUID,
@@ -689,7 +697,10 @@ async def backfill_has_structure_status(job_id: str) -> dict:
     return state
 
 
-@router.post("/_admin/optimize-parcels")
+@router.post(
+    "/_admin/optimize-parcels",
+    dependencies=[Depends(require_secret)],
+)
 async def admin_optimize_parcels(db: AsyncSession = Depends(get_db)) -> dict:
     """One-shot: add the composite indexes the dashboard's jurisdiction-entry
     GROUP BY queries need, and ANALYZE the table. On county-sized
@@ -784,7 +795,10 @@ async def get_municipalities_remediation(
     return result
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning-from-siblings")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_backfill-zoning-from-siblings",
+    dependencies=[Depends(require_secret)],
+)
 async def backfill_zoning_from_siblings(
     jurisdiction_id: uuid.UUID,
     strategy: str = "apn",
@@ -1085,7 +1099,10 @@ _NJ_CITY_TO_COUNTY = {
 }
 
 
-@router.post("/admin/coverage/refresh")
+@router.post(
+    "/admin/coverage/refresh",
+    dependencies=[Depends(require_secret)],
+)
 async def admin_coverage_refresh(
     jurisdiction_id: uuid.UUID | None = Query(default=None),
     source: str = Query(default="manual"),
@@ -1264,7 +1281,10 @@ async def admin_coverage_progression(
     }
 
 
-@router.post("/jurisdictions/_cleanup-empty")
+@router.post(
+    "/jurisdictions/_cleanup-empty",
+    dependencies=[Depends(require_secret)],
+)
 async def cleanup_empty_jurisdictions(
     confirm: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
@@ -1412,7 +1432,10 @@ async def cleanup_empty_jurisdictions(
 
 # ─── Admin: discover candidate zoning sources (Phase C) ─────────────────────
 
-@router.post("/jurisdictions/{jurisdiction_id}/_discover-zoning")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_discover-zoning",
+    dependencies=[Depends(require_secret)],
+)
 async def discover_zoning(
     jurisdiction_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -1528,7 +1551,10 @@ async def list_zoning_sources(
     }
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_sources/{source_id}/_review")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_sources/{source_id}/_review",
+    dependencies=[Depends(require_secret)],
+)
 async def review_zoning_source(
     jurisdiction_id: uuid.UUID,
     source_id: uuid.UUID,
@@ -1590,7 +1616,10 @@ async def review_zoning_source(
     }
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_sources/{source_id}/verify")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_sources/{source_id}/verify",
+    dependencies=[Depends(require_secret)],
+)
 async def verify_zoning_source(
     jurisdiction_id: uuid.UUID,
     source_id: uuid.UUID,
@@ -1654,7 +1683,10 @@ async def spatial_check_source(
     }
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_sources/_bulk-review")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_sources/_bulk-review",
+    dependencies=[Depends(require_secret)],
+)
 async def bulk_review_zoning_sources(
     jurisdiction_id: uuid.UUID,
     body: _BulkReviewBody,
@@ -1914,7 +1946,10 @@ async def _run_backfill_zoning(
     }
 
 
-@router.post("/jurisdictions/{jurisdiction_id}/_backfill-zoning")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_backfill-zoning",
+    dependencies=[Depends(require_secret)],
+)
 async def backfill_zoning(
     jurisdiction_id: uuid.UUID,
     zoning_url: str = Query(..., description="ArcGIS FeatureServer/MapServer layer URL"),
@@ -1935,6 +1970,7 @@ async def backfill_zoning(
 @router.post(
     "/jurisdictions/{jurisdiction_id}/_backfill-zoning-async",
     status_code=202,
+    dependencies=[Depends(require_secret)],
 )
 async def backfill_zoning_async(
     jurisdiction_id: uuid.UUID,
@@ -2028,7 +2064,10 @@ async def backfill_zoning_status(job_id: str) -> dict:
 
 # ─── Admin: upload zoning shapefile/GeoJSON ──────────────────────────────────
 
-@router.post("/jurisdictions/{jurisdiction_id}/_upload-zoning")
+@router.post(
+    "/jurisdictions/{jurisdiction_id}/_upload-zoning",
+    dependencies=[Depends(require_secret)],
+)
 async def upload_zoning(
     jurisdiction_id: uuid.UUID,
     file: UploadFile = File(..., description=".geojson or zipped shapefile"),
