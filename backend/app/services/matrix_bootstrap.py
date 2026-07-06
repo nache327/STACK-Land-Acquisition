@@ -15,9 +15,14 @@ from app.services.classification import classify_zone_code
 
 ZONE_CLASS_TO_SELF_STORAGE: dict[ZoneClass, UsePermission] = {
     ZoneClass.industrial: UsePermission.permitted,
-    ZoneClass.commercial: UsePermission.conditional,
-    ZoneClass.mixed_use: UsePermission.conditional,
-    ZoneClass.agricultural: UsePermission.conditional,
+    # Heuristic commercial/mixed-use/agricultural default to `unclear`, NOT
+    # `conditional` (audit "D2"/catch #49): a false "conditional" across a whole
+    # county reads as an actionable maybe and silently costs trust, whereas
+    # `unclear` correctly signals "needs a grounded verdict before it's a lead".
+    # A real conditional only comes from an ordinance-grounded (human/llm) parse.
+    ZoneClass.commercial: UsePermission.unclear,
+    ZoneClass.mixed_use: UsePermission.unclear,
+    ZoneClass.agricultural: UsePermission.unclear,
     ZoneClass.residential: UsePermission.prohibited,
     ZoneClass.open_space: UsePermission.prohibited,
     ZoneClass.special: UsePermission.prohibited,
