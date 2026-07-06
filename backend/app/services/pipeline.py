@@ -1080,10 +1080,35 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
 
 
 def _match_jurisdiction(input_str: str) -> JurisdictionConfig | None:
-    """Check hard-coded registry first (fast path, no network)."""
+    """Check hard-coded registry first (fast path, no network).
+
+    Resolution order (catch #46 sibling — the *registry* lookup fix, mirroring
+    the create_job resolver hardened earlier this session):
+      1. Exact match on the registry key or the canonical `cfg.name` —
+         unambiguous, always preferred.
+      2. Substring match, but GATED on a state hint parsed from the input.
+         The old bare `if key in normalized` let "Washington Township, NJ"
+         route to a Utah 'washington' entry. Now, when the input carries a
+         state, only same-state configs can match; with no state hint we fall
+         back to the legacy substring behavior (unchanged for "Draper, UT").
+    """
     normalized = input_str.lower().strip()
+    if not normalized:
+        return None
+
+    # 1. Exact key / canonical-name match.
+    if (cfg := KNOWN_JURISDICTIONS.get(normalized)) is not None:
+        return cfg
+    for cfg in KNOWN_JURISDICTIONS.values():
+        if cfg.name.lower() == normalized:
+            return cfg
+
+    # 2. State-gated substring match.
+    state_hint = _parse_state(input_str)
     for key, cfg in KNOWN_JURISDICTIONS.items():
         if key in normalized or cfg.name.lower() in normalized:
+            if state_hint and cfg.state and cfg.state.upper() != state_hint:
+                continue  # same name, wrong state — never cross state lines
             return cfg
     return None
 
