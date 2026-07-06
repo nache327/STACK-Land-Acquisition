@@ -53,6 +53,25 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
+@pytest.fixture(autouse=True)
+def _bypass_admin_auth():
+    """Suite-wide bypass of the shared-secret admin gate (require_secret).
+
+    Router-level auth (2026-07-06) fail-closes with 503 when ADMIN_API_SECRET
+    is unset — which is every CI/test environment — so any test exercising a
+    gated admin/debug route would fail on auth instead of testing its actual
+    behavior. Tests exercise route logic; the auth contract itself is pinned
+    separately in tests/test_admin_auth.py (which pops this override for its
+    end-to-end case).
+    """
+    from app.api._auth import require_secret
+    from app.main import app
+
+    app.dependency_overrides[require_secret] = lambda: None
+    yield
+    app.dependency_overrides.pop(require_secret, None)
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def db_engine():
     """
