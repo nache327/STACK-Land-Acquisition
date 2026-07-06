@@ -638,51 +638,6 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     }
 
 
-# ── Virginia counties (Phase 3) ─────────────────────────────────────────────
-# Each VA county publishes its own ArcGIS service; no statewide composite.
-# Zoning lives on a separate spatial layer (parcel layer carries only PIN +
-# address, with no zoning column).
-_VA_FAIRFAX_PARCELS = (
-    "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest"
-    "/services/Parcels/FeatureServer/0"
-)
-_VA_FAIRFAX_ZONING = (
-    "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest"
-    "/services/Zoning/FeatureServer/0"
-)
-_VA_LOUDOUN_PARCELS = (
-    "https://logis.loudoun.gov/gis/rest/services/COL/LandRecords/MapServer/5"
-)
-_VA_LOUDOUN_ZONING = (
-    "https://logis.loudoun.gov/gis/rest/services/COL/Zoning/MapServer/3"
-)
-
-
-def _va(
-    county_name: str,
-    full_name: str,
-    parcel_endpoint: str,
-    zoning_endpoint: str | None = None,
-    where_clause: str | None = None,
-) -> JurisdictionConfig:
-    """Build a VA county-backed JurisdictionConfig.
-
-    Each VA county publishes its own ArcGIS layer — no statewide composite
-    covers Fairfax or Loudoun. Zoning is published as a separate spatial
-    layer; the parcel layer carries no zoning code (Fairfax's Parcels has
-    only PIN + address; Loudoun's LandRecords/5 has only PA_MCPI + acres).
-    """
-    return JurisdictionConfig(
-        name=full_name,
-        state="VA",
-        county=county_name,
-        parcel_source=ParcelSource.county_gis,
-        parcel_endpoint=parcel_endpoint,
-        where_clause=where_clause,
-        zoning_polygon_endpoint=zoning_endpoint,
-    )
-
-
 KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     # ── Draper (city-specific layer with zoning codes — keep as-is) ───────────
     "draper": JurisdictionConfig(
