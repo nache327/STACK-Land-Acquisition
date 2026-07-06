@@ -19,10 +19,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import psycopg2
 
+from scripts._db import get_sync_dsn
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
-DB_SYNC = "host=aws-1-us-east-2.pooler.supabase.com port=5432 dbname=postgres user=postgres.bbvywbpxwsoyvdvygvyw password=Teczmn3027$"
+DB_SYNC = get_sync_dsn()
 
 RISK_CRITERIA = [
     ("conditional_mixed_use",

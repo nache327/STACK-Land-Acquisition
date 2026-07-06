@@ -21,10 +21,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from scripts._db import get_dsn
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-DB_URL = "postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+DB_URL = get_dsn()
 
 DRY_RUN = "--dry-run" in sys.argv
 

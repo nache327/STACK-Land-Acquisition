@@ -19,11 +19,13 @@ import psycopg2
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from scripts._db import get_dsn, get_sync_dsn
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
-DB_URL = "postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
-DB_SYNC = "host=aws-1-us-east-2.pooler.supabase.com port=5432 dbname=postgres user=postgres.bbvywbpxwsoyvdvygvyw password=Teczmn3027$"
+DB_URL = get_dsn()
+DB_SYNC = get_sync_dsn()
 
 AF_JUR_ID = "d3757bf8-b4f1-4142-bece-8c774c863955"
 

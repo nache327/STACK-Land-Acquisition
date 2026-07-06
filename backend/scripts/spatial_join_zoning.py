@@ -22,10 +22,12 @@ from shapely.geometry import Point
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from scripts._db import get_dsn, get_sync_dsn
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger(__name__)
 
-DB_URL = "postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+DB_URL = get_dsn()
 
 SANDY_JUR_ID = "0cf50881-fdf3-4149-8c9f-6db758c4a08f"
 
@@ -71,7 +73,7 @@ def download_parcel_centroids() -> gpd.GeoDataFrame:
     """Download parcel id + centroid from Supabase using psycopg2 directly."""
     import psycopg2
     # Use sync connection for simplicity
-    conn_str = "host=aws-1-us-east-2.pooler.supabase.com port=5432 dbname=postgres user=postgres.bbvywbpxwsoyvdvygvyw password=Teczmn3027$"
+    conn_str = get_sync_dsn()
     logger.info("Loading parcel centroids from DB …")
     conn = psycopg2.connect(conn_str)
     cur = conn.cursor()
