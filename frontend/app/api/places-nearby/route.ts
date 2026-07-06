@@ -6,10 +6,13 @@
  * Body: { lat, lng, radius_meters, type?, keyword? }
  */
 import { NextRequest, NextResponse } from "next/server";
+import { sameOriginOnly } from "@/lib/api-guard";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
+  const blocked = sameOriginOnly(req);
+  if (blocked) return blocked;
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GOOGLE_PLACES_API_KEY not configured" }, { status: 503 });

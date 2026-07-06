@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { sameOriginOnly } from "@/lib/api-guard";
 
 export const runtime = "edge";
 export const maxDuration = 60;
@@ -241,6 +242,8 @@ async function getZoningRulesForCity(
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const blocked = sameOriginOnly(req);
+  if (blocked) return blocked;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
