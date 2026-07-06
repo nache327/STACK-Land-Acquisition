@@ -66,3 +66,32 @@ def test_alias_prefixes_columns_for_subquery():
     assert "p.zoning_code_source" in pred
     # no unqualified column leaks through
     assert " zoning_code" not in pred.replace("p.zoning_code", "")
+
+
+# ── NULL zoning_code_source semantics (migration 0042 has NO backfill) ────────
+# Pre-migration rows keep a NULL source. NULL MUST be lowest-precedence /
+# freely overridable by a district_spatial re-bind. If any code path treats
+# NULL as trusted 'parcel_attr', old county codes freeze and D2 is silently
+# defeated. The behavioral counterpart runs against PostGIS in
+# test_zoning_precedence_db.py::test_null_source_is_freely_overridable.
+
+def test_null_source_predicate_is_null_safe():
+    """The county-mode predicate must use IS DISTINCT FROM (NULL-safe): a plain
+    `<> 'district_spatial'` evaluates to NULL for NULL-source rows, silently
+    excluding them from rebinding — the exact freeze condition 1 forbids."""
+    pred = _binding_needed_predicate(False, True)
+    assert "zoning_code_source IS DISTINCT FROM 'district_spatial'" in pred
+    # never the NULL-poisoned comparison forms
+    assert "zoning_code_source <>" not in pred
+    assert "zoning_code_source !=" not in pred
+    assert "zoning_code_source = " not in pred
+
+
+def test_merge_never_invents_parcel_attr_for_null_codes():
+    """Non-force merge: when the incoming ingest row has NO zoning code, the
+    existing zoning_code_source is preserved AS IS (including NULL) — never
+    promoted to 'parcel_attr'."""
+    sql = _build_merge_sql(force=False)
+    assert "ELSE parcels.zoning_code_source END" in sql
+    # source is only ever set from the staged row, gated on a real incoming code
+    assert "THEN EXCLUDED.zoning_code_source" in sql

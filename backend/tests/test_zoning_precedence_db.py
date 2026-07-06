@@ -95,6 +95,28 @@ async def test_allentown_integer_code_yields_to_muni_district(db_session):
         await _cleanup(db_session, jid)
 
 
+async def test_null_source_is_freely_overridable(db_session):
+    """NULL zoning_code_source (pre-migration row — 0042 ships NO backfill) is
+    LOWEST precedence: a district re-bind must override it. If NULL were
+    treated as trusted 'parcel_attr', old county codes would freeze and the
+    muni-beats-county precedence would be silently defeated (condition 1 of
+    the 2026-07-06 stop+stamp approval)."""
+    jid = await _setup(db_session, parcel_code="OLDCTY", dist_code="LI", dist_class="industrial")
+    try:
+        # simulate the pre-migration state: code present, provenance unknown
+        await db_session.execute(
+            text("UPDATE parcels SET zoning_code_source = NULL WHERE jurisdiction_id = :jid"),
+            {"jid": jid},
+        )
+        await db_session.commit()
+        await backfill_parcel_zoning_from_districts(jid, db_session, district_beats_attr=True)
+        p = await _parcel(db_session, jid)
+        assert p.zoning_code == "LI"
+        assert p.zoning_code_source == "district_spatial"
+    finally:
+        await _cleanup(db_session, jid)
+
+
 async def test_city_gis_keeps_authoritative_parcel_code(db_session):
     """city_gis (district_beats_attr=False): the parcel-layer code is kept —
     a district must NOT clobber it, and the NYC-style fast-skip holds."""
