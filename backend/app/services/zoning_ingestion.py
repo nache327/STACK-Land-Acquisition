@@ -29,6 +29,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.zoning_district import ZoneSource, ZoningDistrict
 from app.services.classification import classify_zone_code
+from app.services.field_binding import (
+    bad_code_reason,
+    constant_code_reason,
+    first_match as _first,
+    matched_field,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -110,32 +116,6 @@ _DENSITY_FIELDS = ["MAX_DU_ACRE", "DENSITY", "DU_ACRE", "MAX_DENSITY"]
 _MIN_LOT_FIELDS = ["MIN_LOT_AREA", "MIN_LOT_SQFT", "MIN_LOT_SF", "MIN_LOT"]
 
 
-def _first(row: Any, fields: list[str]) -> Any:
-    """Case-insensitive first-match lookup. Tries each candidate field in its
-    original case, lowercase, and uppercase — source layers publish in any of
-    the three (MapPLUTO uses mixed case, Philly OPA uses lowercase, UGRC uses
-    uppercase)."""
-    # Build a case-insensitive row accessor once.
-    if isinstance(row, dict):
-        lookup = {k.lower(): v for k, v in row.items()}
-    elif hasattr(row, "_asdict"):
-        lookup = {k.lower(): v for k, v in row._asdict().items()}
-    elif hasattr(row, "to_dict"):
-        lookup = {k.lower(): v for k, v in row.to_dict().items()}
-    else:
-        lookup = {}
-
-    for f in fields:
-        v = lookup.get(f.lower())
-        if v is not None and str(v).strip() not in ("", "nan", "None"):
-            return v
-        for key, candidate in lookup.items():
-            if key.rsplit(".", 1)[-1] == f.lower():
-                if candidate is not None and str(candidate).strip() not in ("", "nan", "None"):
-                    return candidate
-    return None
-
-
 def _safe_float(val: Any) -> float | None:
     try:
         return float(val) if val is not None else None
@@ -163,17 +143,37 @@ def _geom_hash(geom: Polygon | MultiPolygon) -> str:
     return hashlib.sha1(wkb).hexdigest()[:32]
 
 
-def _map_row(row: Any, jurisdiction_id: uuid.UUID) -> dict | None:
+def _map_row(
+    row: Any,
+    jurisdiction_id: uuid.UUID,
+    code_fields: list[str] | None = None,
+    name_fields: list[str] | None = None,
+) -> dict | None:
+    # Option B: caller may prepend a per-jurisdiction override field (pinned in
+    # JurisdictionConfig) ahead of the global candidate lists — the durable fix
+    # for the recurring catch #3x field collisions (e.g. Delaware County PA's
+    # `LABEL` code vs its `Zoning_Code`=URL field).
+    code_fields = code_fields or _ZONE_CODE_FIELDS
+    name_fields = name_fields or _ZONE_NAME_FIELDS
+
     geom = _normalize_geom(row.geometry)
     if geom is None:
         return None
 
-    code = _first(row, _ZONE_CODE_FIELDS)
+    code = _first(row, code_fields)
     if not code:
         return None
     code = str(code).strip()
 
-    zone_name = _first(row, _ZONE_NAME_FIELDS)
+    # Value-shape validator (catch #34 backstop): reject URL-shaped / over-long
+    # values so an eCode360 URL in a field named ZONING_CODE (Delaware County PA)
+    # or a long description can never bind as a district code.
+    reason = bad_code_reason(code)
+    if reason:
+        logger.warning("[zoning] skipping district row — %s", reason)
+        return None
+
+    zone_name = _first(row, name_fields)
     source_class = _first(row, _ZONE_CLASS_FIELDS)
     zone_class = classify_zone_code(
         code,
@@ -215,28 +215,74 @@ async def ingest_zoning_districts(
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
     replace: bool = True,
+    zone_code_field: str | None = None,
+    zone_name_field: str | None = None,
 ) -> int:
-    """Bulk-insert zoning districts for a jurisdiction. Returns inserted count."""
+    """Bulk-insert zoning districts for a jurisdiction. Returns inserted count.
+
+    ``zone_code_field`` / ``zone_name_field`` are Option-B per-jurisdiction
+    overrides (from ``JurisdictionConfig``): when set, they're tried FIRST,
+    ahead of the global candidate lists, so a source whose real code lives in a
+    field that collides with a global candidate (Delaware County PA's ``LABEL``
+    vs its ``Zoning_Code``=URL field) binds correctly with zero global regression.
+    """
     if gdf.empty:
         logger.warning("Empty zoning GeoDataFrame — nothing to ingest")
         return 0
+
+    # Prepend the override(s) to the global candidate lists (deduped).
+    code_fields = _ZONE_CODE_FIELDS
+    if zone_code_field:
+        code_fields = [zone_code_field] + [f for f in _ZONE_CODE_FIELDS if f != zone_code_field]
+    name_fields = _ZONE_NAME_FIELDS
+    if zone_name_field:
+        name_fields = [zone_name_field] + [f for f in _ZONE_NAME_FIELDS if f != zone_name_field]
+
+    # Binding-provenance log (catch #3x): record which source field actually fed
+    # zone_code / zone_name for this ingest, so a future mis-bind is a diff not a
+    # debugging session. Computed from the first geometry-bearing row.
+    for _, sample in gdf.iterrows():
+        if getattr(sample, "geometry", None) is not None:
+            logger.info(
+                "[zoning] binding provenance for %s: zone_code←%s  zone_name←%s  (override code=%s name=%s)",
+                jurisdiction_id,
+                matched_field(sample, code_fields),
+                matched_field(sample, name_fields),
+                zone_code_field or "—",
+                zone_name_field or "—",
+            )
+            break
 
     logger.info("Mapping %d zoning GDF rows → ZoningDistrict dicts …", len(gdf))
     rows: list[dict] = []
     # iterrows preserves the original ArcGIS field names. itertuples sanitizes
     # dotted names like "GIS.landbase1_Zoning.ZONINGCODE" and breaks mapping.
     for _, row in gdf.iterrows():
-        mapped = _map_row(row, jurisdiction_id)
+        mapped = _map_row(row, jurisdiction_id, code_fields=code_fields, name_fields=name_fields)
         if mapped is not None:
             rows.append(mapped)
 
     skipped = len(gdf) - len(rows)
     if skipped:
-        logger.warning("Skipped %d zoning rows (null geometry or missing code)", skipped)
+        logger.warning("Skipped %d zoning rows (null geometry, missing code, or bad-shaped code)", skipped)
 
     if not rows:
         logger.error("No usable zoning rows after mapping — aborting")
         return 0
+
+    # Dataset-level value-shape check (catch #34, Montgomery `Type="District"`):
+    # a single zone_code dominating the whole layer means the bound field is a
+    # constant, not the real district code. Abort loudly rather than poison the
+    # jurisdiction with one bogus code across every parcel.
+    const_reason = constant_code_reason([r["zone_code"] for r in rows])
+    if const_reason:
+        logger.error(
+            "[zoning] ABORTING ingest for %s — %s. Pin JurisdictionConfig."
+            "zone_code_field to the real district-code field.",
+            jurisdiction_id,
+            const_reason,
+        )
+        raise ValueError(f"zoning bind rejected: {const_reason}")
 
     if replace:
         logger.info("Deleting existing zoning_districts for jurisdiction %s …", jurisdiction_id)

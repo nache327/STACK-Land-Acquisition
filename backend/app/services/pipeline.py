@@ -225,6 +225,15 @@ class JurisdictionConfig:
     # _map_row precedence is city_override -> muni_name_map -> native _CITY_FIELDS.
     muni_field: str | None = None
     muni_name_map: dict[int, str] | None = None
+    # Option B — per-jurisdiction field overrides (durable catch #3x fix). When
+    # a source's real zone code / name / parcel-zone lives in a field that
+    # collides with a global candidate (e.g. Delaware County PA's `LABEL` code
+    # vs its `Zoning_Code`=eCode360-URL field, or a constant `Type` field), pin
+    # the correct field here. It's tried FIRST, ahead of the global lists, with
+    # zero regression to other jurisdictions. Leave None to use the global lists.
+    zone_code_field: str | None = None
+    zone_name_field: str | None = None
+    parcel_zone_field: str | None = None
 
 
 # UGRC county-specific parcel layers (services1.arcgis.com, org 99lidPhWCzftIe9K)
@@ -525,6 +534,22 @@ _PA_BUCKS_ZONING = (
     "/Municipal_Zoning/FeatureServer/0"
 )
 
+# Delaware County PA — 4th SE-PA county. Thin parcel layer (PIN + numeric
+# MUNICIPALI + CALCULATED acres, no zoning inline) like Montgomery; countywide
+# zoning polygons carry the muni NAME (MUNI_NAME) so city is stamped via the
+# district backfill. CATCH #34 LANDMINE: the field literally named `Zoning_Code`
+# holds an eCode360 URL, and it wins over the real `LABEL` code in the global
+# _ZONE_CODE_FIELDS list — so Delco pins Option-B overrides (LABEL / Legend_Info).
+# See _drafts/_delaware_pa_source_manifest.md.
+_PA_DELAWARE_PARCELS = (
+    "https://gis.delcopa.gov/arcgis/rest/services/Parcels"
+    "/Parcels_Public_Access/FeatureServer/0"
+)
+_PA_DELAWARE_ZONING = (
+    "https://gis.delcopa.gov/arcgis/rest/services/SLD_Review"
+    "/Delaware_County_Zoning/FeatureServer/0"
+)
+
 
 def _pa_county(
     county_name: str,
@@ -536,6 +561,9 @@ def _pa_county(
     city_override: str | None = None,
     muni_field: str | None = None,
     muni_name_map: dict[int, str] | None = None,
+    zone_code_field: str | None = None,
+    zone_name_field: str | None = None,
+    parcel_zone_field: str | None = None,
 ) -> JurisdictionConfig:
     """Build a PA county-backed JurisdictionConfig (single-county FeatureServer).
 
@@ -558,6 +586,9 @@ def _pa_county(
         city_override=city_override,
         muni_field=muni_field,
         muni_name_map=muni_name_map,
+        zone_code_field=zone_code_field,
+        zone_name_field=zone_name_field,
+        parcel_zone_field=parcel_zone_field,
     )
 
 
@@ -1033,6 +1064,17 @@ KNOWN_JURISDICTIONS: dict[str, JurisdictionConfig] = {
     "bucks county, pa": _pa_county(
         "Bucks", "Bucks County, PA", _PA_BUCKS_PARCELS,
         zoning_endpoint=_PA_BUCKS_ZONING,
+    ),
+    # Delaware County PA — full county (49 munis). Parcel layer is thin (PIN +
+    # numeric MUNICIPALI, no city NAME) → parcels.city stays NULL and is stamped
+    # from the zoning polygon's MUNI_NAME by the city-stamp backfill (Montgomery
+    # pattern). Option-B overrides pin the zoning bind to LABEL / Legend_Info so
+    # the `Zoning_Code`=eCode360-URL field (catch #34) never binds as the code.
+    "delaware county, pa": _pa_county(
+        "Delaware", "Delaware County, PA", _PA_DELAWARE_PARCELS,
+        zoning_endpoint=_PA_DELAWARE_ZONING,
+        zone_code_field="LABEL",
+        zone_name_field="Legend_Info",
     ),
 }
 
@@ -1580,6 +1622,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
             city_override=cfg.city_override,
             muni_field=cfg.muni_field,
             muni_name_map=cfg.muni_name_map,
+            parcel_zone_field=cfg.parcel_zone_field,
         )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
@@ -1758,7 +1801,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 {"feature_count": len(zgdf)},
             )
             async with asyncio.timeout(ZONING_TIMEOUT_SECONDS):
-                zoning_count = await ingest_zoning_districts(zgdf, jurisdiction.id, db)
+                zoning_count = await ingest_zoning_districts(
+                    zgdf, jurisdiction.id, db,
+                    zone_code_field=cfg.zone_code_field,
+                    zone_name_field=cfg.zone_name_field,
+                )
             await db.commit()
             _stage_completed(job, "zoning_ingest", zoning_ingest_started, districts_ingested=zoning_count)
             await complete_job_step(db, zoning_ingest_step, {"districts_ingested": zoning_count})

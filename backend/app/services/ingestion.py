@@ -25,6 +25,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.services.classification import classify_zone_code
+from app.services.field_binding import (
+    bad_code_reason,
+    first_match as _first,
+    is_numeric_city,
+)
 from app.services.overlays import SFHA_ZONES
 from app.services.vacancy import is_vacant_by_landuse
 
@@ -206,33 +211,6 @@ _CITY_FIELDS = [
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
-def _first(row: Any, fields: list[str]) -> Any:
-    """Return the value of the first field that exists and is non-null.
-
-    Case-insensitive: MapPLUTO publishes fields in mixed case (`ZoneDist1`),
-    Philly OPA in lowercase (`zoning`), UGRC in uppercase (`ZONING`). We
-    normalize both sides to lowercase for lookup.
-    """
-    if isinstance(row, dict):
-        lookup = {k.lower(): v for k, v in row.items()}
-    elif hasattr(row, "_asdict"):
-        lookup = {k.lower(): v for k, v in row._asdict().items()}
-    elif hasattr(row, "to_dict"):
-        lookup = {k.lower(): v for k, v in row.to_dict().items()}
-    else:
-        lookup = {}
-
-    for f in fields:
-        v = lookup.get(f.lower())
-        if v is not None and str(v).strip() not in ("", "nan", "None"):
-            return v
-        for key, candidate in lookup.items():
-            if key.rsplit(".", 1)[-1] == f.lower():
-                if candidate is not None and str(candidate).strip() not in ("", "nan", "None"):
-                    return candidate
-    return None
-
-
 def _safe_float(val: Any) -> float | None:
     try:
         return float(val) if val is not None else None
@@ -371,6 +349,7 @@ def _map_row(
     city_override: str | None = None,
     muni_field: str | None = None,
     muni_name_map: dict[int, str] | None = None,
+    parcel_zone_field: str | None = None,
 ) -> dict | None:
     """
     Convert a single GeoDataFrame row to a dict ready for Parcel bulk insert.
@@ -423,7 +402,19 @@ def _map_row(
         props = {}
     raw = {k: str(v) if v is not None else None for k, v in props.items()}
 
-    zoning_code_val = str(z).strip() if (z := _first(row, _ZONE_FIELDS)) else None
+    # Option B: a per-jurisdiction parcel_zone_field (from JurisdictionConfig)
+    # is tried ahead of the global _ZONE_FIELDS list.
+    zone_fields = (
+        [parcel_zone_field] + [f for f in _ZONE_FIELDS if f != parcel_zone_field]
+        if parcel_zone_field else _ZONE_FIELDS
+    )
+    zoning_code_val = str(z).strip() if (z := _first(row, zone_fields)) else None
+    # Value-shape validator (catch #34): a URL / over-long value bound as a
+    # parcel zoning code is poison. Drop it — leave NULL so the district spatial
+    # backfill can fill the real code — rather than persist the bad value.
+    if zoning_code_val and bad_code_reason(zoning_code_val):
+        logger.warning("[parcels] dropping bad-shaped zoning_code %r", zoning_code_val[:60])
+        zoning_code_val = None
     zone_class_val = classify_zone_code(zoning_code_val).value if zoning_code_val else None
 
     centroid = geom.centroid
@@ -434,19 +425,29 @@ def _map_row(
     from app.services.parcel_value_mapper import map_value_and_residential
     assessed_value, is_residential = map_value_and_residential(state, raw)
 
+    # City resolution precedence (catch #35 / #33 chain):
+    #   1. city_override — fixed muni, the "scope to one muni" shortcut.
+    #   2. muni_name_map[MUNI] — the "scale to all munis" crosswalk: PA county
+    #      assessor layers expose only an integer MUNI code; resolve it to the
+    #      muni name via the baked boundary-layer map (else `_CITY_FIELDS`'s
+    #      "MUNI" candidate would capture a bogus city="43").
+    #   3. native _CITY_FIELDS — layers that carry a real city/muni NAME.
+    city_val = city_override or _resolve_muni_name(row, muni_field, muni_name_map)
+    if not city_val:
+        raw_city = str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None
+        # catch #33: a purely-numeric city ("43") is an unresolved MUNI code —
+        # leave NULL so the district-based city-stamp backfill fills the real
+        # name, rather than persisting a bogus numeric "city".
+        if raw_city and is_numeric_city(raw_city):
+            logger.warning("[parcels] dropping numeric city %r (unresolved muni code)", raw_city)
+            raw_city = None
+        city_val = raw_city
+
     return {
         "jurisdiction_id": jurisdiction_id,
         "apn": apn,
         "address": str(a).strip() if (a := _first(row, _ADDRESS_FIELDS)) else None,
-        # City resolution precedence (catch #35 / #33 chain):
-        #   1. city_override — fixed muni, the "scope to one muni" shortcut.
-        #   2. muni_name_map[MUNI] — the "scale to all munis" crosswalk: PA county
-        #      assessor layers expose only an integer MUNI code; resolve it to the
-        #      muni name via the baked boundary-layer map (else `_CITY_FIELDS`'s
-        #      "MUNI" candidate would capture a bogus city="43").
-        #   3. native _CITY_FIELDS — layers that carry a real city/muni NAME.
-        "city": city_override or _resolve_muni_name(row, muni_field, muni_name_map)
-        or (str(ct).strip() if (ct := _first(row, _CITY_FIELDS)) else None),
+        "city": city_val,
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
         "zone_class": zone_class_val,
