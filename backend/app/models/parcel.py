@@ -60,6 +60,15 @@ class Parcel(Base):
     zone_binding_method: Mapped[str | None] = mapped_column(
         String(32), nullable=True
     )
+    # Which *authority* the current zoning_code came from (audit "D2"):
+    # 'parcel_attr' = the source parcel layer's own zoning field; 'district_spatial'
+    # = ST_Within municipal-district containment; 'nearest' = ST_DWithin fallback;
+    # 'sibling_apn' = inherited from a sibling parcel; NULL = none/unknown. Lets the
+    # backfill enforce "municipal district beats county attribute" instead of
+    # fill-only-where-NULL, and keeps zone_class + zoning_code from one authority.
+    zoning_code_source: Mapped[str | None] = mapped_column(
+        String(32), nullable=True
+    )
     land_use_code: Mapped[str | None] = mapped_column(String(512), nullable=True)
     improvement_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     # Total assessed value (land + improvements) from the source assessor roll.

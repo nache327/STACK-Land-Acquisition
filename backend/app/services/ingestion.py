@@ -451,6 +451,10 @@ def _map_row(
         "owner_name": str(o).strip() if (o := _first(row, _OWNER_FIELDS)) else None,
         "zoning_code": zoning_code_val,
         "zone_class": zone_class_val,
+        # Provenance (audit "D2"): an ingest-time code always comes from the
+        # parcel layer's own attribute. district_spatial / nearest are stamped
+        # later by the spatial backfill; sibling_apn by the sibling crosswalk.
+        "zoning_code_source": "parcel_attr" if zoning_code_val else None,
         "land_use_code": land_use,
         "acres": _resolve_acres(row, geom),
         "county_link": str(lk).strip() if (lk := _first(row, _LINK_FIELDS)) else None,
@@ -477,10 +481,16 @@ async def ingest_parcels(
     city_override: str | None = None,
     muni_field: str | None = None,
     muni_name_map: dict[int, str] | None = None,
+    parcel_zone_field: str | None = None,
+    force: bool = False,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
     into PostGIS, replacing any existing parcels for the jurisdiction.
+
+    ``force`` (a forced re-ingest) overwrites zoning_code / zone_class /
+    zoning_code_source unconditionally so a stale or bad code can be cleared,
+    instead of the default COALESCE keeping it forever.
 
     Returns number of parcels inserted.
     """
@@ -504,7 +514,8 @@ async def ingest_parcels(
     for idx, values in enumerate(gdf.itertuples(index=False, name=None), start=1):
         row = dict(zip(columns, values))
         mapped = _map_row(row, jurisdiction_id, state=state, city_override=city_override,
-                          muni_field=muni_field, muni_name_map=muni_name_map)
+                          muni_field=muni_field, muni_name_map=muni_name_map,
+                          parcel_zone_field=parcel_zone_field)
         if mapped is not None:
             apn = mapped["apn"]
             if apn in rows_by_apn:
@@ -538,7 +549,7 @@ async def ingest_parcels(
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
 
-    total_inserted = await _copy_upsert_parcels(rows, progress_callback)
+    total_inserted = await _copy_upsert_parcels(rows, progress_callback, force=force)
 
     logger.info(
         "Ingested %d parcels for jurisdiction %s", total_inserted, jurisdiction_id
@@ -550,7 +561,7 @@ async def ingest_parcels(
 
 _STAGE_COLUMNS = [
     "jurisdiction_id", "apn", "address", "city", "owner_name",
-    "zoning_code", "zone_class", "land_use_code", "acres",
+    "zoning_code", "zone_class", "zoning_code_source", "land_use_code", "acres",
     "county_link", "in_flood_zone", "in_wetland", "avg_slope_pct",
     "has_structure", "improvement_value",
     "assessed_value", "is_residential",
@@ -566,6 +577,7 @@ CREATE TEMP TABLE IF NOT EXISTS _stage_parcels (
     owner_name text,
     zoning_code text,
     zone_class text,
+    zoning_code_source text,
     land_use_code text,
     acres double precision,
     county_link text,
@@ -584,17 +596,44 @@ CREATE TEMP TABLE IF NOT EXISTS _stage_parcels (
 
 _TRUNCATE_STAGE_SQL = "TRUNCATE _stage_parcels"
 
-_MERGE_SQL = """
+def _build_merge_sql(force: bool = False) -> str:
+    """Build the COPY→parcels upsert.
+
+    zoning_code / zone_class / zoning_code_source always move TOGETHER so a
+    row's code and its class never come from different authorities (audit "D2",
+    item 4):
+
+      - default: keep the existing value when the incoming ingest has no code
+        (COALESCE) — but when the ingest DOES bring a code, take the code, its
+        class, AND stamp source='parcel_attr' as one unit. This never clobbers a
+        district_spatial binding written later by the spatial backfill (that
+        pass runs after ingest and re-stamps).
+      - force=True: a forced re-ingest intends fresh data, so overwrite
+        unconditionally — this is what lets a re-ingest *clear* a stale/bad code
+        (EXCLUDED.zoning_code may legitimately be NULL now) instead of the old
+        COALESCE keeping it forever.
+    """
+    if force:
+        zoning_block = """    zoning_code = EXCLUDED.zoning_code,
+    zone_class = EXCLUDED.zone_class,
+    zoning_code_source = EXCLUDED.zoning_code_source,"""
+    else:
+        zoning_block = """    zoning_code = COALESCE(EXCLUDED.zoning_code, parcels.zoning_code),
+    zone_class = CASE WHEN EXCLUDED.zoning_code IS NOT NULL
+                      THEN EXCLUDED.zone_class ELSE parcels.zone_class END,
+    zoning_code_source = CASE WHEN EXCLUDED.zoning_code IS NOT NULL
+                              THEN EXCLUDED.zoning_code_source ELSE parcels.zoning_code_source END,"""
+    return f"""
 INSERT INTO parcels (
     jurisdiction_id, apn, address, city, owner_name, zoning_code, zone_class,
-    land_use_code, acres, county_link, in_flood_zone, in_wetland,
+    zoning_code_source, land_use_code, acres, county_link, in_flood_zone, in_wetland,
     avg_slope_pct, has_structure, improvement_value,
     assessed_value, is_residential,
     geom, centroid, raw
 )
 SELECT
     s.jurisdiction_id, s.apn, s.address, s.city, s.owner_name,
-    s.zoning_code, s.zone_class::zone_class_enum,
+    s.zoning_code, s.zone_class::zone_class_enum, s.zoning_code_source,
     s.land_use_code, s.acres, s.county_link,
     s.in_flood_zone, s.in_wetland, s.avg_slope_pct,
     s.has_structure, s.improvement_value,
@@ -607,8 +646,7 @@ ON CONFLICT ON CONSTRAINT uq_parcels_jurisdiction_apn DO UPDATE SET
     address = EXCLUDED.address,
     city = COALESCE(EXCLUDED.city, parcels.city),
     owner_name = EXCLUDED.owner_name,
-    zoning_code = COALESCE(EXCLUDED.zoning_code, parcels.zoning_code),
-    zone_class = COALESCE(EXCLUDED.zone_class, parcels.zone_class),
+{zoning_block}
     land_use_code = EXCLUDED.land_use_code,
     acres = EXCLUDED.acres,
     county_link = EXCLUDED.county_link,
@@ -636,6 +674,7 @@ def _row_to_record(r: dict) -> tuple:
         r.get("owner_name"),
         r.get("zoning_code"),
         r.get("zone_class"),
+        r.get("zoning_code_source"),
         r.get("land_use_code"),
         r.get("acres"),
         r.get("county_link"),
@@ -670,7 +709,7 @@ def _raw_dsn() -> str:
     return dsn.replace(":6543/", ":5432/")
 
 
-async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any) -> int:
+async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any, *, force: bool = False) -> int:
     """COPY rows into a temp table, then INSERT...SELECT...ON CONFLICT into parcels.
 
     Uses a raw asyncpg connection (no SQLAlchemy session) to bypass the
@@ -722,7 +761,7 @@ async def _copy_upsert_parcels(rows: list[dict], progress_callback: Any) -> int:
                 staged_count, total,
             )
             try:
-                result = await conn.execute(_MERGE_SQL)
+                result = await conn.execute(_build_merge_sql(force=force))
             except Exception as exc:
                 logger.exception("MERGE INTO parcels failed: %s", exc)
                 raise

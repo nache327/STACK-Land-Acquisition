@@ -14,6 +14,32 @@ from app.config import settings
 from app.models.jurisdiction import CoverageLevel, Jurisdiction
 
 
+def _binding_needed_predicate(
+    force: bool, district_beats_attr: bool, alias: str = ""
+) -> str:
+    """SQL predicate selecting parcels that still need a zoning (re)binding.
+
+    Drives both the fast-skip count and the UPDATE's WHERE so they stay in
+    lock-step. ``alias`` prefixes the columns (e.g. ``'p'``) for use inside the
+    parcel subquery. Precedence policy (audit "D2"):
+      - force            → rebind everything.
+      - district_beats_attr (county_gis) → rebind unzoned parcels AND any whose
+        code is not yet authoritatively district-contained, so a municipal
+        district overrides a stale county 'parcel_attr' code.
+      - default (city_gis) → only unzoned parcels (preserves the NYC fast-skip
+        and the authoritative parcel-layer code).
+    """
+    col = f"{alias}." if alias else ""
+    if force:
+        return "TRUE"
+    if district_beats_attr:
+        return (
+            f"({col}zoning_code IS NULL OR {col}zoning_code = '' "
+            f"OR {col}zoning_code_source IS DISTINCT FROM 'district_spatial')"
+        )
+    return f"({col}zoning_code IS NULL OR {col}zoning_code = '')"
+
+
 async def refresh_jurisdiction_bbox(
     jurisdiction: Jurisdiction, db: AsyncSession
 ) -> list[float] | None:
@@ -47,6 +73,8 @@ async def backfill_parcel_zoning_from_districts(
     *,
     fill_missing_zone_code: bool = True,
     nearest_within_meters: float | None = None,
+    district_beats_attr: bool = False,
+    force: bool = False,
 ) -> int:
     """
     Backfill `parcels.zone_class` using parcel centroid containment.
@@ -72,39 +100,55 @@ async def backfill_parcel_zoning_from_districts(
     them to the visually-adjacent zone.
 
     Every write from this service stamps `parcels.zone_binding_method`
-    ('contained' or 'nearest_<N>m') so the audit can split contained-vs-
+    ('contained' or 'nearest_<N>m') AND `parcels.zoning_code_source`
+    ('district_spatial' or 'nearest') so the audit can split contained-vs-
     inferred coverage without changing the ≥70% operational gate.
+
+    Precedence (audit "D2"): with ``district_beats_attr=True`` (pass this for
+    county_gis jurisdictions), a municipal district binding OVERRIDES a county
+    parcel-attribute code — the thin county attribute is the weaker authority.
+    Default False preserves the city_gis behavior where the parcel layer's own
+    zoning is authoritative (and keeps the NYC fast-skip intact). ``force``
+    rebinds every parcel regardless of current source.
     """
     logger = logging.getLogger(__name__)
-    # Skip the heavy UPDATE entirely when virtually every parcel already
-    # has zoning_code populated. NYC hit this: 13 unzoned parcels of 856,670
-    # caused a 49-min UPDATE that rewrote all 856k rows for ~0 useful work.
-    # The 1% threshold leaves plenty of headroom for jurisdictions that
-    # genuinely need a sweep (where 5-100% of parcels need zoning attached).
+    # Which parcels still need a (re)binding drives both the fast-skip and the
+    # UPDATE's WHERE. A parcel that is already authoritatively district-bound
+    # ('district_spatial') is never rewritten unless forced — that keeps the NYC
+    # fast-skip (13 unzoned of 856,670 → don't rewrite 856k rows) AND lets a
+    # county's municipal layer override a stale 'parcel_attr' code (D2 item 3).
+    needs_pred = _binding_needed_predicate(force, district_beats_attr)
+
     pre_counts = await db.execute(text(
         "SELECT "
         " (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid) AS total,"
-        " (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND (zoning_code IS NULL OR zoning_code = '')) AS unzoned"
+        f" (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND {needs_pred}) AS needs"
     ), {"jid": jurisdiction_id})
     row = pre_counts.one()
     total = int(row.total or 0)
-    unzoned = int(row.unzoned or 0)
-    if total > 0 and unzoned / total < 0.01:
-        # >99% already zoned — bail. Logged so the operator can tell the
+    needs = int(row.needs or 0)
+    if total > 0 and needs / total < 0.01:
+        # <1% still need binding — bail. Logged so the operator can tell the
         # difference between "skipped because already done" and "failed".
         logger.info(
             "backfill_parcel_zoning_from_districts skipping %s — "
-            "%d/%d parcels (%.2f%%) already have zoning_code",
-            jurisdiction_id, total - unzoned, total,
-            (total - unzoned) / total * 100,
+            "%d/%d parcels (%.2f%%) already bound (district_beats_attr=%s force=%s)",
+            jurisdiction_id, total - needs, total,
+            (total - needs) / total * 100, district_beats_attr, force,
         )
         return 0
 
+    # zoning_code + zoning_code_source are stamped together so a row's code and
+    # its authority never diverge (D2 item 4). A district row always carries a
+    # non-empty zone_code (enforced at ingest), so taking it also aligns
+    # zone_class (set from the same district) with the code.
     zone_code_set = (
-        ", zoning_code = COALESCE(NULLIF(target.zoning_code, ''), sub.zone_code)"
+        ", zoning_code = sub.zone_code, zoning_code_source = 'district_spatial'"
         if fill_missing_zone_code
         else ""
     )
+    # Same predicate as the skip check, aliased to the parcel subquery `p`.
+    needs_pred_p = _binding_needed_predicate(force, district_beats_attr, alias="p")
     session_url = settings.database_url.replace(":6543/", ":5432/").replace(
         "postgresql+asyncpg://", "postgresql://"
     )
@@ -148,6 +192,7 @@ async def backfill_parcel_zoning_from_districts(
                 ) m
                 WHERE p.jurisdiction_id = $1
                   AND p.geom IS NOT NULL
+                  AND {needs_pred_p}
             ) sub
             WHERE target.id = sub.parcel_id
             """,
@@ -166,12 +211,18 @@ async def backfill_parcel_zoning_from_districts(
         if nearest_within_meters is not None and nearest_within_meters > 0:
             radius = float(nearest_within_meters)
             binding_label = f"nearest_{int(round(radius))}m"
+            # Nearest binding is its own (weaker) authority in the provenance.
+            zone_code_set_nearest = (
+                ", zoning_code = sub.zone_code, zoning_code_source = 'nearest'"
+                if fill_missing_zone_code
+                else ""
+            )
             nearest_status = await conn.execute(
                 f"""
                 UPDATE parcels target
                 SET zone_class = sub.zone_class,
                     zone_binding_method = $2
-                    {zone_code_set}
+                    {zone_code_set_nearest}
                 FROM (
                     SELECT p.id AS parcel_id, m.zone_class, m.zone_code
                     FROM parcels p,

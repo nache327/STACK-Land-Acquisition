@@ -1603,6 +1603,7 @@ async def _run(db: AsyncSession, job: Job) -> None:
             muni_field=cfg.muni_field,
             muni_name_map=cfg.muni_name_map,
             parcel_zone_field=cfg.parcel_zone_field,
+            force=force_refresh,
         )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
@@ -1804,7 +1805,13 @@ async def _run(db: AsyncSession, job: Job) -> None:
                 "backfill_zoning",
                 {"jurisdiction_id": str(jurisdiction.id)},
             )
-            updated = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
+            updated = await backfill_parcel_zoning_from_districts(
+                jurisdiction.id, db,
+                # county_gis: the municipal district layer outranks the thin
+                # county parcel attribute (audit "D2"). city_gis keeps its own.
+                district_beats_attr=(cfg.parcel_source == ParcelSource.county_gis),
+                force=force_refresh,
+            )
             logger.info("zone_class backfill updated %d parcels", updated)
             await db.commit()
             _stage_completed(job, "zoning_backfill", zoning_backfill_started, parcels_updated=updated)
@@ -1890,7 +1897,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
     if zoning_endpoint and _skip_zd_download and (_unzoned or 0) > 0:
         logger.info("Zoning districts cached but %d unzoned parcels remain — running backfill only", _unzoned)
         try:
-            cached_backfill = await backfill_parcel_zoning_from_districts(jurisdiction.id, db)
+            cached_backfill = await backfill_parcel_zoning_from_districts(
+                jurisdiction.id, db,
+                district_beats_attr=(cfg.parcel_source == ParcelSource.county_gis),
+                force=force_refresh,
+            )
             await db.commit()
             logger.info("Cached-hit backfill: %d parcels updated", cached_backfill)
         except Exception as exc:
