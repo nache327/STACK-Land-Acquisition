@@ -290,9 +290,23 @@ async def crosswalk_county_from_cities(
                 notes=plan.notes,
                 classification_source=ClassificationSource.crosswalk,
             ),
+            # Never let a sibling crosswalk overwrite a GROUNDED county verdict
+            # (audit "D2"): previously only human_reviewed / source='human' were
+            # protected, so a stale sibling could clobber an ordinance-grounded
+            # llm / op5_factory county row. Exclude the full grounded set — same
+            # authority tier as the lead-eligibility gate.
             where=(
                 (ZoneUseMatrix.human_reviewed == False)  # noqa: E712
-                & (ZoneUseMatrix.classification_source != ClassificationSource.human)
+                & (
+                    ZoneUseMatrix.classification_source.notin_(
+                        [
+                            ClassificationSource.human,
+                            ClassificationSource.llm,
+                            ClassificationSource.llm_rule,
+                            ClassificationSource.op5_factory,
+                        ]
+                    )
+                )
             ),
         )
         await db.execute(stmt)

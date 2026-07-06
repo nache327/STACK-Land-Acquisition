@@ -322,7 +322,18 @@ async def refresh_jurisdiction_coverage_level(
             """
             SELECT
                 (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid) AS parcel_count,
-                (SELECT COUNT(*) FROM zone_use_matrix WHERE jurisdiction_id = :jid) AS matrix_count,
+                -- Real verdicts only (audit "D2"): exclude soft-deleted tombstones
+                -- and the placeholder stubs (inherited_pending defers to a future
+                -- sprint; op5_factory_catchall is requires-review; the default
+                -- 'unclear' is the heuristic-bootstrap origin). Counting those
+                -- inflated coverage_level to full/partial on jurisdictions that
+                -- have no grounded matrix at all.
+                (SELECT COUNT(*) FROM zone_use_matrix
+                   WHERE jurisdiction_id = :jid
+                     AND deleted_at IS NULL
+                     AND classification_source NOT IN (
+                         'inherited_pending', 'unclear', 'op5_factory_catchall'
+                     )) AS matrix_count,
                 (SELECT COUNT(*) FROM zoning_districts WHERE jurisdiction_id = :jid) AS zoning_count,
                 (SELECT COUNT(*) FROM parcels WHERE jurisdiction_id = :jid AND has_structure IS NULL) AS null_vacancy_count
             """
