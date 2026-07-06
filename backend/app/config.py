@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     # Anthropic
     anthropic_api_key: str = ""
 
+    # Shared-secret for operator/CLI-only admin routes (Tier-0 security MVP).
+    # When set, gated routes require the `X-Admin-Secret` header to match; when
+    # empty, gated routes fail closed (503) so an unconfigured prod isn't left open.
+    # Real per-user auth (for the in-app admin console) is a later phase.
+    admin_api_secret: str = ""
+
     # Optional data sources
     regrid_api_key: str = ""
 

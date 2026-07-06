@@ -31,6 +31,7 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api._auth import require_secret
 from app.db import async_session_maker, get_db
 from app.models.forsale_listing import ForsaleListing
 from app.models.jurisdiction import Jurisdiction
@@ -508,7 +509,10 @@ async def debug_geocode(address: str, city: str = "", state: str = "") -> dict:
     }
 
 
-@router.post("/listings/_debug-rematch/{jurisdiction_id}")
+@router.post(
+    "/listings/_debug-rematch/{jurisdiction_id}",
+    dependencies=[Depends(require_secret)],
+)
 async def debug_rematch(
     jurisdiction_id: uuid.UUID,
     background_tasks: BackgroundTasks,
@@ -584,7 +588,11 @@ async def debug_rematch(
 _FLIPPED_SAMPLE_CAP = 100
 
 
-@router.post("/listings/_rematch-all", status_code=202)
+@router.post(
+    "/listings/_rematch-all",
+    status_code=202,
+    dependencies=[Depends(require_secret)],
+)
 async def rematch_all_listings(
     background_tasks: BackgroundTasks,
     jurisdiction_id: uuid.UUID | None = None,
@@ -601,8 +609,8 @@ async def rematch_all_listings(
     geocoder improvements (those need a full re-ingest or a separate
     re-geocode endpoint).
 
-    Auth: none, mirroring _run-digest and _score-all. The operation is
-    idempotent and only mutates listing rows; no external side effects.
+    Auth: gated by require_secret (operator-only), same as _run-digest and
+    _score-all. The operation is idempotent and only mutates listing rows.
     """
     job_id = str(uuid.uuid4())
     state: dict[str, Any] = {

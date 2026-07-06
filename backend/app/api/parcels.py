@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import and_, case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api._auth import require_secret
 from app.db import get_db
 from app.models.parcel import Parcel
 from app.models.zone_use_matrix import ZoneUseMatrix, UsePermission
@@ -536,7 +537,10 @@ async def _value_density_impl(
 # kick off the backfill from a curl after the migration deploys — no
 # Railway shell access required.
 
-@router.post("/parcels/_backfill-assessed-value")
+@router.post(
+    "/parcels/_backfill-assessed-value",
+    dependencies=[Depends(require_secret)],
+)
 async def backfill_assessed_value(
     state: str = Query(..., description="Two-letter state code (required)"),
     dry_run: bool = Query(default=False),

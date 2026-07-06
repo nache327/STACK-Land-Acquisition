@@ -25,6 +25,7 @@ from sqlalchemy import and_, delete, func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api._auth import require_secret
 from app.db import get_db
 from app.models.buybox_filter import BuyboxFilter
 from app.models.parcel_buybox_score import ParcelBuyboxScore
@@ -138,7 +139,10 @@ async def update_filter(
     return f
 
 
-@router.post("/buybox-filters/_run-digest")
+@router.post(
+    "/buybox-filters/_run-digest",
+    dependencies=[Depends(require_secret)],
+)
 async def run_digest_now(
     force: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
@@ -169,7 +173,10 @@ async def run_digest_now(
     }
 
 
-@router.post("/buybox-filters/{filter_id}/_clear-cooldown")
+@router.post(
+    "/buybox-filters/{filter_id}/_clear-cooldown",
+    dependencies=[Depends(require_secret)],
+)
 async def clear_digest_cooldown(
     filter_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -206,7 +213,10 @@ async def clear_digest_cooldown(
     }
 
 
-@router.post("/buybox-filters/_score-jurisdiction/{jurisdiction_id}")
+@router.post(
+    "/buybox-filters/_score-jurisdiction/{jurisdiction_id}",
+    dependencies=[Depends(require_secret)],
+)
 async def run_auto_score_now(
     jurisdiction_id: uuid.UUID,
     filter_id: uuid.UUID | None = Query(default=None),
@@ -268,7 +278,11 @@ async def run_auto_score_now(
 # ever scale to multiple instances.
 
 
-@router.post("/buybox-filters/{filter_id}/_score-all", status_code=202)
+@router.post(
+    "/buybox-filters/{filter_id}/_score-all",
+    status_code=202,
+    dependencies=[Depends(require_secret)],
+)
 async def score_filter_across_all_jurisdictions(
     filter_id: uuid.UUID,
     background_tasks: BackgroundTasks,
