@@ -270,7 +270,11 @@ async def backfill_parcel_city_from_districts(
     jurisdiction_id: uuid.UUID,
     db: AsyncSession,
     *,
-    municipality_keys: tuple[str, ...] = ("Municipality", "MUNICIPALITY", "municipality"),
+    # MUNI_NAME: Delaware County PA's countywide zoning layer publishes the
+    # municipality name under this key (per _delaware_pa_source_manifest.md) —
+    # without it the Delco city stamp silently no-ops (observed on the first
+    # Delco ingest, 2026-07-06: 0 of 191k parcels stamped).
+    municipality_keys: tuple[str, ...] = ("Municipality", "MUNICIPALITY", "municipality", "MUNI_NAME"),
 ) -> int:
     """Stamp ``parcels.city`` from the containing zoning district's municipality name.
 
