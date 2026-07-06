@@ -79,6 +79,13 @@ _BATCH_UPDATE = sa.text(
 
 
 def upgrade() -> None:
+    # FIRST statement: disable the server-side statement_timeout for this
+    # session. It must precede the ALTER — lock-WAIT time counts toward
+    # statement_timeout, so an ALTER queued behind a long-running competitor
+    # (observed: the pre-fix crashloop's own monolithic UPDATE) gets cancelled
+    # before it ever acquires the lock.
+    op.execute("SET statement_timeout = 0")
+
     # IF NOT EXISTS (not op.add_column): the batched section below commits per
     # batch, so an interrupted run leaves the column in place with the version
     # still at 0041 — the retry must not die on "column already exists".
