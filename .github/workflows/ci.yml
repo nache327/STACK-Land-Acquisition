@@ -110,3 +110,22 @@ jobs:
         # `--` tells pnpm to pass the rest of the args through to the script
         # (jest) instead of interpreting --coverage as a pnpm flag
         run: pnpm test -- --coverage
+
+  # -------------------------------------------------------------------------
+  # Secret scan — gitleaks (fails the PR if a credential is committed)
+  # -------------------------------------------------------------------------
+  gitleaks:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so a secret added in any past commit is caught,
+          # not just the diff of this PR.
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
