@@ -1,4 +1,4 @@
-"""Add parcels.zoning_code_source provenance column.
+"""Add parcels.zoning_code_source provenance column (schema only — no backfill).
 
 Why:
     ``zone_binding_method`` records the spatial *sub-method* (contained /
@@ -13,20 +13,39 @@ Why:
         'district_spatial' — ST_Within(centroid, municipal district) containment
         'nearest'          — ST_DWithin nearest-district fallback
         'sibling_apn'      — inherited from a sibling parcel via APN crosswalk
-        NULL               — no zoning_code / pre-migration unknown
+        NULL               — unknown / pre-migration row
 
-    Best-effort backfilled from the existing ``zone_binding_method`` +
-    ``zoning_code`` so live rows get a provenance without a re-ingest.
+NULL semantics (load-bearing — tested in test_zoning_provenance.py and
+test_zoning_precedence_db.py):
+    NULL is the LOWEST precedence, freely overridable. The backfill predicate
+    uses ``zoning_code_source IS DISTINCT FROM 'district_spatial'`` (NULL-safe),
+    so a pre-migration row with a code but NULL source is re-bound by the next
+    county district backfill. NULL must NEVER be treated as trusted
+    'parcel_attr' — that would freeze stale county codes and defeat D2.
 
-Operational shape (prod has millions of parcel rows):
+Why there is NO data backfill here (removed 2026-07-06):
+    The original best-effort backfill (stamp provenance on existing rows from
+    zone_binding_method/zoning_code) proved operationally infeasible: parcels
+    has ~17.6M rows and every UPDATE rewrites six indexes (two GiST), measured
+    at ~16 min per 50k batch on the prod instance — days of runtime. It was
+    also never functionally required: ingest stamps provenance on new writes,
+    and each jurisdiction's spatial backfill stamps 'district_spatial' as it
+    (re-)binds — old rows converge organically, and until then their NULL
+    source correctly marks them lowest-precedence (see NULL semantics above).
+    Prod was stamped at exactly this schema state (column + index, no
+    backfill) on 2026-07-06; this file must keep producing that same state so
+    fresh envs/CI match prod (no 0008b/0009b-style drift).
+
+Operational notes:
     - ADD COLUMN is nullable with no default → metadata-only, instant.
-    - The backfill runs in BATCHES of 50k rows keyed on the PK, each batch
-      committing independently (autocommit_block), so no long row-lock window
-      and a cancelled run resumes where it left off. The batch predicate only
-      selects rows the CASE would actually set (else the NULL-outcome rows
-      would be re-selected forever).
-    - The index is created CONCURRENTLY (also requires autocommit) so writes
-      to parcels are never blocked.
+    - The index is created CONCURRENTLY inside an autocommit block (it cannot
+      run in a transaction) so writes to parcels are never blocked. If a
+      CONCURRENTLY build is interrupted it leaves an INVALID index that
+      IF NOT EXISTS will silently skip — check pg_index.indisvalid and
+      DROP + re-create if invalid.
+    - SET statement_timeout=0 comes FIRST: lock-wait time counts toward
+      statement_timeout, and Railway runs `alembic upgrade head` at container
+      boot, where a queued ALTER behind a long query was observed to cancel.
 
 Revision ID: 0042
 Revises: 0041
@@ -43,86 +62,23 @@ down_revision: Union[str, None] = "0041"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-_BATCH = 50_000
-
-# Only rows this backfill would actually change. Keeps each batch's candidate
-# scan honest AND terminates the loop (rows whose CASE outcome is NULL are
-# never selected).
-_NEEDS_BACKFILL = (
-    "zoning_code_source IS NULL AND ("
-    "  zone_binding_method = 'contained'"
-    "  OR zone_binding_method LIKE 'nearest\\_%'"
-    "  OR (zoning_code IS NOT NULL AND zoning_code <> '')"
-    ")"
-)
-
-# Keyset pagination: each batch resumes from the last stamped PK instead of
-# rescanning the already-stamped prefix — total work stays O(N) across the
-# whole run. RETURNING feeds the next batch's cursor.
-_BATCH_UPDATE = sa.text(
-    f"""
-    UPDATE parcels SET zoning_code_source = CASE
-        WHEN zone_binding_method = 'contained'             THEN 'district_spatial'
-        WHEN zone_binding_method LIKE 'nearest\\_%'         THEN 'nearest'
-        WHEN zoning_code IS NOT NULL AND zoning_code <> '' THEN 'parcel_attr'
-        ELSE NULL
-    END
-    WHERE id IN (
-        SELECT id FROM parcels
-        WHERE id > :last_id AND {_NEEDS_BACKFILL}
-        ORDER BY id
-        LIMIT {_BATCH}
-    )
-    RETURNING id
-    """
-)
-
 
 def upgrade() -> None:
-    # FIRST statement: disable the server-side statement_timeout for this
-    # session. It must precede the ALTER — lock-WAIT time counts toward
-    # statement_timeout, so an ALTER queued behind a long-running competitor
-    # (observed: the pre-fix crashloop's own monolithic UPDATE) gets cancelled
-    # before it ever acquires the lock.
+    # FIRST statement — see "Operational notes" in the module docstring.
     op.execute("SET statement_timeout = 0")
 
-    # IF NOT EXISTS (not op.add_column): the batched section below commits per
-    # batch, so an interrupted run leaves the column in place with the version
-    # still at 0041 — the retry must not die on "column already exists".
-    # Nullable, no default → metadata-only, instant.
+    # Idempotent + instant (nullable, no default).
     op.execute(
         "ALTER TABLE parcels ADD COLUMN IF NOT EXISTS "
         "zoning_code_source VARCHAR(32)"
     )
 
-    # Batched backfill + CONCURRENTLY index — both need to run outside the
-    # migration transaction (each batch commits; CONCURRENTLY refuses to run
-    # inside any transaction block).
+    # CONCURRENTLY requires autocommit (refuses to run inside a transaction).
     with op.get_context().autocommit_block():
-        conn = op.get_bind()
-        # Supabase enforces a server-side statement_timeout that killed the
-        # original monolithic UPDATE (observed in the Railway boot crashloop,
-        # 2026-07-06). Batches are small, but late-run batches on a cold cache
-        # can still be slow — disable the timeout for this session only.
-        conn.execute(sa.text("SET statement_timeout = 0"))
-        total = 0
-        last_id = 0
-        while True:
-            result = conn.execute(_BATCH_UPDATE, {"last_id": last_id})
-            ids = [r[0] for r in result]
-            if not ids:
-                break
-            total += len(ids)
-            last_id = max(ids)
-            print(f"  0042 backfill: +{len(ids)} (total {total}, cursor id {last_id})")
-        print(f"  0042 backfill complete: {total} rows stamped")
-
-        conn.execute(
-            sa.text(
-                "CREATE INDEX CONCURRENTLY IF NOT EXISTS "
-                "ix_parcels_jurisdiction_zoning_source "
-                "ON parcels (jurisdiction_id, zoning_code_source)"
-            )
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS "
+            "ix_parcels_jurisdiction_zoning_source "
+            "ON parcels (jurisdiction_id, zoning_code_source)"
         )
 
 
