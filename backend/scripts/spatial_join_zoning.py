@@ -19,7 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import geopandas as gpd
 import requests
 from shapely.geometry import Point
-from sqlalchemy import text
+from sqlalchemy import Integer, String, bindparam, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import create_async_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
@@ -101,15 +102,19 @@ async def update_zoning_codes(id_zone_pairs: list[tuple]) -> int:
     async with engine.begin() as conn:
         for i in range(0, len(id_zone_pairs), BATCH):
             batch = id_zone_pairs[i : i + BATCH]
-            # Build VALUES list
-            values = ", ".join(f"({pid}, '{zone}')" for pid, zone in batch)
-            sql = f"""
-                UPDATE parcels AS p
-                SET zoning_code = v.zone
-                FROM (VALUES {values}) AS v(id, zone)
-                WHERE p.id = v.id
-            """
-            result = await conn.execute(text(sql))
+            # Parameterized UNNEST — zone codes come from public ArcGIS servers
+            # (untrusted); never interpolate them into SQL. (Security: SQLi fix.)
+            ids = [int(pid) for pid, _ in batch]
+            zones = [str(zone) for _, zone in batch]
+            sql = text(
+                "UPDATE parcels AS p SET zoning_code = v.zone "
+                "FROM (SELECT UNNEST(:ids) AS id, UNNEST(:zones) AS zone) AS v "
+                "WHERE p.id = v.id"
+            ).bindparams(
+                bindparam("ids", type_=ARRAY(Integer)),
+                bindparam("zones", type_=ARRAY(String)),
+            )
+            result = await conn.execute(sql, {"ids": ids, "zones": zones})
             updated += result.rowcount
             logger.info("Updated batch %d/%d — %d total", i // BATCH + 1, -(-len(id_zone_pairs) // BATCH), updated)
     return updated

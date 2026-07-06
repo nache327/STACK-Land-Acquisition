@@ -23,7 +23,8 @@ import psycopg2.extras
 import requests
 from shapely.geometry import Point
 from shapely import make_valid
-from sqlalchemy import text
+from sqlalchemy import Integer, String, bindparam, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.services.zone_classifier import PerUseClassification, storage_cls
@@ -206,11 +207,21 @@ async def update_zoning_codes(pairs: list[tuple]) -> int:
     async with engine.begin() as conn:
         for i in range(0, len(pairs), 500):
             batch = pairs[i:i + 500]
-            values = ", ".join(f"({pid}, $${zc}$$)" for pid, zc in batch)
-            result = await conn.execute(text(
-                f"UPDATE parcels AS p SET zoning_code=v.zone "
-                f"FROM (VALUES {values}) AS v(id,zone) WHERE p.id=v.id"
-            ))
+            # Parameterized UNNEST — zone codes are untrusted upstream GIS data;
+            # never interpolate into SQL. (Security: SQLi fix.)
+            ids = [int(pid) for pid, _ in batch]
+            zones = [str(zc) for _, zc in batch]
+            result = await conn.execute(
+                text(
+                    "UPDATE parcels AS p SET zoning_code=v.zone "
+                    "FROM (SELECT UNNEST(:ids) AS id, UNNEST(:zones) AS zone) AS v "
+                    "WHERE p.id=v.id"
+                ).bindparams(
+                    bindparam("ids", type_=ARRAY(Integer)),
+                    bindparam("zones", type_=ARRAY(String)),
+                ),
+                {"ids": ids, "zones": zones},
+            )
             updated += result.rowcount
     await engine.dispose()
     return updated
