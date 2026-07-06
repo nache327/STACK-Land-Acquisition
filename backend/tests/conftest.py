@@ -15,12 +15,33 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.db import Base
 
 
+# Substrings that mark a production / pooled Supabase DSN. The db_engine
+# fixture runs Base.metadata.drop_all — pointing it at any of these would DROP
+# THE PRODUCTION DATABASE. Refuse to run instead.
+_PROD_DSN_MARKERS = ("supabase.com", "pooler", ":6543")
+
+
 def _test_db_url() -> str:
-    """Return the test DATABASE_URL, preferring an env override."""
+    """Return the test DATABASE_URL, preferring an env override.
+
+    Hard-fails if DATABASE_URL points at production: the schema fixtures below
+    drop and recreate every table, so running the suite with a prod DSN in the
+    environment (the common local setup, where backend/.env holds the live
+    Supabase URL) would destroy production data. Fail loudly rather than run.
+    """
     url = os.environ.get(
         "DATABASE_URL",
         "postgresql+asyncpg://postgres:postgres@localhost:5432/zoning_test",
     )
+    lowered = url.lower()
+    if any(marker in lowered for marker in _PROD_DSN_MARKERS):
+        raise RuntimeError(
+            "Refusing to run the test suite against what looks like a PRODUCTION "
+            "database (DATABASE_URL matches a Supabase/pooled DSN). The test "
+            "fixtures drop_all + create_all every table. Point DATABASE_URL at a "
+            "local/CI test database (e.g. the default localhost:5432/zoning_test) "
+            "before running tests."
+        )
     # Ensure we use asyncpg for async tests
     return url.replace("postgresql://", "postgresql+asyncpg://").replace(
         "postgresql+psycopg2://", "postgresql+asyncpg://"
