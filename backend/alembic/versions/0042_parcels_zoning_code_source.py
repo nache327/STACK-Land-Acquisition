@@ -56,6 +56,9 @@ _NEEDS_BACKFILL = (
     ")"
 )
 
+# Keyset pagination: each batch resumes from the last stamped PK instead of
+# rescanning the already-stamped prefix — total work stays O(N) across the
+# whole run. RETURNING feeds the next batch's cursor.
 _BATCH_UPDATE = sa.text(
     f"""
     UPDATE parcels SET zoning_code_source = CASE
@@ -66,19 +69,23 @@ _BATCH_UPDATE = sa.text(
     END
     WHERE id IN (
         SELECT id FROM parcels
-        WHERE {_NEEDS_BACKFILL}
+        WHERE id > :last_id AND {_NEEDS_BACKFILL}
         ORDER BY id
         LIMIT {_BATCH}
     )
+    RETURNING id
     """
 )
 
 
 def upgrade() -> None:
-    # Instant: nullable, no default.
-    op.add_column(
-        "parcels",
-        sa.Column("zoning_code_source", sa.String(length=32), nullable=True),
+    # IF NOT EXISTS (not op.add_column): the batched section below commits per
+    # batch, so an interrupted run leaves the column in place with the version
+    # still at 0041 — the retry must not die on "column already exists".
+    # Nullable, no default → metadata-only, instant.
+    op.execute(
+        "ALTER TABLE parcels ADD COLUMN IF NOT EXISTS "
+        "zoning_code_source VARCHAR(32)"
     )
 
     # Batched backfill + CONCURRENTLY index — both need to run outside the
@@ -86,14 +93,21 @@ def upgrade() -> None:
     # inside any transaction block).
     with op.get_context().autocommit_block():
         conn = op.get_bind()
+        # Supabase enforces a server-side statement_timeout that killed the
+        # original monolithic UPDATE (observed in the Railway boot crashloop,
+        # 2026-07-06). Batches are small, but late-run batches on a cold cache
+        # can still be slow — disable the timeout for this session only.
+        conn.execute(sa.text("SET statement_timeout = 0"))
         total = 0
+        last_id = 0
         while True:
-            result = conn.execute(_BATCH_UPDATE)
-            n = result.rowcount or 0
-            total += n
-            print(f"  0042 backfill: +{n} (total {total})")
-            if n < _BATCH:
+            result = conn.execute(_BATCH_UPDATE, {"last_id": last_id})
+            ids = [r[0] for r in result]
+            if not ids:
                 break
+            total += len(ids)
+            last_id = max(ids)
+            print(f"  0042 backfill: +{len(ids)} (total {total}, cursor id {last_id})")
         print(f"  0042 backfill complete: {total} rows stamped")
 
         conn.execute(
