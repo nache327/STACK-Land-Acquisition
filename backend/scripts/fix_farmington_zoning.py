@@ -16,10 +16,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027%24@aws-1-us-east-2.pooler.supabase.com:5432/postgres",
-)
+from scripts._db import get_dsn
+
+os.environ.setdefault("DATABASE_URL", get_dsn())
 
 logging.basicConfig(
     level=logging.INFO,

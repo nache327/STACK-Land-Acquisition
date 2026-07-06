@@ -6,7 +6,9 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 
-URL = 'postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres'
+from scripts._db import get_dsn
+
+URL = get_dsn()
 
 # source id (has data) -> target id (empty duplicate to absorb into)
 MERGE = {

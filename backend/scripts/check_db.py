@@ -2,7 +2,9 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 
-URL = "postgresql+asyncpg://postgres:WebIIPTvnxZfmKgMbuUKmzYZdjEqaotS@nozomi.proxy.rlwy.net:56784/railway"
+from scripts._db import get_dsn
+
+URL = get_dsn()
 
 async def test():
     engine = create_async_engine(URL)

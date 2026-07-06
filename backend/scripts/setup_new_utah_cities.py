@@ -40,6 +40,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.services.zone_classifier import PerUseClassification, storage_cls
+from scripts._db import get_dsn, get_sync_dsn
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,8 +49,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DB_URL  = "postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
-DB_SYNC = "host=aws-1-us-east-2.pooler.supabase.com port=5432 dbname=postgres user=postgres.bbvywbpxwsoyvdvygvyw password=Teczmn3027$"
+DB_URL = get_dsn()
+DB_SYNC = get_sync_dsn()
 
 UGRC_BASE = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services"
 
