@@ -95,6 +95,18 @@ _CODE_PATTERNS: list[tuple[ZoneClass, re.Pattern[str]]] = [
 ]
 
 
+# Catch #51 (Lake IL 'INC', 2026-07-07): source SENTINEL tokens that mark
+# administrative state ("incorporated - county zoning N/A", "no zoning") rather
+# than a zoning district. Without this guard the I-prefix heuristic classified
+# 'INC' as industrial across 231k parcels. Generic family list, not a one-off;
+# dataset-level detection (unrecognized short token covering a large county
+# share) lives in scripts/reclassify_sentinel_codes.py.
+SENTINEL_ZONE_CODES: frozenset[str] = frozenset({
+    "INC", "INCORP", "INCORPORATED", "UNINC", "UNINCORPORATED",
+    "N/A", "NA", "NONE", "NULL", "UNKNOWN", "UNZONED", "EXEMPT", "MUNI",
+})
+
+
 def classify_zone_code(
     code: str | None,
     zone_name: str | None = None,
@@ -111,6 +123,10 @@ def classify_zone_code(
     Returns:
         A ZoneClass value. Defaults to `unknown` if nothing matches.
     """
+    # Catch #51 sentinel guard: administrative tokens are never zoning districts.
+    if code and code.strip().upper() in SENTINEL_ZONE_CODES:
+        return ZoneClass.unknown
+
     # Source-provided class wins when it's one of our canonical values
     if source_class:
         normalized = _normalize(source_class)

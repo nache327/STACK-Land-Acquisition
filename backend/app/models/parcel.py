@@ -69,6 +69,9 @@ class Parcel(Base):
     zoning_code_source: Mapped[str | None] = mapped_column(
         String(32), nullable=True
     )
+    # City provenance (Task #86, migration 0044): 'boundary_spatial' |
+    # 'district_spatial' | NULL (source attribute / pre-provenance).
+    city_source: Mapped[str | None] = mapped_column(String(32), nullable=True)
     land_use_code: Mapped[str | None] = mapped_column(String(512), nullable=True)
     improvement_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     # Total assessed value (land + improvements) from the source assessor roll.
