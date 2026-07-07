@@ -1,0 +1,21 @@
+# Railway service config — ParcelLogic web+worker (the main service).
+#
+# ACTIVATION (one-time, Railway dashboard): ParcelLogic service → Settings →
+# Config as code → set Config Path to `backend/railway.toml`. Alternatively,
+# set the Pre-deploy Command field manually to the same command below.
+#
+# WHY (2026-07-06 outage): the container CMD runs `alembic upgrade head`
+# at boot, so a slow/failing migration replaced the healthy instance FIRST
+# and then crashlooped — prod 502'd for ~25 min while Railway showed
+# "Deployment successful". A pre-deploy command runs BEFORE the traffic
+# swap: if the migration fails or hangs, the rollout aborts and the old
+# container keeps serving. The boot-time alembic in the Dockerfile CMD is
+# kept as a no-op safety net (the pre-deploy already brought the DB to
+# head, so boot alembic completes in ~2s).
+#
+# Migration authoring rules still apply regardless (see
+# alembic/versions/0042_*.py): SET statement_timeout=0 first, batched
+# backfills in autocommit, idempotent DDL (IF NOT EXISTS / CONCURRENTLY).
+
+[deploy]
+preDeployCommand = "alembic upgrade head"
