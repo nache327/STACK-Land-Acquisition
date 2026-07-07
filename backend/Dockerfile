@@ -55,4 +55,13 @@ EXPOSE 8000
 # previous `cmd1 & cmd2` pattern hid a 58-hour dramatiq outage (see STATUS.md:
 # "Critical Deployment Drift Incident") because the foreground uvicorn kept
 # the container "healthy" while the backgrounded dramatiq had never launched.
+#
+# MIGRATION CONTRACT (2026-07-06 outage, ~25 min of 502s): the REAL migration
+# runner is Railway's pre-deploy command (`alembic upgrade head`, see
+# railway.toml) which runs BEFORE the traffic swap — a failing/slow migration
+# aborts the rollout while the old container keeps serving. The boot-time
+# alembic below is kept only as a no-op safety net for environments without
+# the pre-deploy step; by the time this CMD runs on Railway, the DB is
+# already at head and it completes in ~2s. Do NOT put heavy migrations on
+# this path — follow the authoring rules in alembic/versions/0042_*.py.
 CMD ["sh", "-c", "alembic upgrade head && exec honcho start --no-colour"]
