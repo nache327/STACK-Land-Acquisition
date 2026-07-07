@@ -99,6 +99,11 @@ _ADDRESS_FIELDS = [
     "location", "LOCATION", "Location_1", "street_address",
     # Allentown PA City_Landuse service
     "PROPERTYADDR",
+    # Delaware County PA — Parcels_Public_Access publishes the situs address
+    # as ADRCAT. Without it parcels.address stays NULL and the CoStar listing
+    # matcher can only geocode-match (confidence capped at 0.75, under the
+    # 0.85 scoring gate) — observed on the first Delco Stage-2 pass 2026-07-07.
+    "ADRCAT",
 ]
 _ZONE_FIELDS = [
     "ZONING", "ZONE", "ZONE_CODE", "ZONING_CODE", "ZONE_DIST",
