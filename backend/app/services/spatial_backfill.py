@@ -330,7 +330,7 @@ async def backfill_parcel_city_from_districts(
         status = await conn.execute(
             f"""
             UPDATE parcels target
-            SET city = sub.muni
+            SET city = sub.muni, city_source = 'district_spatial'
             FROM (
                 SELECT p.id AS parcel_id, m.muni
                 FROM parcels p,

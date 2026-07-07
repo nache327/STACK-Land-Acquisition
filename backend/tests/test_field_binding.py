@@ -121,3 +121,15 @@ def test_parcel_zone_field_override():
     row = _row(PIN="12-345", ZONING="C-1", MYZONE="LI")
     mapped = parcel_map_row(row, _JID, parcel_zone_field="MYZONE")
     assert mapped["zoning_code"] == "LI"  # override beats the global ZONING field
+
+
+# ── catch #51: sentinel zone codes (Task #86) ─────────────────────────────────
+
+def test_sentinel_codes_classify_unknown():
+    from app.services.classification import classify_zone_code, SENTINEL_ZONE_CODES
+    for c in ("INC", "inc", "UNINC", "N/A", "NONE", "EXEMPT"):
+        assert classify_zone_code(c).value == "unknown", c
+    assert "INC" in SENTINEL_ZONE_CODES
+    # real industrial codes unaffected
+    for c in ("LI", "M1-4", "I-1", "IND"):
+        assert classify_zone_code(c).value == "industrial", c
