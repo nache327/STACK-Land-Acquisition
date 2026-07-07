@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     BigInteger,
     CheckConstraint,
     DateTime,
@@ -51,6 +52,13 @@ class ParcelBuyboxScore(Base):
     score: Mapped[int] = mapped_column(Integer, nullable=False)
     tier: Mapped[str] = mapped_column(String(20), nullable=False)
     factors: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    # Lead-eligibility gate (catch #49, migration 0043; verdict_gate.py is the
+    # single source of truth). Demote-don't-delete: ineligible rows still serve,
+    # tagged. NULL = scored before the gate existed (treat as unknown).
+    lead_eligible: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    gate_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # 'human-verified' | 'ordinance-parsed' | 'heuristic' | 'ungrounded muni'
+    verdict_basis: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

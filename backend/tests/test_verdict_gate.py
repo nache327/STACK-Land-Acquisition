@@ -103,3 +103,38 @@ def test_sql_fragments_reference_all_inputs():
     # all three reasons present
     for r in (REASON_UNCLEAR, REASON_LOW_CONFIDENCE, REASON_HEURISTIC):
         assert f"'{r}'" in gr
+
+
+# ── verdict basis (2.2 enforcement, 2026-07-07) ──────────────────────────────
+
+from app.services.verdict_gate import (  # noqa: E402
+    BASIS_HEURISTIC,
+    BASIS_HUMAN,
+    BASIS_ORDINANCE,
+    BASIS_UNGROUNDED,
+    verdict_basis,
+    verdict_basis_sql,
+)
+
+
+def test_basis_human_wins():
+    assert verdict_basis("rule", True) == BASIS_HUMAN
+    assert verdict_basis("human", False) == BASIS_HUMAN
+
+
+def test_basis_ordinance_for_grounded_sources():
+    for s in ("llm", "llm_rule", "op5_factory"):
+        assert verdict_basis(s, False) == BASIS_ORDINANCE
+
+
+def test_basis_heuristic_and_ungrounded():
+    assert verdict_basis("unclear", False) == BASIS_HEURISTIC
+    assert verdict_basis("crosswalk", False) == BASIS_HEURISTIC
+    assert verdict_basis(None, False, matched=False) == BASIS_UNGROUNDED
+
+
+def test_basis_sql_covers_all_tags():
+    sql = verdict_basis_sql("zum")
+    for tag in (BASIS_HUMAN, BASIS_ORDINANCE, BASIS_HEURISTIC, BASIS_UNGROUNDED):
+        assert f"'{tag}'" in sql
+    assert "zum.classification_source IS NULL AND zum.human_reviewed IS NULL" in sql

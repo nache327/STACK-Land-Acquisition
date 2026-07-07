@@ -24,6 +24,13 @@ class ParcelScoreRead(BaseModel):
     tier: str
     factors: list[ScoreFactor] = Field(default_factory=list)
     computed_at: datetime
+    # Lead-eligibility gate (catch #49, migration 0043): a score is never
+    # served without its provenance. lead_eligible=None = scored before the
+    # gate existed (re-score to populate).
+    lead_eligible: bool | None = None
+    gate_reason: str | None = None
+    # 'human-verified' | 'ordinance-parsed' | 'heuristic' | 'ungrounded muni'
+    verdict_basis: str | None = None
 
     class Config:
         from_attributes = True

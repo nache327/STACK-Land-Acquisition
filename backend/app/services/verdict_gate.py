@@ -98,3 +98,43 @@ def gate_reason_sql(alias: str = "zum") -> str:
         f"THEN '{REASON_LOW_CONFIDENCE}' "
         f"ELSE '{REASON_HEURISTIC}' END"
     )
+
+
+# ── Verdict basis (human-facing provenance tag, 2026-07-07 directive) ─────────
+# Rendered next to every served score/digest row so a 96-scoring heuristic
+# guess can never read like a verified verdict. Values:
+BASIS_HUMAN = "human-verified"        # human_reviewed / source='human'
+BASIS_ORDINANCE = "ordinance-parsed"  # grounded llm / llm_rule / op5_factory
+BASIS_HEURISTIC = "heuristic"         # a matrix row exists but isn't grounded
+BASIS_UNGROUNDED = "ungrounded muni"  # no matrix row matched at all
+
+
+def verdict_basis(
+    classification_source: str | None,
+    human_reviewed: bool,
+    matched: bool = True,
+) -> str:
+    """Python reference for the basis tag. ``matched=False`` = the serving
+    LATERAL found no matrix row for this parcel's (zone, municipality)."""
+    if not matched:
+        return BASIS_UNGROUNDED
+    if human_reviewed or classification_source == "human":
+        return BASIS_HUMAN
+    if classification_source in GROUNDED_SOURCES:
+        return BASIS_ORDINANCE
+    return BASIS_HEURISTIC
+
+
+def verdict_basis_sql(alias: str = "zum") -> str:
+    """SQL mirror of verdict_basis(). A LEFT-JOINed miss (source IS NULL and
+    human_reviewed IS NULL) yields 'ungrounded muni'."""
+    return (
+        f"CASE "
+        f"WHEN {alias}.classification_source IS NULL AND {alias}.human_reviewed IS NULL "
+        f"THEN '{BASIS_UNGROUNDED}' "
+        f"WHEN COALESCE({alias}.human_reviewed, false) "
+        f"  OR {alias}.classification_source::text = 'human' THEN '{BASIS_HUMAN}' "
+        f"WHEN {alias}.classification_source::text IN {_sources_sql()} "
+        f"THEN '{BASIS_ORDINANCE}' "
+        f"ELSE '{BASIS_HEURISTIC}' END"
+    )
