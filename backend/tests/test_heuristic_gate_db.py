@@ -45,12 +45,16 @@ async def test_sql_gate_matches_python_reference(db_session):
         {"id": jid, "n": f"Gate {jid}"},
     )
     for i, (ss, src, conf, hr) in enumerate(_CASES):
+        # Raw SQL bypasses ORM Python-side defaults — supply every NOT NULL
+        # use column explicitly (CI catch 2026-07-07).
         await db_session.execute(
             text(
                 "INSERT INTO zone_use_matrix "
-                "(jurisdiction_id, zone_code, self_storage, classification_source, "
+                "(jurisdiction_id, zone_code, self_storage, mini_warehouse, "
+                " light_industrial, luxury_garage_condo, classification_source, "
                 " confidence, human_reviewed) "
                 "VALUES (:jid, :zc, CAST(:ss AS use_permission_enum), "
+                " 'unclear', 'unclear', 'unclear', "
                 " CAST(:src AS classification_source_enum), :conf, :hr)"
             ),
             {"jid": jid, "zc": f"Z{i}", "ss": ss, "src": src, "conf": conf, "hr": hr},
