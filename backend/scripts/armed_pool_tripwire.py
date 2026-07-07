@@ -26,19 +26,29 @@ USAGE:
 """
 import asyncio
 import sys
+from pathlib import Path
 
 import asyncpg
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from app.services.wealth_gate import wealth_tag_sql  # noqa: E402
 
 SN_FILTER_ID = "72409acf-3712-4761-a156-50c2329ad35b"  # Storage Needles
 
 # Armed + newly-listed + un-fired. Mirrors the SN hard filter; verdict join prefers muni-specific then
 # county-default (matches buybox_scoring); notified_at IS NULL = not yet alerted by tripwire or digest.
-ARMED_SQL = """
+# Wealth gate via app.services.wealth_gate — standard dt=10 pass OR the
+# near-ring override rule (2026-07-07, Concord codification); wealth_tag
+# distinguishes the two for audit.
+ARMED_SQL = f"""
 SELECT j.name jurisdiction, p.id parcel_id, p.city, p.zoning_code, p.apn,
        l.id listing_id, l.address, round(p.acres::numeric,2) acres, l.sale_price,
        l.listing_broker_company broker_co, l.listing_broker_contact broker,
        v.self_storage::text verdict, pbs.score,
        r.median_hhi hhi, r.median_home_value hv, r.hnw_households hnw,
+       {wealth_tag_sql('p')} AS wealth_tag,
+       CASE WHEN l.sale_price IS NOT NULL AND p.acres > 0
+            THEN round((l.sale_price / p.acres)::numeric) END AS price_per_acre,
        ST_Y(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) lat,
        ST_X(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) lng,
        (SELECT id FROM jobs WHERE jurisdiction_id=j.id AND status='ready'
@@ -58,8 +68,9 @@ JOIN LATERAL (
 ) v ON true
 WHERE v.self_storage IN ('permitted','conditional')
   AND p.acres BETWEEN 1.5 AND 15
-  AND r.median_hhi >= 100000 AND r.hnw_households >= 4400
-  AND r.median_home_value >= 475000 AND r.population >= 50000
+  -- wealth gate: standard dt=10 pass OR near-ring override (see wealth_gate.py)
+  AND ({wealth_tag_sql('p')}) IS NOT NULL
+  AND r.hnw_households >= 4400 AND r.population >= 50000
   AND (l.sale_price IS NULL OR l.sale_price <= 7500000)
   AND (l.sale_price IS NULL OR p.acres = 0 OR l.sale_price / p.acres <= 2000000)
   AND (pbs.notified_at IS NULL)              -- not yet alerted (by tripwire OR digest)
@@ -79,13 +90,19 @@ def _row_html(r, base):
     if r["lat"] is not None and r["lng"] is not None:
         link += f"&lat={r['lat']:.6f}&lng={r['lng']:.6f}"
     price = f"${int(r['sale_price']):,}" if r["sale_price"] else "(unpriced)"
+    # price-per-acre: zoned right ≠ priced for the use (catch #44's economic
+    # cousin, 2026-07-07). >$2M/ac reads as retail-corner pricing, not storage.
+    ppa = f" · ${int(r['price_per_acre']):,}/ac" if r.get("price_per_acre") else ""
+    # near-ring override parcels are flagged so the operator knows the dt=10
+    # HV floor was cleared via the near-ring rule, not the standard gate.
+    ring_flag = " · ⚠ near-ring override" if r.get("wealth_tag") == "near_ring_override" else ""
     broker = " / ".join(x for x in (r["broker_co"], r["broker"]) if x) or "—"
     return (f"<div style='border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:8px 0'>"
             f"<div style='font-size:15px;font-weight:700'>{r['address']}</div>"
             f"<div style='color:#475569'>{r['city']} · zone {r['zoning_code']} · {r['verdict']}</div>"
-            f"<div style='margin-top:4px'>🏷️ {price} · {r['acres']} ac · score {r['score']}</div>"
+            f"<div style='margin-top:4px'>🏷️ {price}{ppa} · {r['acres']} ac · score {r['score']}</div>"
             f"<div style='font-size:13px'>Broker: <strong>{broker}</strong></div>"
-            f"<div style='font-size:12px;color:#334155'>ring HHI ${int(r['hhi']):,} · HV ${int(r['hv']):,} · HNW {r['hnw']}</div>"
+            f"<div style='font-size:12px;color:#334155'>ring HHI ${int(r['hhi']):,} · HV ${int(r['hv']):,} · HNW {r['hnw']}{ring_flag}</div>"
             f"<a href='{link}' style='color:#0369a1;font-size:13px'>Open in dashboard →</a></div>")
 
 
