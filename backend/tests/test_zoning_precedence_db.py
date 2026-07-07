@@ -33,19 +33,25 @@ async def _setup(db, *, parcel_code, dist_code, dist_class):
         text("INSERT INTO jurisdictions (id, name, state) VALUES (:id, :n, :s)"),
         {"id": jid, "n": f"Test {jid}", "s": "PA"},
     )
+    # Raw SQL bypasses ORM Python-side defaults: supply every NOT NULL column
+    # without a server_default, and let parcels.id (BigInteger identity)
+    # autoincrement (CI catch 2026-07-07).
     await db.execute(
         text(
-            "INSERT INTO zoning_districts (id, jurisdiction_id, zone_code, zone_class, geom) "
-            "VALUES (:id, :jid, :c, CAST(:cl AS zone_class_enum), ST_GeomFromText(:g, 4326))"
+            "INSERT INTO zoning_districts (jurisdiction_id, zone_code, zone_class, "
+            "source, human_reviewed, geom) "
+            "VALUES (:jid, :c, CAST(:cl AS zone_class_enum), "
+            "CAST('arcgis' AS zone_source_enum), false, ST_GeomFromText(:g, 4326))"
         ),
-        {"id": uuid.uuid4(), "jid": jid, "c": dist_code, "cl": dist_class, "g": _DISTRICT_POLY},
+        {"jid": jid, "c": dist_code, "cl": dist_class, "g": _DISTRICT_POLY},
     )
     await db.execute(
         text(
-            "INSERT INTO parcels (id, jurisdiction_id, apn, zoning_code, zoning_code_source, geom) "
-            "VALUES (:id, :jid, :apn, :zc, :src, ST_GeomFromText(:g, 4326))"
+            "INSERT INTO parcels (jurisdiction_id, apn, zoning_code, zoning_code_source, "
+            "in_flood_zone, in_wetland, geom) "
+            "VALUES (:jid, :apn, :zc, :src, false, false, ST_GeomFromText(:g, 4326))"
         ),
-        {"id": uuid.uuid4(), "jid": jid, "apn": "A1", "zc": parcel_code,
+        {"jid": jid, "apn": "A1", "zc": parcel_code,
          "src": "parcel_attr", "g": _PARCEL_POLY},
     )
     await db.commit()  # backfill uses a separate raw connection — must be committed
