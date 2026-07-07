@@ -88,6 +88,15 @@ class DigestParcel:
     # the whole county first (faster load, lands on the parcel).
     lat: float | None = None
     lng: float | None = None
+    # Verdict provenance (catch #49 enforcement, 2026-07-07): the score alone
+    # misleads — every digest row renders score + basis together.
+    #   verdict_basis: 'human-verified' | 'ordinance-parsed' | 'heuristic'
+    #                  | 'ungrounded muni'
+    #   storage_dead:  True when a GROUNDED verdict says self-storage is
+    #                  prohibited — the row stays in generic lanes tagged
+    #                  '🚫 storage-dead (generic land)' instead of vanishing.
+    verdict_basis: str | None = None
+    storage_dead: bool = False
     # Hot Deals v2 soft flags — surfaced in the email as warnings, not
     # selection filters. Each is a (emoji, short_label) pair so the
     # renderer can iterate without re-mapping. Empty list means the
@@ -278,10 +287,16 @@ async def _top_parcels_for_filter(
             {_eligible_predicates}
         )
         """
+    from app.services.verdict_gate import lead_eligible_sql, verdict_basis_sql
+
     sql = text(
         eligible_cte
-        + """
+        + f"""
         SELECT
+            ({verdict_basis_sql('zum')}) AS verdict_basis,
+            ({lead_eligible_sql('zum')}) AS lead_eligible,
+            (({lead_eligible_sql('zum')})
+             AND zum.self_storage::text = 'prohibited') AS storage_dead,
             e.parcel_id     AS parcel_id,
             e.apn           AS apn,
             e.address       AS address,
@@ -332,7 +347,8 @@ async def _top_parcels_for_filter(
              LIMIT 1
         ) lst ON true
         LEFT JOIN LATERAL (
-            SELECT self_storage, confidence, human_reviewed
+            SELECT self_storage, confidence, human_reviewed,
+                   classification_source
               FROM zone_use_matrix
              WHERE jurisdiction_id = e.jurisdiction_id
                AND zone_code      = e.zoning_code
@@ -359,7 +375,8 @@ async def _top_parcels_for_filter(
         WHERE (NOT :require_listed OR lst.source IS NOT NULL)
           -- Opt-in: drop unpriced listings entirely (sale_price NULL or 0).
           -- Off by default; gate is a no-op until a filter sets
-          -- {"requirePriced": true}.
+          -- requirePriced=true in its filter_json. (NOTE: this literal is an
+          -- f-string — keep curly braces out of comments here.)
           AND (NOT :require_priced
                OR (lst.sale_price IS NOT NULL AND lst.sale_price > 0))
           -- Price-per-acre cap fires only when both price and acres
@@ -444,6 +461,8 @@ async def _top_parcels_for_filter(
                 lat=float(m["lat"]) if m["lat"] is not None else None,
                 lng=float(m["lng"]) if m["lng"] is not None else None,
                 soft_flags=_soft_flags_from_row(m),
+                verdict_basis=m["verdict_basis"],
+                storage_dead=bool(m["storage_dead"]),
             )
         )
     return out
@@ -613,7 +632,10 @@ def _render_parcel_text(p: DigestParcel) -> list[str]:
         lines.append(f"  ⚠️ Soft flags: {flag_str}")
     if p.owner_name:
         lines.append(f"  Owner: {p.owner_name}")
-    lines.append(f"  Score: {p.score} ({p.tier})")
+    # Score is never shown without its verdict basis (catch #49): a 96 on a
+    # heuristic guess must not read like a verified 96.
+    lines.append(f"  Score: {p.score} ({p.tier}) · basis: {p.verdict_basis or 'unknown'}"
+                 + (" · 🚫 storage-dead (generic land)" if p.storage_dead else ""))
     for f in _top_factors(p):
         sign = "+" if float(f.get("delta", 0)) >= 0 else ""
         lines.append(
@@ -696,6 +718,9 @@ def _render_parcel_html(p: DigestParcel) -> str:
         f"  {owner_html}"
         f"  <div style=\"margin-top:8px;font-size:13px;color:#0f172a\">"
         f"    Score <strong>{p.score}</strong> · {html_lib.escape(p.tier)}"
+        f"    · <span style=\"color:{'#166534' if p.verdict_basis == 'human-verified' else '#92400e'};"
+        f"font-size:12px\">{html_lib.escape(p.verdict_basis or 'unknown')}</span>"
+        f"{'&nbsp;· <span style=\"color:#b91c1c;font-size:12px\">🚫 storage-dead (generic land)</span>' if p.storage_dead else ''}"
         f"  </div>"
         f"  <ul style=\"margin:6px 0 0 16px;padding:0;color:#334155;font-size:12px\">{factor_items}</ul>"
         f"  <a href=\"{link}\" style=\"display:inline-block;margin-top:10px;color:#0369a1;font-size:13px\">Open in dashboard →</a>"

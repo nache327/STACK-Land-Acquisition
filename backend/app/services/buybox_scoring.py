@@ -73,6 +73,13 @@ class ParcelInputs:
     listing_source: str | None = None
     listing_sale_price: float | None = None
     listing_dom: int | None = None
+    # Verdict provenance (catch #49 enforcement): which authority produced
+    # storage_permission. verdict_matched=False = the LATERAL found no matrix
+    # row at all ('ungrounded muni').
+    classification_source: str | None = None
+    confidence: float | None = None
+    human_reviewed: bool = False
+    verdict_matched: bool = False
 
 
 @dataclass
@@ -81,6 +88,11 @@ class ScoredParcel:
     score: int
     tier: str
     factors: list[dict] = field(default_factory=list)
+    # Lead-eligibility gate outputs (verdict_gate.py) — persisted on the score
+    # row so every read path serves score + basis together, never score alone.
+    lead_eligible: bool = False
+    gate_reason: str | None = None
+    verdict_basis: str = "ungrounded muni"
 
 
 def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> ScoredParcel:
@@ -214,7 +226,25 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
 
     raw = sum(f["delta"] for f in factors)
     score = max(0, min(100, round(raw)))
-    return ScoredParcel(p.parcel_id, score, tier_for(score), factors)
+
+    # Lead-eligibility gate (catch #49): a score computed on a heuristic
+    # verdict is DEMOTED, never deleted — the row persists with the reason,
+    # and the basis tag makes the provenance visible wherever the score shows.
+    from app.services.verdict_gate import gate_verdict, verdict_basis
+
+    eligible, reason = gate_verdict(
+        self_storage=p.storage_permission,
+        classification_source=p.classification_source,
+        confidence=p.confidence,
+        human_reviewed=p.human_reviewed,
+    )
+    basis = verdict_basis(
+        p.classification_source, p.human_reviewed, matched=p.verdict_matched
+    )
+    return ScoredParcel(
+        p.parcel_id, score, tier_for(score), factors,
+        lead_eligible=eligible, gate_reason=reason, verdict_basis=basis,
+    )
 
 
 # ─── Bulk scoring ────────────────────────────────────────────────────────
@@ -227,6 +257,9 @@ _SELECT_PARCELS_SQL = """
 SELECT
     p.id                AS parcel_id,
     zum.self_storage::text AS storage_permission,
+    zum.classification_source AS classification_source,
+    zum.confidence      AS verdict_confidence,
+    zum.human_reviewed  AS human_reviewed,
     p.acres,
     p.aadt,
     p.in_flood_zone,
@@ -245,7 +278,8 @@ LEFT JOIN LATERAL (
     -- NULL-municipality county-default row. Implemented as a LATERAL
     -- LIMIT 1 ordered by (municipality IS NULL ASC) so non-null rows
     -- sort first; LIMIT 1 collapses the result to whichever wins.
-    SELECT self_storage
+    SELECT self_storage, classification_source::text AS classification_source,
+           confidence, human_reviewed
       FROM zone_use_matrix
      WHERE jurisdiction_id = p.jurisdiction_id
        AND zone_code      = p.zoning_code
@@ -271,13 +305,17 @@ WHERE p.jurisdiction_id = $1::uuid
 
 
 _UPSERT_SQL = """
-INSERT INTO parcel_buybox_scores (parcel_id, buybox_filter_id, score, tier, factors)
-VALUES ($1::bigint, $2::uuid, $3::int, $4::text, $5::jsonb)
+INSERT INTO parcel_buybox_scores (parcel_id, buybox_filter_id, score, tier, factors,
+                                  lead_eligible, gate_reason, verdict_basis)
+VALUES ($1::bigint, $2::uuid, $3::int, $4::text, $5::jsonb, $6::boolean, $7::text, $8::text)
 ON CONFLICT ON CONSTRAINT pk_parcel_buybox_scores DO UPDATE
-SET score       = EXCLUDED.score,
-    tier        = EXCLUDED.tier,
-    factors     = EXCLUDED.factors,
-    computed_at = NOW()
+SET score         = EXCLUDED.score,
+    tier          = EXCLUDED.tier,
+    factors       = EXCLUDED.factors,
+    lead_eligible = EXCLUDED.lead_eligible,
+    gate_reason   = EXCLUDED.gate_reason,
+    verdict_basis = EXCLUDED.verdict_basis,
+    computed_at   = NOW()
 """
 
 
@@ -395,11 +433,20 @@ async def score_jurisdiction(
                     if r["listing_sale_price"] is not None else None
                 ),
                 listing_dom=r["listing_dom"],
+                classification_source=r["classification_source"],
+                confidence=(
+                    float(r["verdict_confidence"])
+                    if r["verdict_confidence"] is not None else None
+                ),
+                human_reviewed=bool(r["human_reviewed"]),
+                # LEFT LATERAL miss => storage_permission AND source both NULL
+                verdict_matched=r["storage_permission"] is not None,
             )
             s = score_for_parcel(inputs, filter_json)
             scored.append((
                 s.parcel_id, buybox_filter_id, s.score, s.tier,
                 json.dumps(s.factors),
+                s.lead_eligible, s.gate_reason, s.verdict_basis,
             ))
 
         # Batched UPSERT — chunk_size keeps the wire payload small
