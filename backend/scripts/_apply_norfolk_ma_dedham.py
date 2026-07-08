@@ -1,6 +1,6 @@
 """Apply human-verified zone_use_matrix verdicts — DEDHAM (Dedham MA Ch.280 Table 1, 280 Att.1 Supp 4 Nov 2023 (via dedham-ma.gov zoning bylaw); PR parcellogic/norfolk-ma-dedham-verdicts. LM->LMA alias per 280-2.1A; spot-check: 180 Rustcraft Rd / 300 Providence Hwy / 110 Elm St (Rustcraft industrial corridor = LMA). HELD: legacy codes B/G/A/R/000/L/R1).
 
-Generated 2026-07-08 from the applied production rows (paste-session apply;
+Regenerated 2026-07-08 post-rebind (LM re-keyed to LMA; RDO row added w/ fn24 condition; eyeball-verified) (paste-session apply;
 this file is the committed record of that apply and is idempotently re-runnable).
 Discipline: muni-scoped (catch #33), verbatim-quote basis (catch #37),
 human-UPSERT via asyncpg (catch #29), verify-and-print after apply (catch #42).
