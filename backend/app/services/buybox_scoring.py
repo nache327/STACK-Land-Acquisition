@@ -407,6 +407,22 @@ async def score_jurisdiction(
 
     conn = await asyncpg.connect(_raw_dsn())
     try:
+        # Concurrency dedupe (2026-07-08 log finding): two identical runs for
+        # the same (jurisdiction, filter) interleaved their upserts — safe
+        # (ON CONFLICT pk row-locks, identical values) but 2x the work on a
+        # 281k-parcel county. Session-level advisory lock keyed on the pair;
+        # the duplicate caller skips instead of racing. Auto-released on
+        # disconnect, so a crashed run never wedges the key.
+        got = await conn.fetchval(
+            "SELECT pg_try_advisory_lock(hashtextextended($1, 42))",
+            f"score:{jurisdiction_id}:{buybox_filter_id}",
+        )
+        if not got:
+            logger.warning(
+                "score_jurisdiction skipped — identical run already in flight "
+                "(jurisdiction=%s filter=%s)", jurisdiction_id, buybox_filter_id,
+            )
+            return 0
         await conn.execute("SET statement_timeout = 0")
         rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id, drive_time)
         logger.info(
