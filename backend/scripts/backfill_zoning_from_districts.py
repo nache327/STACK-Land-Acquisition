@@ -67,16 +67,19 @@ CONFIGS: dict[str, dict] = {
         nonbinding=set(), expected_count=(8, 12),
     ),
     "BRAINTREE": dict(
-        jid=NORFOLK_JID, url=MAPC, code_field="zo_code", where="muni='Braintree'",
-        strip_prefix=r"^\d+",
-        code_map={"COMM": "C", "HBD": "HB", "ResA": "RA", "ResB": "RB",
-                  "ResC": "RC", "OpenSpace": "OSC"},
-        # 135 Att.2 paste 2026-07-08: RA RB RC C1 C2 C3 GB HB C OSC BWLD.
-        # MAPC shows no C1/C2/C3 and a 'Cluster' poly — EXPECTED to fail gate b
-        # and route to Braintree town-GIS fallback (condition 3b).
-        ordinance_districts={"RA", "RB", "RC", "C1", "C2", "C3", "GB", "HB",
-                             "C", "OSC", "BWLD"},
-        nonbinding={"Cluster"}, expected_count=(11, 13),
+        jid=NORFOLK_JID,
+        # TOWN GIS (braintreema AGO) — MAPC is stale for Braintree (gate-b fail
+        # 2026-07-08). CATCH-#34 NOTE: the district code lives in field 'LAYER';
+        # do not let the global field-candidate list near this source.
+        url="https://services9.arcgis.com/wMoJraMZWuVPEmGK/arcgis/rest/services/Zoning/FeatureServer/28",
+        code_field="LAYER", where="1=1", strip_prefix=None,
+        # C123 = Cluster Zoning I/II/III per 135-610 (user-confirmed via Ch.135
+        # TOC, ecode360.com/14707917); Cluster III unmapped in GIS, not missing.
+        code_map={"ResA": "RA", "ResB": "RB", "ResC": "RC", "GBD": "GB",
+                  "HBD": "HB", "COMM": "C", "OpenSpace": "OSC",
+                  "Cluster1": "C123", "Cluster2": "C123"},
+        ordinance_districts={"RA", "RB", "RC", "C123", "GB", "HB", "C", "OSC", "BWLD"},
+        nonbinding=set(), expected_count=(8, 10),
     ),
     "BILLERICA": dict(
         jid=MIDDLESEX_JID, url=f"{NMCOG}/3", code_field="ZONE_CODE", where="1=1",
