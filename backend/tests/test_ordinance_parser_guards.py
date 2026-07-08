@@ -133,3 +133,20 @@ class TestBuildOutputWiring:
         })
         out = _build_output(raw)
         assert [z.code for z in out.zones] == ["HALLUCINATED"]
+
+
+class TestCompoundTokenPrecheck:
+    def test_compound_token_on_grid_row_warns(self):
+        grid = "Light Manufacturing N N N N N SZ NSZ Y 7.12(A)"
+        out = _apply_output_guards(_out([_zone("I")]), ["I"], grid)
+        assert any("compound-token" in w and "NSZ" in w for w in out.parser_warnings)
+
+    def test_no_warning_off_grid(self):
+        prose = "The NSZ overlay of New York (NY) applies."
+        out = _apply_output_guards(_out([_zone("I")]), ["I"], prose)
+        assert not any("compound-token" in w for w in out.parser_warnings)
+
+    def test_single_symbols_do_not_warn(self):
+        grid = "Wholesale N N N N N SZ N SZ 7.12(B)"
+        out = _apply_output_guards(_out([_zone("I")]), ["I"], grid)
+        assert not any("compound-token" in w for w in out.parser_warnings)

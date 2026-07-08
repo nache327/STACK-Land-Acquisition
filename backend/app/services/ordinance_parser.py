@@ -254,6 +254,25 @@ def _apply_output_guards(
     seen_text = sections_text[:MAX_INPUT_CHARS]
     seen_norm = " ".join(seen_text.split()).lower()
 
+    # Catch #56 pre-check: text-layer extraction is blind to revision marks.
+    # A token that concatenates two valid grid symbols (NSZ, SZY, ...) on a
+    # use-table row means tracked changes until visually disproven — warn so
+    # a human eyeballs the cell before any verdict rests on it.
+    _SYMBOLS = ("SZ", "SP", "SA", "Y", "N")
+    _tok_re = re.compile(r"(?:%s){2,3}" % "|".join(_SYMBOLS))
+    for line in seen_text.splitlines():
+        singles = sum(1 for t in line.split() if t in _SYMBOLS)
+        if singles < 3:
+            continue  # not a use-grid row
+        for tok in _tok_re.findall(line):
+            if tok in _SYMBOLS:
+                continue
+            warnings.append(
+                f"guard[compound-token]: '{tok}' on a use-grid row concatenates two "
+                f"valid symbols — possible tracked-change/strikethrough cell (catch #56); "
+                f"visual check required: {' '.join(line.split())[:100]}"
+            )
+
     kept: list[ParserZoneResult] = []
     for zone in output.zones:
         if known and _normalize_zone_code(zone.code) not in known:
