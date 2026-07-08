@@ -259,7 +259,7 @@ def _apply_output_guards(
     # use-table row means tracked changes until visually disproven — warn so
     # a human eyeballs the cell before any verdict rests on it.
     _SYMBOLS = ("SZ", "SP", "SA", "Y", "N")
-    _tok_re = re.compile(r"(?:%s){2,3}" % "|".join(_SYMBOLS))
+    _tok_re = re.compile(r"\b(?:%s){2,3}\b" % "|".join(_SYMBOLS))
     for line in seen_text.splitlines():
         singles = sum(1 for t in line.split() if t in _SYMBOLS)
         if singles < 3:
