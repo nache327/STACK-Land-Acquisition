@@ -2432,6 +2432,22 @@ async def _parse_and_save_ordinance(
             source = ClassificationSource.llm
 
         citations_val = [c.model_dump() for c in zone.citations] if zone.citations else None
+        # Rule-sourced output must never clobber an LLM/grounded row, even at
+        # higher numeric confidence (a 0.72 rule guess is not better evidence
+        # than a 0.71 ordinance parse). Rule may only overwrite rows that are
+        # themselves ungrounded.
+        overwrite_guard = (
+            (ZoneUseMatrix.human_reviewed == False) &
+            (ZoneUseMatrix.classification_source != ClassificationSource.human) &
+            (ZoneUseMatrix.confidence < zone.confidence)
+        )
+        if source == ClassificationSource.rule:
+            overwrite_guard = overwrite_guard & ZoneUseMatrix.classification_source.in_([
+                ClassificationSource.rule,
+                ClassificationSource.unclear,
+                ClassificationSource.inherited_pending,
+                ClassificationSource.op5_factory_catchall,
+            ])
         stmt = pg_insert(ZoneUseMatrix).values(
             jurisdiction_id=jurisdiction.id,
             zone_code=zone.code,
@@ -2468,11 +2484,7 @@ async def _parse_and_save_ordinance(
                 notes=zone.notes,
                 classification_source=source,
             ),
-            where=(
-                (ZoneUseMatrix.human_reviewed == False) &
-                (ZoneUseMatrix.classification_source != ClassificationSource.human) &
-                (ZoneUseMatrix.confidence < zone.confidence)
-            ),
+            where=overwrite_guard,
         )
         await db.execute(stmt)
 

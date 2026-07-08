@@ -78,6 +78,11 @@ USE_SYNONYMS: dict[str, list[str]] = {
 
 # ─── Public API ──────────────────────────────────────────────────────────────
 
+# Input window sent to Claude; the prohibited-by-silence guard keys off this
+# exact boundary, so both must share one constant.
+MAX_INPUT_CHARS = 200_000
+
+
 async def parse_ordinance_sections(
     sections_text: str,
     jurisdiction_name: str,
@@ -104,7 +109,7 @@ async def parse_ordinance_sections(
     if effective_snapshot and effective_snapshot.exists() and os.environ.get("RECORD_SNAPSHOT") != "1":
         logger.info("Replaying parser snapshot from %s", effective_snapshot)
         raw_json = json.loads(effective_snapshot.read_text())["raw_response"]
-        return _build_output(raw_json)
+        return _build_output(raw_json, known_zone_codes, sections_text)
 
     # ── Live Claude call ───────────────────────────────────────────────────
     last_error: str | None = None
@@ -119,7 +124,7 @@ async def parse_ordinance_sections(
         try:
             raw_json = await asyncio.to_thread(_call_claude, system_prompt, user_message)
             raw_json = _strip_markdown_fences(raw_json)
-            output = _build_output(raw_json)
+            output = _build_output(raw_json, known_zone_codes, sections_text)
 
             # ── Save snapshot ──────────────────────────────────────────────
             if effective_snapshot and (
@@ -185,7 +190,7 @@ def _build_user_message(
     # Truncate text to avoid excessive token usage. 200k chars (~50k tokens) is
     # well within context and stops large chapters (residential first, then
     # commercial/industrial) from losing their B-*/L-I districts to truncation.
-    text = sections_text[:200_000]
+    text = sections_text[:MAX_INPUT_CHARS]
     return (
         f"Jurisdiction: {jurisdiction_name}\n"
         f"Known zone codes to classify: {codes_str}\n\n"
@@ -211,6 +216,91 @@ def _strip_markdown_fences(text: str) -> str:
     text = re.sub(r"^```(?:json)?\s*\n?", "", text)
     text = re.sub(r"\n?```\s*$", "", text)
     return text.strip()
+
+
+def _normalize_zone_code(code: str) -> str:
+    return re.sub(r"[\s\-_.]", "", code).upper()
+
+
+def _apply_output_guards(
+    output: ParserOutput,
+    known_zone_codes: list[str],
+    sections_text: str,
+) -> ParserOutput:
+    """Post-parse guards — the LLM's output is treated as untrusted until proven
+    against the parcel data and the source text (2.3):
+
+    1. Zone-code membership: a returned code that isn't a known parcel code is
+       routed to unknown_zones instead of becoming a matrix row (hallucinated /
+       ordinance-only districts never bind).
+    2. Citation quotes must appear verbatim (whitespace-insensitive) in the
+       source text; failed quotes are dropped, and a zone left with no
+       surviving citation is capped at confidence 0.5 (ungrounded).
+    3. Prohibited-by-silence requires the silence to be in text we actually
+       sent: when input was truncated at MAX_INPUT_CHARS and a zone's code
+       never appears in the sent window, its "prohibited" slots downgrade to
+       "unclear" (the zone's rows may simply have been cut off).
+    """
+    warnings = list(output.parser_warnings)
+    unknown = list(output.unknown_zones)
+
+    known: set[str] = set()
+    for raw in known_zone_codes:
+        for part in re.split(r"[;,]", raw):
+            if part.strip():
+                known.add(_normalize_zone_code(part))
+
+    truncated = len(sections_text) > MAX_INPUT_CHARS
+    seen_text = sections_text[:MAX_INPUT_CHARS]
+    seen_norm = " ".join(seen_text.split()).lower()
+
+    kept: list[ParserZoneResult] = []
+    for zone in output.zones:
+        if known and _normalize_zone_code(zone.code) not in known:
+            unknown.append(zone.code)
+            warnings.append(
+                f"guard[membership]: '{zone.code}' is not a known parcel zone code — "
+                "routed to unknown_zones, no matrix row written"
+            )
+            continue
+
+        d = zone.model_dump()
+
+        surviving = []
+        for c in zone.citations:
+            quote_norm = " ".join((c.quote or "").split()).lower()
+            if quote_norm and quote_norm in seen_norm:
+                surviving.append(c.model_dump())
+            else:
+                warnings.append(
+                    f"guard[quote]: citation for '{zone.code}' ({c.section}) is not a "
+                    "verbatim substring of the source text — citation dropped"
+                )
+        if len(surviving) != len(zone.citations):
+            d["citations"] = surviving
+            if not surviving and zone.citations:
+                d["confidence"] = min(d["confidence"], 0.5)
+                d["notes"] = f"[guard: all citations failed verbatim check] {d.get('notes') or ''}"
+
+        if truncated and not re.search(
+            rf"(?<![A-Za-z0-9]){re.escape(zone.code)}(?![A-Za-z0-9])", seen_text, re.I
+        ):
+            downgraded = False
+            for use_key in ("self_storage", "mini_warehouse", "light_industrial", "luxury_garage_condo"):
+                if d.get(use_key) == "prohibited":
+                    d[use_key] = "unclear"
+                    downgraded = True
+            if downgraded:
+                d["notes"] = f"[guard: input truncated and '{zone.code}' unseen — prohibited-by-silence downgraded to unclear] {d.get('notes') or ''}"
+                warnings.append(
+                    f"guard[silence]: input truncated at {MAX_INPUT_CHARS} chars and "
+                    f"'{zone.code}' never appears in the sent window — its prohibited "
+                    "verdicts downgraded to unclear"
+                )
+
+        kept.append(ParserZoneResult.model_validate(d))
+
+    return ParserOutput(zones=kept, unknown_zones=unknown, parser_warnings=warnings)
 
 
 def _validate_parser_output(raw_json: str) -> ParserOutput:
@@ -264,9 +354,15 @@ def _apply_zone_classifier_floor(zones: list[ParserZoneResult]) -> list[ParserZo
     return result
 
 
-def _build_output(raw_json: str) -> ParserOutput:
-    """Parse, validate, apply inference rule, and apply zone_classifier floor."""
+def _build_output(
+    raw_json: str,
+    known_zone_codes: list[str] | None = None,
+    sections_text: str | None = None,
+) -> ParserOutput:
+    """Parse, validate, guard, apply inference rule, and apply zone_classifier floor."""
     output = _validate_parser_output(raw_json)
+    if known_zone_codes is not None and sections_text is not None:
+        output = _apply_output_guards(output, known_zone_codes, sections_text)
     fixed = [
         ParserZoneResult.model_validate(_apply_luxury_garage_inference(z.model_dump()))
         for z in output.zones
