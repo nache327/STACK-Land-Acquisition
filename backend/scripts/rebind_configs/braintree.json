@@ -1,0 +1,36 @@
+{
+  "muni": "BRAINTREE",
+  "jid": "NORFOLK",
+  "url": "https://services9.arcgis.com/wMoJraMZWuVPEmGK/arcgis/rest/services/Zoning/FeatureServer/28",
+  "code_field": "LAYER",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {
+    "ResA": "RA",
+    "ResB": "RB",
+    "ResC": "RC",
+    "GBD": "GB",
+    "HBD": "HB",
+    "COMM": "C",
+    "OpenSpace": "OSC",
+    "Cluster1": "C123",
+    "Cluster2": "C123"
+  },
+  "ordinance_districts": [
+    "RA",
+    "RB",
+    "RC",
+    "C123",
+    "GB",
+    "HB",
+    "C",
+    "OSC",
+    "BWLD"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    8,
+    10
+  ],
+  "notes": "TOWN GIS (braintreema AGO) \u2014 MAPC stale (gate-b fail). CATCH-#34: code in field 'LAYER'. C123=Cluster I/II/III (135-610, ecode360.com/14707917); Cluster III unmapped. FIRED 2026-07-08: 11,603 rebound."
+}

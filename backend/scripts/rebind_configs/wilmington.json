@@ -1,0 +1,26 @@
+{
+  "muni": "WILMINGTON",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Wilmington'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "CB",
+    "GB",
+    "GI",
+    "HI",
+    "LI",
+    "NB",
+    "R-10",
+    "R-20",
+    "R-60"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    8,
+    11
+  ],
+  "notes": "Fired 2026-07-08 (IND->GI 125); verdicts grounded via 2023 bylaw Table 1 3.6."
+}

@@ -1,0 +1,36 @@
+{
+  "muni": "BILLERICA",
+  "jid": "MIDDLESEX",
+  "url": "NMCOG/3",
+  "code_field": "ZONE_CODE",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "VR",
+    "NR",
+    "RR",
+    "MF",
+    "NB",
+    "GB",
+    "C",
+    "I",
+    "AE"
+  ],
+  "nonbinding": [
+    "WA",
+    "ROW"
+  ],
+  "expected_count": [
+    9,
+    11
+  ],
+  "overlay": {
+    "url": "NMCOG/2",
+    "code_field": "Zone_Code",
+    "tag_codes": [
+      "SS"
+    ]
+  },
+  "notes": "Oct 2025 bylaw 5.1; NMCOG territory (not MAPC). SS overlay = 2 parcels 129/225 Rangeway Rd."
+}

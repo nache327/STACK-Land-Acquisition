@@ -45,72 +45,51 @@ NMCOG = "https://services2.arcgis.com/8sfNXBvIUURUO8wz/arcgis/rest/services/NMCO
 NORFOLK_JID = "6cf15e94-4d2b-4434-a5a8-ea0fff78c1c5"
 MIDDLESEX_JID = "18a11c2a-4d7d-4725-a643-e40ea2a4e171"
 
+# Per-muni configs live as one JSON file each in rebind_configs/ — a parallel
+# session adds a NEW file (zero merge conflict) instead of editing a shared dict.
+# Symbolic aliases keep sessions from pasting UUIDs/URLs: jid ∈ {NORFOLK,MIDDLESEX}
+# or a raw UUID; url ∈ {MAPC, "NMCOG/<layer>"} or a raw https URL.
 # code_map runs BEFORE prefix-strip normalization; codes not in
 # ordinance_districts and not in nonbinding are vocab violations (gate a).
-CONFIGS: dict[str, dict] = {
-    "DEDHAM": dict(
-        jid=NORFOLK_JID, url=MAPC, code_field="zo_code", where="muni='Dedham'",
-        strip_prefix=r"^\d+", code_map={},
-        # Ch. 280 Table 1 paste 2026-07-08; SC (Senior Campus, § 280-7.x) is a
-        # real district absent from the pasted Table-1 header — verify at apply.
-        ordinance_districts={"SRA", "SRB", "GR", "PR", "PC", "RDO", "AP",
-                             "LMA", "LMB", "HB", "LB", "GB", "CB", "SC"},
-        nonbinding=set(), expected_count=(9, 14),
-    ),
-    "STOUGHTON": dict(
-        jid=NORFOLK_JID, url=MAPC, code_field="zo_code", where="muni='Stoughton'",
-        strip_prefix=r"^\d+", code_map={},
-        # 200 Att.2 paste 2026-07-08 (+ CBD seen in MAPC — candidate identity
-        # for the held 'C' assessor code; confirm before verdicts).
-        ordinance_districts={"RM", "RU", "RC", "RB", "RA", "GB", "NB", "HB",
-                             "I", "I2", "CBD"},
-        nonbinding=set(), expected_count=(8, 12),
-    ),
-    "BRAINTREE": dict(
-        jid=NORFOLK_JID, url=MAPC, code_field="zo_code", where="muni='Braintree'",
-        strip_prefix=r"^\d+",
-        code_map={"COMM": "C", "HBD": "HB", "ResA": "RA", "ResB": "RB",
-                  "ResC": "RC", "OpenSpace": "OSC"},
-        # 135 Att.2 paste 2026-07-08: RA RB RC C1 C2 C3 GB HB C OSC BWLD.
-        # MAPC shows no C1/C2/C3 and a 'Cluster' poly — EXPECTED to fail gate b
-        # and route to Braintree town-GIS fallback (condition 3b).
-        ordinance_districts={"RA", "RB", "RC", "C1", "C2", "C3", "GB", "HB",
-                             "C", "OSC", "BWLD"},
-        nonbinding={"Cluster"}, expected_count=(11, 13),
-    ),
-    "WOBURN": dict(
-        jid=MIDDLESEX_JID, url=MAPC, code_field="zo_code", where="muni='Woburn'",
-        strip_prefix=r"^\d+", code_map={},
-        # MAPC recon 2026-07-08 (strip ^347). Full 16-district vocab from the atlas;
-        # ordinance cross-check pending Stage-4 paste — atlas-authoritative for rebind.
-        ordinance_districts={"B-D","B-H","B-I","B-N","I-G","I-P","IP-2","O-P","O-P93",
-                             "O-S","R-1","R-2","R-3","R-4","S-1","S-2"},
-        nonbinding=set(), expected_count=(14, 18),
-    ),
-    "WILMINGTON": dict(
-        jid=MIDDLESEX_JID, url=MAPC, code_field="zo_code", where="muni='Wilmington'",
-        strip_prefix=r"^\d+", code_map={},
-        ordinance_districts={"CB","GB","GI","HI","LI","NB","R-10","R-20","R-60"},
-        nonbinding=set(), expected_count=(8, 11),
-    ),
-    "HUDSON": dict(
-        jid=MIDDLESEX_JID, url=MAPC, code_field="zo_code", where="muni='Hudson'",
-        strip_prefix=r"^\d+", code_map={},
-        ordinance_districts={"C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11",
-                             "C12","C13","LCI1","M1","M2","M3","M4","M5","M6","M7",
-                             "SA5","SA7","SA8","SB","SB1","SB2","SB3","SB4"},
-        nonbinding=set(), expected_count=(27, 31),
-    ),
-    "BILLERICA": dict(
-        jid=MIDDLESEX_JID, url=f"{NMCOG}/3", code_field="ZONE_CODE", where="1=1",
-        strip_prefix=None, code_map={},
-        # Oct 2025 bylaw § 5.1: VR NR RR MF / NB GB C / I (+ AE special).
-        ordinance_districts={"VR", "NR", "RR", "MF", "NB", "GB", "C", "I", "AE"},
-        nonbinding={"WA", "ROW"},  # water / right-of-way: kept in report, never bound
-        expected_count=(9, 11),
-        overlay=dict(url=f"{NMCOG}/2", code_field="Zone_Code", tag_codes={"SS"}),
-    ),
-}
+_JID_ALIASES = {"NORFOLK": NORFOLK_JID, "MIDDLESEX": MIDDLESEX_JID}
+_CONFIG_DIR = Path(__file__).parent / "rebind_configs"
+
+
+def _resolve_url(u: str) -> str:
+    if u.startswith("http"):
+        return u
+    if u == "MAPC":
+        return MAPC
+    if u.startswith("NMCOG"):
+        return NMCOG + u[len("NMCOG"):]  # "NMCOG/3" -> <NMCOG base>/3
+    return u
+
+
+def load_configs() -> dict[str, dict]:
+    """Glob rebind_configs/*.json → the CONFIGS dict, resolving aliases and
+    converting JSON lists → sets. New munis drop in as new files (no shared-dict
+    merge conflict across parallel sessions)."""
+    cfgs: dict[str, dict] = {}
+    for path in sorted(_CONFIG_DIR.glob("*.json")):
+        d = json.loads(path.read_text(encoding="utf-8"))
+        ov = d.get("overlay")
+        if ov:
+            ov = dict(url=_resolve_url(ov["url"]), code_field=ov["code_field"],
+                      tag_codes=set(ov["tag_codes"]))
+        cfgs[d["muni"]] = dict(
+            jid=_JID_ALIASES.get(d["jid"], d["jid"]),
+            url=_resolve_url(d["url"]),
+            code_field=d["code_field"], where=d["where"],
+            strip_prefix=d.get("strip_prefix"), code_map=d.get("code_map", {}),
+            ordinance_districts=set(d["ordinance_districts"]),
+            nonbinding=set(d.get("nonbinding", [])),
+            expected_count=tuple(d["expected_count"]),
+            overlay=ov,
+        )
+    return cfgs
+
+
+CONFIGS: dict[str, dict] = load_configs()
 
 
 def fetch_districts(url: str, code_field: str, where: str) -> list[tuple[str, str]]:
