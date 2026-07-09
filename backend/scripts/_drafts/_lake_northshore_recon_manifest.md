@@ -152,6 +152,33 @@ human verdict; the industrial/commercial spine of the 4 munis + UDO is grounded 
   ordinance PDF (`northchicago.org`, blocks fetchers) needs a browser-UA read to confirm the use
   table + self-storage treatment before grounding.
 
+## BATCH 2 STATUS (2026-07-09) — thesis recalibrated to WEALTH-GATED needles
+Needle = grounded ss permitted/conditional AND acres≥1.5 AND dt=10 median_home_value≥475k AND
+median_hhi≥100k (`parcel_ring_metrics`, Lake has full dt=10 coverage). Batch-1 recomputed under
+this gate = **70 needles** (unincorp UDO 64 + Deerfield 6; Gurnee/Mundelein/Waukegan = 0 — industrial
+but OUTSIDE the wealth rings → correct no-ops, confirming the recalibration).
+
+Wealth-gate profile (median dt10, % parcels clearing gate):
+Highland Park 100% · Buffalo Grove 100% · Lincolnshire 100% · Bannockburn 100% · Lake Forest 100% ·
+Riverwoods 100% · Mettawa 100% · Lake Bluff 99.7% · Libertyville 37% · Vernon Hills 12%.
+
+- **HIGHLAND PARK — GROUNDED (the Batch-2 win).** Correct layer found (catch #38 verified codes+geom):
+  `CHP/CHP_Tyler_Energov_Viewing/MapServer/3` (the UNAUTHENTICATED Tyler_Energov service; the
+  `AGOL_CHP_Project` sibling needs a token). 12,853 rebound. Verdicts (§150.490 via open Municode
+  content API): `I` self_storage/mini_warehouse PERMITTED + light_industrial PERMITTED; `B3`
+  self_storage PROHIBITED, light_industrial PERMITTED. **+22 wealth-gated needles** (I district,
+  all ≥1.5ac clear the 100% gate).
+- **BUFFALO GROVE · LINCOLNSHIRE · LIBERTYVILLE — escalated (exception queue C1).** Geometry-blocked:
+  GIS-Consortium `VBG`/`VOL`/`VLV` services are token-gated (unlike CHP). Real industrial districts +
+  strong wealth gate (BG 100%, Lincolnshire 100%, Libertyville 37%) — geometry is the ONLY blocker;
+  use tables reachable. Highest-value Lake unblock after HP.
+- **VERNON HILLS — escalated (C2).** Private AGOL, no public layer; marginal (12% gate).
+- **BANNOCKBURN — escalated (C3).** Only public layer (GHA) returns HTTP 500 on query; tiny.
+- **RIVERWOODS · METTAWA · LAKE FOREST · LAKE BLUFF — honest no-ops (catch #52).** Clear the wealth
+  gate but have NO self-storage-permitting district (Riverwoods/Mettawa: no industrial; Lake Forest:
+  no industrial district; Lake Bluff: L-1/L-2 enclosed-storage only, no self-storage use class) →
+  0 needles by structure. Not grounded (no false-lead risk).
+
 ## Open verification items (browser-UA reads before/at grounding)
 - **Highland Park §150.490** self-storage cell (L-I / B-*) + reconcile GIS `ZONED` legacy codes ↔ Municode districts.
 - **Waukegan** confirm Self-Storage(Indoor) is Conditional in `I` and absent from `R/LI` (Table 9.02-1).

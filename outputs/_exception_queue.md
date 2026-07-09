@@ -18,7 +18,9 @@ guards + source PDF already settle.
 ## OPEN
 | # | Session | Muni / County | Item (what's ambiguous) | What's needed from Nache |
 |---|---|---|---|---|
-| _(none yet)_ | | | | |
+| C3 | C | Bannockburn, Lake IL | Only public zoning-polygon layer (GHA `gis.gha-engineers.com/.../Bannockburn/Zoning/MapServer/2`, ZONECLASS) returns HTTP 500 on every query — can't rebind. Wealthy (100% wealth-gate) but tiny; self-storage only special-use in Office District (low yield). | A working geometry pull (paginated export / retry window) or a town shapefile. Fine to skip given low yield. |
+| C2 | C | Vernon Hills, Lake IL | No PUBLIC zoning-polygon layer: village runs a PRIVATE AGOL org (vernonhills.maps.arcgis.com; zoning service not shared). Marginal anyway — only 11.7% of parcels clear the wealth gate; O-R&D "Storage facilities" = special use. | Village GIS zoning shapefile / data request, then Municode content-API use table + rebind. |
+| C1 | C | Libertyville, Lake IL | No PUBLIC zoning-polygon layer yet: GIS-Consortium `ags.gisconsortium.org/.../VLV/*` is token-gated. Real industrial districts (I-1/I-3, M1) but only 37% of parcels clear the wealth gate. NOTE: Buffalo Grove + Lincolnshire (same Consortium block) were UNBLOCKED via the `utility.arcgis.com/usrsvcs/servers/<guid>/rest/services/VLV/AGOL_VLV_Project/...` anonymous proxy — Libertyville almost certainly has the same proxy; just need its usrsvcs GUID (from the Libertyville community-map-viewer network calls). | Either find Libertyville's usrsvcs proxy GUID, or credentialed Consortium access / town shapefile. Lower priority (37% gate). |
 
 ## RESOLVED
 | # | Muni | Item | Ruling | Date |
