@@ -1,0 +1,26 @@
+{
+  "muni": "CANTON",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Canton'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "SRA",
+    "SRAA",
+    "SRB",
+    "SRC",
+    "GR",
+    "B",
+    "I",
+    "LI",
+    "POS"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    8,
+    11
+  ],
+  "notes": "Town of Canton Zoning By-Laws; §3.1 Use Regulations Table = Attachment A (current 'TABLE OF USE REGULATIONS 2026', town.canton.ma.us DocumentCenter/View/13244). Assessor codes were NUMERIC (11/12/9/10/3/7/6/5/1) -> MAPC layer 2 strip 50-prefix decodes them spatially to SRA/SRAA/SRB/SRC/GR/B/I/LI/POS. SCHEME NOTE: MAPC reflects pre-2026 scheme (SRA/SRAA/SRB/SRC single-residence variants, single LI); the 2026 recodification consolidated single-residence to 'SR' and split LI into LI/LI(B)/LI(C) + added CB. For the 4 storage/industrial uses the 2026 table's LI/LI(B)/LI(C)/I columns are consistent (li by-right, warehouse=BA), and all SR-variants/GR/B/CB/POS prohibit them, so MAPC's codes map to robust verdicts."
+}
