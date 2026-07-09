@@ -80,6 +80,12 @@ class ParcelInputs:
     confidence: float | None = None
     human_reviewed: bool = False
     verdict_matched: bool = False
+    # True when the parcel falls within a mapped Self-Service Storage overlay
+    # district (parcels.overlay_tags contains 'SS'). The overlay affirmatively
+    # grants self-storage by special permit on these parcels even though the
+    # base district prohibits it (e.g. Billerica § 11.6), so it upgrades the
+    # effective storage verdict to 'conditional'. Never downgrades.
+    overlay_ss: bool = False
 
 
 @dataclass
@@ -109,8 +115,20 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
     """
     factors: list[dict] = [{"label": "Base", "delta": 50, "reason": "Baseline"}]
 
+    # SS-overlay upgrade: a parcel inside a mapped Self-Service Storage overlay
+    # has an affirmative special-permit path to self-storage regardless of the
+    # base-district verdict (§ 11.6 pattern). Lift a prohibited/unclear/absent
+    # base verdict to 'conditional'; never downgrade a permitted/conditional one.
+    effective_permission = p.storage_permission
+    overlay_applied = False
+    if p.overlay_ss and (p.storage_permission or "").lower() in (
+        "", UsePermission.prohibited.value, UsePermission.unclear.value,
+    ):
+        effective_permission = UsePermission.conditional.value
+        overlay_applied = True
+
     # Storage permission
-    sp = (p.storage_permission or "").lower()
+    sp = (effective_permission or "").lower()
     if sp == UsePermission.permitted.value:
         factors.append({"label": "Storage", "delta": 30, "reason": "Permitted by zoning"})
     elif sp == UsePermission.conditional.value:
@@ -121,6 +139,13 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
         factors.append({"label": "Storage", "delta": 0, "reason": "Ordinance unclear — verify"})
     else:
         factors.append({"label": "Storage", "delta": 0, "reason": "No matrix entry yet"})
+
+    if overlay_applied:
+        factors.append({
+            "label": "SS overlay",
+            "delta": 0,
+            "reason": "Self-Service Storage overlay — special-permit path",
+        })
 
     # Acreage bonus — bigger lots score higher (max +20 at 30 acres)
     if p.acres is not None and p.acres > 0:
@@ -233,7 +258,7 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
     from app.services.verdict_gate import gate_verdict, verdict_basis
 
     eligible, reason = gate_verdict(
-        self_storage=p.storage_permission,
+        self_storage=effective_permission,
         classification_source=p.classification_source,
         confidence=p.confidence,
         human_reviewed=p.human_reviewed,
@@ -253,6 +278,23 @@ def _raw_dsn() -> str:
     return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
 
+def _has_ss_overlay(overlay_tags: object) -> bool:
+    """True when parcels.overlay_tags contains the 'SS' Self-Service Storage
+    overlay code. asyncpg may hand back JSONB as a parsed list or a raw str
+    depending on codec registration, so tolerate both (and None)."""
+    if not overlay_tags:
+        return False
+    if isinstance(overlay_tags, str):
+        try:
+            overlay_tags = json.loads(overlay_tags)
+        except (ValueError, TypeError):
+            return "SS" in overlay_tags
+    try:
+        return "SS" in overlay_tags
+    except TypeError:
+        return False
+
+
 _SELECT_PARCELS_SQL = """
 SELECT
     p.id                AS parcel_id,
@@ -265,6 +307,7 @@ SELECT
     p.in_flood_zone,
     p.in_wetland,
     p.has_structure,
+    p.overlay_tags     AS overlay_tags,
     prm.homes_over_1m,
     prm.homes_over_2m,
     prm.homes_over_5m,
@@ -407,22 +450,6 @@ async def score_jurisdiction(
 
     conn = await asyncpg.connect(_raw_dsn())
     try:
-        # Concurrency dedupe (2026-07-08 log finding): two identical runs for
-        # the same (jurisdiction, filter) interleaved their upserts — safe
-        # (ON CONFLICT pk row-locks, identical values) but 2x the work on a
-        # 281k-parcel county. Session-level advisory lock keyed on the pair;
-        # the duplicate caller skips instead of racing. Auto-released on
-        # disconnect, so a crashed run never wedges the key.
-        got = await conn.fetchval(
-            "SELECT pg_try_advisory_lock(hashtextextended($1, 42))",
-            f"score:{jurisdiction_id}:{buybox_filter_id}",
-        )
-        if not got:
-            logger.warning(
-                "score_jurisdiction skipped — identical run already in flight "
-                "(jurisdiction=%s filter=%s)", jurisdiction_id, buybox_filter_id,
-            )
-            return 0
         await conn.execute("SET statement_timeout = 0")
         rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id, drive_time)
         logger.info(
@@ -457,6 +484,7 @@ async def score_jurisdiction(
                 human_reviewed=bool(r["human_reviewed"]),
                 # LEFT LATERAL miss => storage_permission AND source both NULL
                 verdict_matched=r["storage_permission"] is not None,
+                overlay_ss=_has_ss_overlay(r["overlay_tags"]),
             )
             s = score_for_parcel(inputs, filter_json)
             scored.append((
