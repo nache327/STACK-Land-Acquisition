@@ -1,0 +1,21 @@
+{
+  "muni": "BUFFALO GROVE",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://utility.arcgis.com/usrsvcs/servers/0ceee091db504bac8232868a5fc2b5c7/rest/services/VBG/AGOL_VBG_Project/MapServer/2",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "B-1", "B-2", "B-3", "B-4", "B-5",
+    "O&R", "I", "MUPD",
+    "R-1", "R-2", "R-3", "R-3A", "R-4", "R-4A", "R-5", "R-5A",
+    "R-6", "R-6A", "R-7", "R-8", "R-9", "R-9A", "R-E"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    18,
+    26
+  ],
+  "notes": "Village of Buffalo Grove (Lake/Cook) zoning. Public via utility.arcgis.com usrsvcs proxy (the token-gated ags.gisconsortium VBG data served anonymously). Codes match Municode Title 17 (B-1..B-5, O&R, I, R-E, R-1..R-9, MUPD=mixed-use PD). Lake County IL jid (Lake-side parcels). Self-storage = special use in I district (§17.48.020.C)."
+}

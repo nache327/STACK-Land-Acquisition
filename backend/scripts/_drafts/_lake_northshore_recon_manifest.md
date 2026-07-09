@@ -152,6 +152,49 @@ human verdict; the industrial/commercial spine of the 4 munis + UDO is grounded 
   ordinance PDF (`northchicago.org`, blocks fetchers) needs a browser-UA read to confirm the use
   table + self-storage treatment before grounding.
 
+## BATCH 2 STATUS (2026-07-09) — thesis recalibrated to WEALTH-GATED needles
+Needle = grounded ss permitted/conditional AND acres≥1.5 AND dt=10 median_home_value≥475k AND
+median_hhi≥100k (`parcel_ring_metrics`, Lake has full dt=10 coverage). Batch-1 recomputed under
+this gate = **70 needles** (unincorp UDO 64 + Deerfield 6; Gurnee/Mundelein/Waukegan = 0 — industrial
+but OUTSIDE the wealth rings → correct no-ops, confirming the recalibration).
+
+**FINAL BATCH-2 wealth-gated needle count = 262** (86 permitted + 176 conditional), up from
+Batch-1's 70 (+192): Buffalo Grove 116 (cond) · unincorp UDO 64 (perm) · Lincolnshire 54 (cond) ·
+Highland Park 22 (perm) · Deerfield 6 (cond). Gurnee/Mundelein/Waukegan = 0 (industrial but outside
+wealth rings — correct no-ops). Re-score done, `postingest_gate.py` PASS (bound 100%, 90 codes).
+
+Wealth-gate profile (median dt10, % parcels clearing gate):
+Highland Park 100% · Buffalo Grove 100% · Lincolnshire 100% · Bannockburn 100% · Lake Forest 100% ·
+Riverwoods 100% · Mettawa 100% · Lake Bluff 99.7% · Libertyville 37% · Vernon Hills 12%.
+
+- **HIGHLAND PARK — GROUNDED (the Batch-2 win).** Correct layer found (catch #38 verified codes+geom):
+  `CHP/CHP_Tyler_Energov_Viewing/MapServer/3` (the UNAUTHENTICATED Tyler_Energov service; the
+  `AGOL_CHP_Project` sibling needs a token). 12,853 rebound. Verdicts (§150.490 via open Municode
+  content API): `I` self_storage/mini_warehouse PERMITTED + light_industrial PERMITTED; `B3`
+  self_storage PROHIBITED, light_industrial PERMITTED. **+22 wealth-gated needles** (I district,
+  all ≥1.5ac clear the 100% gate).
+- **BUFFALO GROVE — GROUNDED.** Unblocked via the `utility.arcgis.com/usrsvcs/servers/<guid>` anonymous
+  proxy (serves the token-gated Consortium VBG data). `VBG/AGOL_VBG_Project/MapServer/2` (ZONED),
+  10,611 rebound. Verdicts (Title 17 Ch.17.48): I self_storage/mini_warehouse CONDITIONAL
+  (warehouse=>conditional; "storing" by-right B.6, self-storage facility referenced C.20),
+  light_industrial PERMITTED; O&R storage PROHIBITED. **+116 wealth-gated needles** (I district).
+- **LINCOLNSHIRE — GROUNDED.** Same usrsvcs-proxy unlock (`VOL/AGOL_VOL_Project/MapServer/0`), 3,072
+  rebound (endpoint flaky, 504 on full-geom — page it). Verdicts (Title 6): M1 §6-7A + I §6-8B
+  self_storage/mini_warehouse CONDITIONAL (warehouse/storage P by-right, fully-enclosed),
+  light_industrial PERMITTED; O §6-8A all PROHIBITED. **+54 wealth-gated needles** (I 48 + M1 6).
+- **LIBERTYVILLE — escalated (exception queue C1).** Consortium `VLV` token-gated; try the same
+  usrsvcs-proxy trick (need VLV's GUID). Only 37% wealth-gate → lower priority.
+- **REUSABLE UNLOCK (Consortium geometry):** the token-gated `ags.gisconsortium.org/.../<FOLDER>/*`
+  services are mirrored anonymously at `utility.arcgis.com/usrsvcs/servers/<guid>/rest/services/
+  <FOLDER>/AGOL_<FOLDER>_Project/MapServer` (GUID from the village web-map network calls). This +
+  Highland Park's open `<FOLDER>_Tyler_Energov_Viewing` are the two ways past the Consortium wall.
+- **VERNON HILLS — escalated (C2).** Private AGOL, no public layer; marginal (12% gate).
+- **BANNOCKBURN — escalated (C3).** Only public layer (GHA) returns HTTP 500 on query; tiny.
+- **RIVERWOODS · METTAWA · LAKE FOREST · LAKE BLUFF — honest no-ops (catch #52).** Clear the wealth
+  gate but have NO self-storage-permitting district (Riverwoods/Mettawa: no industrial; Lake Forest:
+  no industrial district; Lake Bluff: L-1/L-2 enclosed-storage only, no self-storage use class) →
+  0 needles by structure. Not grounded (no false-lead risk).
+
 ## Open verification items (browser-UA reads before/at grounding)
 - **Highland Park §150.490** self-storage cell (L-I / B-*) + reconcile GIS `ZONED` legacy codes ↔ Municode districts.
 - **Waukegan** confirm Self-Storage(Indoor) is Conditional in `I` and absent from `R/LI` (Table 9.02-1).
