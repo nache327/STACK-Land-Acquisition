@@ -18,11 +18,6 @@ guards + source PDF already settle.
 ## OPEN
 | # | Session | Muni / County | Item (what's ambiguous) | What's needed from Nache |
 |---|---|---|---|---|
-| D5 | D | Bridgeport Boro / Montgomery PA | No auto-fetchable source (eCode360 + town CivicPlus uploads both 403) **and** Ch. 560 rewritten 11-11-2025 (Ord 2025-002)+amended 2026 → parcel codes (LIC/GC/GIC/NC/MUR/TO) may predate rewrite | Paste current Ch. 560 LIC + GC/GIC + commercial use tables; confirm codes still match parcels. Needle = LIC 50 + GC 31. URLs in `_drafts/_montgomery_pa_ecode360_paste_surface.md` |
-| D4 | D | Hatfield Boro / Montgomery PA | eCode360-only (403 to automation), no town PDF | Paste I Industrial (Part 18) + CC/C commercial use tables. Needle = I 60. URLs in paste-surface draft |
-| D3 | D | Hatfield Twp / Montgomery PA | eCode360-only (403 to automation), no town PDF. LI preview shows "Warehousing" + "Truck terminal" by-right (likely self-storage conditional) | Paste LI (Art XX, ecode360.com/10507615) + C/BB/BA use tables. Needle = LI 404. URLs in paste-surface draft |
-| D2 | D | Pottstown Boro / Montgomery PA | eCode360-only (403 to automation), no town PDF; needle industrial district code not yet decoded (KOZ/general-industrial) | Paste industrial district use list + downtown/commercial (D/DG/GE). URLs in paste-surface draft |
-| D1 | D | Hatboro Boro / Montgomery PA | eCode360-only (403 to automation), no town PDF. **Biggest eCode360-only industrial pool (LI 86 + HI 47 + HI-MU 17 = 150)** | Paste LI + HI + HI-MU use lists + HB/O commercial. URLs in `_drafts/_montgomery_pa_ecode360_paste_surface.md` |
 
 ## PARKED (coordinator-ruled, revisit-gated)
 | # | Muni | Item | Coordinator ruling | Unblock condition |
@@ -32,6 +27,11 @@ guards + source PDF already settle.
 ## RESOLVED
 | # | Muni | Item | Ruling | Date |
 |---|---|---|---|---|
+| D1 | Hatboro Boro (MontPA) | eCode360-blocked escalation | UNBLOCKED via curl+browser-UA (Session B method). Ch. 27: LI/HI/HI-MU conditional (§27-1402.J 'Storage buildings and warehouses' by-right); O/RC-1/RC-2/HB prohibited. 150 armed. | 2026-07-09 |
+| D2 | Pottstown Boro (MontPA) | eCode360-blocked; industrial code undecoded | UNBLOCKED. §300 chart decoded (HM/FO/HB). HB permitted ('Rental storage'); HM+FO conditional (Warehouse by-right); downtown/gateway prohibited. 194 armed. | 2026-07-09 |
+| D3 | Hatfield Twp (MontPA) | eCode360-blocked escalation | UNBLOCKED. Ch. 282: LI+LIRC conditional (§282-145.B 'Warehousing' by-right + SE catch-alls); C/LC/SC/LPO/IN/TD prohibited. 408 armed. | 2026-07-09 |
+| D4 | Hatfield Boro (MontPA) | eCode360-blocked escalation | UNBLOCKED. Ch. 27: I PERMITTED (§27-1802.1.N 'Self-storage developments' by-right); CC prohibited (§27-2106.1.I); C prohibited. 60 armed. | 2026-07-09 |
+| D5 | Bridgeport Boro (MontPA) | eCode360-blocked + Ch.560 rewrite version-mismatch risk | UNBLOCKED. Version check RESOLVED — parcel codes match current §560-402 scheme 1:1. LIC+GIC PERMITTED (§560-1202 '(u) Storage facility (self-service)' by-right); GC conditional; NC/MUR prohibited. 82 armed. | 2026-07-09 |
 | ex | Billerica | LM/Wholesale compound tokens `NSZ`/`SZY` (catch #56) | OCR cell-merge, not strikethrough; LM-in-C=SZ, Wholesale-in-I=SZ | 2026-07-08 |
 | ex | Billerica | closed-list clause for ss prohibited-by-silence | "Any building or use of premises not specifically permitted is prohibited" — confirmed | 2026-07-08 |
 | ex | Braintree | MAPC gate-b fail (no C1/C2/C3) | C123=Cluster I/II/III; route to town-GIS layer (field LAYER) | 2026-07-08 |
