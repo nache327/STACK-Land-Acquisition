@@ -43,6 +43,32 @@ _MIN_MATRIX_COVERAGE_PCT = 0.20
 _DOMINATION_PCT = 0.90
 _DOMINATION_MIN_DISTINCT = 5
 
+# Named-garage-use markers (lowercased). Presence in a lgc row's basis text means
+# the permitted/conditional luxury_garage_condo rests on a NAMED ordinance use
+# (e.g. Marlborough "hobby vehicle storage") — legitimate, exempt from the
+# sibling-consistency check (catch #58). Absence + prohibited storage siblings is
+# the Billerica-shaped inference leak.
+_NAMED_GARAGE_MARKERS = (
+    "hobby vehicle", "garage condo", "garage condominium", "motor vehicle storage",
+    "rv and boat", "rv/boat", "motorcoach", "automotive condominium",
+)
+
+
+def sibling_consistency_violation(ss, mw, lgc, basis_text) -> bool:
+    """Catch #58, automated: a luxury_garage_condo verdict of permitted/conditional
+    while BOTH storage siblings (self_storage, mini_warehouse) are prohibited is a
+    consistency leak — UNLESS lgc rests on a named garage use. Garage-condo is
+    leased dead storage, the same use-family as self-storage; if the ordinance
+    prohibits ss/mw (a definitive negative, e.g. closed-list), an inferred lgc that
+    stays permitted/conditional contradicts it. Named-use lgc (Marlborough) is
+    exempt. `basis_text` = the row's notes + citation quotes, lowercased here."""
+    if (lgc or "").lower() not in ("permitted", "conditional"):
+        return False
+    if (ss or "").lower() != "prohibited" or (mw or "").lower() != "prohibited":
+        return False
+    text = (basis_text or "").lower()
+    return not any(m in text for m in _NAMED_GARAGE_MARKERS)
+
 
 def is_url_shaped(code: str | None) -> bool:
     """True if a zoning_code is a URL or absurdly long — a bind failure."""
@@ -132,6 +158,26 @@ async def run_postingest_gate(conn, jurisdiction_id: uuid.UUID | str) -> GateRep
         sample = [f"{r['municipality']}/{r['zone_code']}" for r in masq[:5]]
         rep.fail(f"{len(masq)} grounded-source matrix row(s) with ALL uses 'unclear' "
                  f"(claims grounding, says nothing): {sample}")
+
+    # 3b. Sibling-consistency (catch #58) — HARD. A lgc verdict of permitted/
+    # conditional while BOTH storage siblings are prohibited, with no named-garage
+    # basis, is the Billerica-shaped inference leak. Basis text = notes + citation
+    # quotes.
+    lgc_rows = await conn.fetch(
+        """SELECT municipality, zone_code, self_storage::text ss, mini_warehouse::text mw,
+                  luxury_garage_condo::text lgc, coalesce(notes,'') AS notes,
+                  coalesce(citations::text,'') AS cites
+             FROM zone_use_matrix
+            WHERE jurisdiction_id=$1::uuid AND deleted_at IS NULL
+              AND luxury_garage_condo IN ('permitted','conditional')""", jid)
+    leaks = [
+        f"{r['municipality']}/{r['zone_code']}"
+        for r in lgc_rows
+        if sibling_consistency_violation(r["ss"], r["mw"], r["lgc"], r["notes"] + " " + r["cites"])
+    ]
+    if leaks:
+        rep.fail(f"catch-#58 sibling leak — lgc permitted/conditional (inference basis) while "
+                 f"ss+mw prohibited: {leaks[:5]}{' …' if len(leaks) > 5 else ''} ({len(leaks)} rows)")
 
     # 4. Matrix coverage — SOFT
     covered = await conn.fetchval(
