@@ -1,0 +1,22 @@
+{
+  "muni": "LINCOLNSHIRE",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://utility.arcgis.com/usrsvcs/servers/4ba90e1a036946cdb60b524ad95b2146/rest/services/VOL/AGOL_VOL_Project/MapServer/0",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "B1", "B2", "E", "O",
+    "M1", "I",
+    "R1", "R2", "R2A", "R3", "R4", "R5"
+  ],
+  "nonbinding": [
+    "DEDICATED"
+  ],
+  "expected_count": [
+    10,
+    14
+  ],
+  "notes": "Village of Lincolnshire zoning. Public via utility.arcgis.com usrsvcs proxy (token-gated ags.gisconsortium VOL data, anonymous). Codes match Title 6 (M1 Restricted Manufacturing, B1/B2, E, O Office, R1..R5; I=Industrial District). DEDICATED=dedicated ROW/land (nonbinding). Lake County IL jid. NOTE endpoint flaky (504 on full-geom query) — rebind pages by 500; retry if it 504s."
+}
