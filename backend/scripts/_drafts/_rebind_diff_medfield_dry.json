@@ -1,0 +1,319 @@
+{
+  "muni": "MEDFIELD",
+  "mode": "dry-run",
+  "generated": "2026-07-09T19:25:29.386680+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 8,
+      "expected": [
+        7,
+        10
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 8,
+  "layer_vocab": [
+    "A",
+    "B",
+    "BI",
+    "IE",
+    "RE",
+    "RS",
+    "RT",
+    "RU"
+  ],
+  "parcels_total": 4315,
+  "rebound": 4313,
+  "orphans": 2,
+  "changed": 149,
+  "changed_pct": 3.5,
+  "transitions": [
+    {
+      "old": "RT",
+      "new": "RT",
+      "n": 2196
+    },
+    {
+      "old": "RS",
+      "new": "RS",
+      "n": 1306
+    },
+    {
+      "old": "RU",
+      "new": "RU",
+      "n": 420
+    },
+    {
+      "old": "RE",
+      "new": "RE",
+      "n": 86
+    },
+    {
+      "old": "B",
+      "new": "B",
+      "n": 55
+    },
+    {
+      "old": "RS",
+      "new": "RT",
+      "n": 51
+    },
+    {
+      "old": "A",
+      "new": "A",
+      "n": 49
+    },
+    {
+      "old": "IE",
+      "new": "IE",
+      "n": 35
+    },
+    {
+      "old": "RS",
+      "new": "RU",
+      "n": 24
+    },
+    {
+      "old": "RU",
+      "new": "RS",
+      "n": 21
+    },
+    {
+      "old": "RT",
+      "new": "RS",
+      "n": 18
+    },
+    {
+      "old": "BI",
+      "new": "BI",
+      "n": 17
+    },
+    {
+      "old": "B",
+      "new": "RU",
+      "n": 6
+    },
+    {
+      "old": "BI",
+      "new": "IE",
+      "n": 6
+    },
+    {
+      "old": "RU",
+      "new": "B",
+      "n": 3
+    },
+    {
+      "old": "A",
+      "new": "BI",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "RT",
+      "n": 2
+    },
+    {
+      "old": "BI",
+      "new": "RU",
+      "n": 2
+    },
+    {
+      "old": "IE",
+      "new": "RS",
+      "n": 2
+    },
+    {
+      "old": "RS",
+      "new": "IE",
+      "n": 2
+    },
+    {
+      "old": "B",
+      "new": "BI",
+      "n": 2
+    },
+    {
+      "old": "RT",
+      "new": "IE",
+      "n": 1
+    },
+    {
+      "old": "A",
+      "new": "IE",
+      "n": 1
+    },
+    {
+      "old": "RT",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "IE",
+      "new": "RT",
+      "n": 1
+    },
+    {
+      "old": "IE",
+      "new": "BI",
+      "n": 1
+    },
+    {
+      "old": "IE",
+      "new": "A",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "RE",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "RS",
+      "n": 1
+    },
+    {
+      "old": "EX",
+      "new": null,
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_704360_2893945",
+      "address": "8  BAKER RD",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_703942_2880304",
+      "address": "5  ONONDAGA LN",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_708287_2898838",
+      "address": "13  MAPLEWOOD RD",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_713662_2883565",
+      "address": "9  ORIOLE RD",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_709171_2897221",
+      "address": "29  KENNEY RD",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_710214_2893162",
+      "address": "9  HALE PL",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_710015_2882328",
+      "address": "308  SOUTH ST",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_712642_2890928",
+      "address": "7  CROSS ST",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_711165_2884385",
+      "address": "29  PLANTING FIELD RD",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_702580_2882530",
+      "address": "239  CAUSEWAY ST",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_704110_2900965",
+      "address": "6  MARLYN RD",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_708100_2900034",
+      "address": "12  DEERFIELD DR",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_710326_2889059",
+      "address": "1  PRESERVATION WAY",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_710008_2885655",
+      "address": "SOUTH ST",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_717490_2895611",
+      "address": "80  WOOD END LN",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_711199_2881602",
+      "address": "11  LEE RD",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_714599_2897580",
+      "address": "22  PEDERZINI DR",
+      "old": "RT",
+      "new": "RT"
+    },
+    {
+      "apn": "F_714273_2896443",
+      "address": "202  MAIN ST",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_712104_2897701",
+      "address": "0  QUARRY RD",
+      "old": "RS",
+      "new": "RS"
+    },
+    {
+      "apn": "F_706892_2894296",
+      "address": "22  DALE ST",
+      "old": "RU",
+      "new": "RU"
+    }
+  ],
+  "matrix_untouched": true
+}
