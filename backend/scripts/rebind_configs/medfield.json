@@ -1,0 +1,25 @@
+{
+  "muni": "MEDFIELD",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Medfield'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "A",
+    "RE",
+    "RT",
+    "RS",
+    "RU",
+    "B",
+    "BI",
+    "IE"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    7,
+    10
+  ],
+  "notes": "eCode360 Ch. 300 Zoning (ME3164; §Use Regulations 27374133, Table of Use Regs = 300 Attachment 1 PDF, amended thru 5-5-2025 ATM). Districts A(Agricultural)/RE/RT/RS/RU(residential)/B(Business)/BI(Business-Industrial)/IE(Industrial-Extensive). MAPC layer 2 strip 175-prefix maps 1:1 to ordinance + assessor codes (no code_map)."
+}
