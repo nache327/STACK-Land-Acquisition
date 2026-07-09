@@ -1,0 +1,366 @@
+{
+  "muni": "WALPOLE",
+  "mode": "dry-run",
+  "generated": "2026-07-09T18:39:04.343564+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 10,
+      "expected": [
+        9,
+        12
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 10,
+  "layer_vocab": [
+    "B",
+    "CBD",
+    "GR",
+    "HB",
+    "IND",
+    "LM",
+    "PSRC",
+    "R",
+    "RA",
+    "RB"
+  ],
+  "parcels_total": 8678,
+  "rebound": 8674,
+  "orphans": 4,
+  "changed": 325,
+  "changed_pct": 3.7,
+  "transitions": [
+    {
+      "old": "RB",
+      "new": "RB",
+      "n": 3203
+    },
+    {
+      "old": "R",
+      "new": "R",
+      "n": 1709
+    },
+    {
+      "old": "RA",
+      "new": "RA",
+      "n": 1427
+    },
+    {
+      "old": "GR",
+      "new": "GR",
+      "n": 1350
+    },
+    {
+      "old": "PSRC",
+      "new": "PSRC",
+      "n": 186
+    },
+    {
+      "old": "LM",
+      "new": "LM",
+      "n": 179
+    },
+    {
+      "old": "IND",
+      "new": "IND",
+      "n": 135
+    },
+    {
+      "old": "HBD",
+      "new": "HB",
+      "n": 99
+    },
+    {
+      "old": "CBD",
+      "new": "CBD",
+      "n": 87
+    },
+    {
+      "old": null,
+      "new": "R",
+      "n": 87
+    },
+    {
+      "old": "B",
+      "new": "B",
+      "n": 73
+    },
+    {
+      "old": null,
+      "new": "RA",
+      "n": 70
+    },
+    {
+      "old": null,
+      "new": "RB",
+      "n": 13
+    },
+    {
+      "old": null,
+      "new": "GR",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "IND",
+      "n": 8
+    },
+    {
+      "old": "RB",
+      "new": "GR",
+      "n": 5
+    },
+    {
+      "old": "GR",
+      "new": "RB",
+      "n": 4
+    },
+    {
+      "old": "RA",
+      "new": "R",
+      "n": 4
+    },
+    {
+      "old": "RB",
+      "new": "LM",
+      "n": 4
+    },
+    {
+      "old": "RA",
+      "new": "RB",
+      "n": 3
+    },
+    {
+      "old": "PSRC",
+      "new": "R",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "PSRC",
+      "n": 2
+    },
+    {
+      "old": "R",
+      "new": "RA",
+      "n": 2
+    },
+    {
+      "old": "HBD",
+      "new": "RA",
+      "n": 2
+    },
+    {
+      "old": "LM",
+      "new": "RB",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "LM",
+      "new": "IND",
+      "n": 1
+    },
+    {
+      "old": "IND",
+      "new": "B",
+      "n": 1
+    },
+    {
+      "old": "HBD",
+      "new": "RB",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "IND",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "PSRC",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "RB",
+      "n": 1
+    },
+    {
+      "old": "RB",
+      "new": "RA",
+      "n": 1
+    },
+    {
+      "old": "B",
+      "new": "RB",
+      "n": 1
+    },
+    {
+      "old": "RB",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "RC",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "LM",
+      "n": 1
+    },
+    {
+      "old": "B",
+      "new": "LM",
+      "n": 1
+    },
+    {
+      "old": "LI",
+      "new": null,
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_732039_2882945",
+      "address": "22 JUNE ST",
+      "old": "GR",
+      "new": "GR"
+    },
+    {
+      "apn": "F_725702_2875701",
+      "address": "83 MASSACHUSETTS AVE",
+      "old": "GR",
+      "new": "GR"
+    },
+    {
+      "apn": "F_728242_2877520",
+      "address": "136 PEACH ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_716867_2862226",
+      "address": "WINTER ST",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_717934_2887695",
+      "address": "15 PINE HILL DR",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_735847_2880539",
+      "address": "10 SANDRA RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_730739_2877443",
+      "address": "277 HIGH PLAIN ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_723378_2875207",
+      "address": "3 LAMPLIGHTER LN",
+      "old": "GR",
+      "new": "GR"
+    },
+    {
+      "apn": "F_714615_2868940",
+      "address": "4 CARL RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_716243_2858513",
+      "address": "16 CONCORD DR",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_716909_2867111",
+      "address": "CEDAR SWAMP",
+      "old": "PSRC",
+      "new": "PSRC"
+    },
+    {
+      "apn": "F_717147_2863202",
+      "address": "26 ELDOR DR",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_731891_2880961",
+      "address": "22R PILGRIM WAY",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_722394_2873841",
+      "address": "144 OAK ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_721224_2863823",
+      "address": "2 WILLOW ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_723952_2865583",
+      "address": "6 TOWLE RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_728219_2880094",
+      "address": "12 HOLLY RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_726851_2879099",
+      "address": "12 LILAC CT",
+      "old": "GR",
+      "new": "GR"
+    },
+    {
+      "apn": "F_735023_2883757",
+      "address": "161 UNION ST",
+      "old": "GR",
+      "new": "GR"
+    },
+    {
+      "apn": "F_718649_2868093",
+      "address": "21 INDUSTRIAL RD",
+      "old": "IND",
+      "new": "IND"
+    }
+  ],
+  "matrix_untouched": true
+}
