@@ -1,0 +1,21 @@
+{
+  "muni": "DEERFIELD",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://ags.gisconsortium.org/arcgis/rest/services/VDF/VDF_OpenGov_Project/MapServer/8",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "C-1", "C-2", "C-3", "C-4",
+    "I-1", "I-2",
+    "P-1",
+    "R-1", "R-2", "R-3", "R-4", "R-5"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    10,
+    14
+  ],
+  "notes": "Village of Deerfield (Lake & Cook) zoning layer ags.gisconsortium.org VDF/VDF_OpenGov_Project/MapServer/8 (ZONED). Lake County IL jid (Lake-side parcels). amlegal deerfieldil Zoning Ord.; industrial I-1/I-2 (Sec 6.02). Self-storage special use in I-2 Industrial PUD only (Sec 6.02-C(13))."
+}
