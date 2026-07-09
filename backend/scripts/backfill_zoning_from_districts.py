@@ -78,6 +78,29 @@ CONFIGS: dict[str, dict] = {
                              "C", "OSC", "BWLD"},
         nonbinding={"Cluster"}, expected_count=(11, 13),
     ),
+    "WOBURN": dict(
+        jid=MIDDLESEX_JID, url=MAPC, code_field="zo_code", where="muni='Woburn'",
+        strip_prefix=r"^\d+", code_map={},
+        # MAPC recon 2026-07-08 (strip ^347). Full 16-district vocab from the atlas;
+        # ordinance cross-check pending Stage-4 paste — atlas-authoritative for rebind.
+        ordinance_districts={"B-D","B-H","B-I","B-N","I-G","I-P","IP-2","O-P","O-P93",
+                             "O-S","R-1","R-2","R-3","R-4","S-1","S-2"},
+        nonbinding=set(), expected_count=(14, 18),
+    ),
+    "WILMINGTON": dict(
+        jid=MIDDLESEX_JID, url=MAPC, code_field="zo_code", where="muni='Wilmington'",
+        strip_prefix=r"^\d+", code_map={},
+        ordinance_districts={"CB","GB","GI","HI","LI","NB","R-10","R-20","R-60"},
+        nonbinding=set(), expected_count=(8, 11),
+    ),
+    "HUDSON": dict(
+        jid=MIDDLESEX_JID, url=MAPC, code_field="zo_code", where="muni='Hudson'",
+        strip_prefix=r"^\d+", code_map={},
+        ordinance_districts={"C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11",
+                             "C12","C13","LCI1","M1","M2","M3","M4","M5","M6","M7",
+                             "SA5","SA7","SA8","SB","SB1","SB2","SB3","SB4"},
+        nonbinding=set(), expected_count=(27, 31),
+    ),
     "BILLERICA": dict(
         jid=MIDDLESEX_JID, url=f"{NMCOG}/3", code_field="ZONE_CODE", where="1=1",
         strip_prefix=None, code_map={},
