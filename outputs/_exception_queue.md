@@ -18,7 +18,12 @@ guards + source PDF already settle.
 ## OPEN
 | # | Session | Muni / County | Item (what's ambiguous) | What's needed from Nache |
 |---|---|---|---|---|
-| 1 | A | Hudson / Middlesex MA | **Stale district scheme (rebind can't resolve).** Parcels + MAPC layer carry PRE-recodification codes (`C1–C13`, `M1–M7`, `SA5/7/8`, `SB/SB1–4`, `LCI1`). The **current Nov-2023 bylaw** (§5.0 + Appendix B Table of Use Regs + Appendix C Intensity) establishes an entirely different set: `R60/R40/R30/R15/MR/MH/DB/NB/GB1/GB2/LCLI/IA/IB`. Legacy codes appear NOWHERE in the current bylaw. Rebind gates a/b passed only because `hudson.json` was reconned from the same stale MAPC source. No official old→new crosswalk found → can't ground Appendix-B verdicts on codes the parcels don't carry. **Rebind was DRY-RUN ONLY (never `--apply`); 0 matrix rows written — Hudson state clean/untouched.** | Pick Hudson source: **(a)** re-point `hudson.json` `url` at the town's current Nov-2023 zoning GIS layer (`R60…/IA/IB`) + re-recon `ordinance_districts` to the current bylaw, then rebind→verdicts; or **(b)** confirm an official old→new recodification crosswalk (`SA/SB/C/M → R/DB/NB/GB/LCLI/IA/IB`). Verdicts HELD. Source: townofhudson.org DocumentCenter/View/325 (Nov 20 2023). |
+| _(none)_ | | | | |
+
+## PARKED (coordinator-ruled, revisit-gated)
+| # | Muni | Item | Coordinator ruling | Unblock condition |
+|---|---|---|---|---|
+| 1 | Hudson / Middlesex MA | Stale district scheme — parcels carry PRE-recodification codes (`C1–C13`/`M1–M7`/`SA5/7/8`/`SB*`/`LCI1`); current Nov-2023 bylaw uses `R15/R30/R40/R60/MR/MH/DB/NB/GB1/GB2/LCLI/IA/IB`. Rebind was DRY-RUN ONLY; **0 rows written, Hudson untouched.** | **HELD-parked, revisit at end of MA push (Nache 2026-07-09).** It's a *consolidating recodification, NOT a rename* (13 commercial→4 business, 7 industrial→3) → option-(b) crosswalk won't cleanly work (many-to-few, boundaries re-drawn) and hand-digitizing the PDF map = poison risk. Path = **spatial rebind against new polygons** (option a, Braintree pattern). No public queryable new-code layer (AGO "Hudson Zoning" = Hudson WI / NRPC-NH, catch #38). **Real yield — self-storage by-right in IA/IB/LCLI per amlegal — revisit-worthy, not a dead no-op.** | Obtain Hudson's **Nov-2023 zoning shapefile/geodatabase** from Town Planning/GIS (footer: "created by Hudson GIS – Nov 2023" → it exists). Then `rebind_configs/hudson.json` → town-GIS layer; `ordinance_districts` = {IA, IB, LCLI, DB, NB, GB1, GB2, R15, R30, R40, R60, MR, MH}; rebind → ground amlegal use table (codelibrary.amlegal.com/codes/hudson/latest) → re-score. Bylaw PDF: townofhudson.org DocumentCenter/View/325. |
 
 ## RESOLVED
 | # | Muni | Item | Ruling | Date |
