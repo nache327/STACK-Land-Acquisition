@@ -1,0 +1,376 @@
+{
+  "muni": "NORFOLK",
+  "mode": "apply",
+  "generated": "2026-07-09T20:21:25.658252+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 12,
+      "expected": [
+        10,
+        14
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 13,
+  "layer_vocab": [
+    "B-1",
+    "B-3",
+    "B-4",
+    "C-1",
+    "C-1A",
+    "C-3",
+    "C-4",
+    "C-5",
+    "C-6",
+    "R-1",
+    "R-2",
+    "R-3"
+  ],
+  "parcels_total": 4044,
+  "rebound": 4043,
+  "orphans": 1,
+  "changed": 3971,
+  "changed_pct": 98.2,
+  "transitions": [
+    {
+      "old": "R3",
+      "new": "R-3",
+      "n": 1464
+    },
+    {
+      "old": "R1",
+      "new": "R-1",
+      "n": 1175
+    },
+    {
+      "old": "R2",
+      "new": "R-2",
+      "n": 925
+    },
+    {
+      "old": "COM",
+      "new": "C-1A",
+      "n": 58
+    },
+    {
+      "old": "COM",
+      "new": "C-1",
+      "n": 42
+    },
+    {
+      "old": "R-3",
+      "new": "R-3",
+      "n": 42
+    },
+    {
+      "old": null,
+      "new": "R-1",
+      "n": 37
+    },
+    {
+      "old": null,
+      "new": "R-3",
+      "n": 33
+    },
+    {
+      "old": "R2",
+      "new": "R-3",
+      "n": 30
+    },
+    {
+      "old": "R-2",
+      "new": "R-2",
+      "n": 20
+    },
+    {
+      "old": "COM",
+      "new": "B-1",
+      "n": 20
+    },
+    {
+      "old": "R1",
+      "new": "R-3",
+      "n": 19
+    },
+    {
+      "old": "IND",
+      "new": "C-1",
+      "n": 14
+    },
+    {
+      "old": "RI",
+      "new": "R-1",
+      "n": 11
+    },
+    {
+      "old": "R-1",
+      "new": "R-1",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "R-2",
+      "n": 9
+    },
+    {
+      "old": "IND",
+      "new": "C-1A",
+      "n": 9
+    },
+    {
+      "old": "R-3",
+      "new": "R-1",
+      "n": 9
+    },
+    {
+      "old": "COM",
+      "new": "C-4",
+      "n": 8
+    },
+    {
+      "old": "BUS",
+      "new": "B-1",
+      "n": 8
+    },
+    {
+      "old": "IND",
+      "new": "C-4",
+      "n": 8
+    },
+    {
+      "old": "R2",
+      "new": "R-1",
+      "n": 7
+    },
+    {
+      "old": "R1",
+      "new": "R-2",
+      "n": 7
+    },
+    {
+      "old": "BU",
+      "new": "B-1",
+      "n": 7
+    },
+    {
+      "old": "R3",
+      "new": "R-2",
+      "n": 6
+    },
+    {
+      "old": "R2",
+      "new": "B-1",
+      "n": 6
+    },
+    {
+      "old": null,
+      "new": "C-1A",
+      "n": 5
+    },
+    {
+      "old": "R1",
+      "new": "B-1",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "C-4",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "B-1",
+      "n": 4
+    },
+    {
+      "old": "COM",
+      "new": "C-3",
+      "n": 3
+    },
+    {
+      "old": "C5",
+      "new": "C-5",
+      "n": 3
+    },
+    {
+      "old": "R3",
+      "new": "C-4",
+      "n": 2
+    },
+    {
+      "old": "C1",
+      "new": "R-3",
+      "n": 2
+    },
+    {
+      "old": "R-1",
+      "new": "R-3",
+      "n": 2
+    },
+    {
+      "old": "RES",
+      "new": "R-3",
+      "n": 2
+    },
+    {
+      "old": "R3",
+      "new": "R-1",
+      "n": 2
+    },
+    {
+      "old": "R",
+      "new": "R-1",
+      "n": 1
+    },
+    {
+      "old": "00R",
+      "new": "R-1",
+      "n": 1
+    },
+    {
+      "old": "00R",
+      "new": "R-2",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_693997_2859702",
+      "address": "7 WAITES CROSSING",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_707229_2879022",
+      "address": "45 NOON HILL AVE",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_705187_2861834",
+      "address": "152 NORTH ST",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_706654_2861579",
+      "address": "4 AUDUBON TRAIL",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_690435_2872531",
+      "address": "5 TAILWIND CIR",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_696479_2874653",
+      "address": "9 LOIS LN",
+      "old": null,
+      "new": "C-4"
+    },
+    {
+      "apn": "F_697897_2870348",
+      "address": "54 MEDWAY ST",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_690025_2873892",
+      "address": "75 RIVER RD",
+      "old": "R2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_705483_2858208",
+      "address": "BIRCH RD",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_704249_2867553",
+      "address": "46 NORTH ST",
+      "old": "R2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_697612_2870455",
+      "address": "58 MEDWAY ST",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_705632_2877107",
+      "address": "38 FRUIT ST",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_689445_2874299",
+      "address": "RIVER RD",
+      "old": "R2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_705148_2868506",
+      "address": "101 MAIN ST",
+      "old": "R2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_704666_2879065",
+      "address": "18 NOON HILL AVE",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_704828_2858620",
+      "address": "CEDAR RD",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_703105_2859095",
+      "address": "5 BEAVERBROOK RD",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_701398_2862482",
+      "address": "15 PHEASANT HILL RD",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_707253_2877755",
+      "address": "6 REDWOOD CIR",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_689798_2873442",
+      "address": "25 LAKE SHORE DR",
+      "old": "R2",
+      "new": "R-2"
+    }
+  ],
+  "apply": {
+    "rows_written": 3971
+  },
+  "matrix_untouched": true
+}
