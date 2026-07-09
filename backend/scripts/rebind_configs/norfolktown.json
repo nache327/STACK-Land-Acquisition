@@ -1,0 +1,31 @@
+{
+  "muni": "NORFOLK",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Norfolk'",
+  "strip_prefix": "^\\d+",
+  "code_map": {
+    "B-1 OUT": "B-1"
+  },
+  "ordinance_districts": [
+    "R-1",
+    "R-2",
+    "R-3",
+    "B-1",
+    "B-3",
+    "B-4",
+    "C-1",
+    "C-1A",
+    "C-3",
+    "C-4",
+    "C-5",
+    "C-6"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    10,
+    14
+  ],
+  "notes": "Town of Norfolk (Norfolk County) eCode360 NO3198 Ch. 310 Zoning; Art. 4 Use Regulations + Schedule of Use Regulations = Attachment 310a PDF (Supp 6, Nov 2025). MAPC layer 2 strip 208-prefix. code_map: 'B-1 OUT' -> B-1 (outlying Town-Center variant, prohibited either way). Schedule columns R/B-1/B-3/B-4/C-1/C-1a..C-1d(Hwy)/C-3/C-4/C-5/C-6; MAPC carries C-1a (not C-1b/c/d — no mapped parcels). REAL self-storage needle: 'Self-storage facilities'=Yes (by-right) in C-1a and C-6."
+}
