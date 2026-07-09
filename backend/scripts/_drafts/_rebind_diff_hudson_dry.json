@@ -1,0 +1,390 @@
+{
+  "muni": "HUDSON",
+  "mode": "dry-run",
+  "generated": "2026-07-09T18:28:43.181663+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 29,
+      "expected": [
+        27,
+        31
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 29,
+  "layer_vocab": [
+    "C1",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "LCI1",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "SA5",
+    "SA7",
+    "SA8",
+    "SB",
+    "SB1",
+    "SB2",
+    "SB3",
+    "SB4"
+  ],
+  "parcels_total": 5952,
+  "rebound": 5943,
+  "orphans": 9,
+  "changed": 262,
+  "changed_pct": 4.4,
+  "transitions": [
+    {
+      "old": "SA8",
+      "new": "SA8",
+      "n": 2080
+    },
+    {
+      "old": "SB",
+      "new": "SB",
+      "n": 2001
+    },
+    {
+      "old": "SA7",
+      "new": "SA7",
+      "n": 592
+    },
+    {
+      "old": "SA5",
+      "new": "SA5",
+      "n": 401
+    },
+    {
+      "old": "M6",
+      "new": "M6",
+      "n": 142
+    },
+    {
+      "old": "C1",
+      "new": "C1",
+      "n": 119
+    },
+    {
+      "old": "M1",
+      "new": "M1",
+      "n": 57
+    },
+    {
+      "old": null,
+      "new": "SB",
+      "n": 48
+    },
+    {
+      "old": "M5",
+      "new": "M5",
+      "n": 47
+    },
+    {
+      "old": "C6",
+      "new": "C6",
+      "n": 39
+    },
+    {
+      "old": "M7",
+      "new": "M7",
+      "n": 32
+    },
+    {
+      "old": "M3",
+      "new": "M3",
+      "n": 25
+    },
+    {
+      "old": "C8",
+      "new": "C8",
+      "n": 23
+    },
+    {
+      "old": "SA8",
+      "new": "SB",
+      "n": 17
+    },
+    {
+      "old": "C2",
+      "new": "C2",
+      "n": 14
+    },
+    {
+      "old": null,
+      "new": "SA7",
+      "n": 14
+    },
+    {
+      "old": "C10",
+      "new": "C10",
+      "n": 13
+    },
+    {
+      "old": "LCI1",
+      "new": "LCI1",
+      "n": 11
+    },
+    {
+      "old": "CND",
+      "new": "SB",
+      "n": 11
+    },
+    {
+      "old": "C8",
+      "new": "SB",
+      "n": 11
+    },
+    {
+      "old": "C11",
+      "new": "C11",
+      "n": 11
+    },
+    {
+      "old": "C4",
+      "new": "C4",
+      "n": 11
+    },
+    {
+      "old": "SB2",
+      "new": "SB2",
+      "n": 11
+    },
+    {
+      "old": "C13",
+      "new": "C13",
+      "n": 11
+    },
+    {
+      "old": "C1",
+      "new": "M2",
+      "n": 10
+    },
+    {
+      "old": "C1",
+      "new": "C2",
+      "n": 9
+    },
+    {
+      "old": "C1",
+      "new": "SB",
+      "n": 8
+    },
+    {
+      "old": "SB",
+      "new": "SA8",
+      "n": 8
+    },
+    {
+      "old": "M4",
+      "new": "M4",
+      "n": 7
+    },
+    {
+      "old": "M2",
+      "new": "M2",
+      "n": 6
+    },
+    {
+      "old": "SB3",
+      "new": "SB",
+      "n": 6
+    },
+    {
+      "old": "SB1",
+      "new": "SB1",
+      "n": 5
+    },
+    {
+      "old": "C12",
+      "new": "C12",
+      "n": 5
+    },
+    {
+      "old": "SA8",
+      "new": null,
+      "n": 5
+    },
+    {
+      "old": "CND",
+      "new": "SB1",
+      "n": 5
+    },
+    {
+      "old": "SB3",
+      "new": "SB3",
+      "n": 5
+    },
+    {
+      "old": "SA8",
+      "new": "M5",
+      "n": 4
+    },
+    {
+      "old": "M4",
+      "new": "M5",
+      "n": 4
+    },
+    {
+      "old": "C9",
+      "new": "C9",
+      "n": 4
+    },
+    {
+      "old": "M6",
+      "new": "SA8",
+      "n": 4
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "M_194320_904239",
+      "address": "PALMER TERR",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_193805_903214",
+      "address": "18 ALBERTA DR",
+      "old": "SA7",
+      "new": "SA7"
+    },
+    {
+      "apn": "M_195654_905270",
+      "address": "42 PRIEST ST",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_194896_906677",
+      "address": "8 KENT DR",
+      "old": "SA8",
+      "new": "SA8"
+    },
+    {
+      "apn": "M_193564_904869",
+      "address": "83 CENTRAL ST",
+      "old": "M1",
+      "new": "M1"
+    },
+    {
+      "apn": "M_196010_905406",
+      "address": "4 MARYCHRIS DR",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_193522_902554",
+      "address": "190 CHAPIN RD",
+      "old": "SA7",
+      "new": "SA7"
+    },
+    {
+      "apn": "M_197409_902802",
+      "address": "15 LAKESHORE DR",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_193239_902457",
+      "address": "9 ORDWAY RD",
+      "old": "SA7",
+      "new": "SA7"
+    },
+    {
+      "apn": "M_195731_905284",
+      "address": "43 PRIEST ST",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_193899_905182",
+      "address": "18 ONEIL ST",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_193570_904184",
+      "address": "132 RIVER ST",
+      "old": "SB",
+      "new": "SB"
+    },
+    {
+      "apn": "M_196584_904196",
+      "address": "9 OLD NORTH RD",
+      "old": "SA8",
+      "new": "SA8"
+    },
+    {
+      "apn": "M_195620_902535",
+      "address": "166 MARLBORO ST",
+      "old": "SA8",
+      "new": "SA8"
+    },
+    {
+      "apn": "M_194330_904278",
+      "address": "47 SCHOOL ST",
+      "old": "C2",
+      "new": "C2"
+    },
+    {
+      "apn": "M_194376_904498",
+      "address": "65 MAIN ST",
+      "old": "C1",
+      "new": "C1"
+    },
+    {
+      "apn": "M_193905_903293",
+      "address": "14 REARDON RD",
+      "old": "SA7",
+      "new": "SA7"
+    },
+    {
+      "apn": "M_195122_906566",
+      "address": "62 OLD BOLTON RD",
+      "old": "SA8",
+      "new": "SA8"
+    },
+    {
+      "apn": "M_194221_905895",
+      "address": "20 TEMI RD",
+      "old": "SA8",
+      "new": "SA8"
+    },
+    {
+      "apn": "M_193310_906315",
+      "address": "10 FALLS BROOK RD",
+      "old": "SA8",
+      "new": "SA8"
+    }
+  ],
+  "matrix_untouched": true
+}
