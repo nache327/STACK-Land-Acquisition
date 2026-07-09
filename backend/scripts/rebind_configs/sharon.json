@@ -1,0 +1,35 @@
+{
+  "muni": "SHARON",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Sharon'",
+  "strip_prefix": "^\\d+",
+  "code_map": {
+    "SA": "SRA",
+    "SB": "SRB",
+    "BD": "BD1"
+  },
+  "ordinance_districts": [
+    "R1",
+    "R2",
+    "SUB1",
+    "SUB2",
+    "SRA",
+    "SRB",
+    "GR",
+    "HA",
+    "BA",
+    "BB",
+    "BC",
+    "BD1",
+    "LI",
+    "P"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    12,
+    16
+  ],
+  "notes": "eCode360 Ch. 275 Zoning (SH3206; §2.0 Districts, §3.2 Table of Use Regulations = Attachment 1 PDF, adopted 5-2-2022 amended thru 5-5-2025). Sharon parcels were ~98.8% NULL -> MAPC layer 2 strip 266-prefix fills them spatially. code_map: MAPC SA/SB -> ordinance SRA/SRB (Single Residence), BD -> BD1 (Business D). MAPC collapses Pro A/Pro B to 'P' and Sub A/Sub B to SUB1/SUB2 (all residential/business = prohibited for the 4 uses, so cosmetic). HA (Housing Authority) has no use-table column -> residential-public, prohibited."
+}

@@ -1,0 +1,308 @@
+{
+  "muni": "SHARON",
+  "mode": "apply",
+  "generated": "2026-07-09T19:18:33.666306+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 14,
+      "expected": [
+        12,
+        16
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 14,
+  "layer_vocab": [
+    "BA",
+    "BB",
+    "BC",
+    "BD1",
+    "GR",
+    "HA",
+    "LI",
+    "P",
+    "R1",
+    "R2",
+    "SRA",
+    "SRB",
+    "SUB1",
+    "SUB2"
+  ],
+  "parcels_total": 6554,
+  "rebound": 6552,
+  "orphans": 2,
+  "changed": 6501,
+  "changed_pct": 99.2,
+  "transitions": [
+    {
+      "old": null,
+      "new": "SRA",
+      "n": 1674
+    },
+    {
+      "old": null,
+      "new": "SRB",
+      "n": 1654
+    },
+    {
+      "old": null,
+      "new": "R1",
+      "n": 1481
+    },
+    {
+      "old": null,
+      "new": "R2",
+      "n": 1263
+    },
+    {
+      "old": null,
+      "new": "GR",
+      "n": 242
+    },
+    {
+      "old": null,
+      "new": "BA",
+      "n": 60
+    },
+    {
+      "old": null,
+      "new": "SUB2",
+      "n": 45
+    },
+    {
+      "old": "LI",
+      "new": "LI",
+      "n": 42
+    },
+    {
+      "old": null,
+      "new": "SUB1",
+      "n": 40
+    },
+    {
+      "old": "RB",
+      "new": "SRB",
+      "n": 10
+    },
+    {
+      "old": "SRA",
+      "new": "SRA",
+      "n": 9
+    },
+    {
+      "old": null,
+      "new": "LI",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "BD1",
+      "n": 4
+    },
+    {
+      "old": "R-1",
+      "new": "R1",
+      "n": 3
+    },
+    {
+      "old": "R-2",
+      "new": "R2",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "BC",
+      "n": 2
+    },
+    {
+      "old": "LM",
+      "new": "R1",
+      "n": 2
+    },
+    {
+      "old": "S2",
+      "new": "R1",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "HA",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "BB",
+      "n": 2
+    },
+    {
+      "old": "HAD",
+      "new": "HA",
+      "n": 1
+    },
+    {
+      "old": "PD",
+      "new": "SRA",
+      "n": 1
+    },
+    {
+      "old": "PD",
+      "new": "P",
+      "n": 1
+    },
+    {
+      "old": "LI",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "LI",
+      "new": "R1",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": null,
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_743992_2851840",
+      "address": "9 VICTORIA CIR",
+      "old": null,
+      "new": "R1"
+    },
+    {
+      "apn": "F_745907_2849679",
+      "address": "2 CHESHIRE RD",
+      "old": null,
+      "new": "R2"
+    },
+    {
+      "apn": "F_735847_2855781",
+      "address": "76 CANNON BALL RD",
+      "old": null,
+      "new": "R1"
+    },
+    {
+      "apn": "F_755427_2865405",
+      "address": "6 LEONARD RD",
+      "old": null,
+      "new": "SRA"
+    },
+    {
+      "apn": "F_742313_2860820",
+      "address": "3 LIVINGSTON RD",
+      "old": null,
+      "new": "R2"
+    },
+    {
+      "apn": "F_745469_2862011",
+      "address": "156 MASSAPOAG AVE",
+      "old": null,
+      "new": "R2"
+    },
+    {
+      "apn": "F_750742_2867457",
+      "address": "7 HAMPTON RD",
+      "old": null,
+      "new": "SRA"
+    },
+    {
+      "apn": "F_746246_2850182",
+      "address": "5 BORDERLAND RD",
+      "old": null,
+      "new": "R2"
+    },
+    {
+      "apn": "F_744064_2872598",
+      "address": "32 GREENWOOD RD",
+      "old": null,
+      "new": "SRB"
+    },
+    {
+      "apn": "F_737075_2865281",
+      "address": "4 LEO RD",
+      "old": null,
+      "new": "SRB"
+    },
+    {
+      "apn": "F_747505_2875862",
+      "address": "15 CANTON ST",
+      "old": null,
+      "new": "R1"
+    },
+    {
+      "apn": "F_743473_2851721",
+      "address": "128 MANSFIELD ST",
+      "old": null,
+      "new": "R1"
+    },
+    {
+      "apn": "F_754411_2867681",
+      "address": "1 MAYFLOWER LN",
+      "old": null,
+      "new": "SRA"
+    },
+    {
+      "apn": "F_745973_2855147",
+      "address": "R BRIAR HILL RD",
+      "old": null,
+      "new": "R2"
+    },
+    {
+      "apn": "F_738879_2858321",
+      "address": "34 CHASE DR",
+      "old": null,
+      "new": "R1"
+    },
+    {
+      "apn": "F_745189_2869008",
+      "address": "20 GODDARD RD",
+      "old": null,
+      "new": "SRB"
+    },
+    {
+      "apn": "F_744551_2868858",
+      "address": "2 SUMMER ST",
+      "old": null,
+      "new": "GR"
+    },
+    {
+      "apn": "F_743959_2868247",
+      "address": "9 WOODLAND ST",
+      "old": null,
+      "new": "GR"
+    },
+    {
+      "apn": "F_745212_2856796",
+      "address": "373 MASSAPOAG AVE",
+      "old": null,
+      "new": "R2"
+    },
+    {
+      "apn": "F_751999_2865866",
+      "address": "24 COUNTRY LN",
+      "old": null,
+      "new": "SRA"
+    }
+  ],
+  "apply": {
+    "rows_written": 6501
+  },
+  "matrix_untouched": true
+}
