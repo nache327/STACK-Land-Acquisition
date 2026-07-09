@@ -1,0 +1,37 @@
+{
+  "muni": "BRAINTREE",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Braintree'",
+  "strip_prefix": "^\\d+",
+  "code_map": {
+    "COMM": "C",
+    "HBD": "HB",
+    "ResA": "RA",
+    "ResB": "RB",
+    "ResC": "RC",
+    "OpenSpace": "OSC"
+  },
+  "ordinance_districts": [
+    "RA",
+    "RB",
+    "RC",
+    "C1",
+    "C2",
+    "C3",
+    "GB",
+    "HB",
+    "C",
+    "OSC",
+    "BWLD"
+  ],
+  "nonbinding": [
+    "Cluster"
+  ],
+  "expected_count": [
+    11,
+    13
+  ],
+  "notes": "135 Att.2. MAPC lacks C1/C2/C3 -> EXPECTED gate-b fail -> town-GIS fallback (see braintree_towngis)."
+}

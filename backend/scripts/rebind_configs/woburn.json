@@ -1,0 +1,33 @@
+{
+  "muni": "WOBURN",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Woburn'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "B-D",
+    "B-H",
+    "B-I",
+    "B-N",
+    "I-G",
+    "I-P",
+    "IP-2",
+    "O-P",
+    "O-P93",
+    "O-S",
+    "R-1",
+    "R-2",
+    "R-3",
+    "R-4",
+    "S-1",
+    "S-2"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    14,
+    18
+  ],
+  "notes": "MAPC recon 2026-07-08 (strip ^347); atlas-authoritative for rebind."
+}

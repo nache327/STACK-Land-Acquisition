@@ -1,0 +1,28 @@
+{
+  "muni": "STOUGHTON",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Stoughton'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "RM",
+    "RU",
+    "RC",
+    "RB",
+    "RA",
+    "GB",
+    "NB",
+    "HB",
+    "I",
+    "I2",
+    "CBD"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    8,
+    12
+  ],
+  "notes": "200 Att.2 paste 2026-07-08; CBD candidate identity for held 'C' assessor code."
+}

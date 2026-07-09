@@ -1,0 +1,31 @@
+{
+  "muni": "DEDHAM",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Dedham'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "SRA",
+    "SRB",
+    "GR",
+    "PR",
+    "PC",
+    "RDO",
+    "AP",
+    "LMA",
+    "LMB",
+    "HB",
+    "LB",
+    "GB",
+    "CB",
+    "SC"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    9,
+    14
+  ],
+  "notes": "Ch. 280 Table 1 paste 2026-07-08; SC (Senior Campus) real district absent from pasted header."
+}
