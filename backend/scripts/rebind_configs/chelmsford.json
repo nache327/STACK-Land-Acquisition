@@ -1,0 +1,32 @@
+{
+  "muni": "CHELMSFORD",
+  "jid": "MIDDLESEX",
+  "url": "NMCOG/5",
+  "code_field": "ZONE_",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "RA",
+    "RB",
+    "RC",
+    "RM",
+    "RMH",
+    "CA",
+    "CB",
+    "CC",
+    "CD",
+    "CV",
+    "CX",
+    "IA",
+    "IS",
+    "P",
+    "OS"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    13,
+    17
+  ],
+  "notes": "Chelmsford MA (Middlesex) — NMCOG layer 5 (field ZONE_). Vocab-vs-bylaw check PASSED: NMCOG codes match the CURRENT Ch.195 Use Regulation Schedule district columns exactly (RA/RB/RC/RM/RMH residential; CA/CB/CC/CD/CV/CX commercial; IA Limited Industrial / IS Special Industrial; P Public; OS Open Space). REBIND-READY but verdicts HELD pending source paste — see outputs/_exception_queue.md OPEN #2 (full Use Regulation Schedule industrial/commercial rows are image-only/bot-blocked). Partial: CBLT-2025 amendment says Light Manufacturing = PB in IS/IA/CB."
+}
