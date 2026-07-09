@@ -450,6 +450,25 @@ async def score_jurisdiction(
 
     conn = await asyncpg.connect(_raw_dsn())
     try:
+        # Concurrency dedupe: two identical runs for the same (jurisdiction,
+        # filter) interleaving their upserts is safe (ON CONFLICT row-locks,
+        # identical values) but wastes 2x the work on a large county AND makes
+        # the final persisted score nondeterministic if the two runs read
+        # zone_use_matrix at different instants (last upsert wins). This matters
+        # now that parallel sessions ground different munis in the same county.
+        # Session-level advisory lock keyed on the pair; the duplicate caller
+        # skips instead of racing. Auto-released on disconnect, so a crashed run
+        # never wedges the key.
+        got = await conn.fetchval(
+            "SELECT pg_try_advisory_lock(hashtextextended($1, 42))",
+            f"score:{jurisdiction_id}:{buybox_filter_id}",
+        )
+        if not got:
+            logger.warning(
+                "score_jurisdiction skipped — identical run already in flight "
+                "(jurisdiction=%s filter=%s)", jurisdiction_id, buybox_filter_id,
+            )
+            return 0
         await conn.execute("SET statement_timeout = 0")
         rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id, drive_time)
         logger.info(
