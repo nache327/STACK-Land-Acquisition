@@ -125,13 +125,26 @@ human verdict; the industrial/commercial spine of the 4 munis + UDO is grounded 
 (the coverage tail) intentionally left ungrounded (no lead risk).
 
 ### DEFERRED to Batch 2 (each has an open blocker — do NOT ground on shaky sourcing):
-- **HIGHLAND PARK** — a real GO (L-I district + active operators) but BLOCKED on rebind:
-  the VHP layer (`ags.gisconsortium.org/.../VHP/AGOL_VHP_Project/MapServer/0`) declares a custom
-  SR (wkid 102671/3435) whose on-the-fly reprojection to 4326 is FAULTY — returned polygon coords
-  (~-88.12/41.98) do not overlap the real HP lakefront parcels (~-87.82/42.17), so centroid rebind
-  = 0/12,857. FIX: fetch native SR (3435) + `ST_Transform` in-DB (a `backfill_zoning_from_districts`
-  enhancement), OR find an alt HP zoning layer serving clean 4326. PLUS: §150.490 use-table
-  extraction (Municode SPA 403s) + GIS-legacy-code↔ordinance-code reconciliation (L-I=Light Ind).
+- **HIGHLAND PARK** — a real GO (its `I` Light Industrial district permits self-storage **by right**),
+  but the recon's GIS layer is the **WRONG JURISDICTION (catch #38 at the layer level)**:
+  `ags.gisconsortium.org/.../VHP/AGOL_VHP_Project/MapServer/0` yields `ZONED` codes
+  (L-I, L-O, BP, VC-C/N/P/R, B-1, B-2) that match **neither** Highland Park IL (real §150.401 codes:
+  R1–R7, RM*, RO, HC=Health Care, **I**=Light Industrial, PA, overlays LFOZ/SLOZ/CDRO) **nor**
+  Highland Park NJ (RA/RB/C/CBD/LI…). Its geometry also reprojects to ~-88.12/41.98 (SW Lake Co.,
+  not the HP lakefront ~-87.82/42.17) → 0/12,857 rebind. So "VHP" is NOT Village of Highland Park
+  zoning. FIX: find the CORRECT Highland Park IL zoning-polygon layer (city AGOL / a properly-attributed
+  source), then key verdicts to IL codes.
+  **Real HP IL use table IS in hand** (Municode content API, current thru Ord. O67-2025, §150.490
+  Table of Allowable Uses): "Mini-warehouses" = **P in `I` only** (no self-storage row in any B
+  district); "Warehouse and Distribution Facilities, Enclosed" = P in B3 + I; all manufacturing = I
+  only. So once a correct HP polygon layer is found: `I` → self_storage/mini_warehouse PERMITTED,
+  light_industrial PERMITTED; B3 → light_industrial PERMITTED (enclosed warehouse) but self_storage
+  prohibited.
+  **REUSABLE UNLOCK for Group C:** Municode's SPA 403s automated fetchers, but its **content API is
+  open** — `https://api.municode.com/CodesContent?jobId=<J>&nodeId=<N>&productId=<P>` returns the
+  section JSON (get jobId/productId from the SPA's network calls). This de-blocks the Group-C Municode
+  munis (Vernon Hills Appendix C, Libertyville Ch.26, Buffalo Grove Title 17) — they can be grounded
+  once a public zoning-polygon layer is located for each.
 - **BANNOCKBURN** — GHA endpoint (`gis.gha-engineers.com/.../Bannockburn/Zoning/MapServer/2`) is
   slow/500s (retry+paginate needed); eCode360 403s the use table. Tiny (261 ac; Office-District
   special-use only). Low priority.
