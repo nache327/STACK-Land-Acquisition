@@ -1,0 +1,385 @@
+{
+  "muni": "FRAMINGHAM",
+  "mode": "apply",
+  "generated": "2026-07-09T19:15:47.088201+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 18,
+      "expected": [
+        14,
+        22
+      ],
+      "ordinance_districts_missing_from_layer": [
+        "B-4",
+        "CMU"
+      ]
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 18,
+  "layer_vocab": [
+    "B",
+    "B-1",
+    "B-2",
+    "B-3",
+    "CB",
+    "G",
+    "G-E",
+    "HC",
+    "M",
+    "M-1",
+    "OSR",
+    "P",
+    "PRD",
+    "R-1",
+    "R-2",
+    "R-3",
+    "R-4",
+    "TP"
+  ],
+  "parcels_total": 17795,
+  "rebound": 17792,
+  "orphans": 3,
+  "changed": 880,
+  "changed_pct": 4.9,
+  "transitions": [
+    {
+      "old": "R-1",
+      "new": "R-1",
+      "n": 6315
+    },
+    {
+      "old": "R-3",
+      "new": "R-3",
+      "n": 4006
+    },
+    {
+      "old": "R-4",
+      "new": "R-4",
+      "n": 2768
+    },
+    {
+      "old": "G",
+      "new": "G",
+      "n": 2477
+    },
+    {
+      "old": "B",
+      "new": "B",
+      "n": 465
+    },
+    {
+      "old": "M",
+      "new": "M",
+      "n": 366
+    },
+    {
+      "old": "CB",
+      "new": "CB",
+      "n": 207
+    },
+    {
+      "old": null,
+      "new": "G",
+      "n": 131
+    },
+    {
+      "old": null,
+      "new": "R-1",
+      "n": 112
+    },
+    {
+      "old": "P",
+      "new": "P",
+      "n": 85
+    },
+    {
+      "old": null,
+      "new": "R-3",
+      "n": 68
+    },
+    {
+      "old": "M-1",
+      "new": "M-1",
+      "n": 64
+    },
+    {
+      "old": "CB",
+      "new": "B",
+      "n": 61
+    },
+    {
+      "old": null,
+      "new": "R-4",
+      "n": 57
+    },
+    {
+      "old": "CB",
+      "new": "M",
+      "n": 54
+    },
+    {
+      "old": "B-2",
+      "new": "B-2",
+      "n": 46
+    },
+    {
+      "old": "B-1",
+      "new": "B-1",
+      "n": 46
+    },
+    {
+      "old": "B",
+      "new": "R-1",
+      "n": 44
+    },
+    {
+      "old": "B",
+      "new": "G",
+      "n": 43
+    },
+    {
+      "old": null,
+      "new": "M",
+      "n": 33
+    },
+    {
+      "old": "TP",
+      "new": "TP",
+      "n": 32
+    },
+    {
+      "old": null,
+      "new": "B",
+      "n": 30
+    },
+    {
+      "old": "G",
+      "new": "M",
+      "n": 25
+    },
+    {
+      "old": "B",
+      "new": "M",
+      "n": 24
+    },
+    {
+      "old": "R-2",
+      "new": "R-3",
+      "n": 23
+    },
+    {
+      "old": "CB",
+      "new": "G",
+      "n": 14
+    },
+    {
+      "old": "CB",
+      "new": "P",
+      "n": 13
+    },
+    {
+      "old": "OSR",
+      "new": "OSR",
+      "n": 12
+    },
+    {
+      "old": "R-2",
+      "new": "R-2",
+      "n": 12
+    },
+    {
+      "old": "G",
+      "new": "P",
+      "n": 12
+    },
+    {
+      "old": null,
+      "new": "CB",
+      "n": 11
+    },
+    {
+      "old": "B",
+      "new": "M-1",
+      "n": 11
+    },
+    {
+      "old": "B-2",
+      "new": "R-1",
+      "n": 8
+    },
+    {
+      "old": "R-3",
+      "new": "R-4",
+      "n": 7
+    },
+    {
+      "old": "PRD",
+      "new": "PRD",
+      "n": 7
+    },
+    {
+      "old": "R-3",
+      "new": "R-1",
+      "n": 7
+    },
+    {
+      "old": null,
+      "new": "P",
+      "n": 6
+    },
+    {
+      "old": "R-3",
+      "new": "R-2",
+      "n": 6
+    },
+    {
+      "old": "G",
+      "new": "R-1",
+      "n": 5
+    },
+    {
+      "old": "R-1",
+      "new": "R-3",
+      "n": 5
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_669348_2925605",
+      "address": "24 WILLIAM J HGTS",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_677196_2923466",
+      "address": "43 CYPRESS ST",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "F_665855_2942859",
+      "address": "1 WINCH ST",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_677720_2941808",
+      "address": "12 ANDERSON RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_674044_2948985",
+      "address": "18 HIRAM RD",
+      "old": "R-3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_680852_2924814",
+      "address": "12 ROXANNA ST",
+      "old": "M",
+      "new": "M"
+    },
+    {
+      "apn": "F_675835_2924144",
+      "address": "39 COBURN ST",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "F_669753_2946718",
+      "address": "7 BENT HILL DR",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_672729_2948579",
+      "address": "1196 EDGELL RD",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_670732_2943135",
+      "address": "52 AGNES DR",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_679012_2938426",
+      "address": "41 SUMMER LN",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_668061_2936764",
+      "address": "9 DOYLE CIR",
+      "old": "R-3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_680302_2928539",
+      "address": "29 POND ST",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "F_683642_2938592",
+      "address": "19 ARLENE DR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_660847_2940473",
+      "address": "44 LANEWOOD AVE",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_679142_2923788",
+      "address": "56 EAMES ST",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "F_677446_2947280",
+      "address": "30 LANCASTER DR",
+      "old": "R-3",
+      "new": "R-3"
+    },
+    {
+      "apn": "F_684564_2924187",
+      "address": "10 STILLMAN ST",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "F_679845_2936206",
+      "address": "27 PITT RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_667824_2926377",
+      "address": "6 TOMKINS LN",
+      "old": "R-4",
+      "new": "R-4"
+    }
+  ],
+  "apply": {
+    "rows_written": 880
+  },
+  "matrix_untouched": true
+}
