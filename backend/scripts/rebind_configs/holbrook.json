@@ -1,0 +1,28 @@
+{
+  "muni": "HOLBROOK",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Holbrook'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "B1",
+    "B2",
+    "BC",
+    "I"
+  ],
+  "nonbinding": [
+    "W"
+  ],
+  "expected_count": [
+    8,
+    12
+  ],
+  "notes": "Holbrook Zoning By-Law (Sept 2019; holbrookma.gov/372 DocumentCenter PDF); Table of Use Regulations (Appendix A). Use-table columns Res I-V / Bus I / Bus II / BV / BC / I; MAPC (strip 133) gives R1-R5=Res I-V, B1=Bus I, B2=Bus II, BC, I (bylaw 'BV' not in MAPC vocab). MAPC 'W' (Water) not a use-table district -> nonbinding. Named use 'Self Service Storage Warehouse' = PB (special permit) in Bus I/II/BV/BC/I."
+}

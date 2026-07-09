@@ -1,0 +1,374 @@
+{
+  "muni": "HOLBROOK",
+  "mode": "apply",
+  "generated": "2026-07-09T20:26:24.458152+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 10,
+      "expected": [
+        8,
+        12
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 10,
+  "layer_vocab": [
+    "B1",
+    "B2",
+    "BC",
+    "I",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "W"
+  ],
+  "parcels_total": 4861,
+  "rebound": 4851,
+  "orphans": 10,
+  "changed": 564,
+  "changed_pct": 11.6,
+  "transitions": [
+    {
+      "old": "R3",
+      "new": "R3",
+      "n": 3103
+    },
+    {
+      "old": "R5",
+      "new": "R5",
+      "n": 390
+    },
+    {
+      "old": "R1",
+      "new": "R1",
+      "n": 307
+    },
+    {
+      "old": "R2",
+      "new": "R2",
+      "n": 200
+    },
+    {
+      "old": "B1",
+      "new": "B1",
+      "n": 128
+    },
+    {
+      "old": "I",
+      "new": "I",
+      "n": 96
+    },
+    {
+      "old": "TC",
+      "new": "B2",
+      "n": 89
+    },
+    {
+      "old": "R3",
+      "new": "R1",
+      "n": 80
+    },
+    {
+      "old": "R3",
+      "new": "B2",
+      "n": 67
+    },
+    {
+      "old": "TC",
+      "new": "B1",
+      "n": 41
+    },
+    {
+      "old": "R5",
+      "new": "R3",
+      "n": 36
+    },
+    {
+      "old": "R3",
+      "new": "I",
+      "n": 34
+    },
+    {
+      "old": "BC",
+      "new": "BC",
+      "n": 32
+    },
+    {
+      "old": "R3",
+      "new": "R2",
+      "n": 29
+    },
+    {
+      "old": "R3",
+      "new": "R4",
+      "n": 26
+    },
+    {
+      "old": "B1",
+      "new": "R3",
+      "n": 25
+    },
+    {
+      "old": "B2",
+      "new": "B2",
+      "n": 18
+    },
+    {
+      "old": "R1",
+      "new": "R3",
+      "n": 17
+    },
+    {
+      "old": "R2",
+      "new": "R3",
+      "n": 15
+    },
+    {
+      "old": "R4",
+      "new": "R4",
+      "n": 13
+    },
+    {
+      "old": null,
+      "new": "R1",
+      "n": 12
+    },
+    {
+      "old": "R5",
+      "new": "R1",
+      "n": 12
+    },
+    {
+      "old": "TC",
+      "new": "R3",
+      "n": 11
+    },
+    {
+      "old": "R3",
+      "new": null,
+      "n": 6
+    },
+    {
+      "old": "R1",
+      "new": "R2",
+      "n": 6
+    },
+    {
+      "old": "R2",
+      "new": "R1",
+      "n": 6
+    },
+    {
+      "old": "R3",
+      "new": "B1",
+      "n": 6
+    },
+    {
+      "old": null,
+      "new": "R3",
+      "n": 5
+    },
+    {
+      "old": "R4",
+      "new": "R3",
+      "n": 4
+    },
+    {
+      "old": "B1",
+      "new": "R2",
+      "n": 4
+    },
+    {
+      "old": "R1",
+      "new": "I",
+      "n": 4
+    },
+    {
+      "old": "R1",
+      "new": "B1",
+      "n": 3
+    },
+    {
+      "old": "R4",
+      "new": "BC",
+      "n": 3
+    },
+    {
+      "old": "I",
+      "new": null,
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "I",
+      "n": 3
+    },
+    {
+      "old": "I",
+      "new": "R1",
+      "n": 3
+    },
+    {
+      "old": "R4",
+      "new": "B2",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "R2",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "R4",
+      "n": 2
+    },
+    {
+      "old": "R3",
+      "new": "BC",
+      "n": 2
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_787825_2882069",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_790456_2877067",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_796560_2881871",
+      "address": "HOLBROOK",
+      "old": "R1",
+      "new": "R1"
+    },
+    {
+      "apn": "F_788084_2872199",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_789482_2882905",
+      "address": "HOLBROOK",
+      "old": "TC",
+      "new": "B2"
+    },
+    {
+      "apn": "F_785148_2884153",
+      "address": "HOLBROOK",
+      "old": "I",
+      "new": "I"
+    },
+    {
+      "apn": "F_789594_2883392",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_787849_2876247",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_787498_2875829",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R1"
+    },
+    {
+      "apn": "F_785798_2882564",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_789925_2883922",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_793385_2881654",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_788292_2872076",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_786679_2877509",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_786063_2874446",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_789926_2877735",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_791517_2875535",
+      "address": "HOLBROOK",
+      "old": "R5",
+      "new": "R5"
+    },
+    {
+      "apn": "F_790900_2881602",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_789532_2876184",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    },
+    {
+      "apn": "F_788248_2881614",
+      "address": "HOLBROOK",
+      "old": "R3",
+      "new": "R3"
+    }
+  ],
+  "apply": {
+    "rows_written": 564
+  },
+  "matrix_untouched": true
+}
