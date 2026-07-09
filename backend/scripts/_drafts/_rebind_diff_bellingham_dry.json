@@ -1,0 +1,343 @@
+{
+  "muni": "BELLINGHAM",
+  "mode": "dry-run",
+  "generated": "2026-07-09T19:57:46.359937+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 7,
+      "expected": [
+        6,
+        9
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 7,
+  "layer_vocab": [
+    "A",
+    "B-1",
+    "B-2",
+    "I",
+    "M",
+    "R",
+    "S"
+  ],
+  "parcels_total": 6221,
+  "rebound": 6198,
+  "orphans": 23,
+  "changed": 6191,
+  "changed_pct": 99.5,
+  "transitions": [
+    {
+      "old": null,
+      "new": "R",
+      "n": 1593
+    },
+    {
+      "old": "RES",
+      "new": "R",
+      "n": 1185
+    },
+    {
+      "old": null,
+      "new": "S",
+      "n": 888
+    },
+    {
+      "old": "SUBN",
+      "new": "S",
+      "n": 770
+    },
+    {
+      "old": null,
+      "new": "A",
+      "n": 660
+    },
+    {
+      "old": "AGR",
+      "new": "A",
+      "n": 419
+    },
+    {
+      "old": null,
+      "new": "B-1",
+      "n": 173
+    },
+    {
+      "old": "BUS1",
+      "new": "B-1",
+      "n": 170
+    },
+    {
+      "old": "IND",
+      "new": "I",
+      "n": 120
+    },
+    {
+      "old": "BUS2",
+      "new": "B-1",
+      "n": 45
+    },
+    {
+      "old": null,
+      "new": "B-2",
+      "n": 44
+    },
+    {
+      "old": "SUBN",
+      "new": "I",
+      "n": 39
+    },
+    {
+      "old": null,
+      "new": "I",
+      "n": 16
+    },
+    {
+      "old": "BUS1",
+      "new": "R",
+      "n": 13
+    },
+    {
+      "old": "BUS2",
+      "new": "B-2",
+      "n": 12
+    },
+    {
+      "old": null,
+      "new": null,
+      "n": 10
+    },
+    {
+      "old": "SUBN",
+      "new": null,
+      "n": 10
+    },
+    {
+      "old": "M",
+      "new": "M",
+      "n": 7
+    },
+    {
+      "old": "AGR",
+      "new": "S",
+      "n": 6
+    },
+    {
+      "old": "AGR",
+      "new": "B-1",
+      "n": 5
+    },
+    {
+      "old": "BUS1",
+      "new": "S",
+      "n": 5
+    },
+    {
+      "old": "IND",
+      "new": "S",
+      "n": 4
+    },
+    {
+      "old": "AGR",
+      "new": "I",
+      "n": 4
+    },
+    {
+      "old": "AGR",
+      "new": null,
+      "n": 3
+    },
+    {
+      "old": "B",
+      "new": "B-1",
+      "n": 3
+    },
+    {
+      "old": "BUS1",
+      "new": "I",
+      "n": 3
+    },
+    {
+      "old": "AGR",
+      "new": "R",
+      "n": 3
+    },
+    {
+      "old": "SUBN",
+      "new": "A",
+      "n": 2
+    },
+    {
+      "old": "RES",
+      "new": "B-1",
+      "n": 2
+    },
+    {
+      "old": "RES",
+      "new": "S",
+      "n": 2
+    },
+    {
+      "old": "BUS2",
+      "new": "I",
+      "n": 1
+    },
+    {
+      "old": "res",
+      "new": "R",
+      "n": 1
+    },
+    {
+      "old": "agr",
+      "new": "R",
+      "n": 1
+    },
+    {
+      "old": "subn",
+      "new": "S",
+      "n": 1
+    },
+    {
+      "old": "B",
+      "new": "I",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_659991_2837043",
+      "address": "628  PULASKI BV",
+      "old": null,
+      "new": "R"
+    },
+    {
+      "apn": "F_657171_2836123",
+      "address": "0  YOLANDA ST",
+      "old": null,
+      "new": "R"
+    },
+    {
+      "apn": "F_658753_2838981",
+      "address": "0  SOUTH MAIN ST",
+      "old": null,
+      "new": "S"
+    },
+    {
+      "apn": "F_660812_2863523",
+      "address": "127  JEANNINE RD",
+      "old": "RES",
+      "new": "R"
+    },
+    {
+      "apn": "F_668512_2870485",
+      "address": "375  HARTFORD AV",
+      "old": "SUBN",
+      "new": "S"
+    },
+    {
+      "apn": "F_669084_2867295",
+      "address": "0  MAPLE ST",
+      "old": "SUBN",
+      "new": "S"
+    },
+    {
+      "apn": "F_661239_2857933",
+      "address": "11  JUDY LN",
+      "old": "RES",
+      "new": "R"
+    },
+    {
+      "apn": "F_663558_2856329",
+      "address": "42  MECHANIC ST",
+      "old": "BUS1",
+      "new": "B-1"
+    },
+    {
+      "apn": "F_669377_2858454",
+      "address": "379  MAPLE ST",
+      "old": "AGR",
+      "new": "A"
+    },
+    {
+      "apn": "F_658759_2841651",
+      "address": "17  HILLTOP DR",
+      "old": null,
+      "new": "S"
+    },
+    {
+      "apn": "F_665359_2835151",
+      "address": "41  LAKE ST",
+      "old": null,
+      "new": "S"
+    },
+    {
+      "apn": "F_660445_2834646",
+      "address": "90  WRENTHAM RD",
+      "old": null,
+      "new": "R"
+    },
+    {
+      "apn": "F_660791_2862935",
+      "address": "99  PATRICIA DR",
+      "old": "RES",
+      "new": "R"
+    },
+    {
+      "apn": "F_670141_2866835",
+      "address": "118  MAPLE ST",
+      "old": "SUBN",
+      "new": "I"
+    },
+    {
+      "apn": "F_658368_2834302",
+      "address": "21  LAFAYETTE ST",
+      "old": null,
+      "new": "R"
+    },
+    {
+      "apn": "F_659822_2834666",
+      "address": "31  MURON ST",
+      "old": null,
+      "new": "R"
+    },
+    {
+      "apn": "F_661348_2837124",
+      "address": "13  DEER RUN RD",
+      "old": null,
+      "new": "S"
+    },
+    {
+      "apn": "F_662859_2862911",
+      "address": "81  RUTHELLEN RD",
+      "old": "RES",
+      "new": "R"
+    },
+    {
+      "apn": "F_669670_2871247",
+      "address": "44  STANDISH RD",
+      "old": "SUBN",
+      "new": "S"
+    },
+    {
+      "apn": "F_661026_2834605",
+      "address": "150  WRENTHAM RD",
+      "old": null,
+      "new": "R"
+    }
+  ],
+  "matrix_untouched": true
+}
