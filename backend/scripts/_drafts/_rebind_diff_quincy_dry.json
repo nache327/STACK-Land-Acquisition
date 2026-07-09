@@ -1,0 +1,374 @@
+{
+  "muni": "QUINCY",
+  "mode": "dry-run",
+  "generated": "2026-07-09T19:02:46.784365+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 13,
+      "expected": [
+        11,
+        15
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 13,
+  "layer_vocab": [
+    "BA",
+    "BB",
+    "BC",
+    "IA",
+    "IB",
+    "OS",
+    "PUD",
+    "QCD-10",
+    "QCD-15",
+    "RA",
+    "RB",
+    "RC",
+    "RES D"
+  ],
+  "parcels_total": 21252,
+  "rebound": 21233,
+  "orphans": 19,
+  "changed": 20912,
+  "changed_pct": 98.4,
+  "transitions": [
+    {
+      "old": "RESA",
+      "new": "RA",
+      "n": 11725
+    },
+    {
+      "old": "RESB",
+      "new": "RB",
+      "n": 6579
+    },
+    {
+      "old": "BUSB",
+      "new": "BB",
+      "n": 1048
+    },
+    {
+      "old": "RESC",
+      "new": "RC",
+      "n": 319
+    },
+    {
+      "old": "BUSC",
+      "new": "BC",
+      "n": 289
+    },
+    {
+      "old": "INDA",
+      "new": "IA",
+      "n": 253
+    },
+    {
+      "old": "OS",
+      "new": "OS",
+      "n": 247
+    },
+    {
+      "old": "BUSA",
+      "new": "BA",
+      "n": 112
+    },
+    {
+      "old": "QCZD15",
+      "new": "QCD-15",
+      "n": 83
+    },
+    {
+      "old": "INDB",
+      "new": "IB",
+      "n": 81
+    },
+    {
+      "old": "QCZD10",
+      "new": "QCD-10",
+      "n": 77
+    },
+    {
+      "old": "PUD",
+      "new": "PUD",
+      "n": 74
+    },
+    {
+      "old": null,
+      "new": "RA",
+      "n": 37
+    },
+    {
+      "old": "BUSB",
+      "new": "RB",
+      "n": 29
+    },
+    {
+      "old": "BUSBRESA",
+      "new": "BB",
+      "n": 19
+    },
+    {
+      "old": "RESARESB",
+      "new": "RB",
+      "n": 14
+    },
+    {
+      "old": null,
+      "new": "BB",
+      "n": 11
+    },
+    {
+      "old": "BUSBRESB",
+      "new": "BB",
+      "n": 11
+    },
+    {
+      "old": "OSRESA",
+      "new": "RA",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "RB",
+      "n": 10
+    },
+    {
+      "old": "BUSBRESA",
+      "new": "RA",
+      "n": 9
+    },
+    {
+      "old": "RESBRESC",
+      "new": "RB",
+      "n": 9
+    },
+    {
+      "old": "RESARESB",
+      "new": "RA",
+      "n": 9
+    },
+    {
+      "old": "RESBRESC",
+      "new": "RC",
+      "n": 8
+    },
+    {
+      "old": "RESA",
+      "new": null,
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "IB",
+      "n": 8
+    },
+    {
+      "old": "RESA",
+      "new": "RB",
+      "n": 8
+    },
+    {
+      "old": "BUSBRESB",
+      "new": "RB",
+      "n": 7
+    },
+    {
+      "old": "INDAINDB",
+      "new": "IB",
+      "n": 6
+    },
+    {
+      "old": "BUSC",
+      "new": "QCD-15",
+      "n": 5
+    },
+    {
+      "old": "PUDRESB",
+      "new": "RB",
+      "n": 4
+    },
+    {
+      "old": "BUSC",
+      "new": "QCD-10",
+      "n": 4
+    },
+    {
+      "old": "RESD",
+      "new": null,
+      "n": 4
+    },
+    {
+      "old": "BUSCRESB",
+      "new": "RB",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "BC",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "OS",
+      "n": 4
+    },
+    {
+      "old": "OS",
+      "new": "RA",
+      "n": 4
+    },
+    {
+      "old": "PUDRESB",
+      "new": "PUD",
+      "n": 4
+    },
+    {
+      "old": "RESC",
+      "new": "RB",
+      "n": 3
+    },
+    {
+      "old": "RESARESC",
+      "new": "RC",
+      "n": 3
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_790108_2919370",
+      "address": "65 MERRYMOUNT RD",
+      "old": "RESB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_786313_2927462",
+      "address": "23 MILTON RD",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_784500_2919625",
+      "address": "80 SUMMIT AVE",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_792830_2921147",
+      "address": "70 VICTORIA RD",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_799791_2919900",
+      "address": "28 LIND ST",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_792214_2911343",
+      "address": "3 CREST ST",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_787015_2927002",
+      "address": "31 CARLE RD",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_790132_2924420",
+      "address": "17 ROBERTA LN",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_784967_2927329",
+      "address": "20 FAXON RD",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_780874_2915335",
+      "address": "29 OCONNELL AVE",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_784329_2923820",
+      "address": "136 FAYETTE ST",
+      "old": "RESB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_790010_2923277",
+      "address": "28 LANGLEY CIR",
+      "old": "RESB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_784189_2917345",
+      "address": "42 HILLTOP ST",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_793863_2916227",
+      "address": "5 ALDEN ST",
+      "old": "RESB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_784340_2931084",
+      "address": "440B E SQUANTUM ST",
+      "old": "PUD",
+      "new": "PUD"
+    },
+    {
+      "apn": "F_789023_2915637",
+      "address": "5 ROWLEY ST",
+      "old": "RESB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_802152_2923834",
+      "address": "182 MANET AVE",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_785310_2928444",
+      "address": "34 WEBSTER ST",
+      "old": "RESA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_783316_2932829",
+      "address": "2304",
+      "old": "PUD",
+      "new": "PUD"
+    },
+    {
+      "apn": "F_779821_2916381",
+      "address": "59 SHAWMUT ST",
+      "old": "RESA",
+      "new": "RA"
+    }
+  ],
+  "matrix_untouched": true
+}
