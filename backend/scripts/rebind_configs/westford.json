@@ -1,0 +1,27 @@
+{
+  "muni": "WESTFORD",
+  "jid": "MIDDLESEX",
+  "url": "NMCOG/20",
+  "code_field": "DISTRICT_C",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "RA",
+    "RB",
+    "B",
+    "BL",
+    "CH",
+    "IH",
+    "IA",
+    "IB",
+    "IC",
+    "ID"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    8,
+    12
+  ],
+  "notes": "Westford MA (Middlesex) — NMCOG layer 20 (field DISTRICT_C). Vocab-vs-bylaw check PASSED: NMCOG codes match the CURRENT Oct-27-2025 certified bylaw Appendix A Table of Principal Use Regulations district columns exactly (RA/RB residential; B/BL/CH commercial; IH/IA/IB/IC/ID industrial)."
+}
