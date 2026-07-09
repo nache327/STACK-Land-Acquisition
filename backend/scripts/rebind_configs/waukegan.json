@@ -1,0 +1,22 @@
+{
+  "muni": "WAUKEGAN",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://services5.arcgis.com/LcMXE3TFhi1BSaCY/arcgis/rest/services/New_Zoning_Districts/FeatureServer/0",
+  "code_field": "New_Zoning_Code",
+  "where": "1=1",
+  "strip_prefix": " .*$",
+  "code_map": {},
+  "ordinance_districts": [
+    "B1", "B2", "B3", "B4",
+    "CR", "E", "H/C",
+    "R/LI", "I",
+    "L1", "L2", "L3",
+    "R1", "R2", "R3", "R4", "R5"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    14,
+    19
+  ],
+  "notes": "City of Waukegan UDO (eff. 2024-07-01) New_Zoning_Districts FeatureServer/0. New_Zoning_Code holds '<code> <name>' labels; strip_prefix ' .*$' keeps the leading code token. Industrial: R/LI (Research/Light Industrial), I (Light Industrial). Use table UDO Table 9.02-1."
+}
