@@ -64,3 +64,34 @@ class TestGateReport:
         r = GateReport(jurisdiction_id="x")
         r.warn("meh")
         assert r.passed is True and r.warnings == ["meh"]
+
+
+class TestSiblingConsistencyCatch58:
+    from app.services.postingest_gate import sibling_consistency_violation as _f
+
+    def test_billerica_shaped_trips(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # lgc conditional (inferred from li), ss+mw prohibited, no named-garage basis
+        basis = "lgc conditional by inference from light_industrial; closed-list; no named garage use"
+        assert f("prohibited", "prohibited", "conditional", basis) is True
+
+    def test_marlborough_shaped_does_not_trip(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # lgc permitted on the NAMED 'hobby vehicle storage' use — legit, exempt
+        basis = "lgc permitted 0.95: 'hobby vehicle storage' named by-right in 650-18A(36)"
+        assert f("prohibited", "prohibited", "permitted", basis) is False
+
+    def test_conditional_sibling_not_flagged(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # Stoughton/Braintree/Dedham: ss=conditional (not prohibited) => consistent, no trip
+        assert f("conditional", "conditional", "conditional", "inferred") is False
+
+    def test_lgc_prohibited_not_flagged(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # Billerica/Wilmington post-reconcile: lgc prohibited => nothing to flag
+        assert f("prohibited", "prohibited", "prohibited", "any basis") is False
+
+    def test_one_sibling_prohibited_not_enough(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # only ss prohibited, mw conditional => not the both-prohibited leak signature
+        assert f("prohibited", "conditional", "conditional", "inferred") is False
