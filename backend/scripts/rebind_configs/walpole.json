@@ -1,0 +1,27 @@
+{
+  "muni": "WALPOLE",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Walpole'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "R",
+    "RA",
+    "RB",
+    "GR",
+    "PSRC",
+    "B",
+    "CBD",
+    "HB",
+    "LM",
+    "IND"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    9,
+    12
+  ],
+  "notes": "Town PDF zoning_bylaws_october_2025.pdf (walpole-ma.gov, CURRENT) §4 Establishment of Districts: R/RA/RB/GR/PSRC residential-public, B/CBD/HB/LM/IND commercial. MAPC layer 2 strip 307-prefix maps 1:1 to ordinance codes (no code_map). NOTE assessor used 'HBD' for Highway Business; ordinance + MAPC both use 'HB' — rebind supersedes the assessor label. Overlays (FPPOD/SEP/SPOD/WRPOD/MCMOD/EWCPROD) excluded from base rebind."
+}
