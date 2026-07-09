@@ -1,0 +1,370 @@
+{
+  "muni": "FOXBOROUGH",
+  "mode": "dry-run",
+  "generated": "2026-07-09T18:45:56.267927+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 9,
+      "expected": [
+        8,
+        11
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 9,
+  "layer_vocab": [
+    "GB",
+    "GI",
+    "HB",
+    "LI",
+    "NB",
+    "NZ",
+    "R-15",
+    "R-40",
+    "S-1"
+  ],
+  "parcels_total": 6014,
+  "rebound": 5996,
+  "orphans": 18,
+  "changed": 5513,
+  "changed_pct": 91.7,
+  "transitions": [
+    {
+      "old": "R 40",
+      "new": "R-40",
+      "n": 2851
+    },
+    {
+      "old": "R40",
+      "new": "R-40",
+      "n": 1497
+    },
+    {
+      "old": "R 15",
+      "new": "R-15",
+      "n": 368
+    },
+    {
+      "old": "R15",
+      "new": "R-15",
+      "n": 231
+    },
+    {
+      "old": "R-40",
+      "new": "R-40",
+      "n": 131
+    },
+    {
+      "old": "LI",
+      "new": "LI",
+      "n": 87
+    },
+    {
+      "old": "R-15",
+      "new": "R-15",
+      "n": 84
+    },
+    {
+      "old": null,
+      "new": "R-40",
+      "n": 80
+    },
+    {
+      "old": "GB",
+      "new": "GB",
+      "n": 73
+    },
+    {
+      "old": null,
+      "new": "R-15",
+      "n": 59
+    },
+    {
+      "old": "OSRD",
+      "new": "R-40",
+      "n": 57
+    },
+    {
+      "old": "GI",
+      "new": "GI",
+      "n": 50
+    },
+    {
+      "old": "R 40",
+      "new": "R-15",
+      "n": 42
+    },
+    {
+      "old": "S-1",
+      "new": "S-1",
+      "n": 33
+    },
+    {
+      "old": "S1",
+      "new": "S-1",
+      "n": 29
+    },
+    {
+      "old": "R15",
+      "new": "R-40",
+      "n": 28
+    },
+    {
+      "old": "R 15",
+      "new": "R-40",
+      "n": 26
+    },
+    {
+      "old": "HB",
+      "new": "HB",
+      "n": 20
+    },
+    {
+      "old": "R15",
+      "new": "GB",
+      "n": 19
+    },
+    {
+      "old": "R40",
+      "new": "R-15",
+      "n": 18
+    },
+    {
+      "old": "WRPD",
+      "new": "R-40",
+      "n": 14
+    },
+    {
+      "old": "R40",
+      "new": null,
+      "n": 13
+    },
+    {
+      "old": "GB",
+      "new": "R-15",
+      "n": 9
+    },
+    {
+      "old": "R15",
+      "new": "LI",
+      "n": 8
+    },
+    {
+      "old": "LI",
+      "new": "R-40",
+      "n": 8
+    },
+    {
+      "old": "R40",
+      "new": "S-1",
+      "n": 8
+    },
+    {
+      "old": "R40",
+      "new": "LI",
+      "n": 8
+    },
+    {
+      "old": "R 40",
+      "new": "S-1",
+      "n": 7
+    },
+    {
+      "old": "R-15",
+      "new": "R-40",
+      "n": 6
+    },
+    {
+      "old": null,
+      "new": "GB",
+      "n": 6
+    },
+    {
+      "old": "R 15",
+      "new": "GI",
+      "n": 6
+    },
+    {
+      "old": "R 4O",
+      "new": "R-40",
+      "n": 5
+    },
+    {
+      "old": "NB",
+      "new": "NB",
+      "n": 5
+    },
+    {
+      "old": "NB",
+      "new": "R-40",
+      "n": 5
+    },
+    {
+      "old": "R  40",
+      "new": "R-40",
+      "n": 5
+    },
+    {
+      "old": null,
+      "new": "GI",
+      "n": 5
+    },
+    {
+      "old": ".R 40",
+      "new": "R-40",
+      "n": 4
+    },
+    {
+      "old": "R 40",
+      "new": "LI",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "LI",
+      "n": 4
+    },
+    {
+      "old": "GI",
+      "new": "R-40",
+      "n": 4
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "M_221610_865460",
+      "address": "2  FISHER STREET",
+      "old": "HB",
+      "new": "HB"
+    },
+    {
+      "apn": "M_221577_871939",
+      "address": "20 EVERETT LANE",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_220481_868648",
+      "address": "8 ORCHARD PLACE",
+      "old": null,
+      "new": "R-15"
+    },
+    {
+      "apn": "M_225060_868208",
+      "address": "14 WILLOW STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_219389_863975",
+      "address": "57 BORROWS ROAD",
+      "old": "R40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_218281_869351",
+      "address": "8 GOODWIN DRIVE",
+      "old": "R40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_220436_868302",
+      "address": "28 MARKET STREET",
+      "old": "R 15",
+      "new": "R-15"
+    },
+    {
+      "apn": "M_221186_867729",
+      "address": "65 LEONARD STREET",
+      "old": "LI",
+      "new": "LI"
+    },
+    {
+      "apn": "M_219892_864895",
+      "address": "18 FLETCHER STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_221847_868028",
+      "address": "14 LEDGEVILLE AVENUE",
+      "old": "R 40",
+      "new": "R-15"
+    },
+    {
+      "apn": "M_219785_867074",
+      "address": "35 PROSPECT STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_219583_870079",
+      "address": "CROSS STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_218310_869741",
+      "address": "3 PIERCE STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_221164_868293",
+      "address": "7 PARK AVENUE",
+      "old": "R 40",
+      "new": "R-15"
+    },
+    {
+      "apn": "M_219178_869798",
+      "address": "52 CROSS STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_221452_869311",
+      "address": "6 MARGARET ROAD",
+      "old": "R15",
+      "new": "R-15"
+    },
+    {
+      "apn": "M_218383_863174",
+      "address": "37 SHEPHERD STREET",
+      "old": "R40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_224023_866763",
+      "address": "87 MORSE STREET",
+      "old": "R 40",
+      "new": "R-40"
+    },
+    {
+      "apn": "M_221717_868038",
+      "address": "LEDGEVILLE AVENUE",
+      "old": "R15",
+      "new": "R-15"
+    },
+    {
+      "apn": "M_224565_868505",
+      "address": "18 ROBBINS ROAD",
+      "old": "R40",
+      "new": "R-40"
+    }
+  ],
+  "matrix_untouched": true
+}

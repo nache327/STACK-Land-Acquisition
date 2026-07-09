@@ -1,0 +1,27 @@
+{
+  "muni": "FOXBOROUGH",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Foxborough'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "R-15",
+    "R-40",
+    "GB",
+    "NB",
+    "HB",
+    "GI",
+    "LI",
+    "S-1"
+  ],
+  "nonbinding": [
+    "NZ"
+  ],
+  "expected_count": [
+    8,
+    11
+  ],
+  "notes": "eCode360 Ch. 275 (Districts 26808603, Use Regs §3.0 26808617; thru 10-27-2025 STM). §Districts: R-15/R-40 residential, GB/NB/HB business, GI/LI industrial, S-1 Special Use. MAPC layer 2 strip 99-prefix maps 1:1 to ordinance codes (no code_map). MAPC 'NZ' (Not Zoned) = nonbinding placeholder. Assessor vocab was a mess (R 40 / R40 / R-40 / R  40 / .R 40 variants) — rebind supersedes."
+}
