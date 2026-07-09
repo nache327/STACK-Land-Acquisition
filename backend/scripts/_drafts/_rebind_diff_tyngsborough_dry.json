@@ -1,0 +1,359 @@
+{
+  "muni": "TYNGSBOROUGH",
+  "mode": "dry-run",
+  "generated": "2026-07-09T19:48:35.017648+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 8,
+      "expected": [
+        6,
+        10
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 52,
+  "layer_vocab": [
+    "B-1",
+    "B-2",
+    "B-3",
+    "B-4",
+    "I-1",
+    "R-1",
+    "R-2",
+    "R-3"
+  ],
+  "parcels_total": 4141,
+  "rebound": 4141,
+  "orphans": 0,
+  "changed": 4141,
+  "changed_pct": 100.0,
+  "transitions": [
+    {
+      "old": "R1",
+      "new": "R-1",
+      "n": 2805
+    },
+    {
+      "old": "R2",
+      "new": "R-2",
+      "n": 612
+    },
+    {
+      "old": "I1",
+      "new": "I-1",
+      "n": 212
+    },
+    {
+      "old": "R3",
+      "new": "R-3",
+      "n": 102
+    },
+    {
+      "old": "B3",
+      "new": "B-3",
+      "n": 80
+    },
+    {
+      "old": "B2",
+      "new": "B-2",
+      "n": 77
+    },
+    {
+      "old": "B1",
+      "new": "B-1",
+      "n": 63
+    },
+    {
+      "old": null,
+      "new": "R-1",
+      "n": 49
+    },
+    {
+      "old": "I1",
+      "new": "R-1",
+      "n": 33
+    },
+    {
+      "old": "R1",
+      "new": "R-2",
+      "n": 11
+    },
+    {
+      "old": "B1",
+      "new": "R-2",
+      "n": 11
+    },
+    {
+      "old": null,
+      "new": "I-1",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "R-2",
+      "n": 10
+    },
+    {
+      "old": "B3",
+      "new": "I-1",
+      "n": 8
+    },
+    {
+      "old": "I1",
+      "new": "B-3",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "B-1",
+      "n": 7
+    },
+    {
+      "old": "R2",
+      "new": "R-1",
+      "n": 5
+    },
+    {
+      "old": null,
+      "new": "R-3",
+      "n": 3
+    },
+    {
+      "old": "B4",
+      "new": "B-4",
+      "n": 3
+    },
+    {
+      "old": "R1",
+      "new": "B-2",
+      "n": 3
+    },
+    {
+      "old": "R1",
+      "new": "I-1",
+      "n": 3
+    },
+    {
+      "old": "R1",
+      "new": "R-3",
+      "n": 3
+    },
+    {
+      "old": "R3",
+      "new": "B-3",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "B-3",
+      "n": 2
+    },
+    {
+      "old": "B3",
+      "new": "R-1",
+      "n": 2
+    },
+    {
+      "old": "R1",
+      "new": "B-3",
+      "n": 2
+    },
+    {
+      "old": "R2",
+      "new": "B-1",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "B-2",
+      "n": 2
+    },
+    {
+      "old": "R3",
+      "new": "R-1",
+      "n": 1
+    },
+    {
+      "old": "B4",
+      "new": "I-1",
+      "n": 1
+    },
+    {
+      "old": "B3",
+      "new": "R-2",
+      "n": 1
+    },
+    {
+      "old": "B2",
+      "new": "R-1",
+      "n": 1
+    },
+    {
+      "old": "I1",
+      "new": "B-4",
+      "n": 1
+    },
+    {
+      "old": "R1",
+      "new": "B-1",
+      "n": 1
+    },
+    {
+      "old": "B2",
+      "new": "B-3",
+      "n": 1
+    },
+    {
+      "old": "I1",
+      "new": "B-2",
+      "n": 1
+    },
+    {
+      "old": "B4",
+      "new": "R-1",
+      "n": 1
+    },
+    {
+      "old": "B1",
+      "new": "R-3",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "M_203818_932960",
+      "address": "285 WESTFORD RD",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_205281_933200",
+      "address": "10 SWAN RD",
+      "old": "R3",
+      "new": "R-3"
+    },
+    {
+      "apn": "M_207790_933275",
+      "address": "1 BRAEMAR CR",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_201214_932803",
+      "address": "29 VIRGINIA RD",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_208651_935713",
+      "address": "50 SEQUOIA DR",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207886_933798",
+      "address": "34 TYNG RD",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_209510_937631",
+      "address": "4 INDEPENDENCE DR",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_205121_934532",
+      "address": "12 MACKEY DR",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_206712_934441",
+      "address": "21 STEINBECK ST",
+      "old": "I1",
+      "new": "I-1"
+    },
+    {
+      "apn": "M_206034_937170",
+      "address": "44 HIGHLAND ST",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_202850_931498",
+      "address": "52 ALPINE WY",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_208696_935762",
+      "address": "55 SEQUOIA DR",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_209493_935660",
+      "address": "0 SPRUCE AV",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_206676_938319",
+      "address": "10 GAUDET LN",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207768_934230",
+      "address": "60 MIDDLESEX RD",
+      "old": "B1",
+      "new": "B-1"
+    },
+    {
+      "apn": "M_208167_936203",
+      "address": "18 CYPRESS LN",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_208078_935294",
+      "address": "3 NOTTINGHAM RD",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207376_934800",
+      "address": "104 MIDDLESEX RD",
+      "old": "B1",
+      "new": "B-1"
+    },
+    {
+      "apn": "M_203127_933045",
+      "address": "44 CHESTNUT RD",
+      "old": "R1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207770_934077",
+      "address": "53 TYNG RD",
+      "old": "R2",
+      "new": "R-2"
+    }
+  ],
+  "matrix_untouched": true
+}
