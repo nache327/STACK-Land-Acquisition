@@ -1,0 +1,22 @@
+{
+  "muni": "MUNDELEIN",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://ags.gisconsortium.org/arcgis/rest/services/VMD/AGOL_VMD_Project/MapServer/3",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "C-1", "C-2", "C-3", "C-4",
+    "C5-C", "C5-MU", "C5-R", "C5-VC",
+    "O-R", "M-1", "M-MU",
+    "L-MU", "I", "OS",
+    "R-1", "R-2", "R-3", "R-4", "R-5"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    16,
+    21
+  ],
+  "notes": "Village of Mundelein zoning layer ags.gisconsortium.org VMD/AGOL_VMD_Project/MapServer/3 (ZONED). Lake County IL jid. Title 20 use tables 20.32-1 (commercial) + 20.40-1 (office park/mfg). I=Institutional, OS=Open Space (base districts)."
+}
