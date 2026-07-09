@@ -1,37 +1,36 @@
 {
   "muni": "BRAINTREE",
   "jid": "NORFOLK",
-  "url": "MAPC",
-  "code_field": "zo_code",
-  "where": "muni='Braintree'",
-  "strip_prefix": "^\\d+",
+  "url": "https://services9.arcgis.com/wMoJraMZWuVPEmGK/arcgis/rest/services/Zoning/FeatureServer/28",
+  "code_field": "LAYER",
+  "where": "1=1",
+  "strip_prefix": null,
   "code_map": {
-    "COMM": "C",
-    "HBD": "HB",
     "ResA": "RA",
     "ResB": "RB",
     "ResC": "RC",
-    "OpenSpace": "OSC"
+    "GBD": "GB",
+    "HBD": "HB",
+    "COMM": "C",
+    "OpenSpace": "OSC",
+    "Cluster1": "C123",
+    "Cluster2": "C123"
   },
   "ordinance_districts": [
     "RA",
     "RB",
     "RC",
-    "C1",
-    "C2",
-    "C3",
+    "C123",
     "GB",
     "HB",
     "C",
     "OSC",
     "BWLD"
   ],
-  "nonbinding": [
-    "Cluster"
-  ],
+  "nonbinding": [],
   "expected_count": [
-    11,
-    13
+    8,
+    10
   ],
-  "notes": "135 Att.2. MAPC lacks C1/C2/C3 -> EXPECTED gate-b fail -> town-GIS fallback (see braintree_towngis)."
+  "notes": "TOWN GIS (braintreema AGO) \u2014 MAPC stale (gate-b fail). CATCH-#34: code in field 'LAYER'. C123=Cluster I/II/III (135-610, ecode360.com/14707917); Cluster III unmapped. FIRED 2026-07-08: 11,603 rebound."
 }
