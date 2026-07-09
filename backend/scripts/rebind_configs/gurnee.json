@@ -1,0 +1,27 @@
+{
+  "muni": "GURNEE",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://webmaps.gurnee.il.us/arcgis/rest/services/Zoning/MapServer/0",
+  "code_field": "ZONE_CLASS",
+  "where": "1=1",
+  "strip_prefix": " PUD",
+  "code_map": {
+    "I-2(O.I.P.)": "I-2"
+  },
+  "ordinance_districts": [
+    "C-1", "C-2", "C-3", "C-4", "C-5", "C-6",
+    "O-1", "O-2",
+    "I-1", "I-2", "I-3",
+    "R-1", "R-2", "R-3", "R-4", "R-5", "R-6",
+    "P"
+  ],
+  "nonbinding": [
+    "EGG",
+    "C-2,I-2"
+  ],
+  "expected_count": [
+    14,
+    22
+  ],
+  "notes": "Village of Gurnee zoning layer webmaps.gurnee.il.us Zoning/MapServer/0 (ZONE_CLASS). Lake County IL jid. PUD suffix stripped; I-2(O.I.P.) Office Industrial Park -> I-2; EGG overlay + C-2,I-2 split-zoning nonbinding. Use matrix Table 8-1 (Zoning Ordinance Art. 8)."
+}
