@@ -109,6 +109,36 @@ For each muni, one PR:
    `python scripts/postingest_gate.py --jurisdiction 10d01284-829b-4b03-b416-54bc452b8e70`
    (must PASS); then post distance-to-Loudoun delta + armed count by tier.
 
+## BATCH 1 STATUS (2026-07-09) — GROUNDED + re-scored + gate PASS
+Grounded end-to-end (rebind → verbatim muni-scoped verdicts, human_reviewed, catch #42 verified):
+- **Gurnee** (`gurnee.json` + `_apply_lake_gurnee.py`): C-3/I-1 self_storage P; I-2/I-3 conditional.
+- **Mundelein** (`_apply_lake_mundelein.py`): mini-warehouse P by-right C-1..C-4 + M-1/M-MU (255 ac).
+- **Waukegan** (`_apply_lake_waukegan.py`): self_storage conditional in I only; R/LI light-ind P.
+- **Deerfield** (`_apply_lake_deerfield.py`): I-2 self_storage conditional (PUD special use); thin.
+- (+ county-UDO LI/II from the prior county sequence.)
+
+**ONE Lake re-score done + `postingest_gate.py` PASS** (278,834 parcels; bound 100%; 56 distinct
+codes; matrix_coverage 91.2%). Armed ≥1.5ac after batch: **416 self_storage PERMITTED + 251
+CONDITIONAL = 667** (unincorp UDO 151 P; Mundelein 255 P; Gurnee 10 P + 114 C; Waukegan 131 C;
+Deerfield 6 C). Distance-to-Loudoun (100%-operational gold standard): 14/56 distinct codes carry a
+human verdict; the industrial/commercial spine of the 4 munis + UDO is grounded — residential codes
+(the coverage tail) intentionally left ungrounded (no lead risk).
+
+### DEFERRED to Batch 2 (each has an open blocker — do NOT ground on shaky sourcing):
+- **HIGHLAND PARK** — a real GO (L-I district + active operators) but BLOCKED on rebind:
+  the VHP layer (`ags.gisconsortium.org/.../VHP/AGOL_VHP_Project/MapServer/0`) declares a custom
+  SR (wkid 102671/3435) whose on-the-fly reprojection to 4326 is FAULTY — returned polygon coords
+  (~-88.12/41.98) do not overlap the real HP lakefront parcels (~-87.82/42.17), so centroid rebind
+  = 0/12,857. FIX: fetch native SR (3435) + `ST_Transform` in-DB (a `backfill_zoning_from_districts`
+  enhancement), OR find an alt HP zoning layer serving clean 4326. PLUS: §150.490 use-table
+  extraction (Municode SPA 403s) + GIS-legacy-code↔ordinance-code reconciliation (L-I=Light Ind).
+- **BANNOCKBURN** — GHA endpoint (`gis.gha-engineers.com/.../Bannockburn/Zoning/MapServer/2`) is
+  slow/500s (retry+paginate needed); eCode360 403s the use table. Tiny (261 ac; Office-District
+  special-use only). Low priority.
+- **NORTH CHICAGO** — GIS layer OK (`.../Zoning_Map_WFL1/FeatureServer/14`, `ZONING_DIS`) but the
+  ordinance PDF (`northchicago.org`, blocks fetchers) needs a browser-UA read to confirm the use
+  table + self-storage treatment before grounding.
+
 ## Open verification items (browser-UA reads before/at grounding)
 - **Highland Park §150.490** self-storage cell (L-I / B-*) + reconcile GIS `ZONED` legacy codes ↔ Municode districts.
 - **Waukegan** confirm Self-Storage(Indoor) is Conditional in `I` and absent from `R/LI` (Table 9.02-1).
