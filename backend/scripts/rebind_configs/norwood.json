@@ -1,0 +1,33 @@
+{
+  "muni": "NORWOOD",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Norwood'",
+  "strip_prefix": "^\\d+",
+  "code_map": {
+    "HB": "BPH"
+  },
+  "ordinance_districts": [
+    "S",
+    "S1",
+    "S2",
+    "G",
+    "A",
+    "GB",
+    "CB",
+    "BPH",
+    "LB",
+    "O",
+    "LM",
+    "LMA",
+    "M",
+    "LSDD"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    12,
+    15
+  ],
+  "notes": "eCode360 Ch. Z (ecode360.com/42511340; through 10-24-2024). §2.1 districts: S/S1/S2/G/A residential, GB/CB/BPH/LB business, O/LM/LMA/M/LSDD industrial. CODE-MAP: MAPC 'HB' (Highway Business) = ordinance 'BPH' (Boston-Providence Highway District, Route 1 corridor; use-table fn.12 = Route 1 ground-level restriction). Assessor labels were a mess (B/S-2/9/7/GR); MAPC layer 2 strip 220-prefix rebind. LSDD real base district but absent from MAPC Norwood vocab (informational gate-b miss)."
+}

@@ -1,0 +1,379 @@
+{
+  "muni": "NORWOOD",
+  "mode": "apply",
+  "generated": "2026-07-09T18:22:20.210992+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 13,
+      "expected": [
+        12,
+        15
+      ],
+      "ordinance_districts_missing_from_layer": [
+        "LSDD"
+      ]
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 13,
+  "layer_vocab": [
+    "A",
+    "BPH",
+    "CB",
+    "G",
+    "GB",
+    "LB",
+    "LM",
+    "LMA",
+    "M",
+    "O",
+    "S",
+    "S1",
+    "S2"
+  ],
+  "parcels_total": 8135,
+  "rebound": 8066,
+  "orphans": 69,
+  "changed": 997,
+  "changed_pct": 12.3,
+  "transitions": [
+    {
+      "old": "G",
+      "new": "G",
+      "n": 2859
+    },
+    {
+      "old": "S",
+      "new": "S",
+      "n": 1861
+    },
+    {
+      "old": "S2",
+      "new": "S2",
+      "n": 1550
+    },
+    {
+      "old": "S1",
+      "new": "S1",
+      "n": 472
+    },
+    {
+      "old": "M",
+      "new": "M",
+      "n": 201
+    },
+    {
+      "old": "G",
+      "new": "S",
+      "n": 183
+    },
+    {
+      "old": null,
+      "new": "G",
+      "n": 137
+    },
+    {
+      "old": "B",
+      "new": "GB",
+      "n": 117
+    },
+    {
+      "old": "B",
+      "new": "CB",
+      "n": 94
+    },
+    {
+      "old": "LM",
+      "new": "LM",
+      "n": 76
+    },
+    {
+      "old": null,
+      "new": "S",
+      "n": 45
+    },
+    {
+      "old": "B",
+      "new": "BPH",
+      "n": 36
+    },
+    {
+      "old": "S2",
+      "new": null,
+      "n": 35
+    },
+    {
+      "old": "G",
+      "new": "GB",
+      "n": 29
+    },
+    {
+      "old": "M",
+      "new": "G",
+      "n": 29
+    },
+    {
+      "old": null,
+      "new": "M",
+      "n": 26
+    },
+    {
+      "old": "G",
+      "new": "M",
+      "n": 25
+    },
+    {
+      "old": null,
+      "new": "S1",
+      "n": 21
+    },
+    {
+      "old": "S",
+      "new": "G",
+      "n": 21
+    },
+    {
+      "old": "M",
+      "new": "GB",
+      "n": 19
+    },
+    {
+      "old": "CB",
+      "new": "CB",
+      "n": 19
+    },
+    {
+      "old": "A",
+      "new": "A",
+      "n": 16
+    },
+    {
+      "old": null,
+      "new": "CB",
+      "n": 15
+    },
+    {
+      "old": null,
+      "new": "S2",
+      "n": 15
+    },
+    {
+      "old": "B",
+      "new": "G",
+      "n": 14
+    },
+    {
+      "old": "S-2",
+      "new": "S2",
+      "n": 13
+    },
+    {
+      "old": "M",
+      "new": "CB",
+      "n": 10
+    },
+    {
+      "old": "B",
+      "new": "LB",
+      "n": 9
+    },
+    {
+      "old": "GB",
+      "new": "GB",
+      "n": 9
+    },
+    {
+      "old": null,
+      "new": "GB",
+      "n": 9
+    },
+    {
+      "old": "GB",
+      "new": "CB",
+      "n": 9
+    },
+    {
+      "old": "G",
+      "new": null,
+      "n": 9
+    },
+    {
+      "old": "B",
+      "new": "M",
+      "n": 8
+    },
+    {
+      "old": "LM",
+      "new": "BPH",
+      "n": 8
+    },
+    {
+      "old": "7",
+      "new": null,
+      "n": 7
+    },
+    {
+      "old": "9",
+      "new": null,
+      "n": 7
+    },
+    {
+      "old": null,
+      "new": "A",
+      "n": 6
+    },
+    {
+      "old": "M",
+      "new": "BPH",
+      "n": 6
+    },
+    {
+      "old": "G",
+      "new": "BPH",
+      "n": 6
+    },
+    {
+      "old": "A",
+      "new": "GB",
+      "n": 6
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "M_226277_880875",
+      "address": "315 DEAN STREET",
+      "old": "S",
+      "new": "S"
+    },
+    {
+      "apn": "M_225394_883713",
+      "address": "131 NEPONSET STREET",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_225318_879871",
+      "address": "201-203 CARNEGIE ROW",
+      "old": "B",
+      "new": "BPH"
+    },
+    {
+      "apn": "M_224134_880380",
+      "address": "1266 WASHINGTON ST",
+      "old": "B",
+      "new": "GB"
+    },
+    {
+      "apn": "M_226408_879996",
+      "address": "NEPONSET VALLEY",
+      "old": "S1",
+      "new": "S1"
+    },
+    {
+      "apn": "M_224805_882466",
+      "address": "47 EAST VERNON ST",
+      "old": "B",
+      "new": "CB"
+    },
+    {
+      "apn": "M_226940_884327",
+      "address": "EVERETT ST",
+      "old": "LM",
+      "new": "LM"
+    },
+    {
+      "apn": "M_224391_882607",
+      "address": "125 DAY STREET",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_226727_881273",
+      "address": "111 JUNIPER DRIVE",
+      "old": "S",
+      "new": "S"
+    },
+    {
+      "apn": "M_225515_881946",
+      "address": "11 FIRST STREET",
+      "old": "S",
+      "new": "S"
+    },
+    {
+      "apn": "M_225712_882436",
+      "address": "71 OLIVER STREET",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_222498_881061",
+      "address": "107 WILSON STREET",
+      "old": "S2",
+      "new": "S2"
+    },
+    {
+      "apn": "M_223783_882269",
+      "address": "36-38 WEST STREET",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_224566_883231",
+      "address": "305 RAILROAD AVENUE",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_226728_879989",
+      "address": "31 LEDGEVIEW DRIVE",
+      "old": "S1",
+      "new": "S1"
+    },
+    {
+      "apn": "M_224158_881856",
+      "address": "92 WALNUT AVENUE",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_225512_882711",
+      "address": "95 PLEASANT STREET",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_225195_883464",
+      "address": "28 EISENHOWER ROAD",
+      "old": "G",
+      "new": "G"
+    },
+    {
+      "apn": "M_223785_881861",
+      "address": "86 SAUNDERS RD",
+      "old": "S2",
+      "new": "S2"
+    },
+    {
+      "apn": "M_224169_880133",
+      "address": "PROPOSED SHORT ST",
+      "old": "G",
+      "new": "G"
+    }
+  ],
+  "apply": {
+    "rows_written": 997
+  },
+  "matrix_untouched": true
+}
