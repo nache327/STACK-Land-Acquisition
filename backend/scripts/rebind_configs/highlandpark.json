@@ -1,0 +1,21 @@
+{
+  "muni": "HIGHLAND PARK",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://ags.gisconsortium.org/arcgis/rest/services/CHP/CHP_Tyler_Energov_Viewing/MapServer/3",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "R0", "R1", "R2", "R3", "R4", "R5", "R5A", "R6", "R7",
+    "RM1", "RM1A", "RM2",
+    "B1", "B1A", "B2", "B3", "B4", "B4-4", "B4-5", "B4-6", "B4-BG", "B5",
+    "HC", "I", "PA"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    20,
+    28
+  ],
+  "notes": "City of Highland Park CORRECT zoning layer (catch #38 verified: codes R1-R7/B1-B5/B4-*/HC/I/PA match Municode Ch.150 §150.401 AND geometry on the lakefront -87.81/42.17). Source ags.gisconsortium.org CHP/CHP_Tyler_Energov_Viewing/MapServer/3 (ZONED) — the unauthenticated Tyler_Energov viewing service (the AGOL_CHP_Project sibling requires a token). PRIOR VHP layer was WRONG jurisdiction. Use table §150.490: Mini-warehouses P in I only. R0=ordinance RO (Residential-Office; residential, no verdict). Overlays in layer 16, PUD layer 14 (not bound here)."
+}
