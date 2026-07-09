@@ -1,0 +1,32 @@
+{
+  "muni": "TEWKSBURY",
+  "jid": "MIDDLESEX",
+  "url": "NMCOG/23",
+  "code_field": "CODE",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "F",
+    "R40",
+    "MF",
+    "VR",
+    "TC",
+    "MUB",
+    "SB",
+    "WNB",
+    "GB",
+    "LB",
+    "OR",
+    "I1",
+    "I2",
+    "TD",
+    "P"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    13,
+    17
+  ],
+  "notes": "Tewksbury MA (Middlesex) — NMCOG layer 23 'Tewksbury Zoning Districts 7-1-2022'. Vocab-vs-bylaw check PASSED: layer codes match the CURRENT May-2025 bylaw §4.1 districts exactly (F,R40,MF,VR,TC,MUB,SB,WNB,GB,LB,OR,I1,I2 + TD=Transition + P=Park). NOT the NJ Tewksbury Township (catch #38 — that is Hunterdon jid e8612f49, off-limits)."
+}
