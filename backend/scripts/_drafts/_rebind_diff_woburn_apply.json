@@ -1,0 +1,380 @@
+{
+  "muni": "WOBURN",
+  "mode": "apply",
+  "generated": "2026-07-09T18:19:24.315213+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 16,
+      "expected": [
+        14,
+        18
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 16,
+  "layer_vocab": [
+    "B-D",
+    "B-H",
+    "B-I",
+    "B-N",
+    "I-G",
+    "I-P",
+    "IP-2",
+    "O-P",
+    "O-P93",
+    "O-S",
+    "R-1",
+    "R-2",
+    "R-3",
+    "R-4",
+    "S-1",
+    "S-2"
+  ],
+  "parcels_total": 11414,
+  "rebound": 11411,
+  "orphans": 3,
+  "changed": 599,
+  "changed_pct": 5.2,
+  "transitions": [
+    {
+      "old": "R-1",
+      "new": "R-1",
+      "n": 6412
+    },
+    {
+      "old": "R-2",
+      "new": "R-2",
+      "n": 3557
+    },
+    {
+      "old": "I-P",
+      "new": "I-P",
+      "n": 218
+    },
+    {
+      "old": "I-G",
+      "new": "I-G",
+      "n": 166
+    },
+    {
+      "old": "B-D",
+      "new": "B-D",
+      "n": 148
+    },
+    {
+      "old": null,
+      "new": "R-2",
+      "n": 126
+    },
+    {
+      "old": "S-I",
+      "new": "S-1",
+      "n": 122
+    },
+    {
+      "old": "B-H",
+      "new": "B-H",
+      "n": 106
+    },
+    {
+      "old": "O-P",
+      "new": "O-P",
+      "n": 66
+    },
+    {
+      "old": "B-N",
+      "new": "B-N",
+      "n": 52
+    },
+    {
+      "old": "B-I",
+      "new": "B-I",
+      "n": 48
+    },
+    {
+      "old": null,
+      "new": "R-1",
+      "n": 45
+    },
+    {
+      "old": "I-P2",
+      "new": "IP-2",
+      "n": 44
+    },
+    {
+      "old": "R1",
+      "new": "R-1",
+      "n": 19
+    },
+    {
+      "old": "R-4",
+      "new": "R-4",
+      "n": 19
+    },
+    {
+      "old": "R-3",
+      "new": "R-3",
+      "n": 19
+    },
+    {
+      "old": "R-1",
+      "new": "R-2",
+      "n": 19
+    },
+    {
+      "old": "OS",
+      "new": "O-S",
+      "n": 19
+    },
+    {
+      "old": "R-4",
+      "new": "I-G",
+      "n": 17
+    },
+    {
+      "old": null,
+      "new": "I-G",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "S-1",
+      "n": 9
+    },
+    {
+      "old": "OP93",
+      "new": "O-P93",
+      "n": 8
+    },
+    {
+      "old": "R-1",
+      "new": "O-S",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "O-P",
+      "n": 7
+    },
+    {
+      "old": "GI",
+      "new": "I-G",
+      "n": 7
+    },
+    {
+      "old": null,
+      "new": "B-D",
+      "n": 6
+    },
+    {
+      "old": "R-2",
+      "new": "B-N",
+      "n": 6
+    },
+    {
+      "old": "R-2",
+      "new": "B-D",
+      "n": 6
+    },
+    {
+      "old": "R-2",
+      "new": "R-1",
+      "n": 6
+    },
+    {
+      "old": "R1",
+      "new": "R-2",
+      "n": 5
+    },
+    {
+      "old": "I-G",
+      "new": "R-1",
+      "n": 5
+    },
+    {
+      "old": null,
+      "new": "I-P",
+      "n": 5
+    },
+    {
+      "old": null,
+      "new": "R-3",
+      "n": 5
+    },
+    {
+      "old": "R2",
+      "new": "R-2",
+      "n": 4
+    },
+    {
+      "old": "BD",
+      "new": "B-D",
+      "n": 4
+    },
+    {
+      "old": "TBOD",
+      "new": "I-G",
+      "n": 4
+    },
+    {
+      "old": "S-I",
+      "new": "R-2",
+      "n": 4
+    },
+    {
+      "old": "OP93",
+      "new": "S-2",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "B-H",
+      "n": 3
+    },
+    {
+      "old": "I-G",
+      "new": "R-2",
+      "n": 3
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_740796_2997853",
+      "address": "29 SYLVANUS WOOD LN",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_747329_2997799",
+      "address": "3 ROBERTSON WAY",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_751193_3004219",
+      "address": "8 BEACH TERR",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_741802_2993605",
+      "address": "26 GLENWOOD AVE",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_750663_3002354",
+      "address": "43 CHURCH ST",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_757672_3009636",
+      "address": "57 RICHARD CIR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_746670_3011218",
+      "address": "5 GATTA CIR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_748238_2999768",
+      "address": "12 MORSE ST",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_738008_2994372",
+      "address": "2 LIANA ST",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_752530_2998356",
+      "address": "6 GOLDEN TERR",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_747720_3003838",
+      "address": "28 PARK DR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_751552_3014973",
+      "address": "NEW BOSTON ST R",
+      "old": "I-P2",
+      "new": "IP-2"
+    },
+    {
+      "apn": "F_750160_3004745",
+      "address": "9 NEWBURY ST",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_751521_2997596",
+      "address": "23 FOWLE ST",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_751729_2997295",
+      "address": "43",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_751745_3004242",
+      "address": "16 MAYWOOD TERR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_748575_3005437",
+      "address": "5 KIMBALL RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_752972_2997276",
+      "address": "5 BLUEBERRY HILL RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_749081_3008746",
+      "address": "28 VAN NORDEN RD A",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "F_753888_2997311",
+      "address": "BRADFORD & SKYVIEW RDS",
+      "old": "R-1",
+      "new": "R-1"
+    }
+  ],
+  "apply": {
+    "rows_written": 599
+  },
+  "matrix_untouched": true
+}
