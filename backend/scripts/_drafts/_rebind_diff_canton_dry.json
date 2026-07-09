@@ -1,0 +1,370 @@
+{
+  "muni": "CANTON",
+  "mode": "dry-run",
+  "generated": "2026-07-09T20:14:20.511239+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 9,
+      "expected": [
+        8,
+        11
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 9,
+  "layer_vocab": [
+    "B",
+    "GR",
+    "I",
+    "LI",
+    "POS",
+    "SRA",
+    "SRAA",
+    "SRB",
+    "SRC"
+  ],
+  "parcels_total": 7066,
+  "rebound": 7058,
+  "orphans": 8,
+  "changed": 7058,
+  "changed_pct": 99.9,
+  "transitions": [
+    {
+      "old": "11",
+      "new": "SRB",
+      "n": 2156
+    },
+    {
+      "old": "12",
+      "new": "SRC",
+      "n": 1171
+    },
+    {
+      "old": "10",
+      "new": "SRAA",
+      "n": 1151
+    },
+    {
+      "old": "9",
+      "new": "SRA",
+      "n": 1049
+    },
+    {
+      "old": "3",
+      "new": "GR",
+      "n": 447
+    },
+    {
+      "old": "6",
+      "new": "LI",
+      "n": 179
+    },
+    {
+      "old": "5",
+      "new": "I",
+      "n": 160
+    },
+    {
+      "old": "1",
+      "new": "B",
+      "n": 109
+    },
+    {
+      "old": "7",
+      "new": "POS",
+      "n": 89
+    },
+    {
+      "old": "9",
+      "new": "SRB",
+      "n": 83
+    },
+    {
+      "old": "11",
+      "new": "SRC",
+      "n": 60
+    },
+    {
+      "old": "3",
+      "new": "SRC",
+      "n": 55
+    },
+    {
+      "old": "7",
+      "new": "SRA",
+      "n": 47
+    },
+    {
+      "old": "7",
+      "new": "SRB",
+      "n": 27
+    },
+    {
+      "old": "9",
+      "new": "SRC",
+      "n": 26
+    },
+    {
+      "old": "3",
+      "new": "B",
+      "n": 21
+    },
+    {
+      "old": "11",
+      "new": "POS",
+      "n": 16
+    },
+    {
+      "old": "7",
+      "new": "SRAA",
+      "n": 13
+    },
+    {
+      "old": "3",
+      "new": "SRB",
+      "n": 13
+    },
+    {
+      "old": "11",
+      "new": "SRA",
+      "n": 12
+    },
+    {
+      "old": "9",
+      "new": "LI",
+      "n": 12
+    },
+    {
+      "old": null,
+      "new": "I",
+      "n": 11
+    },
+    {
+      "old": "7",
+      "new": "SRC",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "SRAA",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "GR",
+      "n": 9
+    },
+    {
+      "old": "3",
+      "new": "I",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "SRB",
+      "n": 8
+    },
+    {
+      "old": "5",
+      "new": "SRC",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "SRC",
+      "n": 7
+    },
+    {
+      "old": "5",
+      "new": "GR",
+      "n": 7
+    },
+    {
+      "old": "7",
+      "new": "LI",
+      "n": 7
+    },
+    {
+      "old": "5",
+      "new": "SRB",
+      "n": 6
+    },
+    {
+      "old": "10",
+      "new": "LI",
+      "n": 4
+    },
+    {
+      "old": "6",
+      "new": "SRAA",
+      "n": 4
+    },
+    {
+      "old": "11",
+      "new": "GR",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "SRA",
+      "n": 4
+    },
+    {
+      "old": "11",
+      "new": "SRAA",
+      "n": 3
+    },
+    {
+      "old": "6",
+      "new": "I",
+      "n": 3
+    },
+    {
+      "old": "11",
+      "new": "B",
+      "n": 3
+    },
+    {
+      "old": "9",
+      "new": null,
+      "n": 3
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_749566_2885343",
+      "address": "509 CHAPMAN ST",
+      "old": "12",
+      "new": "SRC"
+    },
+    {
+      "apn": "F_763136_2889427",
+      "address": "115 WESTCHESTER DR",
+      "old": "10",
+      "new": "SRAA"
+    },
+    {
+      "apn": "F_765262_2880287",
+      "address": "20 TRACY WOOD RD",
+      "old": "10",
+      "new": "SRAA"
+    },
+    {
+      "apn": "F_753820_2877878",
+      "address": "188 BAILEY ST",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_759062_2890799",
+      "address": "26 RANDOLPH ST",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_759431_2895855",
+      "address": "6 GREENLODGE ST",
+      "old": "9",
+      "new": "SRC"
+    },
+    {
+      "apn": "F_766871_2886303",
+      "address": "353 YORK ST",
+      "old": "10",
+      "new": "SRAA"
+    },
+    {
+      "apn": "F_765194_2892979",
+      "address": "4 HARRISON RD",
+      "old": "10",
+      "new": "SRAA"
+    },
+    {
+      "apn": "F_751443_2878812",
+      "address": "14 OLD SHEPARD ST",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_764568_2890555",
+      "address": "85 BAYBERRY RD",
+      "old": "10",
+      "new": "SRAA"
+    },
+    {
+      "apn": "F_752570_2878088",
+      "address": "0 BAILEY ST",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_754525_2896439",
+      "address": "8 OSAGE RD",
+      "old": "9",
+      "new": "SRA"
+    },
+    {
+      "apn": "F_755393_2885834",
+      "address": "2 MORRIS DR",
+      "old": "12",
+      "new": "SRC"
+    },
+    {
+      "apn": "F_756880_2891234",
+      "address": "1684 WASHINGTON ST",
+      "old": "7",
+      "new": "SRA"
+    },
+    {
+      "apn": "F_758290_2890744",
+      "address": "23 REDMAN RD",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_756544_2878545",
+      "address": "0 PINE ST",
+      "old": "5",
+      "new": "I"
+    },
+    {
+      "apn": "F_750830_2887385",
+      "address": "48 SPRING LN",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_750921_2878140",
+      "address": "258 WASHINGTON ST",
+      "old": "11",
+      "new": "SRB"
+    },
+    {
+      "apn": "F_754081_2888997",
+      "address": "9 MORTON ST",
+      "old": "9",
+      "new": "SRA"
+    },
+    {
+      "apn": "F_753078_2886428",
+      "address": "1146 WASHINGTON ST",
+      "old": "11",
+      "new": "SRB"
+    }
+  ],
+  "matrix_untouched": true
+}
