@@ -1,0 +1,42 @@
+{
+  "muni": "QUINCY",
+  "jid": "NORFOLK",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Quincy'",
+  "strip_prefix": "^\\d+",
+  "code_map": {
+    "RES A": "RA",
+    "RES B": "RB",
+    "RES C": "RC",
+    "BUS A": "BA",
+    "BUS B": "BB",
+    "BUS C": "BC",
+    "IND A": "IA",
+    "IND B": "IB",
+    "QCD10": "QCD-10",
+    "QCD15": "QCD-15"
+  },
+  "ordinance_districts": [
+    "RA",
+    "RB",
+    "RC",
+    "BA",
+    "BB",
+    "BC",
+    "IA",
+    "IB",
+    "OS",
+    "PUD",
+    "QCD-10",
+    "QCD-15"
+  ],
+  "nonbinding": [
+    "RES D"
+  ],
+  "expected_count": [
+    11,
+    15
+  ],
+  "notes": "City of Quincy Ch. 375 Zoning (eCode360 QU3125; §2.1 Establishment, §3.1 Use Regulations + Appendix A Table of Use Regulations dated 2011-06-16). §2.1 base districts RA/RB/RC/BA/BB/BC/IA/IB (Appendix A columns) + special districts OS(§8.2)/QCD-10,QCD-15(§8.3)/PUD(§8.4). MAPC layer 2 strip 243-prefix -> code_map to ordinance abbreviations. MAPC 'RES D' is a 4-parcel artifact (no Residence D in current §2.1) -> nonbinding. Assessor vocab was split-zoned combos (BUSBRESA etc) -> rebind supersedes."
+}
