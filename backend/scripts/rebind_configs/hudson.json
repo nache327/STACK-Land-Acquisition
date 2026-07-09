@@ -42,5 +42,5 @@
     27,
     31
   ],
-  "notes": "MAPC recon; near-identity (4.4% changed) \u2014 low-value rebind."
+  "notes": "STALE / BLOCKED (Session A, 2026-07-09): these codes are Hudson's PRE-recodification scheme. Current Nov-2023 bylaw (townofhudson.org DocumentCenter/View/325) uses R60/R40/R30/R15/MR/MH/DB/NB/GB1/GB2/LCLI/IA/IB (\u00a75.0 + Appendix B). MAPC layer is stale; gates a/b pass only because this config was built from the same stale source. DO NOT rebind/apply until url is re-pointed at the current town GIS (R60.../IA/IB) or an official old->new crosswalk is confirmed. See outputs/_exception_queue.md OPEN #1. Original recon note: MAPC recon; near-identity (4.4% changed)."
 }
