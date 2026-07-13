@@ -28,8 +28,9 @@ No commercial district (O/RC-1/RC-2/HB) names any storage/warehouse use.
   HB Highway Business (Part 13 §27-1302) -> PROHIBITED (0.82). Closed list; highway business; no
      storage named -> silence rule.
 
-Armed pool = LI (86) + HI (47) + HI-MU (17) = 150 parcels (conditional). Commercial/office prohibited.
-Residential (R-1/R-2/R-3/R-4) self-evidently prohibited, not verdicted (not needle-relevant).
+Armed pool = 0 (LI/HI/HI-MU demoted conditional->prohibited 2026-07-09 per the inference hard gate /
+#58 closed-list sweep; see VERDICTS note + outputs/_exceptions_sessionD.md, open call D-ex1). Commercial/
+office prohibited. Residential (R-1/R-2/R-3/R-4) self-evidently prohibited, not verdicted.
 
 Run: python scripts/_apply_hatboro_verdicts.py
 """
@@ -47,12 +48,18 @@ JID = "a59d956d-5f67-4c39-aef1-36140bd57c6f"  # Montgomery County, PA
 MUNI = "Hatboro Borough"
 
 VERDICTS = {
-    "LI": ("conditional", "permitted", 0.75, "Limited Industrial District",
-           "§27-1402.1 closed list ('following uses and no other'); subsection J 'Storage buildings and warehouses' by-right (also F office record storage); self-storage unnamed -> conditional (warehouse-by-right convention)"),
-    "HI": ("conditional", "permitted", 0.75, "Heavy Industrial District",
-           "§27-1502.1.A(1) 'All uses permitted in LI Limited Industrial Districts' + heavy manufacturing (closed list) -> incorporates LI 'Storage buildings and warehouses' by-right -> conditional"),
-    "HI-MU": ("conditional", "permitted", 0.75, "Heavy Industrial - Mixed Use District",
-              "§27-1502 governs both HI and HI-MU (closed list); incorporates all LI uses incl. 'Storage buildings and warehouses' -> conditional"),
+    # DISCIPLINE CORRECTION 2026-07-09: demoted conditional->prohibited (#58 closed-list hard gate).
+    # Prior conditional rested on the warehouse-by-right *inference*. §27-1402 is a CLOSED list ("following
+    # uses and no other"); "Storage buildings and warehouses" (J) is a distinct warehousing use and does NOT
+    # name self-storage; there is NO unlisted-use special-exception catch-all in LI/HI. -> self-storage
+    # unnamed in a closed list -> prohibited by silence (grounded). Named-vs-inferred call ("does 'Storage
+    # buildings' encompass the self-storage cohort?") flagged in outputs/_exceptions_sessionD.md.
+    "LI": ("prohibited", "permitted", 0.70, "Limited Industrial District",
+           "§27-1402.1 CLOSED list ('following uses and no other'); J 'Storage buildings and warehouses' is distinct warehousing, self-storage NOT named, no unlisted-use SE catch-all -> self-storage prohibited by closed-list silence (#58 sweep; named-use grounded, not warehouse-inference)"),
+    "HI": ("prohibited", "permitted", 0.70, "Heavy Industrial District",
+           "§27-1502.1.A(1) incorporates LI uses (closed list); self-storage not named, no unlisted-use SE catch-all -> prohibited by closed-list silence (#58 sweep)"),
+    "HI-MU": ("prohibited", "permitted", 0.70, "Heavy Industrial - Mixed Use District",
+              "§27-1502 governs HI and HI-MU (closed list); self-storage not named -> prohibited by closed-list silence (#58 sweep)"),
     "O": ("prohibited", "unclear", 0.82, "Office District",
           "§27-1002 closed list ('following uses and no other'); office uses; no storage/warehouse named -> silence rule"),
     "RC-1": ("prohibited", "unclear", 0.82, "Retail Commercial District",
