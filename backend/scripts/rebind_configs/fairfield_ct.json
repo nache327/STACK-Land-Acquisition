@@ -1,0 +1,13 @@
+{
+  "muni": "Fairfield",
+  "jid": "66230887-aabe-4d62-aebb-856939ba77bb",
+  "url": "https://maps.ctmetro.org/server/rest/services/Fairfield/Fairfield_Landuse/MapServer/7",
+  "code_field": "ZONE",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": ["A","AA","AAA","B","BD","C","CDD","DCD","DI","DR","DRD","FPD","NDD","R-2","R-3"],
+  "nonbinding": [],
+  "expected_count": [13, 16],
+  "notes": "Town of Fairfield CT zoning (MetroCOG maps.ctmetro.org/Fairfield/Fairfield_Landuse/MapServer/7, field ZONE; catch #38 verified codes+geom -73.27/41.13). County_gis jid, muni='Fairfield'. Self-storage ABSENT townwide (strict closed-list §2.4.A) -> prohibited everywhere; DI has warehouse+light-mfg by-right but NOT self-storage. Honest no-op for self-storage."
+}
