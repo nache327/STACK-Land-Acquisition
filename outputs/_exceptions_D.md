@@ -1,52 +1,47 @@
-# Session D exceptions — Montgomery County PA (jid a59d956d) — batch-v3
+# Session D exceptions — Westchester County NY (jid 3e706886) + MontPA carryover
 
-Per-session file (not the shared queue). Batch-v3 targeted the strategic IN-list (default-deny).
+Per-session file (not the shared queue).
 
-## Grounded this batch (3 IN-list munis)
-| Muni | Needle verdict | Basis | source |
+## Westchester NY — batch 1 (2026-07-09)
+
+### Grounded this batch
+| Town | Needle verdict | Basis | source |
 |---|---|---|---|
-| Conshohocken Borough | LI → **conditional** (0.72) | §27-1402.I same-general-character permitted catch-all + F "Warehouse, storage, or distribution center"; self-storage same-character as permitted storage use | eCode360 curl+UA |
-| Springfield Township | I → **permitted** (0.95); LI → prohibited | §114-121 names "O. Self storage facility" by-right; LI §114-12C1 closed list omits it (catch #37 — the two industrial codes diverge) | eCode360 curl+UA |
-| Whitpain Township | I → **conditional** (0.90) | §160-142.G(3) names "miniwarehousing ... ministorage facilities" as special exception | eCode360 curl+UA |
+| New Rochelle | LI → **permitted** (0.95, 443 parcels); LSR → **conditional** (0.88, 96, ≤2ac cap) | §331-59.A(13) "Self-storage facility" permitted principal use (litem anchor 331-59A(13)); LSR §331-58 special permit + §331-105.1 (≤2ac). Self-storage named ONLY in LSR/LSR-1/LI/LI-H; rest prohibited. | eCode360 curl+UA (DOM-anchor parse) |
+| Yonkers | BR/B/BA → **conditional** (0.80) — PARTIAL | §43-36.M "Self-storage warehouse" (Added 2018) affirmatively regulated in BR/B/BA (retail-liner + storage-only standards). Industrial escalated (below). | eCode360 curl+UA |
+| Harrison | business SB-0/B/PB → **prohibited** (honest no-op) | §235 Attach.3 Business Use Table: self-storage NOT a listed use (only "Equipment storage building"); closed table → prohibited. Ultra-wealthy Purchase; catch #52. 0 needles. | eCode360 attachment PDF |
 
-## OPEN escalations
+### OPEN escalations
 
-### D-v3-1 — Upper Dublin Township: amlegal-hosted, not auto-fetchable
-Upper Dublin's code (Chapter 255 Zoning) is on **American Legal Publishing** (codelibrary.amlegal.com),
-NOT eCode360/Municode. Tried the banked + adjacent unlocks, all failed:
-- eCode360: not present (amlegal muni).
-- amlegal `files.amlegal.com/pdffiles/UpperDublin/UpperDublinALS.pdf` = 1-page 9KB STUB (not the code).
-- amlegal codelibrary SPA: content behind a JS app; `/api/clients/...`, `/api/codes/...`, `/api/clients/.../products`, `export.amlegal.com/api/...` all HTTP 404.
-- Municode content-API: `api.municode.com/Clients/name?name=Upper Dublin` → 404 (not a Municode client).
-- Zoneomics: mirror only (non-authoritative for verbatim human_reviewed citations); CR-I content paginated, not surfaced.
-Needle worth chasing: Upper Dublin is wealthy (Fort Washington / PA-309), needle district **CR-I** (23
-parcels, Commercial-Restricted Industrial) + CR-L (67). **Need:** an amlegal content-API path / export
-token, OR OK to ground from the Zoneomics mirror (§255 sections preserved), OR a town-site PDF from
-upperdublin.net/township-code.
+#### D-wc-1 — Yonkers industrial (M/MG/I/PMD): needs Table 43-1
+§43-36.M names self-storage warehouse standards for BR/B/BA, but does NOT settle whether the large
+INDUSTRIAL districts (M:4316, MG:2364, I:914, PMD:255) permit self-storage/warehouse. Yonkers zoning
+uses per-district use lists / Schedule of Use Regulations (Table 43-1, §43-27) that don't render as a
+single clean HTML table via curl (the page returns explanatory text only; the schedule is a large
+table/attachment I couldn't cleanly extract). **Need:** Table 43-1's self-storage-warehouse + general-
+warehouse rows across M/MG/I/PMD (P/SP/X). Big potential pool — high priority for a follow-up with
+table-extraction. BR/B/BA already grounded conditional.
 
-### D-v3-2 — Lower Merion Township: deferred no-op (no industrial district)
-Catch #37 save: Lower Merion's IE1/2/3 = **Institutional Education**, IC1/3 = **Institutional Civic**
-(NOT industrial). Lower Merion (elite Main Line, Chapter 155 form-based code) has **no industrial
-district** — non-residential districts are commercial/town-center (VC/TC1/TC2/BMV), institutional
-(IN/IC/IE), and mixed-use overlays. Per catch #52 this is an expected self-storage prohibition / honest
-no-op with ~0 wealth-gated needles, and the form-based use-table parse is heavy for ~0 yield. DEFERRED —
-low priority. If grounded later, expect all-prohibited.
+#### D-wc-2 — White Plains + Tarrytown: DEFERRED (heavy city codes, this batch)
+Both have real commercial pools in the wealth ring (White Plains CB-4/BR-2/C-O ~640 comm; Tarrytown
+WGBD/OB/ID + note that Tarrytown's M-1/M-2/M-3 are **Multifamily Residence**, NOT manufacturing —
+catch #37, do not treat as industrial). Not parsed this batch due to time (NY city use tables are
+attachment/large-table format; New Rochelle's interleaved-section parse alone was heavy). Queued for
+Westchester batch 2.
 
-### D-v3-3 — Bryn Athyn Borough: tiny, town-site-only source
-Bryn Athyn (IN-list, flagged "small/very-high-wealth, review") is a 423-parcel borough with only LI:7.
-Not on eCode360; ordinance would come from brynathynboro.org. Marginal yield (7 industrial parcels).
-Low priority; ultra-wealth means those 7 could clear the wealth gate if grounded — opportunistic.
+### Method notes (for the next Westchester session)
+- eCode360 NY city pages INTERLEAVE sibling district sections; plain text extraction misattributes uses
+  across districts. Resolve placements by DOM position: the litem anchor (e.g. `331-59A(13)`) or the
+  nearest `data-full-title` section anchor + nearest use-category header. This is how New Rochelle LI was
+  confirmed (an earlier text-only read wrongly showed LI without self-storage — it was an adjacent
+  district's list).
+- Use-schedule TABLES are often eCode360 attachment PDFs: `/attachment/<id>/<file>.pdf` (Harrison's
+  business use table came through this way). Try this before declaring a table unparseable.
+- catch #37 (verbatim over code-name): read district ENUMERATION names — NY "M-1/2/3" can be Multifamily
+  (Tarrytown), not Manufacturing. Triage by district NAME, not letter.
 
-## ⚠ IN-list status: near-exhausted of easy (auto-fetchable) wins
-Grounded IN munis to date: Upper Merion, Horsham, Plymouth, Whitemarsh, West Conshohocken (prior) +
-Conshohocken, Springfield, Whitpain (this batch). Remaining IN-list: Upper Dublin (amlegal-blocked,
-D-v3-1), Lower Merion (no industrial, D-v3-2), Bryn Athyn (tiny/town-site, D-v3-3). **All remaining
-IN-list munis are blocked, no-op, or marginal.** Per the coordinator's standing offer: recommend
-green-lighting a fresh county rather than reaching into OUT-list munis. (Do NOT self-decide OUT-list
-munis in — catch #48.)
-
-## Notes
-- municipality = parcels.city EXACTLY (mixed case) on every write; case-sensitive join.
-- eCode360 fetch: curl + browser-UA (WebFetch 403s). Confirmed working this batch.
-- catch #34 GIS-vs-ordinance: Whitpain parcels carry S-C/AR/AR-1 (ordinance SC/A-R/A-R-1); Springfield
-  B-1/B-2 (ordinance B1/B2). Verdicts keyed to parcel codes.
+## MontPA carryover (parked for a Nache ruling — from prior batches)
+- Upper Dublin Township — amlegal-hosted (not eCode360/Municode; API 404; ALS.pdf is a stub). Needle: CR-I.
+  Need amlegal content path / town PDF / OK-to-use-Zoneomics.
+- Lower Merion Township — no industrial district (IE/IC = Institutional, catch #37); elite no-op, deferred.
+- Bryn Athyn Borough — tiny (LI:7), town-site-only source; marginal.
