@@ -1,0 +1,28 @@
+{
+  "muni": "BEDFORD",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Bedford'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "R",
+    "R-A",
+    "R-B",
+    "R-C",
+    "R-D",
+    "C",
+    "GB",
+    "LB",
+    "IP",
+    "I",
+    "IC"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    9,
+    13
+  ],
+  "notes": "Bedford MA (Middlesex) — MAPC layer 2 (strip ^23). Parcels carry generic assessor codes (IND/COM/A/B/C) so a spatial rebind is required. MAPC codes map to the CURRENT bylaw (adopted March 25 2025, bedfordma.gov View/2818): IP=Industrial Park A (bylaw 'Industrial A'), I=Industrial (B), IC=Industrial (C), C=Commercial, GB/LB=Great Road business (Table 4.3-2), R/R-A/R-B/R-C/R-D=Residence. Vocab-vs-bylaw check via gate-a."
+}
