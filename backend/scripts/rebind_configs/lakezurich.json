@@ -1,0 +1,22 @@
+{
+  "muni": "LAKE ZURICH",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://services2.arcgis.com/uRp89l90TnovtJpf/ArcGIS/rest/services/VLZ_GISC_PUBLISH_CMV_FGDB_202204_View/FeatureServer/34",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "B-1", "B-2", "B-3",
+    "O-1", "O-2",
+    "I",
+    "IB", "OS",
+    "R-1/2", "R-3", "R-4", "R-5", "R-6"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    10,
+    15
+  ],
+  "notes": "Village of Lake Zurich zoning (GIS-Consortium public hosted View, org uRp89l90TnovtJpf, VLZ_GISC_PUBLISH_CMV_FGDB_202204_View/FeatureServer/34, field ZONED; usrsvcs proxy 400s for VLZ so use this public View). catch #38 verified: codes match American Legal Title 9 (B-1/B-2/B-3, O-1/O-2, I, IB; R-1/2..R-6) + geometry -88.07/42.20. Single industrial district 'I'. Self-storage NAMED (SIC 4225) = special use in I only (§9-6-3(K)(3)); absent in all B districts. Closed-list 'and no others' (§9-6-2/§9-4-2)."
+}
