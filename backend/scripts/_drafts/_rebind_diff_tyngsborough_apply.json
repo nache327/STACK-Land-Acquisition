@@ -1,0 +1,212 @@
+{
+  "muni": "TYNGSBOROUGH",
+  "mode": "apply",
+  "generated": "2026-07-09T19:51:38.511903+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 8,
+      "expected": [
+        6,
+        10
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 52,
+  "layer_vocab": [
+    "B-1",
+    "B-2",
+    "B-3",
+    "B-4",
+    "I-1",
+    "R-1",
+    "R-2",
+    "R-3"
+  ],
+  "parcels_total": 4141,
+  "rebound": 4141,
+  "orphans": 0,
+  "changed": 0,
+  "changed_pct": 0.0,
+  "transitions": [
+    {
+      "old": "R-1",
+      "new": "R-1",
+      "n": 2897
+    },
+    {
+      "old": "R-2",
+      "new": "R-2",
+      "n": 645
+    },
+    {
+      "old": "I-1",
+      "new": "I-1",
+      "n": 234
+    },
+    {
+      "old": "R-3",
+      "new": "R-3",
+      "n": 109
+    },
+    {
+      "old": "B-3",
+      "new": "B-3",
+      "n": 96
+    },
+    {
+      "old": "B-2",
+      "new": "B-2",
+      "n": 83
+    },
+    {
+      "old": "B-1",
+      "new": "B-1",
+      "n": 73
+    },
+    {
+      "old": "B-4",
+      "new": "B-4",
+      "n": 4
+    }
+  ],
+  "matrix_join": {
+    "before": 4141,
+    "after": 4141
+  },
+  "spot_check": [
+    {
+      "apn": "M_203818_932960",
+      "address": "285 WESTFORD RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_205281_933200",
+      "address": "10 SWAN RD",
+      "old": "R-3",
+      "new": "R-3"
+    },
+    {
+      "apn": "M_207790_933275",
+      "address": "1 BRAEMAR CR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_201214_932803",
+      "address": "29 VIRGINIA RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_208651_935713",
+      "address": "50 SEQUOIA DR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207886_933798",
+      "address": "34 TYNG RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_209510_937631",
+      "address": "4 INDEPENDENCE DR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_205121_934532",
+      "address": "12 MACKEY DR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_206712_934441",
+      "address": "21 STEINBECK ST",
+      "old": "I-1",
+      "new": "I-1"
+    },
+    {
+      "apn": "M_206034_937170",
+      "address": "44 HIGHLAND ST",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_202850_931498",
+      "address": "52 ALPINE WY",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_208696_935762",
+      "address": "55 SEQUOIA DR",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_209493_935660",
+      "address": "0 SPRUCE AV",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_206676_938319",
+      "address": "10 GAUDET LN",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207768_934230",
+      "address": "60 MIDDLESEX RD",
+      "old": "B-1",
+      "new": "B-1"
+    },
+    {
+      "apn": "M_208167_936203",
+      "address": "18 CYPRESS LN",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_208078_935294",
+      "address": "3 NOTTINGHAM RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207376_934800",
+      "address": "104 MIDDLESEX RD",
+      "old": "B-1",
+      "new": "B-1"
+    },
+    {
+      "apn": "M_203127_933045",
+      "address": "44 CHESTNUT RD",
+      "old": "R-1",
+      "new": "R-1"
+    },
+    {
+      "apn": "M_207770_934077",
+      "address": "53 TYNG RD",
+      "old": "R-2",
+      "new": "R-2"
+    }
+  ],
+  "apply": {
+    "rows_written": 0
+  },
+  "matrix_untouched": true
+}

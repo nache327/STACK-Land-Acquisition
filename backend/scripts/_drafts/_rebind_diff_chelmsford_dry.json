@@ -1,0 +1,378 @@
+{
+  "muni": "CHELMSFORD",
+  "mode": "dry-run",
+  "generated": "2026-07-09T20:09:32.722081+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 15,
+      "expected": [
+        13,
+        18
+      ],
+      "ordinance_districts_missing_from_layer": [
+        "CBLT"
+      ]
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 173,
+  "layer_vocab": [
+    "CA",
+    "CB",
+    "CC",
+    "CD",
+    "CV",
+    "CX",
+    "IA",
+    "IS",
+    "OS",
+    "P",
+    "RA",
+    "RB",
+    "RC",
+    "RM",
+    "RMH"
+  ],
+  "parcels_total": 11239,
+  "rebound": 11237,
+  "orphans": 2,
+  "changed": 111,
+  "changed_pct": 1.0,
+  "transitions": [
+    {
+      "old": "RB",
+      "new": "RB",
+      "n": 9006
+    },
+    {
+      "old": "RC",
+      "new": "RC",
+      "n": 849
+    },
+    {
+      "old": "RA",
+      "new": "RA",
+      "n": 338
+    },
+    {
+      "old": "IA",
+      "new": "IA",
+      "n": 292
+    },
+    {
+      "old": "P",
+      "new": "P",
+      "n": 221
+    },
+    {
+      "old": "CB",
+      "new": "CB",
+      "n": 125
+    },
+    {
+      "old": "CD",
+      "new": "CD",
+      "n": 108
+    },
+    {
+      "old": "RM",
+      "new": "RM",
+      "n": 61
+    },
+    {
+      "old": "CC",
+      "new": "CC",
+      "n": 40
+    },
+    {
+      "old": null,
+      "new": "RB",
+      "n": 35
+    },
+    {
+      "old": "CV",
+      "new": "CV",
+      "n": 34
+    },
+    {
+      "old": "CA",
+      "new": "CA",
+      "n": 30
+    },
+    {
+      "old": null,
+      "new": "RC",
+      "n": 26
+    },
+    {
+      "old": "OS",
+      "new": "OS",
+      "n": 12
+    },
+    {
+      "old": null,
+      "new": "IA",
+      "n": 8
+    },
+    {
+      "old": "IS",
+      "new": "IS",
+      "n": 5
+    },
+    {
+      "old": "P",
+      "new": "RB",
+      "n": 5
+    },
+    {
+      "old": "CX",
+      "new": "CX",
+      "n": 4
+    },
+    {
+      "old": "RB",
+      "new": "RA",
+      "n": 4
+    },
+    {
+      "old": "RC",
+      "new": "OS",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "CV",
+      "n": 3
+    },
+    {
+      "old": "RA",
+      "new": "RB",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "CB",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "CD",
+      "n": 2
+    },
+    {
+      "old": "RC",
+      "new": "IA",
+      "n": 2
+    },
+    {
+      "old": "RB",
+      "new": "P",
+      "n": 2
+    },
+    {
+      "old": "RB",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "RB0",
+      "new": "RB",
+      "n": 1
+    },
+    {
+      "old": "RA",
+      "new": "RM",
+      "n": 1
+    },
+    {
+      "old": "P",
+      "new": "IA",
+      "n": 1
+    },
+    {
+      "old": "RC0",
+      "new": "RB",
+      "n": 1
+    },
+    {
+      "old": "p",
+      "new": "P",
+      "n": 1
+    },
+    {
+      "old": "RB",
+      "new": "OS",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "RM",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "CC",
+      "n": 1
+    },
+    {
+      "old": "CD",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "CD",
+      "new": "CB",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "RA",
+      "n": 1
+    },
+    {
+      "old": "CA",
+      "new": "RC",
+      "n": 1
+    },
+    {
+      "old": "CA",
+      "new": "RB",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_685377_3054655",
+      "address": "TWELFTH AV & THIRTEENTH AV",
+      "old": "RA",
+      "new": "RB"
+    },
+    {
+      "apn": "F_681222_3052438",
+      "address": "129 MAIN ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_689426_3031384",
+      "address": "19 PURCELL DR",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_696815_3047627",
+      "address": "16 MILAND AV",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_694551_3049034",
+      "address": "17 RAINBOW AV",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_683129_3053142",
+      "address": "24 ABERDEEN RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_684671_3057972",
+      "address": "37 HARDING ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_697632_3049476",
+      "address": "80 STEDMAN ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_682093_3048555",
+      "address": "7 DENNISON RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_700193_3033038",
+      "address": "18 JANET RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_694458_3050287",
+      "address": "8 PLEASANT ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_685243_3059212",
+      "address": "4 MARGUERITE RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_703428_3044007",
+      "address": "27 MCFARLIN RD",
+      "old": "IA",
+      "new": "IA"
+    },
+    {
+      "apn": "F_693371_3048687",
+      "address": "180 NORTH RD",
+      "old": null,
+      "new": "RB"
+    },
+    {
+      "apn": "F_685366_3054987",
+      "address": "WILLIS DR",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_682824_3043675",
+      "address": "350 OLD WESTFORD RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_689263_3033890",
+      "address": "191 ROBIN HILL RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_703592_3034987",
+      "address": "18 NOBLE DR",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_702076_3040000",
+      "address": "143 TURNPIKE RD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_690977_3039657",
+      "address": "145 HIGH ST",
+      "old": "RB",
+      "new": "RB"
+    }
+  ],
+  "matrix_untouched": true
+}
