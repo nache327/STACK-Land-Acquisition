@@ -1,0 +1,24 @@
+{
+  "muni": "HOLLISTON",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Holliston'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "AR1",
+    "AR2",
+    "C1",
+    "I",
+    "R1",
+    "VC",
+    "VR"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    5,
+    9
+  ],
+  "notes": "Holliston MA (Middlesex) — MAPC layer 2 (strip ^136). Parcels carry messy assessor codes (40/30/80/CL4/etc.) so a spatial rebind is required. MAPC codes (AR1/AR2/C1/I/R1/VC/VR) match the CURRENT bylaw §II-A Classes of Districts + Schedule of Use Regulations (Oct-2017 ed., hollistonedc.com). Vocab-vs-bylaw check PASS."
+}

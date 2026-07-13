@@ -1,0 +1,368 @@
+{
+  "muni": "HOLLISTON",
+  "mode": "dry-run",
+  "generated": "2026-07-13T17:01:34.329882+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 7,
+      "expected": [
+        5,
+        9
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 7,
+  "layer_vocab": [
+    "AR1",
+    "AR2",
+    "C1",
+    "I",
+    "R1",
+    "VC",
+    "VR"
+  ],
+  "parcels_total": 5798,
+  "rebound": 5798,
+  "orphans": 0,
+  "changed": 5583,
+  "changed_pct": 96.3,
+  "transitions": [
+    {
+      "old": "40",
+      "new": "AR2",
+      "n": 2512
+    },
+    {
+      "old": "30",
+      "new": "R1",
+      "n": 1519
+    },
+    {
+      "old": "80",
+      "new": "AR1",
+      "n": 621
+    },
+    {
+      "old": "CL4",
+      "new": "AR2",
+      "n": 351
+    },
+    {
+      "old": "I",
+      "new": "I",
+      "n": 164
+    },
+    {
+      "old": "30",
+      "new": "AR2",
+      "n": 93
+    },
+    {
+      "old": "CL8",
+      "new": "AR1",
+      "n": 70
+    },
+    {
+      "old": null,
+      "new": "AR2",
+      "n": 54
+    },
+    {
+      "old": "30",
+      "new": "VC",
+      "n": 53
+    },
+    {
+      "old": "VC",
+      "new": "VC",
+      "n": 51
+    },
+    {
+      "old": "40",
+      "new": "R1",
+      "n": 41
+    },
+    {
+      "old": "CL3",
+      "new": "R1",
+      "n": 37
+    },
+    {
+      "old": "40",
+      "new": "I",
+      "n": 35
+    },
+    {
+      "old": "C",
+      "new": "C1",
+      "n": 26
+    },
+    {
+      "old": null,
+      "new": "R1",
+      "n": 18
+    },
+    {
+      "old": null,
+      "new": "I",
+      "n": 13
+    },
+    {
+      "old": "I",
+      "new": "AR2",
+      "n": 13
+    },
+    {
+      "old": "30",
+      "new": "VR",
+      "n": 12
+    },
+    {
+      "old": "15",
+      "new": "AR2",
+      "n": 9
+    },
+    {
+      "old": "80",
+      "new": "AR2",
+      "n": 9
+    },
+    {
+      "old": null,
+      "new": "AR1",
+      "n": 9
+    },
+    {
+      "old": "C",
+      "new": "AR2",
+      "n": 8
+    },
+    {
+      "old": "C",
+      "new": "I",
+      "n": 8
+    },
+    {
+      "old": "30",
+      "new": "I",
+      "n": 8
+    },
+    {
+      "old": "C",
+      "new": "VC",
+      "n": 6
+    },
+    {
+      "old": "40",
+      "new": "AR1",
+      "n": 6
+    },
+    {
+      "old": "30",
+      "new": "AR1",
+      "n": 5
+    },
+    {
+      "old": "C",
+      "new": "AR1",
+      "n": 5
+    },
+    {
+      "old": "80",
+      "new": "R1",
+      "n": 4
+    },
+    {
+      "old": "I",
+      "new": "R1",
+      "n": 4
+    },
+    {
+      "old": "I",
+      "new": "AR1",
+      "n": 4
+    },
+    {
+      "old": "R1",
+      "new": "AR2",
+      "n": 3
+    },
+    {
+      "old": "CL4",
+      "new": "AR1",
+      "n": 3
+    },
+    {
+      "old": "40",
+      "new": "VC",
+      "n": 3
+    },
+    {
+      "old": "I",
+      "new": "VC",
+      "n": 3
+    },
+    {
+      "old": "80",
+      "new": "I",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "VC",
+      "n": 2
+    },
+    {
+      "old": "VC",
+      "new": "AR2",
+      "n": 2
+    },
+    {
+      "old": "40",
+      "new": "C1",
+      "n": 2
+    },
+    {
+      "old": "15",
+      "new": "R1",
+      "n": 2
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "M_205779_881127",
+      "address": "43",
+      "old": "CL4",
+      "new": "AR2"
+    },
+    {
+      "apn": "M_201963_878920",
+      "address": "83",
+      "old": "80",
+      "new": "AR1"
+    },
+    {
+      "apn": "M_203122_882330",
+      "address": "33",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_201397_881139",
+      "address": "83",
+      "old": "80",
+      "new": "AR1"
+    },
+    {
+      "apn": "M_206478_883782",
+      "address": "96.06",
+      "old": "I",
+      "new": "I"
+    },
+    {
+      "apn": "M_205981_882677",
+      "address": "36.06",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_205200_882907",
+      "address": "32",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_207212_881745",
+      "address": "32",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_204650_881390",
+      "address": "33",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_205286_885550",
+      "address": "45",
+      "old": "40",
+      "new": "AR2"
+    },
+    {
+      "apn": "M_201300_882548",
+      "address": "84",
+      "old": "CL8",
+      "new": "AR1"
+    },
+    {
+      "apn": "M_201890_881083",
+      "address": "83",
+      "old": "80",
+      "new": "AR1"
+    },
+    {
+      "apn": "M_204502_882251",
+      "address": "43",
+      "old": "40",
+      "new": "AR2"
+    },
+    {
+      "apn": "M_203314_881592",
+      "address": "41",
+      "old": "40",
+      "new": "AR2"
+    },
+    {
+      "apn": "M_200139_881905",
+      "address": "83",
+      "old": "80",
+      "new": "AR1"
+    },
+    {
+      "apn": "M_201435_880007",
+      "address": "85",
+      "old": "80",
+      "new": "AR1"
+    },
+    {
+      "apn": "M_205225_882297",
+      "address": "43",
+      "old": "40",
+      "new": "AR2"
+    },
+    {
+      "apn": "M_204060_881833",
+      "address": "31",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_202830_882341",
+      "address": "33",
+      "old": "30",
+      "new": "R1"
+    },
+    {
+      "apn": "M_205762_883778",
+      "address": "45",
+      "old": "40",
+      "new": "AR2"
+    }
+  ],
+  "matrix_untouched": true
+}
