@@ -16,6 +16,8 @@ import {
   type KeyboardEvent,
 } from "react";
 
+import { api } from "@/lib/api";
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface AttachedImage {
@@ -124,6 +126,52 @@ export function ZoningChatPanel({
   const structuredTableRef = useRef<Record<string, unknown> | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [applyStatus, setApplyStatus] = useState<Record<string, string>>({});
+
+  // ── Municipality scoping (required for a correct human verdict) ─────────────
+  // A verdict written without a town persists at municipality=NULL and, for a
+  // multi-town county jurisdiction, silently fans out to EVERY town. The
+  // selector's options ARE the exact parcels.city strings, so any applied
+  // verdict is guaranteed to match the case-sensitive scoring join.
+  const [cities, setCities] = useState<string[]>([]);
+  const [citiesLoaded, setCitiesLoaded] = useState(false);
+  // parcels.city unpopulated → single-place jurisdiction; NULL is the CORRECT
+  // scope, so we apply jurisdiction-wide instead of forcing a town.
+  const [jurisdictionWide, setJurisdictionWide] = useState(false);
+  const [municipality, setMunicipality] = useState("");
+
+  useEffect(() => {
+    if (!jurisdictionId) return;
+    let cancelled = false;
+    setCitiesLoaded(false);
+    api
+      .getParcelCities(jurisdictionId)
+      .then((res) => {
+        if (cancelled) return;
+        setCities(res.cities);
+        setJurisdictionWide(res.city_unpopulated);
+        // Auto-select when the jurisdiction is a single town; otherwise force
+        // an explicit pick (empty until the user chooses).
+        setMunicipality(
+          res.city_unpopulated ? "" : res.cities.length === 1 ? res.cities[0] : ""
+        );
+        setCitiesLoaded(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fail closed: no city list → no auto jurisdiction-wide; the user must
+        // still pick (they can type an exact town) rather than silently NULL.
+        setCities([]);
+        setCitiesLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [jurisdictionId]);
+
+  // A verdict is applyable only when scoped: an explicit town match, or an
+  // acknowledged jurisdiction-wide write (single-place jurisdiction).
+  const municipalityValid =
+    jurisdictionWide || (municipality !== "" && cities.includes(municipality));
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -371,6 +419,13 @@ export function ZoningChatPanel({
   const applyCorrection = useCallback(
     async (messageId: string, report: string) => {
       if (!jurisdictionId) return;
+      if (!municipalityValid) {
+        setApplyStatus((prev) => ({
+          ...prev,
+          [messageId]: "error:Select the town this verdict applies to before applying.",
+        }));
+        return;
+      }
       setApplyStatus((prev) => ({ ...prev, [messageId]: "applying" }));
 
       const corrections = parseCorrectionJson(report);
@@ -386,6 +441,8 @@ export function ZoningChatPanel({
           body: JSON.stringify({
             jurisdictionId,
             corrections,
+            municipality: jurisdictionWide ? undefined : municipality,
+            jurisdictionWide,
             source: ordinanceUrl || "user session",
             verifiedDate: new Date().toISOString().slice(0, 10),
           }),
@@ -402,7 +459,7 @@ export function ZoningChatPanel({
         }));
       }
     },
-    [jurisdictionId, ordinanceUrl]
+    [jurisdictionId, ordinanceUrl, municipality, jurisdictionWide, municipalityValid]
   );
 
   // ── Copy for VS Code ───────────────────────────────────────────────────────
@@ -473,6 +530,46 @@ Verified: ${new Date().toISOString().slice(0, 10)}`;
           </button>
         </div>
       </header>
+
+      {/* Municipality scope — a verdict MUST be scoped to a town */}
+      {jurisdictionId && (
+        <div className="shrink-0 border-b border-slate-100 bg-white px-4 py-2">
+          <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
+            <span className="shrink-0">Town</span>
+            {jurisdictionWide ? (
+              <span className="rounded bg-slate-100 px-2 py-1 text-[11px] text-slate-500">
+                Single-place jurisdiction — verdicts apply jurisdiction-wide
+              </span>
+            ) : (
+              <select
+                value={municipality}
+                onChange={(e) => setMunicipality(e.target.value)}
+                disabled={!citiesLoaded || cities.length <= 1}
+                className={[
+                  "min-w-0 flex-1 rounded border bg-white px-2 py-1 text-xs text-slate-800 focus:outline-none",
+                  municipalityValid
+                    ? "border-slate-200 focus:border-emerald-400"
+                    : "border-amber-400 focus:border-amber-500",
+                ].join(" ")}
+              >
+                <option value="">
+                  {!citiesLoaded ? "Loading towns…" : "Select the town this verdict applies to…"}
+                </option>
+                {cities.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+          </label>
+          {!jurisdictionWide && !municipalityValid && citiesLoaded && (
+            <p className="mt-1 text-[10px] text-amber-600">
+              Required — a county-wide (unscoped) verdict silently applies to every town.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Ordinance source bar */}
       <div className="shrink-0 border-b border-slate-100 bg-slate-50 px-4 py-2">
@@ -563,6 +660,7 @@ Verified: ${new Date().toISOString().slice(0, 10)}`;
             message={msg}
             isLoading={isLoading && msg === messages[messages.length - 1] && msg.role === "assistant" && msg.content === ""}
             applyStatus={applyStatus[msg.id]}
+            canApply={municipalityValid}
             onApplyCorrection={
               jurisdictionId
                 ? (report) => applyCorrection(msg.id, report)
@@ -680,12 +778,14 @@ function MessageBubble({
   message,
   isLoading,
   applyStatus,
+  canApply,
   onApplyCorrection,
   onCopyForVsCode,
 }: {
   message: ChatMessage;
   isLoading: boolean;
   applyStatus?: string;
+  canApply?: boolean;
   onApplyCorrection?: (report: string) => void;
   onCopyForVsCode: (report: string) => void;
 }) {
@@ -752,6 +852,7 @@ function MessageBubble({
           <CorrectionReportBlock
             report={correctionReport}
             applyStatus={applyStatus}
+            canApply={canApply}
             onApply={onApplyCorrection}
             onCopy={onCopyForVsCode}
           />
@@ -773,11 +874,13 @@ function MessageBubble({
 function CorrectionReportBlock({
   report,
   applyStatus,
+  canApply,
   onApply,
   onCopy,
 }: {
   report: string;
   applyStatus?: string;
+  canApply?: boolean;
   onApply?: (report: string) => void;
   onCopy: (report: string) => void;
 }) {
@@ -799,8 +902,9 @@ function CorrectionReportBlock({
         {onApply && !isDone && (
           <button
             onClick={() => onApply(report)}
-            disabled={isApplying}
-            className="rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+            disabled={isApplying || canApply === false}
+            title={canApply === false ? "Select the town this verdict applies to first" : undefined}
+            className="rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isApplying ? "Applying…" : "Apply Correction"}
           </button>
