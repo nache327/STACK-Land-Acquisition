@@ -11,6 +11,17 @@ Per-session file (not the shared queue).
 | Yonkers | BR/B/BA → **conditional** (0.80) — PARTIAL | §43-36.M "Self-storage warehouse" (Added 2018) affirmatively regulated in BR/B/BA (retail-liner + storage-only standards). Industrial escalated (below). | eCode360 curl+UA |
 | Harrison | business SB-0/B/PB → **prohibited** (honest no-op) | §235 Attach.3 Business Use Table: self-storage NOT a listed use (only "Equipment storage building"); closed table → prohibited. Ultra-wealthy Purchase; catch #52. 0 needles. | eCode360 attachment PDF |
 
+### ⚠ D-wc-0 — Westchester postingest_gate HARD FAIL (pre-existing, NOT this batch)
+`postingest_gate.py --jurisdiction 3e706886` **FAILS**: `HARD FAIL: URL-shaped / over-length
+zoning_code(s): ['View Preservation Overlay'] (1 distinct)`. Cause: **79 parcels in Hastings-on-Hudson**
+carry `zoning_code='View Preservation Overlay'` — an overlay NAME mis-ingested as a base zoning_code
+(county-ingest data defect). This is pre-existing and in a town I did NOT touch; my verdicts only write
+muni-scoped `zone_use_matrix` rows, never `parcels.zoning_code`. Gate also reflects partial county
+coverage (bound_pct 0.86, matrix_coverage 0.77 — Westchester is early-stage, 7+3 towns grounded of 43).
+**Not mine to fix** (parcel-data/ingest level, Hastings-on-Hudson). Needs an ingest-side fix: null out or
+remap the 79 Hastings 'View Preservation Overlay' zoning_codes to the base district + strip the overlay
+to `overlay_tags`. Re-score succeeded (independent of gate); my towns' verdicts + needle tally are valid.
+
 ### OPEN escalations
 
 #### D-wc-1 — Yonkers industrial (M/MG/I/PMD): needs Table 43-1
