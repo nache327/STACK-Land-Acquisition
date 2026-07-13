@@ -1,0 +1,24 @@
+{
+  "muni": "LIBERTYVILLE",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://utility.arcgis.com/usrsvcs/servers/fb468aa6bd77480e956c31872705fbb3/rest/services/VLV/AGOL_VLV_Project/MapServer/0",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "C-1", "C-2", "C-3", "C-4", "C-5",
+    "O-1", "O-2",
+    "I-1", "I-2", "I-3",
+    "IB", "OS",
+    "R-1", "R-2", "R-3", "R-4", "R-5", "R-6", "R-7", "R-8"
+  ],
+  "nonbinding": [
+    "ZONED"
+  ],
+  "expected_count": [
+    16,
+    24
+  ],
+  "notes": "Village of Libertyville zoning. Public via utility.arcgis.com usrsvcs proxy (GUID fb468aa6... — the token-gated ags.gisconsortium VLV data served anonymously; catch #38 verified codes+geometry -87.99/42.30). Codes match Municode Ch.26 (C-1..C-5, O-1/O-2, I-1/I-2/I-3, IB, R-1..R-8; +OS Open Space). Stray 'ZONED' placeholder = nonbinding. Self-storage NAMED (NAICS 53113): special use in I-1 (§26-7-2.3(m)(1)), absent I-3, excluded O-2."
+}

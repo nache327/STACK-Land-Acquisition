@@ -182,8 +182,12 @@ Riverwoods 100% · Mettawa 100% · Lake Bluff 99.7% · Libertyville 37% · Verno
   rebound (endpoint flaky, 504 on full-geom — page it). Verdicts (Title 6): M1 §6-7A + I §6-8B
   self_storage/mini_warehouse CONDITIONAL (warehouse/storage P by-right, fully-enclosed),
   light_industrial PERMITTED; O §6-8A all PROHIBITED. **+54 wealth-gated needles** (I 48 + M1 6).
-- **LIBERTYVILLE — escalated (exception queue C1).** Consortium `VLV` token-gated; try the same
-  usrsvcs-proxy trick (need VLV's GUID). Only 37% wealth-gate → lower priority.
+- **LIBERTYVILLE — GROUNDED (Batch 3, 2026-07-10).** Unblocked via the usrsvcs proxy (GUID
+  fb468aa6...). Rebound 8,769 (0 orphans). Self-storage is NAMED (NAICS 53113): I-1 CONDITIONAL
+  (special use §26-7-2.3(m)(1)), I-3 + O-2 PROHIBITED (absent / expressly excluded §26-6-3.2(u)),
+  light_industrial PERMITTED in all three. **+3 wealth-gated needles** (37% gate → industrial mostly
+  outside wealth rings). Also completed the `fix/rebind-matrix-assert-scope` (mx_after was left
+  global; scoped it to jurisdiction).
 - **REUSABLE UNLOCK (Consortium geometry):** the token-gated `ags.gisconsortium.org/.../<FOLDER>/*`
   services are mirrored anonymously at `utility.arcgis.com/usrsvcs/servers/<guid>/rest/services/
   <FOLDER>/AGOL_<FOLDER>_Project/MapServer` (GUID from the village web-map network calls). This +
