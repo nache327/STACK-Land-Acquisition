@@ -149,7 +149,8 @@ async def run(muni: str, apply: bool, batch: int) -> None:
     try:
         await con.execute("SET statement_timeout = 0")
         mx_before = await con.fetchrow(
-            "SELECT count(*) n, max(updated_at) u FROM zone_use_matrix")
+            "SELECT count(*) n, max(updated_at) u FROM zone_use_matrix WHERE jurisdiction_id=$1::uuid",
+            cfg["jid"])
 
         await con.execute(
             "CREATE TEMP TABLE _dist (code text, binding bool, geom geometry(GEOMETRY, 4326))")
