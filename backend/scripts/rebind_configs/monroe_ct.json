@@ -1,0 +1,13 @@
+{
+  "muni": "Monroe",
+  "jid": "66230887-aabe-4d62-aebb-856939ba77bb",
+  "url": "https://maps.ctmetro.org/server/rest/services/Monroe/Monroe_OpenGov/MapServer/14",
+  "code_field": "Zone",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": ["RF-1","RF-2","RF-3","ARR","MFR","RR","HOD","LOR","B-1","B-2","SB-2","I-1","I-2","I-3"],
+  "nonbinding": ["None"],
+  "expected_count": [12, 16],
+  "notes": "Town of Monroe CT zoning (MetroCOG maps.ctmetro.org/Monroe/Monroe_OpenGov/MapServer/14, field Zone; catch #38 verified codes+geom -73.26/41.35). County_gis jid, muni='Monroe'. Self-storage NAMED = Special Exception (SEP) in SB-2 + I-2 (Art.10 schedule); prohibited I-1/I-3/B-1/B-2/LOR. Closed-list §1.9.12."
+}
