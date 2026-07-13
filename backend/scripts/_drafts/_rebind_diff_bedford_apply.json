@@ -1,0 +1,375 @@
+{
+  "muni": "BEDFORD",
+  "mode": "apply",
+  "generated": "2026-07-13T17:51:34.524042+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 11,
+      "expected": [
+        9,
+        13
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 11,
+  "layer_vocab": [
+    "C",
+    "GB",
+    "I",
+    "IC",
+    "IP",
+    "LB",
+    "R",
+    "R-A",
+    "R-B",
+    "R-C",
+    "R-D"
+  ],
+  "parcels_total": 4373,
+  "rebound": 4368,
+  "orphans": 5,
+  "changed": 4080,
+  "changed_pct": 93.3,
+  "transitions": [
+    {
+      "old": "A",
+      "new": "R-A",
+      "n": 1412
+    },
+    {
+      "old": "B",
+      "new": "R-B",
+      "n": 1240
+    },
+    {
+      "old": "C",
+      "new": "R-C",
+      "n": 1067
+    },
+    {
+      "old": "R",
+      "new": "R",
+      "n": 285
+    },
+    {
+      "old": "COM",
+      "new": "LB",
+      "n": 44
+    },
+    {
+      "old": "IND",
+      "new": "IC",
+      "n": 36
+    },
+    {
+      "old": "COM",
+      "new": "C",
+      "n": 30
+    },
+    {
+      "old": "C",
+      "new": "R-B",
+      "n": 24
+    },
+    {
+      "old": null,
+      "new": "R-C",
+      "n": 21
+    },
+    {
+      "old": "B",
+      "new": "R",
+      "n": 19
+    },
+    {
+      "old": "IND",
+      "new": "I",
+      "n": 19
+    },
+    {
+      "old": "IND",
+      "new": "IP",
+      "n": 17
+    },
+    {
+      "old": "COM",
+      "new": "GB",
+      "n": 15
+    },
+    {
+      "old": "A",
+      "new": "R",
+      "n": 13
+    },
+    {
+      "old": "B",
+      "new": "LB",
+      "n": 11
+    },
+    {
+      "old": null,
+      "new": "R-B",
+      "n": 11
+    },
+    {
+      "old": "COM",
+      "new": "R-C",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "R-A",
+      "n": 10
+    },
+    {
+      "old": null,
+      "new": "LB",
+      "n": 8
+    },
+    {
+      "old": "B",
+      "new": "R-C",
+      "n": 8
+    },
+    {
+      "old": "COM",
+      "new": "R-B",
+      "n": 7
+    },
+    {
+      "old": "A",
+      "new": "R-B",
+      "n": 7
+    },
+    {
+      "old": "R",
+      "new": "IC",
+      "n": 6
+    },
+    {
+      "old": null,
+      "new": "R",
+      "n": 6
+    },
+    {
+      "old": "C",
+      "new": "LB",
+      "n": 5
+    },
+    {
+      "old": "R",
+      "new": "R-A",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "IC",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "C",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "IP",
+      "n": 3
+    },
+    {
+      "old": "A",
+      "new": "LB",
+      "n": 2
+    },
+    {
+      "old": "C",
+      "new": "IP",
+      "n": 2
+    },
+    {
+      "old": "I-A",
+      "new": "IP",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": null,
+      "n": 2
+    },
+    {
+      "old": "IP",
+      "new": "IP",
+      "n": 1
+    },
+    {
+      "old": "LB",
+      "new": "LB",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "I",
+      "n": 1
+    },
+    {
+      "old": "IND",
+      "new": "R-D",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "LB",
+      "n": 1
+    },
+    {
+      "old": "IND",
+      "new": "R",
+      "n": 1
+    },
+    {
+      "old": "GB",
+      "new": "LB",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_715080_3009666",
+      "address": "48  WILDWOOD DRIVE",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_719004_3005922",
+      "address": "9  REED LANE",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_722064_3001402",
+      "address": "25  GRAY TERRACE",
+      "old": "C",
+      "new": "R-C"
+    },
+    {
+      "apn": "F_715358_3012520",
+      "address": "34  SWEETWATER AVENUE",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_716122_3016541",
+      "address": "602  SPRINGS ROAD",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_722428_3001260",
+      "address": "11  HOULTON STREET",
+      "old": "C",
+      "new": "R-C"
+    },
+    {
+      "apn": "F_715631_3001221",
+      "address": "12  WASHINGTON STREET",
+      "old": "C",
+      "new": "R-C"
+    },
+    {
+      "apn": "F_716556_3016845",
+      "address": "595  SPRINGS ROAD",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_715430_3003981",
+      "address": "2",
+      "old": "C",
+      "new": "R-C"
+    },
+    {
+      "apn": "F_721861_3001613",
+      "address": "24  GRAY TERRACE",
+      "old": "C",
+      "new": "R-C"
+    },
+    {
+      "apn": "F_715555_3014039",
+      "address": "12  BUEHLER ROAD",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_706882_3001949",
+      "address": "396  DAVIS ROAD",
+      "old": "B",
+      "new": "R-B"
+    },
+    {
+      "apn": "F_723877_3005449",
+      "address": "5  ROBINSON DRIVE",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_714969_3015338",
+      "address": "39  BUEHLER ROAD",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_716371_3005731",
+      "address": "20  ANTHONY ROAD",
+      "old": "C",
+      "new": "R-C"
+    },
+    {
+      "apn": "F_716885_3003428",
+      "address": "167  GREAT ROAD",
+      "old": "A",
+      "new": "R-B"
+    },
+    {
+      "apn": "F_718750_3013172",
+      "address": "10  GOULD ROAD",
+      "old": "A",
+      "new": "R-A"
+    },
+    {
+      "apn": "F_720232_2999979",
+      "address": "25  WIGGINS AVENUE",
+      "old": "IND",
+      "new": "IP"
+    },
+    {
+      "apn": "F_705782_3000302",
+      "address": "9  BONNIEVALE DRIVE",
+      "old": "B",
+      "new": "R-B"
+    },
+    {
+      "apn": "F_721801_3000653",
+      "address": "1  PERHAM STREET",
+      "old": "B",
+      "new": "R-B"
+    }
+  ],
+  "apply": {
+    "rows_written": 4080
+  },
+  "matrix_untouched": true
+}
