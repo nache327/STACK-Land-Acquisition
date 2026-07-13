@@ -1,0 +1,22 @@
+{
+  "muni": "LITTLETON",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Littleton'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "R",
+    "B",
+    "VC",
+    "I-A",
+    "I-B"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    4,
+    7
+  ],
+  "notes": "Littleton MA (Middlesex) — MAPC layer 2 (strip ^158). Vocab-vs-bylaw check: MAPC codes (R Residence, B Business, VC Village Common, I-A Industrial A, I-B Industrial B) match the CURRENT eCode360 Ch.173 §173-22 base districts (Littleton Station MBTA overlay is newer, not in MAPC / no base parcels). Use schedule §173-26 auto-fetched via eCode360 print view (curl+UA)."
+}

@@ -1,0 +1,249 @@
+{
+  "muni": "LITTLETON",
+  "mode": "apply",
+  "generated": "2026-07-13T16:47:39.111916+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 5,
+      "expected": [
+        4,
+        7
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 5,
+  "layer_vocab": [
+    "B",
+    "I-A",
+    "I-B",
+    "R",
+    "VC"
+  ],
+  "parcels_total": 4302,
+  "rebound": 4293,
+  "orphans": 9,
+  "changed": 231,
+  "changed_pct": 5.4,
+  "transitions": [
+    {
+      "old": "R",
+      "new": "R",
+      "n": 4010
+    },
+    {
+      "old": "IA",
+      "new": "I-A",
+      "n": 90
+    },
+    {
+      "old": "B",
+      "new": "VC",
+      "n": 73
+    },
+    {
+      "old": "B",
+      "new": "B",
+      "n": 51
+    },
+    {
+      "old": "IB",
+      "new": "I-B",
+      "n": 41
+    },
+    {
+      "old": null,
+      "new": "R",
+      "n": 11
+    },
+    {
+      "old": "R",
+      "new": null,
+      "n": 8
+    },
+    {
+      "old": "IA",
+      "new": "R",
+      "n": 6
+    },
+    {
+      "old": "4",
+      "new": "R",
+      "n": 4
+    },
+    {
+      "old": "B",
+      "new": "R",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "B",
+      "n": 1
+    },
+    {
+      "old": "R",
+      "new": "I-B",
+      "n": 1
+    },
+    {
+      "old": "R-8",
+      "new": "R",
+      "n": 1
+    },
+    {
+      "old": "VC",
+      "new": "VC",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "I-A",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_663206_3018969",
+      "address": "12  ASPEN RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_673289_3018888",
+      "address": "51  GRIST MILL RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_663399_3021040",
+      "address": "2  RITA LN",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_655198_3019193",
+      "address": "1  STONEYSTREAM LN",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_655248_3022107",
+      "address": "50  NEW ESTATE RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_662519_3022276",
+      "address": "21  EDSEL RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_650433_3019303",
+      "address": "16I  OAK HILL RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_666099_3020792",
+      "address": "0  MAPLEHURST RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_662904_3008272",
+      "address": "0  NEWTOWN RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_662044_3015500",
+      "address": "174  TAHATTAWAN RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_666379_3018228",
+      "address": "16  ROXBURY DR",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_663415_3012988",
+      "address": "295  TAHATTAWAN RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_657850_3017381",
+      "address": "187  HARWOOD AV",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_656377_3010611",
+      "address": "64  BULKELEY RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_665030_3020815",
+      "address": "3  WASHINGTON DR",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_673404_3017699",
+      "address": "21  SURREY RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_655535_3014166",
+      "address": "264  FOSTER ST",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_671241_3020154",
+      "address": "14  MARY SHEPHERD RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_670176_3015074",
+      "address": "0  NASHOBA RD",
+      "old": "R",
+      "new": "R"
+    },
+    {
+      "apn": "F_654848_3029443",
+      "address": "187  HARTWELL AV",
+      "old": "R",
+      "new": "R"
+    }
+  ],
+  "apply": {
+    "rows_written": 0
+  },
+  "matrix_untouched": true
+}
