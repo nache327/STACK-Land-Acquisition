@@ -82,8 +82,10 @@ for c,n in [("SRA","Single Residence A"),("SRB","Single Residence B"),("GR","Gen
             ("CB","Center Business")]:
     res(c,n)
 # business with SP light-industrial (li conditional; ss/mw prohibited)
-V["B"]   = ("Business","prohibited","prohibited","conditional","conditional",[_BUS,_SSPROHIB,_LGC])
-V["BUS"] = ("Business","prohibited","prohibited","conditional","conditional",[_BUS,_SSPROHIB,_LGC])
+# lgc prohibited (not conditional): ss+mw prohibited here (warehouse only SP), so the
+# garage-condo inference sibling must not exceed them (catch-#58 sibling-consistency).
+V["B"]   = ("Business","prohibited","prohibited","conditional","prohibited",[_BUS,_SSPROHIB])
+V["BUS"] = ("Business","prohibited","prohibited","conditional","prohibited",[_BUS,_SSPROHIB])
 V["AS"]  = ("Avery Square Business (ASB)","prohibited","prohibited","conditional","prohibited",[_BUS,_SSPROHIB])
 V["HA"]  = ("Hillside Avenue Business (HAB)","prohibited","prohibited","conditional","prohibited",[_BUS,_SSPROHIB])
 # needle districts
