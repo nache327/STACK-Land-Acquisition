@@ -45,9 +45,10 @@ Q_SS = ("Table 1 has NO self-storage / mini-warehouse use row. Category M storag
 Q_LI = ("Table 1 N.1.01 'Light manufacturing' = Y (by-right) in CM only; N.1.02 'Research and "
         "development' = Y in CRO + CM; N.1.04 'Biotech manufacturing' = SP CRO / Y CM; M.1.02 "
         "'Industrial services (machine shop, welding)' + M.1.03 = SP in CS + CSX.")
-Q_LGC = ("Table 1 L.1.08 'Storage of automobiles or trucks' = SP (special permit) in CS and CSX; N in "
-         "all other districts. No other vehicle-storage / garage-condo principal use is listed -> "
-         "closed-list prohibits it elsewhere.")
+Q_LGC = ("Table 1 L.1.08 'Storage of automobiles or trucks' = SP in CS and CSX (a commercial/fleet "
+         "vehicle-storage use), N elsewhere. No luxury owned/leased garage-condo use is listed -> lgc "
+         "PROHIBITED in every district (closed-list §135-3.1; and lgc is not carried above the "
+         "prohibited self-storage product, catch #58).")
 
 
 def cite(*qs):
@@ -61,8 +62,10 @@ N_CRO = ("li PERMITTED (GROUNDED): Table 1 N.1.02 R&D = Y (by-right) in CRO (bio
          "PROHIBITED (no self-storage row; only distribution by-right; closed-list). lgc PROHIBITED "
          "(L.1.08 = N in CRO).")
 N_CSX = ("li CONDITIONAL: Table 1 M.1.02 industrial services + M.1.03 mover-storage = SP here. lgc "
-         "CONDITIONAL: L.1.08 'Storage of automobiles or trucks' = SP here (named vehicle-storage use). "
-         "ss/mw PROHIBITED (no self-storage row; closed-list §135-3.1).")
+         "PROHIBITED (demoted, catch #58): L.1.08 'Storage of automobiles or trucks' = SP here is a "
+         "commercial/fleet vehicle-storage use, NOT a luxury owned/leased garage-condo; and lgc may not "
+         "sit permitted/conditional above the prohibited self-storage product. ss/mw PROHIBITED (no "
+         "self-storage row; closed-list §135-3.1).")
 N_PROHIB = ("All prohibited (closed-list §135-3.1). No self-storage row in Table 1; Light manufacturing "
             "(N.1.01) + auto-storage (L.1.08) = N in this district.")
 
@@ -76,8 +79,8 @@ _R = [
     ("CRS", "Retail/Service Commercial",   "prohibited","prohibited","prohibited","prohibited",0.90,N_PROHIB),
     ("CB",  "Central Business",            "prohibited","prohibited","prohibited","prohibited",0.90,N_PROHIB),
     ("CLO", "Local Office",                "prohibited","prohibited","prohibited","prohibited",0.88,N_PROHIB),
-    ("CS",  "Service Commercial",          "prohibited","prohibited","conditional","conditional",0.78,N_CSX),
-    ("CSX", "Service Commercial (CSX)",    "prohibited","prohibited","conditional","conditional",0.78,N_CSX),
+    ("CS",  "Service Commercial",          "prohibited","prohibited","conditional","prohibited",0.78,N_CSX),
+    ("CSX", "Service Commercial (CSX)",    "prohibited","prohibited","conditional","prohibited",0.78,N_CSX),
     ("CRO", "Regional Office",             "prohibited","prohibited","permitted","prohibited",0.88,N_CRO),
     ("CM",  "Manufacturing",               "prohibited","prohibited","permitted","prohibited",0.90,N_CM),
 ]
