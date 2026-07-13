@@ -33,8 +33,9 @@ districts).
   NB Neighborhood Business (§332) -> PROHIBITED (0.72). No storage/warehouse permitted use.
   P  Park (§335) -> PROHIBITED (0.80). Recreational; no storage.
 
-Armed pool = HB (24 permitted) + HM (48 conditional) + FO (122 conditional) = 194 parcels. Downtown/
-Gateway/Park prohibited. Residential (NR/TTN) self-evidently prohibited, not verdicted.
+Armed pool = HB (permitted) + FO (conditional, §336 same-general-character catch-all). HM demoted
+conditional->prohibited 2026-07-09 per the inference hard gate / #58 sweep (no catch-all; see VERDICTS
+note). Downtown/Gateway/Park prohibited. Residential (NR/TTN) self-evidently prohibited, not verdicted.
 
 Run: python scripts/_apply_pottstown_verdicts.py
 """
@@ -54,8 +55,14 @@ MUNI = "Pottstown Borough"
 VERDICTS = {
     "HB": ("permitted", "unclear", 0.85, "Highway Business District",
            "§337 Permitted Uses expressly include 'Rental storage' (renting of storage units = self-storage) and 'Warehouse' by-right -> self-storage named-permitted"),
-    "HM": ("conditional", "permitted", 0.72, "Heavy Manufacturing District",
-           "§338 Permitted Uses A-H (closed enumerated); H 'Warehouse' by-right + G utility storage; self-storage unnamed -> conditional (warehouse-by-right convention)"),
+    # DISCIPLINE CORRECTION 2026-07-09: demoted conditional->prohibited (#58 closed-list hard gate).
+    # Prior conditional rested on the warehouse-by-right *inference*. §338 Permitted Uses A-H are closed
+    # enumerated; H 'Warehouse' is distinct warehousing (does NOT name self-storage); the §338 Conditional
+    # Uses list (adult/solid-waste/utility) does NOT include self-storage or a "same general character"
+    # catch-all. -> self-storage unnamed and un-catch-alled -> prohibited (grounded). (FO retains conditional
+    # because §336 carries an explicit "same general character" conditional catch-all; HM does not.)
+    "HM": ("prohibited", "permitted", 0.72, "Heavy Manufacturing District",
+           "§338 Permitted Uses A-H closed enumerated (H 'Warehouse' distinct, self-storage not named); §338 Conditional Uses = adult/solid-waste/utility only, no 'same general character' catch-all -> self-storage prohibited (named-use grounded, not warehouse-inference)"),
     "FO": ("conditional", "permitted", 0.72, "Flex-Office District",
            "§336 Permitted Uses include 'Warehouse' + 'Outdoor storage' + light/medium manufacturing by-right; self-storage unnamed -> conditional (warehouse-by-right convention)"),
     "D": ("prohibited", "unclear", 0.72, "Downtown District",

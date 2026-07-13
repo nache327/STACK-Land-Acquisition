@@ -30,7 +30,8 @@ commercial fabric and in the industrial district.
      purposes and no other") — residential + retail/office/restaurant/hotel; no storage/warehouse named.
      Silence rule.
 
-Armed pool = LI (6 parcels, conditional). Commercial/MUR prohibited (express + silence). Residential
+Armed pool = 0 (LI demoted conditional->prohibited 2026-07-09 per the inference hard gate; see VERDICTS
+note + outputs/_exceptions_sessionD.md). Commercial/MUR prohibited (express + silence). Residential
 (R-1/R-2/R-3) + GA garden-apartment self-evidently prohibited, not verdicted (not needle-relevant).
 
 Run: python scripts/_apply_souderton_verdicts.py
@@ -49,8 +50,16 @@ JID = "a59d956d-5f67-4c39-aef1-36140bd57c6f"  # Montgomery County, PA
 MUNI = "Souderton Borough"
 
 VERDICTS = {
-    "LI": ("conditional", "permitted", 0.65, "Limited Industrial District",
-           "§1001 'any lawful industrial purposes as well as any commercial use permitted in the C-1 and C-2 Districts ... except [noxious-manufacturing exclusion list only]'; warehousing is a lawful industrial purpose not in the exclusion -> warehouse by-right -> self-storage (mini-warehouse) admissible -> conditional (warehouse-by-right convention). C-1/C-2/C-3 expressly prohibit self-storage, pushing warehouses into LI."),
+    # DISCIPLINE CORRECTION 2026-07-09: demoted conditional->prohibited. Prior conditional rested on the
+    # warehouse-by-right *inference* (convention), which cannot sit in human_reviewed. Grounded reading:
+    # the ordinance NAMES self-storage ("Self-service storage facilities (mini-warehouse)") as a PROHIBITED
+    # commercial use in C-1/C-2/C-3 -> it classifies self-storage as commercial. LI permits "any lawful
+    # industrial purpose" + "commercial uses permitted in the C-1 and C-2 Districts" — self-storage is a
+    # commercial use NOT permitted in C-1/C-2 (expressly prohibited there) and there is NO unlisted-use
+    # special-exception catch-all in LI. -> self-storage not admissible in LI -> prohibited (grounded).
+    # Residual "any lawful industrial purpose" ambiguity flagged in outputs/_exceptions_sessionD.md.
+    "LI": ("prohibited", "permitted", 0.62, "Limited Industrial District",
+           "§1001 permits 'any lawful industrial purposes as well as any commercial use permitted in the C-1 and C-2 Districts' (+ noxious-mfg exclusions); ordinance names self-storage as a PROHIBITED commercial use in C-1/C-2/C-3 -> self-storage is commercial, not permitted in C-1/C-2, and no unlisted-use SE catch-all in LI -> prohibited (named-use grounded, not warehouse-inference)"),
     "C-1": ("prohibited", "unclear", 0.92, "Commercial - Central Business District",
             "§801.D 'the following uses are expressly prohibited. 1. Storage facilities or warehouses.'"),
     "C-2": ("prohibited", "unclear", 0.95, "Limited Commercial/Residential District",
