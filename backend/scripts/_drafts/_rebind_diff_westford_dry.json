@@ -1,0 +1,371 @@
+{
+  "muni": "WESTFORD",
+  "mode": "dry-run",
+  "generated": "2026-07-09T19:58:35.512301+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 10,
+      "expected": [
+        8,
+        12
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 200,
+  "layer_vocab": [
+    "B",
+    "BL",
+    "CH",
+    "IA",
+    "IB",
+    "IC",
+    "ID",
+    "IH",
+    "RA",
+    "RB"
+  ],
+  "parcels_total": 8229,
+  "rebound": 8221,
+  "orphans": 8,
+  "changed": 286,
+  "changed_pct": 3.5,
+  "transitions": [
+    {
+      "old": "RA",
+      "new": "RA",
+      "n": 6051
+    },
+    {
+      "old": "RB",
+      "new": "RB",
+      "n": 1580
+    },
+    {
+      "old": null,
+      "new": "RA",
+      "n": 124
+    },
+    {
+      "old": "CH",
+      "new": "CH",
+      "n": 91
+    },
+    {
+      "old": "B",
+      "new": "B",
+      "n": 73
+    },
+    {
+      "old": "RA",
+      "new": "RB",
+      "n": 65
+    },
+    {
+      "old": "IA",
+      "new": "IA",
+      "n": 62
+    },
+    {
+      "old": "IH",
+      "new": "IH",
+      "n": 35
+    },
+    {
+      "old": "IC",
+      "new": "IC",
+      "n": 33
+    },
+    {
+      "old": "RB",
+      "new": "RA",
+      "n": 16
+    },
+    {
+      "old": null,
+      "new": "RB",
+      "n": 9
+    },
+    {
+      "old": "CH",
+      "new": "RA",
+      "n": 9
+    },
+    {
+      "old": "B",
+      "new": "RB",
+      "n": 8
+    },
+    {
+      "old": "IB",
+      "new": "IB",
+      "n": 8
+    },
+    {
+      "old": "CH",
+      "new": "IH",
+      "n": 7
+    },
+    {
+      "old": "IA",
+      "new": "RA",
+      "n": 7
+    },
+    {
+      "old": "IA",
+      "new": null,
+      "n": 7
+    },
+    {
+      "old": "RB",
+      "new": "B",
+      "n": 6
+    },
+    {
+      "old": "RA",
+      "new": "BL",
+      "n": 3
+    },
+    {
+      "old": "RA",
+      "new": "IC",
+      "n": 3
+    },
+    {
+      "old": "RA",
+      "new": "IA",
+      "n": 3
+    },
+    {
+      "old": "ID",
+      "new": "ID",
+      "n": 2
+    },
+    {
+      "old": "IH",
+      "new": "RA",
+      "n": 2
+    },
+    {
+      "old": "RA",
+      "new": "B",
+      "n": 2
+    },
+    {
+      "old": "RA",
+      "new": "CH",
+      "n": 2
+    },
+    {
+      "old": "RA",
+      "new": "IB",
+      "n": 2
+    },
+    {
+      "old": "RB",
+      "new": "IA",
+      "n": 2
+    },
+    {
+      "old": "IA",
+      "new": "RB",
+      "n": 2
+    },
+    {
+      "old": "B",
+      "new": "RA",
+      "n": 2
+    },
+    {
+      "old": "IH",
+      "new": "CH",
+      "n": 1
+    },
+    {
+      "old": "IC",
+      "new": "IH",
+      "n": 1
+    },
+    {
+      "old": "IB",
+      "new": "RB",
+      "n": 1
+    },
+    {
+      "old": "RA",
+      "new": null,
+      "n": 1
+    },
+    {
+      "old": "ID",
+      "new": "RA",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "IH",
+      "n": 1
+    },
+    {
+      "old": "B",
+      "new": "IA",
+      "n": 1
+    },
+    {
+      "old": "LB",
+      "new": "RA",
+      "n": 1
+    },
+    {
+      "old": "IA",
+      "new": "IC",
+      "n": 1
+    },
+    {
+      "old": "LB",
+      "new": "BL",
+      "n": 1
+    },
+    {
+      "old": null,
+      "new": "B",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_675587_3025424",
+      "address": "32  PRESERVATION WAY",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_675985_3039398",
+      "address": "40  PROVIDENCE RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_674661_3056841",
+      "address": "3  CURREN DR",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_663765_3035421",
+      "address": "62  PATTEN RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_665541_3043603",
+      "address": "13  NORTH ST",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_684675_3023946",
+      "address": "57  ACTON RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_681699_3046879",
+      "address": "17  HORSESHOE RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_670549_3028228",
+      "address": "13  LANES END",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_674927_3035980",
+      "address": "25  CROWN RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_669112_3026811",
+      "address": "359  LITTLETON RD",
+      "old": "CH",
+      "new": "CH"
+    },
+    {
+      "apn": "F_668299_3049839",
+      "address": "58  DUNSTABLE RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_666924_3030228",
+      "address": "2  ROBINWOOD CIR",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_672193_3034900",
+      "address": "13  HILDRETH ST",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_662629_3040622",
+      "address": "2  WEST ST",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_682631_3030498",
+      "address": "16  JEFFERSON RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_667936_3039078",
+      "address": "83  COLD SPRING RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_673066_3058524",
+      "address": "0  TYNGSBORO RD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_677279_3040862",
+      "address": "24  KIRSI CIR",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_671098_3048146",
+      "address": "149  DEPOT ST",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_671564_3040296",
+      "address": "24  FLETCHER RD",
+      "old": "RA",
+      "new": "RA"
+    }
+  ],
+  "matrix_untouched": true
+}

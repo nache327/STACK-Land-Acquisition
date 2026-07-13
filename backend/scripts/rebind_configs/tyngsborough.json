@@ -1,0 +1,25 @@
+{
+  "muni": "TYNGSBOROUGH",
+  "jid": "MIDDLESEX",
+  "url": "NMCOG/18",
+  "code_field": "CODE",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "R-1",
+    "R-2",
+    "R-3",
+    "B-1",
+    "B-2",
+    "B-3",
+    "B-4",
+    "I-1"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    6,
+    10
+  ],
+  "notes": "Tyngsborough MA (Middlesex) — NMCOG layer 18 (field CODE). Vocab-vs-bylaw check PASSED: NMCOG codes (R-1/R-2/R-3, B-1/B-2/B-3/B-4, I-1) match the CURRENT May-2025 bylaw §3.1 base districts exactly. Overlays (MUOD/FP/WD/TC-1/MBTA) excluded (not base zoning)."
+}

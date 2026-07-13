@@ -1,0 +1,33 @@
+{
+  "muni": "CHELMSFORD",
+  "jid": "MIDDLESEX",
+  "url": "NMCOG/5",
+  "code_field": "ZONE_",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "RA",
+    "RB",
+    "RC",
+    "RM",
+    "RMH",
+    "CA",
+    "CB",
+    "CBLT",
+    "CC",
+    "CD",
+    "CV",
+    "CX",
+    "IA",
+    "IS",
+    "P",
+    "OS"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    13,
+    18
+  ],
+  "notes": "Chelmsford MA (Middlesex) — NMCOG layer 5 (field ZONE_). GROUNDED (exception #2 RESOLVED): Use Regulation Schedule auto-fetched via curl+browser-UA at ecode360.com/attachment/332663/CH1747-195a (corrected eCode360 method). Current Ch.195 schedule has 16 districts incl. CBLT (brand-new, added 10-20-2025 FTM Art.24-26); NMCOG/5 layer still carries the pre-CBLT 15 (RA/RB/RC/RM/RMH, CA/CB/CC/CD/CV/CX, IA/IS, P/OS) — CBLT added for verdict completeness but no NMCOG parcels bind to it yet (minor layer lag, not blocking)."
+}

@@ -1,0 +1,38 @@
+{
+  "muni": "FRAMINGHAM",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Framingham'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "R-1",
+    "R-2",
+    "R-3",
+    "R-4",
+    "G",
+    "B-1",
+    "B-2",
+    "B-3",
+    "B-4",
+    "CB",
+    "B",
+    "P",
+    "PRD",
+    "M-1",
+    "M",
+    "OSR",
+    "TP",
+    "CMU",
+    "G-E"
+  ],
+  "nonbinding": [
+    "HC"
+  ],
+  "expected_count": [
+    14,
+    22
+  ],
+  "notes": "ordinance_districts reconned from the CURRENT bylaw (City of Framingham Zoning By-Law, Aug 2019 ed., §II.A Classes of Districts + Table of Uses) per the Hudson lesson. Framingham did NOT recodify (town->city 2018 kept district codes). G-E = Geriatric/Elderly Housing base district (§II.A.7). HC = Highway Corridor OVERLAY (§III Overlay Districts: 'underlying permitted uses are permitted' — never sets base uses) -> nonbinding so parcels bind to their base district. Vocab-vs-bylaw check enforced via gate-a (first pass flagged G-E + HC, both resolved here)."
+}

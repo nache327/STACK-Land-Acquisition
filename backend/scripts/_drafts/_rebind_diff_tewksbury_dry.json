@@ -1,0 +1,376 @@
+{
+  "muni": "TEWKSBURY",
+  "mode": "dry-run",
+  "generated": "2026-07-09T19:26:22.725101+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 15,
+      "expected": [
+        13,
+        17
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 61,
+  "layer_vocab": [
+    "F",
+    "GB",
+    "I1",
+    "I2",
+    "LB",
+    "MF",
+    "MUB",
+    "OR",
+    "P",
+    "R40",
+    "SB",
+    "TC",
+    "TD",
+    "VR",
+    "WNB"
+  ],
+  "parcels_total": 9483,
+  "rebound": 9479,
+  "orphans": 4,
+  "changed": 902,
+  "changed_pct": 9.5,
+  "transitions": [
+    {
+      "old": "R40",
+      "new": "R40",
+      "n": 8448
+    },
+    {
+      "old": "HI",
+      "new": "I1",
+      "n": 100
+    },
+    {
+      "old": "COM",
+      "new": "SB",
+      "n": 95
+    },
+    {
+      "old": "COM",
+      "new": "MUB",
+      "n": 94
+    },
+    {
+      "old": "COM",
+      "new": "R40",
+      "n": 79
+    },
+    {
+      "old": "COM",
+      "new": "TC",
+      "n": 74
+    },
+    {
+      "old": "COM",
+      "new": "GB",
+      "n": 74
+    },
+    {
+      "old": "WNB",
+      "new": "WNB",
+      "n": 70
+    },
+    {
+      "old": "R40",
+      "new": "TC",
+      "n": 49
+    },
+    {
+      "old": "OR",
+      "new": "OR",
+      "n": 44
+    },
+    {
+      "old": "HI",
+      "new": "I2",
+      "n": 43
+    },
+    {
+      "old": "HI",
+      "new": "R40",
+      "n": 41
+    },
+    {
+      "old": "TR",
+      "new": "TD",
+      "n": 31
+    },
+    {
+      "old": "HI",
+      "new": "MF",
+      "n": 24
+    },
+    {
+      "old": null,
+      "new": "R40",
+      "n": 23
+    },
+    {
+      "old": "COM",
+      "new": "VR",
+      "n": 20
+    },
+    {
+      "old": "MN",
+      "new": "R40",
+      "n": 20
+    },
+    {
+      "old": "FA",
+      "new": "F",
+      "n": 20
+    },
+    {
+      "old": "MFD",
+      "new": "MF",
+      "n": 18
+    },
+    {
+      "old": "HI",
+      "new": "GB",
+      "n": 16
+    },
+    {
+      "old": "R40",
+      "new": "MUB",
+      "n": 14
+    },
+    {
+      "old": "LB",
+      "new": "LB",
+      "n": 10
+    },
+    {
+      "old": "MFD",
+      "new": "MUB",
+      "n": 10
+    },
+    {
+      "old": "HI",
+      "new": "P",
+      "n": 9
+    },
+    {
+      "old": "P",
+      "new": "P",
+      "n": 5
+    },
+    {
+      "old": "HI",
+      "new": "F",
+      "n": 5
+    },
+    {
+      "old": "MN",
+      "new": "TC",
+      "n": 4
+    },
+    {
+      "old": "MFD",
+      "new": "R40",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "MUB",
+      "n": 3
+    },
+    {
+      "old": "FA",
+      "new": "R40",
+      "n": 3
+    },
+    {
+      "old": "R40",
+      "new": "SB",
+      "n": 3
+    },
+    {
+      "old": "R40",
+      "new": "MF",
+      "n": 2
+    },
+    {
+      "old": "LB",
+      "new": "R40",
+      "n": 2
+    },
+    {
+      "old": "EA",
+      "new": null,
+      "n": 2
+    },
+    {
+      "old": "HI",
+      "new": "MUB",
+      "n": 2
+    },
+    {
+      "old": null,
+      "new": "SB",
+      "n": 1
+    },
+    {
+      "old": "CDD",
+      "new": "R40",
+      "n": 1
+    },
+    {
+      "old": "CO",
+      "new": "GB",
+      "n": 1
+    },
+    {
+      "old": "COMM",
+      "new": "R40",
+      "n": 1
+    },
+    {
+      "old": "HI",
+      "new": "OR",
+      "n": 1
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "M_223132_931325",
+      "address": "471 KENDALL RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_220726_933266",
+      "address": "20 BRIDLE PH",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_224516_925034",
+      "address": "110 ARKANSAS RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_225305_925706",
+      "address": "10 LAURIE DR",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_224916_924340",
+      "address": "6 TEMPLE ST",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_222750_930487",
+      "address": "157 KENDALL RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_224139_925307",
+      "address": "WISCONSIN RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_222537_926520",
+      "address": "61 TERM TR",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_225745_925500",
+      "address": "71 IDLEWILD RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_222712_925451",
+      "address": "75 OXFORD RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_222819_926482",
+      "address": "382 FOSTER RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_225533_924530",
+      "address": "44 CLYDE AV",
+      "old": "COM",
+      "new": "SB"
+    },
+    {
+      "apn": "M_225722_929529",
+      "address": "1523 SHAWSHEEN ST",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_225011_924042",
+      "address": "94 LAKE ST",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_219783_929045",
+      "address": "355 MARSTON ST",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_223490_925724",
+      "address": "21 CHARME RD",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_226201_928378",
+      "address": "52 MOONLIGHT DR",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_225855_926143",
+      "address": "200 PRINGLE ST",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_223958_926123",
+      "address": "407 SHAWSHEEN ST",
+      "old": "R40",
+      "new": "R40"
+    },
+    {
+      "apn": "M_222281_930944",
+      "address": "11 CATAMOUNT RD",
+      "old": "R40",
+      "new": "R40"
+    }
+  ],
+  "matrix_untouched": true
+}
