@@ -56,6 +56,8 @@ export async function POST(req: NextRequest) {
   let body: {
     jurisdictionId: string;
     corrections: ZoneCorrection[];
+    municipality?: string;
+    jurisdictionWide?: boolean;
     source?: string;
     sourceType?: string;
     verifiedDate?: string;
@@ -67,11 +69,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { jurisdictionId, corrections, source, verifiedDate } = body;
+  const { jurisdictionId, corrections, municipality, jurisdictionWide, source, verifiedDate } = body;
 
   if (!jurisdictionId || !Array.isArray(corrections) || corrections.length === 0) {
     return NextResponse.json(
       { error: "jurisdictionId and corrections[] are required" },
+      { status: 400 }
+    );
+  }
+
+  // Municipality scoping is MANDATORY unless the caller explicitly declares the
+  // write jurisdiction-wide. Writing a human verdict without a town persists it
+  // at municipality=NULL, which for a MULTI-TOWN county jurisdiction fans the
+  // verdict out to EVERY town in the county (silent county-wide mis-apply — the
+  // Zoning Verifier NULL-municipality bug). For a single-place jurisdiction
+  // (parcels.city unpopulated) NULL is instead the CORRECT scoping, so the
+  // client sets jurisdictionWide=true there. Requiring an *explicit* choice —
+  // a town, or an acknowledged jurisdiction-wide write — is what closes the
+  // accidental-NULL hole while still supporting single-place jurisdictions.
+  const muni = typeof municipality === "string" ? municipality.trim() : "";
+  if (!muni && !jurisdictionWide) {
+    return NextResponse.json(
+      {
+        error:
+          "municipality is required — a verdict must be scoped to a town. " +
+          "Select the town in the Verifier before applying (or, for a " +
+          "single-place jurisdiction, confirm the jurisdiction-wide write).",
+      },
       { status: 400 }
     );
   }
@@ -117,12 +141,15 @@ export async function POST(req: NextRequest) {
   // ── UPDATES ──
   for (const [zoneCode, fields] of Object.entries(updates)) {
     try {
-      const url = `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}`;
+      const url =
+        `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}` +
+        (muni ? `?municipality=${encodeURIComponent(muni)}` : "");
+      const scope = muni || "jurisdiction-wide";
       const patch = {
         ...fields,
         classification_source: "human",
         human_reviewed: true,
-        notes: `Verified via Site Scout Zoning Chat. Source: ${source ?? "user session"}. Date: ${verifiedDate ?? new Date().toISOString().slice(0, 10)}.`,
+        notes: `Verified via Site Scout Zoning Chat (${scope}). Source: ${source ?? "user session"}. Date: ${verifiedDate ?? new Date().toISOString().slice(0, 10)}.`,
       };
       const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch), signal: AbortSignal.timeout(8_000) });
       if (res.ok) {
@@ -143,6 +170,7 @@ export async function POST(req: NextRequest) {
       const body = {
         zone_code: c.zone,
         zone_name: c.display_name ?? c.zone_name ?? c.zone,
+        ...(muni ? { municipality: muni } : {}),
         self_storage: c.self_storage ?? "unclear",
         mini_warehouse: c.mini_warehouse ?? "unclear",
         light_industrial: c.light_industrial ?? "unclear",

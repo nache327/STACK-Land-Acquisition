@@ -342,6 +342,16 @@ export const api = {
     );
   },
 
+  // Canonical parcels.city option-set for the Zoning Verifier's municipality
+  // selector — exact casing, plus flags for prefill. A human verdict MUST be
+  // scoped to one of these strings (case-sensitive scoring join); see the
+  // backend _parcel-cities docstring.
+  async getParcelCities(
+    jurisdictionId: string
+  ): Promise<{ cities: string[]; single_town: boolean; city_unpopulated: boolean }> {
+    return fetchJSON(`/api/jurisdictions/${jurisdictionId}/_parcel-cities`);
+  },
+
   async getZoningDistricts(jurisdictionId: string): Promise<ZoningDistrictList> {
     const raw = await fetchJSON<unknown>(
       `/api/jurisdictions/${jurisdictionId}/zoning-districts`

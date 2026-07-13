@@ -145,6 +145,46 @@ async def get_zone_matrix(
     return {"zones": zones, "unknown_zones": [], "parser_warnings": []}
 
 
+@router.get("/jurisdictions/{jurisdiction_id}/_parcel-cities")
+async def get_parcel_cities(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Distinct, non-null parcels.city values for this jurisdiction, in the
+    EXACT casing stored on parcels.
+
+    This is the canonical option-set for the Zoning Verifier's municipality
+    selector. Because the buybox scoring join is a case-sensitive
+    `municipality = p.city`, a human verdict MUST carry a municipality that
+    exactly matches one of these strings — anything else silently scores 0
+    parcels (see project_municipality_city_case_sensitive) or, when NULL,
+    fans the verdict out county-wide (project_verifier_writes_null_municipality).
+    Returning the list straight from parcels guarantees the selector can only
+    emit a value the scorer will actually match.
+
+    `single_town` is true when the jurisdiction resolves to exactly one town
+    (0 or 1 distinct city) — the caller can auto-select it. When 0 distinct
+    non-null cities exist, `parcels.city` is unpopulated for this jurisdiction
+    (a single-place ingest); the correct municipality there is NULL, not a
+    fabricated name, so `cities` is empty and the caller should NOT force a
+    selection.
+    """
+    result = await db.execute(
+        text(
+            "SELECT DISTINCT city FROM parcels "
+            "WHERE jurisdiction_id = :jid AND city IS NOT NULL "
+            "ORDER BY city"
+        ),
+        {"jid": str(jurisdiction_id)},
+    )
+    cities = [row[0] for row in result.all()]
+    return {
+        "cities": cities,
+        "single_town": len(cities) <= 1,
+        "city_unpopulated": len(cities) == 0,
+    }
+
+
 @router.post(
     "/jurisdictions/{jurisdiction_id}/zones",
     response_model=ZoneUseMatrixRead,
