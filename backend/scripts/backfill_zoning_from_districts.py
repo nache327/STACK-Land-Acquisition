@@ -282,7 +282,8 @@ async def run(muni: str, apply: bool, batch: int) -> None:
                     report["apply"]["overlay_tagged"] = n
 
         mx_after = await con.fetchrow(
-            "SELECT count(*) n, max(updated_at) u FROM zone_use_matrix")
+            "SELECT count(*) n, max(updated_at) u FROM zone_use_matrix WHERE jurisdiction_id=$1::uuid",
+            cfg["jid"])
         assert (mx_before["n"], mx_before["u"]) == (mx_after["n"], mx_after["u"]), \
             "zone_use_matrix mutated — condition 5 violated"
         report["matrix_untouched"] = True
