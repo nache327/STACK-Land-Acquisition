@@ -1,38 +1,49 @@
-# Session C exceptions — New Canaan + Darien CT (ct-newcanaan-darien-batch1)
+# Session C — Passaic NJ prep (parcellogic/passaic-nj-prep)
 
-## Darien CT (jid 9b27e214-367c-4652-8385-99b09fe38cd6) — STAGE-1 BLOCKED (not grounded)
-**Do NOT ground.** Darien is Stage-1 blocked exactly like the earlier NJ Tier-1 / A-Essex case:
-- parcels: 5,831 — **`zoning_code` is NULL on 100% of them** (0% zone-bound).
-- `zone_use_matrix`: 0 rows.
-- Grounding now would only create false, unmatchable rows (the m.zone_code=p.zoning_code join
-  can't match a NULL code) → silent 0-scoring, no needles, no value. So it is deliberately skipped.
+## Passaic County NJ (jid 7a9ed95d-df89-4864-a203-f831a987b562) — PREP ONLY, HELD
+County-model jurisdiction, 125,785 parcels, 16 municipalities (Paterson/Clifton/Wayne/West
+Milford/Passaic/Hawthorne/Ringwood/Wanaque/Totowa/Woodland Park/Pompton Lakes/Little Falls/
+North Haledon/Bloomingdale/Haledon/Prospect Park). Doubly-blocked at recon:
+`parcel_ring_metrics` dt=10 = 0 (Stage 3) AND `zoning_code` NULL on 100% (Stage 1).
+**After prep: Stage 3 CLOSED (ring complete); Stage 1 bind DRY-READY (apply held).**
 
-**Good news — Stage 3 is already done:** `parcel_ring_metrics` has 5,831 dt=10 rows for Darien
-(ring precompute complete). The ONLY missing piece is Stage-1 spatial zone binding.
+**NOTHING grounded, NOTHING bound.** Prep to make Passaic fire-ready the instant A's Essex
+distribution confirms suburban-NJ yields + coordinator/Nache go.
 
-**A bindable zoning-polygon source DOES exist** (this is the A/Essex situation — a source is
-available, the bind just hasn't been run). Options, in order of preference:
-  1. **Town of Darien ArcGIS** — `https://darienct.maps.arcgis.com/` publishes a zoning layer
-     (streets/wetlands/zoning). New Canaan's identical situation was solved by binding to its town
-     Tighe & Bond zoning layer (`hostingdata3.tighebond.com/.../NewCanaanDynamic/MapServer` L89,
-     `Code`->`ZONING`); Darien's town layer is the direct analog. Confirm the layer + its zone-code
-     field, then run the standard spatial bind (ST_Within(ST_Centroid)) like New Canaan.
-  2. **CT ECO / CT Geodata Portal** — `https://geodata.ct.gov/maps/CTECO::darien` (statewide parcel
-     collection; check for an accompanying municipal zoning polygon).
-  3. **WestCOG** (Darien is in the Western CT COG region) regional zoning polygons.
+### Task 1 — ring precompute (Stage 3): ✅ COMPLETE
+`POST /api/jurisdictions/7a9ed95d…/_precompute-ring-metrics-worker` (X-Admin-Secret) → **HTTP 202
+enqueued** to the Dramatiq worker path. Landed within ~2 min (tract demographics already available,
+so a fast spatial-join + batch UPSERT). Verified: **125,785 dt=10 rows, 100% with non-null
+median_home_value + median_hhi, and 25,687 wealth-pass** (HV≥475k AND HHI≥100k). Stage 3 done —
+Passaic now has a real wealth-ring pool to gate needles against.
 
-**Next action (Stage-1 owner, not this grounding session):** bind Darien parcels to the town zoning
-polygon → then a normal grounding pass can run (expected another estate-residential no-op given
-Darien's profile, but must be grounded on its own ordinance once bound). CT ordinance is on the
-Darien P&Z site / eCode/amlegal.
+### Task 2 — NJTPA Atlas bind (Stage 1): DRY-RUN READY (no writes)
+Script: `backend/scripts/_bind_passaic_njtpa_atlas.py` (replicates the proven Essex bind:
+Atlas MapServer 082025, `County='Passaic'` filter, centroid-within EPSG:4326, replace=false,
+provenance `njtpa_atlas_082025`/`njtpa`, overlays excluded from base bind). **DRY by default;
+writes gated behind `APPLY=1` — do NOT set without the greenlight.**
 
-## New Canaan CT (jid 2580f226…) — GROUNDED, correct no-op (0 needles)
-- 100% zone-bound (7,386 parcels, 16 letter codes A–Q). Ring-ready (4,807 dt=10).
-- #38 layer check PASSED: parcel letter codes = the Town GIS zoning-layer `Code` field, decoded via
-  the authoritative `Code`->`ZONING` legend (Tighe & Bond NewCanaanDynamic/MapServer L89). Note
-  'I' = **Business A**, NOT Institutional — confirms the #38 caution.
-- Estate-residential + "Village District" business zones (Retail A/B, Business A/B/C/D); **no
-  industrial zone**. Self-storage / self-service storage / mini-warehouse is a permitted use in
-  **no** zone (whole-text: 0 self-storage hits; the single "warehous" hit is a Business-B parking
-  computation — a dimensional-mention, not a use grant). All 16 zones grounded PROHIBITED. Correct
-  no-op (Greenwich/Westport pattern). verify_batch: needles=0 gate=PASS CLEAN.
+Dry-run result: **county centroid match = 123,645 / 125,785 = 98.3%.** Per-town match:
+Wayne 100%, North Haledon 100%, Wanaque 97.6%, Ringwood 99.9%, Pompton Lakes ~100%, Totowa ~100%,
+Woodland Park ~100%, Little Falls 100%, Hawthorne 100%, West Milford 99.1%, Bloomingdale 99.9%.
+(~1.7% unmatched county-wide = expected slivers/water — West Milford lakes, edge centroids.)
+
+**#38 spot-check — Atlas codes match town ordinances (clean):**
+- Wayne: R-15 / R-30 / RC-2.5 / PUD / GA / **I (Industrial)** / **B (Business)** — real Wayne
+  district vocabulary; "I" = Industrial (correct, not Institutional), 315 parcels — a live needle
+  candidate once grounded.
+- North Haledon: RA-1/RA-2/RA-3 / B-1/B-2 / AHTD townhouse / RDZ — matches (residential-heavy
+  wealthy borough, no heavy industrial, as expected).
+- Wanaque: R-10/R-15/R-40 / B / IR-1 (Industrial/Research) / AAH — matches.
+- Ringwood: R-20/R-40/R-80V / I-60 (Industrial/Office/Research) / CS-40 — matches.
+- Little Falls: R-1A/B/C / B-1/B-2/B-3 / LI (Light Industrial) / TV-CBD — matches.
+- Hawthorne: R-1/R-2/R-3 / B-1/B-2/B-3 / I-1 (Light Industrial) — matches.
+- Bloomingdale: R-10/R-20/R-40 / B-1 / M-1 (Light Industrial) — matches.
+Each code carries an Atlas `Full_District_Name` (affirmative basis for later grounding). No
+mislabeled-family (#38) red flags. Atlas `Jurisdic_1` town spellings are Title-Case ("Wayne
+Township") vs parcels.city lowercase-suffix ("Wayne township") — irrelevant to the spatial bind,
+but the grounding session must set `municipality` = exact parcels.city.
+
+### HOLD (both gated)
+- Bind apply (`APPLY=1`) — HELD pending Essex-yield confirmation + coordinator/Nache go.
+- All grounding — HELD until bound + ring-complete + go. No verdict rows written this session.
