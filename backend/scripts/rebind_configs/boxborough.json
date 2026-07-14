@@ -1,0 +1,24 @@
+{
+  "muni": "BOXBOROUGH",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Boxborough'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "AR",
+    "R1",
+    "B",
+    "B1",
+    "OP",
+    "TC",
+    "IC"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    5,
+    9
+  ],
+  "notes": "Boxborough MA (Middlesex) — MAPC layer 2 (strip ^25). Parcels carry reduced assessor codes (AR/OP/C/B/TC) with no 'IC' column, so a spatial rebind confirms which parcels sit in the Industrial-Commercial (IC) district along Codman Hill Rd. Ordinance districts per Article 3 of the Boxborough Zoning Bylaw (boxborough-ma.gov View/1918, 2025): AR/R1 residential; B/B1 business; OP office park; TC town center; IC industrial-commercial (the only self-storage-by-right district, Table 4.1.3.d 'Self-storage facility' = Y in IC only)."
+}
