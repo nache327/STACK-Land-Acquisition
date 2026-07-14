@@ -48,6 +48,21 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 PROVENANCE = "njtpa_atlas_082025"
 PAGE = 2000  # Atlas maxRecordCount
+MAX_CODE_LEN = 20  # Atlas Abbreviated_District_Name is occasionally a full phrase
+                   # (e.g. Paterson "1st Ward Revelopment District") — a non-code that
+                   # trips the post-ingest gate's URL/over-length mis-bind catch. Skip it
+                   # (parcel stays NULL/unbound) rather than write a phrase as a zone code.
+
+
+def _bad_code(code: str | None) -> bool:
+    if not code:
+        return True
+    code = str(code).strip()
+    if not code or len(code) > MAX_CODE_LEN:
+        return True
+    if code.upper() in ("NULL", "NONE"):
+        return True
+    return False
 
 
 def download_atlas(county: str) -> list:
@@ -122,7 +137,7 @@ async def run(jid: str, county: str, apply: bool) -> None:
                 break
         if hit is not None:
             code = codes[hit]
-            if not code:
+            if _bad_code(code):  # skip empty / phrase / over-length non-codes
                 continue
             matched += 1
             by_city[city][1] += 1
@@ -153,23 +168,25 @@ async def run(jid: str, county: str, apply: bool) -> None:
         await conn.close()
         return
 
-    print(f"\n[APPLY] writing {len(updates)} zoning_code + provenance='{PROVENANCE}' (write-once, batched)…")
-    # Batched UNNEST write: one UPDATE...FROM unnest(...) per BATCH rows instead of
-    # a per-row loop (245k round-trips → ~25 statements). Bit-identical semantics:
-    # write-once on NULL rows only, same provenance. parcels.id is bigint.
-    ids = [int(pid) for pid, _ in updates]
-    zcodes = [str(code) for _, code in updates]
-    BATCH = 10000
+    print(f"\n[APPLY] writing {len(updates)} zoning_code + provenance='{PROVENANCE}' (write-once)…")
+    # Batched UNNEST write: one UPDATE ... FROM unnest(ids, codes) per chunk, instead of a
+    # per-row awaited UPDATE loop (the latter is pathologically slow at county scale —
+    # 125k round-trips in a single txn ran 60+ min on Passaic). Identical semantics:
+    # write-once (WHERE zoning_code IS NULL), same provenance. ~1-2 min for a full county.
     written = 0
+    CHUNK = 5000
     async with conn.transaction():
-        for i in range(0, len(updates), BATCH):
+        for i in range(0, len(updates), CHUNK):
+            batch = updates[i:i + CHUNK]
+            ids = [int(pid) for pid, _ in batch]
+            zcodes = [str(code) for _, code in batch]
             res = await conn.execute(
-                """UPDATE parcels p SET zoning_code = v.code, zoning_code_source = $3
-                     FROM (SELECT unnest($1::bigint[]) AS id, unnest($2::text[]) AS code) v
-                    WHERE p.id = v.id AND p.zoning_code IS NULL""",
-                ids[i:i + BATCH], zcodes[i:i + BATCH], PROVENANCE,
+                """UPDATE parcels AS p SET zoning_code=v.code, zoning_code_source=$3
+                   FROM unnest($1::bigint[], $2::text[]) AS v(id, code)
+                   WHERE p.id=v.id AND p.zoning_code IS NULL""",
+                ids, zcodes, PROVENANCE,
             )
-            written += int(res.split()[-1])  # "UPDATE N"
+            written += int(res.split()[-1])
     print(f"[APPLY] rows written: {written}")
     now_bound = await conn.fetchval(
         "SELECT COUNT(*) FROM parcels WHERE jurisdiction_id=$1 AND zoning_code IS NOT NULL", jid)
