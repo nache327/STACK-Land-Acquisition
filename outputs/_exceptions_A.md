@@ -1,8 +1,52 @@
 # Session A exceptions / discovery notes (cumulative)
 
-# ================= ESSEX COUNTY NJ (jid 67541a18…) — batch1 BLOCKED at Stage-1 (2026-07-14) =================
+# ================= ESSEX COUNTY NJ (jid 67541a18…) — STAGE-1 UNBLOCKED via NJTPA Atlas (2026-07-14) =================
 
-**STOP / ESCALATE — Essex is NOT groundable as a matrix batch. The parcels are not zone-bound.**
+## ✅ RESOLVED — the Stage-1 block below is FIXED. Essex parcels are now 99.81% zone-bound.
+**Source = NJTPA Zoning Atlas 082025** (`https://gis.njtpa.org/server/rest/services/LandUse/NJTPA_Zoning_Atlas_082025/MapServer/0`)
+— a NEW region-wide polygon layer (all 13 NJTPA counties in ONE layer + a `County` filter), superseding the
+per-county `NJTPA_Zoning` FeatureServer layers in zoning_ingestion.py (which have NO Essex). Fields: `County`
+| `Jurisdic_1` (town) | `Abbreviate` (=code) | `Full_District_Name`. Bound via
+`scripts/_bind_essex_njtpa_atlas.py` (curl-fetch — Cloudflare 403s httpx but passes curl+UA; geopandas
+centroid-`within` sjoin; replace=false so Newark's codes preserved; provenance `njtpa_atlas_082025`).
+
+- **bound_pct: 175,603/175,932 = 99.81%** (was 23.8% / Newark-only). Wealthy towns: Millburn 99.9%,
+  Livingston 99.4%, Fairfield 96.3%, Montclair/Verona/West Caldwell/Roseland/Essex Fells 100%, West
+  Orange/North Caldwell 99.9%. Dry-run centroid-within match = 99.8% (CRS clean, EPSG:4326 both sides).
+- #38 spot-check PASS: codes match ordinances (Livingston I=Limited Industrial, CI=Commercial Industrial;
+  Fairfield L-1/L-2/L-3=Light Industrial, C-3=Commercial-Industrial, H-D=Rt-46 Highway Development).
+- **Template for Union/Passaic/Hudson**: same Atlas covers Union (2,464 polygons/21 munis), Passaic
+  (7,243/16), Hudson (2,495/12). Re-run the script with their jid + `where=County='<X>'`. Opens ~140k
+  wealth-pass parcels.
+
+## DISTRIBUTION (post-bind) — Essex is a Morris-PLUS profile → GROUNDING-WORTHY, not a Hudson no-op.
+Wealth-ring (dt10 HV≥475k, HHI≥100k) AND acres≥1.5 lots that land in REAL industrial / commercial-industrial
+districts (the grounding-worthy pool; residential/park/open-space excluded):
+- **Fairfield township = the headline** (~HV 697k): **L-1=150, H-D=90, L-2=40, L-3=15, C-3=8, C-2=5, O-P=4,
+  C-1=3 → ~315 wealth-ring industrial/CI lots**. 564 of its 660 wealth-ring lots are NON-residential. The
+  county's industrial hub (Rt-46 corridor). Bigger industrial base than any single Morris wealth town.
+- **West Caldwell township** (~HV 651k): **M-1=57, M-2=21** (+ OP office 14, B-3 11) → ~78. 112/143
+  non-residential. ⚠️#38 at grounding: confirm M-1/M-2 = Manufacturing (likely) NOT Multifamily (Tarrytown trap).
+- **Livingston township** (~HV 850k — very wealthy): **CI=27, I=11, R-L2=8, R-L=7, B-2=4, B-1=3 → ~60**.
+  ⚠️#38: R-L/R-L2 = Research Laboratory (industrial-ish), NOT residential despite the R- prefix. Bulk (700)
+  is residential (R-5A/R-5B adult/senior + R-1/2/3).
+- **Millburn township** (Short Hills, ~HV 764k): **C=30, CMO=9 → ~39** commercial.
+- **Roseland borough** (~HV 586k): C=13, CR=10, OB-3=9 → ~32 commercial/office (weaker).
+- **Montclair** (~HV 530k): C-1=5, C-2=3 → ~8 (mostly residential 332/402 — dense downtown, modest industrial).
+- **West Orange / Verona / North Caldwell / Essex Fells**: wealth-ring pools are predominantly
+  residential + P(park)/OS-REC(open space)/AH(adult housing)/A-C(agricultural-conservation) — NOT
+  self-storage-eligible. Likely correct no-ops (verify at grounding).
+
+**Recommendation: GO on a grounding batch, led by Fairfield (L-1/L-2/L-3/H-D/C-3), then West Caldwell
+(M-1/M-2), Livingston (CI/I/R-L), Millburn (C).** ~500+ wealth-ring industrial/CI lots concentrated across
+4 towns. Data caveat: `acres` is genuine acres (verified vs geom-derived), but a few corrupted-geometry
+parcels inflate acres (max 94,018 impossible; county median 0.13ac) — rare outliers, don't change the picture.
+HELD per scope: no zone_use_matrix writes, no ordinance reads, no re-score — awaiting coordinator grounding scope.
+
+---
+### (historical) The original block, now fixed by the above:
+
+**Essex was NOT groundable as a matrix batch — the parcels were not zone-bound.**
 The session was scoped as "NJ name-bound → no rebind, ground top 3-4 towns." That assumption (true for
 Morris, where 177,464/177,532 parcels arrived with a `zoning_code` from the source pull) is **FALSE for
 Essex**. Diagnosis below is verify-before-declare (#42) — all counts are live queries, not inference.
