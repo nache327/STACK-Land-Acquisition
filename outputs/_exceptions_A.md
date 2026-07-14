@@ -1,6 +1,29 @@
 # Session A exceptions / discovery notes (cumulative)
 
-# ================= ESSEX COUNTY NJ (jid 67541a18…) — STAGE-1 UNBLOCKED via NJTPA Atlas (2026-07-14) =================
+# ================= ESSEX COUNTY NJ (jid 67541a18…) — GROUND BATCH 1 (2026-07-14) =================
+Grounded 4 wealthy-industrial towns off the NJTPA-Atlas binding. NJ closed-list + named-beats-convention
+applied per town. Re-scored (solo county). verify_batch output pasted in the PR/handoff.
+
+## GROUNDED — Essex batch1
+| Muni | Result |
+|---|---|
+| **Fairfield township** | eCode360 FA0184 Ch.45, print guid=35314662. Global closed list §45-7. **self-storage NAMED & CONFINED** → NEEDLE = **C-3** (Commercial-Industrial Mixed-Use §45-32.1h "Interior self-storage facilities" — ss/mw/li **permitted**, 8 wealth-ring lots) + **H-R** (Highway Redevelopment §45-34.1 "limited to self-service storage facilities" — ss/mw permitted, li prohibited [mfg barred in units], 1 lot). **L-1(150)/H-D(90)/L-2(40)/L-3(15) = li-armed ONLY** (warehousing by-right §45-39.1b/§45-35.1l but self-storage NOT named → closed-list + named-confinement demotes them; the Boonton rule). NEEDLE ≈ **9 wealth-ring ss lots**. lgc prohibited (§45-32.1r indoor vehicle storage ≠ garage-condo). |
+| **West Caldwell township** | eCode360 WE0897 Ch.20, guid=35367190. #38 RESOLVED: M-1 = "LIMITED MANUFACTURING DISTRICT", M-2 = "LIMITED INDUSTRY & RESEARCH LABORATORY" (NOT Multifamily; B-1 is the "Special Business AND Multi-Family Residence" zone). Global closed list §20-20. **NEEDLE = M-1** (§20-13.3.c + §20-17.27 "Self-Storage facilities shall be permitted as a conditional use in the M-1 Limited Manufacturing District ONLY" — ss/mw **conditional**, li permitted, **57 wealth-ring lots**). M-2 = li-armed only (self-storage M-1-only; 21 lots). Warehousing in M-1/M-2 is accessory-only (own products) so convention moot. |
+| **Livingston township** | eCode360 LI1238 Ch.170, guid=10295328. #38: R-L/R-L2 = Research Laboratory (office/research; R-L2 §170-116B(4) bars mfg). **NEEDLE = CI + I (by-right) + R-L + R-L2 (conditional)**: **CI** §170-118A(3)(c) "Warehouses, including self-storage facilities (mini-warehouses)" ss/mw/li permitted (27 lots); **I** §170-117A(6) "Moving and storage operations and self-storage facilities" ss/mw/li permitted (11 lots); **R-L/R-L2** §170-94.K self-storage conditional (li prohibited; 7+8 lots). NEEDLE ≈ **53 wealth-ring ss lots** (biggest in batch). ⚠️**TENSION FLAG** below. |
+| **Millburn township** | eCode360 MI4080 Art.6, guid=35143140. #38 CATCH: parcel 'C' = **Conservation-Recreation** (§DRZ-606.1, NOT commercial) → the 30 wealth-ring 'C' lots are conservation, NOT a needle (Mountain-Lakes pattern). self-storage NAMED NOWHERE; closed list. **NEEDLE = CMO** (Commercial/Medical Office §DRZ-606.9 b.2 "warehouses" by-right + self-storage unnamed → ss/mw **conditional** by convention, li permitted, **9 wealth-ring lots**). OR-1/2/3 office (no warehouse), B-1..B-4 business, CE/CD/P/R-* = prohibited. |
+
+## ⚠️ FLAGS for Nache review
+- **Livingston §170-94.K tension** (grounded I/CI = ss PERMITTED at conf 0.82): §170-94.K reads "Self-storage
+  facilities...shall be permitted **only in the R-L and R-L2 Zones as conditional uses**," which is in tension
+  with the explicit by-right self-storage listings in **I** (§170-117A(6)) and **CI** (§170-118A(3)(c)).
+  Grounded here as: §170-94.K scopes the *conditional*-use pathway (R-L/R-L2), while I/CI grant self-storage
+  by-right in their own permitted-use sections (#57 affirmative-provision). If Nache reads §170-94.K as an
+  override, demote I/CI ss → prohibited (would drop ~38 needle lots to R-L/R-L2's 15 conditional). Left at
+  permitted pending that call.
+- **Fairfield NDLR** (New Dutch Lane Redevelopment, 1 wealth-ring lot) grounded conservative-prohibited conf
+  0.60 — its use schedule (Ord. 2016-11) isn't in the Ch.45 print export. Low stakes; revisit if a deal lands.
+
+
 
 ## ✅ RESOLVED — the Stage-1 block below is FIXED. Essex parcels are now 99.81% zone-bound.
 **Source = NJTPA Zoning Atlas 082025** (`https://gis.njtpa.org/server/rest/services/LandUse/NJTPA_Zoning_Atlas_082025/MapServer/0`)
