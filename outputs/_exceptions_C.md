@@ -67,3 +67,20 @@ PA spatially bound → no rebind. All use tables via eCode360 print-endpoint (cu
 
 ## TRANSPARENCY FLAG (not a blocker — coordinator review)
 CF-UW: **Uwchlan's 127 needles rest on the warehouse⇒conditional CONVENTION, not a named self-storage use.** Self-storage is UNNAMED townwide in Ch.265; PI/PIC/PCID permit "warehousing" by-right and the code is NOT a closed list (open conditional catch-all §509.5.f), so self_storage is reachable as a conditional use per the blessed convention (conf 0.65). This is weaker grounding than the other 3 towns (which name self-storage explicitly). Flagging for visibility; verdicts are conditional (not permitted), so they surface as conditional needles.
+
+---
+# CHESTER PA — Batch 2 (2026-07-14) — 4 towns grounded, +87 wealth-gated needles
+
+PA spatially bound → no rebind; eCode360 print-endpoint. Discovery ranking (excl. 7 grounded).
+- Upper Uwchlan Twp: LI self_storage PERMITTED by right (NAMED §200-44.A(10)); PI PROHIBITED (NB-Twp J25 — self-storage named only in LI under closed list, convention does NOT make PI conditional); C1/C3 prohibited. **+30 (LI)**.
+- East Marlborough Twp: LI self_storage CONDITIONAL (NAMED §450-1002.B(12)); ESI=Institutional (catch #38, not industrial); MU/WMU/LMU/C-2 prohibited. **+33 (LI)**.
+- Charlestown Twp: I/O self_storage CONDITIONAL (NAMED §27-1002.1.A(3)(h)); **"I" map code = INSTITUTIONAL (catch #38, §27-802 — NOT industrial)**; LI/B (misleading name, no storage)/B-1/H/NC prohibited. **+21 (I/O)**.
+- West Whiteland Twp: I-1 self_storage CONDITIONAL (see CF-WW); TC/NC/O-L/O-R/O-C office/retail prohibited (Exton commercial core = correct no-op). **+3 (I-1)**.
+
+## TRANSPARENCY FLAG (coordinator review)
+CF-WW: **West Whiteland's 3 I-1 needles rest on the warehouse⇒conditional CONVENTION, not a named self-storage use.** Ch.325 has NO named self-storage anywhere; I-1 permits warehouse + light-mfg by right (§325-18B(3)/(4)) and does not exclude self-storage → conditional per the blessed convention (conf 0.65). Small (3 parcels). Same class as batch-1 CF-UW.
+
+## CATCHES that PREVENTED false needles (kept honest)
+- Charlestown "I" = Institutional (not Industrial) → the 4 wealth-ring "I" parcels correctly NOT grounded as a needle (catch #38).
+- East Marlborough "ESI" = Educational/Scientific/Institutional → not an industrial needle (catch #38).
+- Upper Uwchlan "PI" → prohibited (NOT convention-conditional) because self-storage is named only in LI under a closed list (NB-Twp J25 rule) — avoided ~15 false convention-needles.
