@@ -2,6 +2,30 @@
 
 Per-session file (not the shared queue).
 
+## Westchester NY — batch 4 (2026-07-09) — 2nd-tier discovery (mostly no-ops, as expected)
+
+Re-ran the wealth-ring industrial/commercial ranking on remaining un-grounded towns. As the coordinator
+predicted, self-storage is narrowly zoned in Westchester → high no-op rate. All eCode360 curl+UA; use
+schedules via attachment PDFs (pdfplumber) / embedded HTML tables. Held #37 legacy-code discipline.
+
+| Town | Verdict | Basis |
+|---|---|---|
+| Bedford | LI/CB/NB/PB-O/PB-R/PB-O(K) → **prohibited** (no-op) | Ch. 125 Use schedules (Principal 125b + Special Permit 125d): self-storage/mini-warehouse named 0×; LI lists only generic "Wholesale business, storage or warehouse" (no-inference). Very-high-wealth but not zoned for it (catch #52). |
+| Mount Kisco | GC/CD/CD-2/CL/CB-1/OG/SC → **prohibited** (no-op) | Ch. 110 Art III (71 use tables): self-storage 0×; "warehouse" only generic ("Wholesale, indoor storage and warehousing establishments"; accessory indoor storage). No-inference. |
+| Dobbs Ferry | OF1-6/DB/B/CP/WFA/WFB/EI → **prohibited** (no-op) | Ch. 300 Art X use tables + Art XIII + Definitions: self-storage/warehouse/storage named 0×. Office/downtown/waterfront village. |
+
+### ⚠ D-wc-4 — Port Chester: ESCALATE (form-based recode vs legacy parcel codes — Hudson pattern)
+Port Chester adopted a **form-based "Character Districts"** code (Ch. 345, §345-302/305). Parcels carry
+LEGACY codes **M1/M2** (manufacturing), DW, MUR, C3, VCRA — which do NOT appear in the current
+Character-District descriptions (only CD/PMU matched). Cannot ground the legacy M1/M2 parcels against the
+current form-based scheme (Hudson/Bridgeport version-mismatch discipline). **Need:** a re-stamp of Port
+Chester parcels to the current Character-District codes, OR an old→new crosswalk. LOW priority — small
+pool (~10 wealth+sized M1/M2) and Port Chester is lower-wealth (barely clears the ring). Not forced.
+
+Batch-4 needle yield = 0 (3 honest no-ops + 1 version-mismatch escalation). Confirms self-storage is
+narrowly zoned to specific industrial districts in Westchester (grounded so far in New Rochelle LI,
+Yonkers BR/B/BA, Yorktown I-1/I-2) and absent from these 2nd-tier commercial/office/light-industrial towns.
+
 ## Westchester NY — batch 3 (2026-07-09) — data-driven discovery
 
 Ranked un-grounded towns by wealth-ring commercial/industrial parcels; grounded the top 4 with genuine
