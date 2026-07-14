@@ -1,0 +1,387 @@
+{
+  "muni": "ACTON",
+  "mode": "dry-run",
+  "generated": "2026-07-14T15:30:45.451032+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 26,
+      "expected": [
+        22,
+        30
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 26,
+  "layer_vocab": [
+    "ARC",
+    "EAV",
+    "EAV-2",
+    "GI",
+    "KC",
+    "LB",
+    "LI",
+    "LI-1",
+    "NAV",
+    "OP-1",
+    "OP-2",
+    "PCRC",
+    "PM",
+    "R-10",
+    "R-10/8",
+    "R-2",
+    "R-4",
+    "R-8",
+    "R-8/4",
+    "R-A",
+    "R-AA",
+    "SAV",
+    "SM",
+    "TD",
+    "VR",
+    "WAV"
+  ],
+  "parcels_total": 6984,
+  "rebound": 6962,
+  "orphans": 22,
+  "changed": 924,
+  "changed_pct": 13.2,
+  "transitions": [
+    {
+      "old": "R-2",
+      "new": "R-2",
+      "n": 4310
+    },
+    {
+      "old": "R-8",
+      "new": "R-8",
+      "n": 433
+    },
+    {
+      "old": "R-4",
+      "new": "R-4",
+      "n": 397
+    },
+    {
+      "old": "R108",
+      "new": "R-10/8",
+      "n": 357
+    },
+    {
+      "old": "R8/4",
+      "new": "R-8/4",
+      "n": 220
+    },
+    {
+      "old": "ARC",
+      "new": "ARC",
+      "n": 131
+    },
+    {
+      "old": "VR",
+      "new": "VR",
+      "n": 121
+    },
+    {
+      "old": "PCRC",
+      "new": "PCRC",
+      "n": 96
+    },
+    {
+      "old": "LB",
+      "new": "LB",
+      "n": 90
+    },
+    {
+      "old": "GI",
+      "new": "GI",
+      "n": 84
+    },
+    {
+      "old": null,
+      "new": "R-2",
+      "n": 56
+    },
+    {
+      "old": "PM",
+      "new": "PM",
+      "n": 45
+    },
+    {
+      "old": "SAV",
+      "new": "SAV",
+      "n": 45
+    },
+    {
+      "old": "TD",
+      "new": "TD",
+      "n": 42
+    },
+    {
+      "old": "WAV",
+      "new": "WAV",
+      "n": 39
+    },
+    {
+      "old": "R2",
+      "new": "R-2",
+      "n": 36
+    },
+    {
+      "old": "KC",
+      "new": "KC",
+      "n": 33
+    },
+    {
+      "old": "R-A",
+      "new": "R-A",
+      "n": 33
+    },
+    {
+      "old": "SM",
+      "new": "SM",
+      "n": 28
+    },
+    {
+      "old": "NAV",
+      "new": "NAV",
+      "n": 26
+    },
+    {
+      "old": "EAV",
+      "new": "EAV",
+      "n": 26
+    },
+    {
+      "old": null,
+      "new": "R-10/8",
+      "n": 22
+    },
+    {
+      "old": "OP1",
+      "new": "OP-1",
+      "n": 18
+    },
+    {
+      "old": "OP-2",
+      "new": "OP-2",
+      "n": 16
+    },
+    {
+      "old": "RA",
+      "new": "R-A",
+      "n": 16
+    },
+    {
+      "old": "LI-1",
+      "new": "LI-1",
+      "n": 16
+    },
+    {
+      "old": null,
+      "new": "R-8/4",
+      "n": 15
+    },
+    {
+      "old": null,
+      "new": "PCRC",
+      "n": 15
+    },
+    {
+      "old": "LI",
+      "new": "LI",
+      "n": 15
+    },
+    {
+      "old": "EAV2",
+      "new": "EAV-2",
+      "n": 13
+    },
+    {
+      "old": "R-8",
+      "new": "R-10/8",
+      "n": 12
+    },
+    {
+      "old": null,
+      "new": "R-4",
+      "n": 9
+    },
+    {
+      "old": null,
+      "new": "GI",
+      "n": 9
+    },
+    {
+      "old": null,
+      "new": "LB",
+      "n": 8
+    },
+    {
+      "old": "OP2",
+      "new": "OP-2",
+      "n": 8
+    },
+    {
+      "old": null,
+      "new": "R-A",
+      "n": 7
+    },
+    {
+      "old": "R-10",
+      "new": "R-10",
+      "n": 7
+    },
+    {
+      "old": "R-2",
+      "new": null,
+      "n": 6
+    },
+    {
+      "old": null,
+      "new": "LI-1",
+      "n": 5
+    },
+    {
+      "old": null,
+      "new": "VR",
+      "n": 5
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_661865_2998603",
+      "address": "634 MASS AV",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_676748_2995320",
+      "address": "7 RUSSELL RD",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_668739_3003917",
+      "address": "28 LINCOLN DR",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_677128_2992776",
+      "address": "14/52 LEXINGTON DR",
+      "old": "R8/4",
+      "new": "R-8/4"
+    },
+    {
+      "apn": "F_664597_2992190",
+      "address": "6  BEACON CT",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_665471_2990187",
+      "address": "64 LIBERTY ST BESIDE",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_681538_3012450",
+      "address": "8 WHEELER LN",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_675285_3003029",
+      "address": "523 MAIN ST",
+      "old": "R8/4",
+      "new": "R-8/4"
+    },
+    {
+      "apn": "F_657723_2994758",
+      "address": "9 TICONDEROGA RD",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_662418_3001105",
+      "address": "365 CENTRAL ST BESIDE",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_663656_2992036",
+      "address": "20 BILLINGS ST",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_671780_3004474",
+      "address": "10 BALSAM DR BESIDE",
+      "old": "R-4",
+      "new": "R-4"
+    },
+    {
+      "apn": "F_675907_2993014",
+      "address": "24 HERITAGE RD",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_664843_3001479",
+      "address": "34 AGAWAM RD",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_681318_2997612",
+      "address": "6 GREAT RD",
+      "old": "EAV",
+      "new": "EAV"
+    },
+    {
+      "apn": "F_683026_3006063",
+      "address": "10 JAY LN",
+      "old": "R108",
+      "new": "R-10/8"
+    },
+    {
+      "apn": "F_658115_2994909",
+      "address": "14 TICONDEROGA RD",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_670439_3003274",
+      "address": "5 JACKSON DR",
+      "old": "R-2",
+      "new": "R-2"
+    },
+    {
+      "apn": "F_680450_2999665",
+      "address": "4 BRAEBROOK RD",
+      "old": "R-8",
+      "new": "R-8"
+    },
+    {
+      "apn": "F_666591_2998962",
+      "address": "7 CAPT BROWNS LN",
+      "old": "R-2",
+      "new": "R-2"
+    }
+  ],
+  "matrix_untouched": true
+}

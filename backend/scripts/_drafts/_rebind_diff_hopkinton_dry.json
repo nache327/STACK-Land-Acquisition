@@ -1,0 +1,372 @@
+{
+  "muni": "HOPKINTON",
+  "mode": "dry-run",
+  "generated": "2026-07-14T15:22:42.103072+00:00",
+  "gates": {
+    "a_vocab": {
+      "pass": true,
+      "violations": []
+    },
+    "b_count": {
+      "pass": true,
+      "got": 11,
+      "expected": [
+        9,
+        13
+      ],
+      "ordinance_districts_missing_from_layer": []
+    },
+    "d_no_unaccounted": {
+      "pass": true,
+      "note": "every parcel is rebound, orphan, or unchanged by construction"
+    }
+  },
+  "districts_fetched": 11,
+  "layer_vocab": [
+    "A",
+    "B",
+    "BD",
+    "BR",
+    "IA",
+    "IB",
+    "OP",
+    "P",
+    "RA",
+    "RB",
+    "RLF"
+  ],
+  "parcels_total": 5924,
+  "rebound": 5923,
+  "orphans": 1,
+  "changed": 1280,
+  "changed_pct": 21.6,
+  "transitions": [
+    {
+      "old": "A",
+      "new": "A",
+      "n": 2360
+    },
+    {
+      "old": "RB",
+      "new": "RB",
+      "n": 889
+    },
+    {
+      "old": "RA",
+      "new": "RA",
+      "n": 719
+    },
+    {
+      "old": null,
+      "new": "RB",
+      "n": 563
+    },
+    {
+      "old": "RLF",
+      "new": "RLF",
+      "n": 532
+    },
+    {
+      "old": "A2",
+      "new": "A",
+      "n": 150
+    },
+    {
+      "old": null,
+      "new": "A",
+      "n": 115
+    },
+    {
+      "old": null,
+      "new": "RLF",
+      "n": 85
+    },
+    {
+      "old": "BD",
+      "new": "BD",
+      "n": 73
+    },
+    {
+      "old": null,
+      "new": "RA",
+      "n": 40
+    },
+    {
+      "old": "RB2",
+      "new": "RB",
+      "n": 36
+    },
+    {
+      "old": "IA",
+      "new": "IA",
+      "n": 33
+    },
+    {
+      "old": "OSLP",
+      "new": "A",
+      "n": 32
+    },
+    {
+      "old": "RA1",
+      "new": "RA",
+      "n": 30
+    },
+    {
+      "old": "A",
+      "new": "RA",
+      "n": 30
+    },
+    {
+      "old": "A",
+      "new": "RB",
+      "n": 25
+    },
+    {
+      "old": "RA",
+      "new": "RB",
+      "n": 21
+    },
+    {
+      "old": "BR",
+      "new": "BR",
+      "n": 21
+    },
+    {
+      "old": "OSMU",
+      "new": "RB",
+      "n": 15
+    },
+    {
+      "old": "RB",
+      "new": "A",
+      "n": 15
+    },
+    {
+      "old": "A",
+      "new": "RLF",
+      "n": 14
+    },
+    {
+      "old": null,
+      "new": "BD",
+      "n": 12
+    },
+    {
+      "old": "IB",
+      "new": "IB",
+      "n": 11
+    },
+    {
+      "old": null,
+      "new": "IA",
+      "n": 10
+    },
+    {
+      "old": "RB2",
+      "new": "A",
+      "n": 6
+    },
+    {
+      "old": "BR",
+      "new": "RA",
+      "n": 6
+    },
+    {
+      "old": "RA1",
+      "new": "A",
+      "n": 6
+    },
+    {
+      "old": "A2",
+      "new": "RB",
+      "n": 5
+    },
+    {
+      "old": "RA1",
+      "new": "RB",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "BR",
+      "n": 4
+    },
+    {
+      "old": null,
+      "new": "IB",
+      "n": 4
+    },
+    {
+      "old": "B",
+      "new": "B",
+      "n": 4
+    },
+    {
+      "old": "NMU",
+      "new": "OP",
+      "n": 4
+    },
+    {
+      "old": "A",
+      "new": "OP",
+      "n": 4
+    },
+    {
+      "old": "A",
+      "new": "IB",
+      "n": 4
+    },
+    {
+      "old": "BD",
+      "new": "RA",
+      "n": 4
+    },
+    {
+      "old": "B",
+      "new": "RA",
+      "n": 3
+    },
+    {
+      "old": "HD",
+      "new": "RA",
+      "n": 3
+    },
+    {
+      "old": "OSLP",
+      "new": "RB",
+      "n": 3
+    },
+    {
+      "old": null,
+      "new": "B",
+      "n": 3
+    }
+  ],
+  "matrix_join": {
+    "before": 0,
+    "after": 0
+  },
+  "spot_check": [
+    {
+      "apn": "F_653172_2898862",
+      "address": "8 DEER RUN",
+      "old": "RB2",
+      "new": "RB"
+    },
+    {
+      "apn": "F_637828_2911681",
+      "address": "41 PARKER POINT ROAD",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_647829_2919836",
+      "address": "9 CEDAR STREET EXT",
+      "old": "A2",
+      "new": "A"
+    },
+    {
+      "apn": "F_638511_2896177",
+      "address": "3 PINECREST VILLAGE",
+      "old": "A",
+      "new": "A"
+    },
+    {
+      "apn": "F_649803_2898718",
+      "address": "OFF ALEXANDER ROAD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_647429_2921547",
+      "address": "38 LINCOLN STREET",
+      "old": "A",
+      "new": "A"
+    },
+    {
+      "apn": "F_642761_2910090",
+      "address": "3 BRIDLE PATH",
+      "old": null,
+      "new": "A"
+    },
+    {
+      "apn": "F_635611_2900449",
+      "address": "9 STONEGATE ROAD",
+      "old": "A",
+      "new": "A"
+    },
+    {
+      "apn": "F_642539_2897753",
+      "address": "109 HAYWARD STREET",
+      "old": "RLF",
+      "new": "RLF"
+    },
+    {
+      "apn": "F_650858_2907885",
+      "address": "18 CHURCH STREET",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_652726_2904685",
+      "address": "9 HAZEL ROAD",
+      "old": "RB",
+      "new": "RB"
+    },
+    {
+      "apn": "F_646428_2907528",
+      "address": "44 WOOD STREET",
+      "old": null,
+      "new": "RB"
+    },
+    {
+      "apn": "F_643018_2914797",
+      "address": "0 GREENWOOD ROAD",
+      "old": "OSLP",
+      "new": "A"
+    },
+    {
+      "apn": "F_634960_2913709",
+      "address": "3 CUNNINGHAM STREET",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_634702_2912601",
+      "address": "8 SPRING LANE",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_645521_2917408",
+      "address": "31 OVERLOOK ROAD",
+      "old": "A",
+      "new": "A"
+    },
+    {
+      "apn": "F_633548_2897120",
+      "address": "70 OLD ELM WAY",
+      "old": "A",
+      "new": "A"
+    },
+    {
+      "apn": "F_656571_2911831",
+      "address": "0 EAST MAIN STREET",
+      "old": null,
+      "new": "RB"
+    },
+    {
+      "apn": "F_652124_2907381",
+      "address": "13 PIKE STREET",
+      "old": "RA",
+      "new": "RA"
+    },
+    {
+      "apn": "F_636028_2916719",
+      "address": "5 NORTH STREET",
+      "old": "A",
+      "new": "A"
+    }
+  ],
+  "matrix_untouched": true
+}

@@ -1,0 +1,17 @@
+{
+  "muni": "ACTON",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Acton'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "ARC", "EAV", "EAV-2", "GI", "KC", "LB", "LI", "LI-1", "NAV",
+    "OP-1", "OP-2", "PCRC", "PM", "R-10", "R-10/8", "R-2", "R-4",
+    "R-8", "R-8/4", "R-A", "R-AA", "SAV", "SM", "TD", "VR", "WAV"
+  ],
+  "nonbinding": [],
+  "expected_count": [22, 30],
+  "notes": "Acton MA (Middlesex) — MAPC layer 2 (strip ^2). Parcels carry inconsistent assessor variants (OP1/OP-1, R2/R-2, EAV2/EAV-2, R108/R-10, R84/R-8/4) so a spatial rebind normalizes them to the CURRENT bylaw codes (2026 ed. amended May 2025, acton-ma.gov View/659). Vocab matches Table of Principal Uses §3. Vocab-vs-bylaw check via gate-a."
+}

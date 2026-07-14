@@ -1,0 +1,28 @@
+{
+  "muni": "HOPKINTON",
+  "jid": "MIDDLESEX",
+  "url": "MAPC",
+  "code_field": "zo_code",
+  "where": "muni='Hopkinton'",
+  "strip_prefix": "^\\d+",
+  "code_map": {},
+  "ordinance_districts": [
+    "A",
+    "B",
+    "BD",
+    "BR",
+    "IA",
+    "IB",
+    "OP",
+    "P",
+    "RA",
+    "RB",
+    "RLF"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    9,
+    13
+  ],
+  "notes": "Hopkinton MA (Middlesex) — MAPC layer 2 (strip ^139). Parcels carry assessor sub-codes (A2/RA1/RB2/OSLP) so a spatial rebind cleans them to bylaw districts. MAPC codes match the CURRENT Ch.210 bylaw (2023 ed., ehop.org): A=Agriculture, B/BD/BR=Business, IA/IB=Industrial A/B, OP=Office Park, P=Professional Office, RA/RB/RLF=Residence. Vocab-vs-bylaw check via gate-a."
+}
