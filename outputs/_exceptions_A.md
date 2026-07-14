@@ -1,6 +1,29 @@
 # Session A exceptions / discovery notes (cumulative)
 
-# ================= ESSEX COUNTY NJ (jid 67541a18…) — GROUND BATCH 1 (2026-07-14) =================
+# ================= MIDDLESEX COUNTY NJ (jid 9c039328…) — BIND + GROUND BATCH 1 (2026-07-14) =================
+Doubly-blocked → unblocked: ring precompute (worker path, 245,616 parcels dt10) + NJTPA Atlas 082025 bind
+(**245,578/245,616 = 100.0% bound**, batched-write fix to bind_nj_atlas082025.py). Then grounded the top
+in-ring industrial/CI towns off the wealth-ring distribution. Solo county → re-scored at batch end.
+
+## HUDSON LESSON confirmed for Middlesex (the big-warehouse-corridors-are-out-of-ring pattern)
+The distribution proved it: Edison's massive **L-I Light Industrial** corridor and Woodbridge/South
+Plainfield Turnpike/Exit-8A warehouse belts sit OUTSIDE the wealth ring (dt10 HV≥475k/HHI≥100k) — they are
+correct no-ops, not gaps. In-ring wealth+1.5ac industrial concentrates in Cranbury (Exit-8A but in-ring),
+Monroe, Edison's Restricted-Industrial, South Brunswick. Woodbridge in-ring = 6 lots (PQP, 0 industrial).
+
+## GROUNDED — Middlesex batch1
+| Muni | Result |
+|---|---|
+| **Cranbury township** | eCode360 CR0758 Ch.150 Art.III, guid=6664894. Closed list §150-10. **NEEDLE = HC + GC**: §150-20B(47) "Self-storage warehouses" permitted in HC Highway Commercial; GC §150-21B(1) inherits all HC uses → ss/mw permitted (HC 14 + GC 10 = 24 wealth-ring lots). **#38: R-LI = Residential-Light Impact (NOT industrial)** — 27 lots residential. I-LI (Industrial-Light Impact, 88) + RO/LI (Research Office/Light Industrial, 23) = **li-armed only** — their §150-23B(5)/§150-24B(3)(c) "wholesaling…warehousing/storage" is wholesale-accessory (Berkeley-Heights) and §150-10 + named-confinement to HC/GC override the convention. |
+| **Monroe township** | eCode360 MO0544 Ch.108 Art.VI, guid=35513835. No global closed list → per-district enumerated. **NEEDLE = L-I** (§108-6.19.A(2) "Fully enclosed wholesale, distributive or storage establishments" by-right → ss/mw conditional by convention; li permitted; **55 wealth-ring lots**). **H-D Highway Development = correct no-op**: its "wholesale/distributive/storage establishments" is a CONDITIONAL use only (§108-6.18.D(11), amended 10-6-2025 — permitted uses are office/retail/auto/hotel) → convention excludes conditional-only warehouse; self-storage unnamed → prohibited (60 HD lots no-op). |
+| **Edison township** | eCode360 ED0440 Ch.37, guid=34716725. Closed list §37-4.14. **NEEDLE = R-I-1** (§37-32.2(d) "Warehousing facilities" by-right → ss/mw conditional by convention; li permitted; **14 wealth-ring lots**). R-I (§37-31.1, no warehousing) = li-armed (18). **L-I (§37-33.1(d) warehousing by-right) grounded ss conditional but 0 wealth-ring lots — the out-of-ring Turnpike corridor (HUDSON LESSON)**. **#38: G-C = Golf Course District** (NOT General Commercial) — 7 in-ring lots no-op. |
+
+## FOLLOW-UP (not grounded this batch)
+| Muni | Item |
+|---|---|
+| **South Brunswick township** | In-ring industrial/CI: OR=48, OP=22, I-3=14, LI-1/2/4. Ordinance is on **Municode** (library.municode.com/nj/south_brunswick_township…CH62LAUS_ARTIVZO) — api.municode.com CodesContent needs the jobId/productId which didn't resolve via curl in a bounded probe. Deferred to avoid rabbit-holing; next pickup = resolve the Municode jobId (or paste Art.IV use table). Likely a real needle (OR Office-Research + LI-* + I-3). |
+
+
 Grounded 4 wealthy-industrial towns off the NJTPA-Atlas binding. NJ closed-list + named-beats-convention
 applied per town. Re-scored (solo county). verify_batch output pasted in the PR/handoff.
 
