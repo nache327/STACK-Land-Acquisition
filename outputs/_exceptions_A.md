@@ -1,5 +1,21 @@
 # Session A exceptions / discovery notes (cumulative)
 
+# ================= MORRIS COUNTY NJ (jid 746b7604…) — batchA1 (2026-07-14, shared w/ D) =================
+Partition: D = discovery ranks 1-4 (Kinnelon/Randolph/Boonton township/Long Hill); A = ranks 5-8
+(Morristown/Chatham township/Boonton town/Mountain Lakes). NJ name-bound → NO rebind. SKIP re-score
+(coordinator runs ONE reconciling Morris re-score after A+D merge).
+
+## GROUNDED — Morris NJ batchA1
+| Muni | Result |
+|---|---|
+| **Boonton town** | GROUNDED **NEEDLE = C-1** (eCode360 BO1912 Ch.300, print?guid=7162402). §300-110 A(18)(d) "Self-storage facilities" by-right in **C-1 (Hybrid Commercial/Industrial)** ONLY (added 9-16-2024 Ord.19-24). NJ CATCH: the same ordinance amended I-1 (§300-111) but did NOT add self-storage there; global closed-list §300-83 ("use not specifically permitted... is prohibited") ⇒ warehouse-by-right in I-1 does NOT ground ss. So I-1's 27 wealth-ring lots = **li-armed only** (manufacturing + warehouses by-right), NOT ss needles. C-2 (Gateway) = shared commercial uses only, no ss. Distinct from D's 'Boonton township' (#38). |
+| **Mountain Lakes borough** | GROUNDED **NEEDLE = B (Business Zone B)** (eCode360 MO1514 Ch.245, print?guid=8632797). §245-78 C(4) self-storage **conditional** in Business Zone B (§245-112). #38 CATCH: parcel "C-1"/"C-2" = **CONSERVATION Zones** (§245-81, recreational only) NOT commercial → the 26+8 wealth-ring "C" lots are prohibited (false signal). "A"/"B" = Business Zone A/B; "OL-1"/"OL-2" = Office & Light Industrial (§245-79 A(2) light mfg/storing/fabrication by-right → **li-armed**, ss not named there so prohibited). "RC-*" = Residential Clustering. |
+
+## DEFERRED — code-mismatch, 0 self-storage needle under current law
+| Muni | Reason |
+|---|---|
+| **Morristown town** (rank 5) | Feb-2024 form-based LDO (eCode360 MO0747 Ch.30) renamed ALL districts to R/E/MF-1/MF-2/PWN/**CI**/MX — but parcels still carry PRE-2024 codes (RC/RDZ/OB-1/OB-2/CBD-1/CBD-2/B/M1/PPU/TVC/ORC...). **Self-storage/warehouse is NOT a named use anywhere in the current LDO** (searched Article 2E + Part 2 District Standards, 260k chars, use tables Key P/NP/C) → 0 self-storage needles town-wide regardless of code mapping. Low ceiling anyway (dense downtown; M1 only 2 wealth-ring lots; PPU=Public/Park). NOT force-grounded: per-district li verdicts would need an old→new (M1→CI etc.) crosswalk — declined to fabricate against a superseded code scheme. Unblock = re-code parcels to the 2024 LDO districts, then ground CI for li. |
+
 # ================= DELAWARE COUNTY PA (jid de8945f7…) — batch1 (2026-07-14) =================
 
 ## Discovery
