@@ -1,6 +1,25 @@
-# Session D exceptions — Westchester County NY (jid 3e706886) + MontPA carryover
+# Session D exceptions — Morris NJ (746b7604) + Westchester NY (3e706886) + MontPA carryover
 
 Per-session file (not the shared queue).
+
+## Morris NJ — batch 1 (2026-07-09) — wealthy-industrial discovery
+
+Discovery-ranked un-grounded towns by wealth-ring industrial/commercial parcels; grounded the top 4.
+All eCode360 curl+UA; DOM-anchor for use placements. NJ casing (mixed-case + suffix) matched EXACTLY.
+NJ parcels 100% zoning-coded (name-bound; no rebind).
+
+| Town | Verdict | Basis |
+|---|---|---|
+| **Hanover township** | **I-B + I-B2 → permitted** (28 parcels); base I/I-P/I-5/I-P2 + all others → prohibited | §166-203.6K (I-B3) / §166-203.2B (I-B2) list "Self-service storage facilit(y/ies)" as a Permitted use. DECISIVE: §166-119.2 "self-service storage facilities are prohibited in all zone districts ... unless specifically permitted" — OVERRIDES the warehouse-by-right convention, so base I (126, warehouse-by-right) is PROHIBITED. catch #37/#57 — verbatim prohibition beats inference. |
+| **East Hanover township** | **I-3 → permitted** (128 parcels); I-1 + all others → prohibited | §95-59A(1)(j) "Self-storage facilities" is a Permitted principal use in the Light Industry I-3 Zone. Named only in I-3 → affirmative-provision → prohibited elsewhere. Biggest Morris needle this batch. |
+| **Montville township** | **I-1B + OB-2A + B-5 → conditional** (38 parcels); other industrial (I-1A/I-2/I-2A) → prohibited | §230-173 makes self-storage a CONDITIONAL use assigned ONLY to B-5/I-1B (§230-173A), OB-2A/OB-4 (§230-173B), OB-5 (§230-149). Named-use restricted to those zones → I-1A/I-2/I-2A prohibited (affirmative-provision). |
+| Denville township | all industrial/commercial → **prohibited** (no-op) | Ch. 600 Part 4 names self-storage 0×; I-1/I-2 primary use = offices/labs/industrial-and-manufacturing (NO warehouse → no convention trigger). Honest no-op. |
+
+Morris batch-1 needle contribution (pre-wealth/size gate): Hanover I-B/I-B2 (28 permitted), East Hanover
+I-3 (128 permitted), Montville I-1B/OB-2A/B-5 (38 conditional) — wealth-gated totals in verify_batch below.
+KEY NJ catch: multiple Morris towns have a general "self-storage prohibited unless specifically permitted"
+provision (Hanover §166-119.2) or assign self-storage to specific named districts — reading verbatim
+prevents false warehouse-convention needles (Hanover base I would have falsely armed 126 parcels).
 
 ## Westchester NY — batch 4 (2026-07-09) — 2nd-tier discovery (mostly no-ops, as expected)
 
