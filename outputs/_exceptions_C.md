@@ -31,3 +31,27 @@ The instruction named Greenwich, Norwalk, Stamford, Westport, Darien. Reality fr
 - Newtown I-2 not grounded (code present in layer but not in the Art. V M-series use analysis — unverified; left no-verdict).
 - Monroe & Newtown: light_industrial grounded (conditional in Monroe = manufacturing SEP; permitted in Newtown M-zones = by-right) but not a self-storage needle.
 - Did NOT touch the 6 separate town jids or the in-app Verifier (frozen).
+
+---
+# BATCH 2 (2026-07-14) — 0 new grounded needles; county_gis needle-EXHAUSTED (recon+escalation batch)
+
+**Finding: none of the batch-2 targets can yield wealth-gated needles.** The 6 named targets are
+ring-COVERED but NOT wealthy enough — dt10 median HV is all BELOW the $475k gate, so their ≥1.5ac
+wealth-gate pool = 0 (industrial-below-wealth-ring no-ops, per the coordinator's own "inside the
+wealth ring" qualifier — none are):
+  Bethel medHV $398k · Brookfield $366k · Trumbull $394k · Danbury $412k · Shelton $408k · Stratford $302k.
+The towns that DO clear the gate (Redding $625k, Weston $888k, Easton $863k) are estate-residential:
+- **Weston — NO-OP (confirmed).** Only 2 districts: R-2A + NSC (one 8,000-sf-capped neighborhood retail zone, exterior storage barred). Self-storage absent from closed-list Ch.240 → prohibited townwide.
+- **Easton — NO-OP (confirmed).** All-residential (Residence A/B + Floodplain overlay); no commercial/industrial district at all. Self-storage absent (closed-list §1410).
+
+## OPEN / ESCALATE (batch 2)
+| # | Town | Blocker | Needed |
+|---|---|---|---|
+| CF2 | **Redding CT** | REAL GO but geometry-blocked. Redding **SB (Service Business) Zone permits "Self-service storage facility" BY RIGHT** (§4.3.2(a), named; excluded from BC §4.3.3(a)); clears the wealth gate (medHV $625k). BUT no public zoning-polygon REST layer: town CDM Smith service `gis3.cdmsmithgis.com/reddingct` is 404/dead; Redding is WestCOG (not MetroCOG — no folder); WestCOG MapGeo is proprietary; WestCOG Parcels FeatureServer carries no zoning attribute. | Redding SB-zone geometry — town/WestCOG zoning shapefile OR digitize the zoning-map PDF. Then rebind + ground SB self_storage=permitted → real needles (SB parcels ≥1.5ac in the $625k ring). **Highest-value Fairfield unblock.** |
+
+## BATCH-2 BOTTOM LINE FOR COORDINATOR
+county_gis groundable wealth-gated needles are **EXHAUSTED** after Batch 1 (Monroe 21 + Newtown 1 = 22). Remaining needle sources are all BLOCKED:
+1. **Geometry-blocked GOs:** Redding (SB self-storage by-right, CF2), Ridgefield (CF1) — need town zoning shapefiles.
+2. **Ring-precompute-blocked:** the marquee wealthy jids (Greenwich/Stamford/Darien/Westport/New Canaan/Wilton separate jids) + Norwalk (county_gis) — 0 ring metrics.
+3. **True no-ops (correct, not gaps):** the 6 sub-$475k towns (Bethel/Brookfield/Trumbull/Danbury/Shelton/Stratford) + Weston + Easton + Fairfield-town.
+Recommend Fairfield county_gis moves to a holding state pending (1) a ring-precompute run on the marquee jids+Norwalk and (2) sourcing Redding/Ridgefield zoning geometry. Did NOT grind 0-needle groundings (discipline: industrial-without-wealth-ring = correct no-op, not a gap).
