@@ -1,4 +1,24 @@
-# Session A exceptions / discovery notes — Middlesex MA (cumulative)
+# Session A exceptions / discovery notes (cumulative)
+
+# ================= DELAWARE COUNTY PA (jid de8945f7…) — batch1 (2026-07-14) =================
+
+## Discovery
+Only 3 un-grounded towns have ANY wealth-ring ≥1.5ac lots (rest have ring_big=0 — the industrial
+river-boroughs Eddystone/Marcus Hook/Ridley etc. sit OUTSIDE the wealth ring = correct no-ops):
+Radnor (546), Upper Providence (148), Chester Heights (132). PA spatially bound → NO rebind.
+
+## GROUNDED — Delaware PA batch1
+| Muni | Result |
+|---|---|
+| **Radnor Township** | GROUNDED **0-NEEDLE correct no-op** (eCode360 RA0484 Ch.280, full chapter via print?guid=11078356). Wealthy Main Line office/institutional township with NO industrial district and self-storage NOT named. Only standalone by-right warehouse = C-3 Service Commercial §280-55.E "Indoor storage building or warehouse" → ss/mw conditional (convention, self-storage UNNAMED, flagged) — but C-3 has **0 wealth-ring ≥1.5ac lots** → 0 needles. #38: PI=Planned **Institutional** (not Industrial), PLU=Public Land Use, AC=Agricultural-Conservation. CO "storage" = bank security-vault only; C-2 warehouse = accessory-to-retail only. |
+| **Chester Heights Borough** | GROUNDED **NEEDLE = MHP only** (eCode360 CH2012 Ch.185, print?guid=12777187). KEY CATCH: self-storage IS named but §185-110.1.A confines it to **conditional use in the Mobile Home Park (MHP) district ONLY** → ss/mw conditional in MHP (2 wealth-ring lots). Named-and-confined ⇒ warehouse convention does NOT override the exclusion in B/LI. **LI §185-81** ("...and no other", closed) = light manufacturing by-right → li permitted (4 ring-big li-armed, NOT ss). **B §185-72** (current, amended 4-21-2025) = retail/office/service + accessory conjunctive storage only → prohibited (the 11 wealth-ring B lots are NOT self-storage needles). |
+
+## CORRECT NO-OP — recorded, not force-grounded
+| Muni | Reason |
+|---|---|
+| **Upper Providence Township (Delaware Co)** | **#38 catch**: TWO Upper Providence Townships in PA. The eCode360 UP1236 / Chapter 300 (node 42975244, uprov-montco.org) is the **Montgomery County** namesake — do NOT use it. The Delaware Co one = eCode360 **UP0461**, Title Six Zoning (node 28525006; confirmed Delaware/Media). It is 98% residential; "Miniwarehouse" (G7) is a defined use but lives in the industrial group, and the **LI Limited Industrial district — the only plausible host — has 0 wealth-ring ≥1.5ac parcels** (discovery). Wealth-ring lots are only B Business (1) + RO Residence-Office (3), which are not self-storage-eligible categories. **0 possible wealth-gated needles** → correct no-op. Not force-grounded (district use-tables live in §§1274-1280 not cleanly captured; declined to fabricate uncited verdicts). Revisit only if a specific blocked deal surfaces. |
+
+# ================= MIDDLESEX COUNTY MA (jid 18a11c2a…) — COMPLETE =================
 
 ## OPEN — needs Nache
 | Muni | Item | What's needed |
