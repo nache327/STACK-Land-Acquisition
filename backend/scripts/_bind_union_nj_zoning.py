@@ -50,7 +50,7 @@ def download_zoning() -> gpd.GeoDataFrame:
     return gdf
 
 
-async def main(dry: bool, cities: list[str] | None):
+async def main(dry: bool, cities: list[str] | None, only_unbound: bool = False):
     url = [l.split("=", 1)[1].strip() for l in open(".env") if l.startswith("DATABASE_URL=")][0]
     url = url.replace("postgresql+asyncpg://", "postgresql://")
 
@@ -59,16 +59,19 @@ async def main(dry: bool, cities: list[str] | None):
     con = await asyncpg.connect(url, timeout=60, statement_cache_size=0)
     try:
         await con.execute("SET statement_timeout=0")
+        unbound_clause = " AND zoning_code IS NULL" if only_unbound else ""
+        if only_unbound:
+            print("REPLACE=FALSE: binding only parcels with zoning_code IS NULL")
         if cities:
             print(f"SCOPED to cities: {cities}")
             rows = await con.fetch(
                 "SELECT id, city, ST_X(centroid::geometry) lon, ST_Y(centroid::geometry) lat "
                 "FROM parcels WHERE jurisdiction_id=$1 AND centroid IS NOT NULL "
-                "AND city = ANY($2::text[])", JID, cities)
+                "AND city = ANY($2::text[])" + unbound_clause, JID, cities)
         else:
             rows = await con.fetch(
                 "SELECT id, city, ST_X(centroid::geometry) lon, ST_Y(centroid::geometry) lat "
-                "FROM parcels WHERE jurisdiction_id=$1 AND centroid IS NOT NULL", JID)
+                "FROM parcels WHERE jurisdiction_id=$1 AND centroid IS NOT NULL" + unbound_clause, JID)
         print(f"parcel centroids: {len(rows)}")
         pgdf = gpd.GeoDataFrame(
             {"id": [r["id"] for r in rows], "city": [r["city"] for r in rows]},
@@ -122,6 +125,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--cities", default="", help="comma-separated parcels.city values to scope the bind")
+    ap.add_argument("--only-unbound", action="store_true", help="replace=false: bind only parcels with zoning_code IS NULL")
     a = ap.parse_args()
     cs = [c.strip() for c in a.cities.split(",") if c.strip()] or None
-    asyncio.run(main(a.dry_run, cs))
+    asyncio.run(main(a.dry_run, cs, a.only_unbound))
