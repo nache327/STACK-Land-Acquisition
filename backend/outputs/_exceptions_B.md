@@ -1,43 +1,47 @@
 # Session B exceptions
 
-## Hudson County NJ — DONE (branch parcellogic/hudson-nj-jc-bind)
-Jersey City bound 98.7% from NJTPA layer 7; ruled a confirmed near-total no-op (wealth on
-Gold-Coast RDPs, industrial outside the wealth ring). Full detail on that branch's copy of this
-file + memory `project_hudson_nj_outcome`. Pivoted to Union prep below.
+Prior Session-B work (separate branches, not on this one): Hudson NJ JC-bind (no-op,
+`project_hudson_nj_outcome`); Union NJ Atlas dry-run (superseded — Union is D's).
 
 ---
 
-# Union County NJ (jid 16dc5ad9-8211-47c6-bfad-93bf588b15e4) — Atlas-082025 bind DRY-RUN (2026-07-14)
+# Essex County NJ (jid 67541a18) — Session-B grounding (2026-07-14)
+Shared with A (A = Fairfield + West Caldwell; B = Livingston + Millburn + Roseland).
+Applied via `scripts/_apply_essex_nj_batchB.py` (muni-scoped, human_reviewed, verbatim citations).
+verify_batch = CLEAN, gate PASS; combined A+B = 144 needles. B contributes **78**:
+Livingston 53, Roseland 16, Millburn 9. **Re-score SKIPPED** (shared → coordinator reconciles).
 
-DRY-RUN PREP ONLY — apply HELD pending (a) Essex distribution greenlight, (b) coordinator/Nache go.
+## FLAG for coordinator/Nache — Livingston I/CI vs §170-88K (affects 38 of the 53 Livingston needles)
+Livingston has an internal tension I resolved by the coexistence reading but want reviewed:
+- **I (§170-117A(6))** lists "Moving and storage operations and self-storage facilities" as a by-right
+  primary use; **CI (§170-118A(3)(c))** lists "Warehouses, including self-storage facilities
+  (mini-warehouses)" by-right. → grounded self_storage **PERMITTED** (conf 0.90). These 2 zones = 38
+  wealth-ring needles (CI 27 + I 11).
+- BUT **§170-88K** (Conditional Uses) says self-storage "shall be permitted **only** in the R-L and R-L2
+  Zones as conditional uses," and §170-88 has a clause "Requirements for conditional uses shall take
+  precedence over any regulations for the zone."
+- **My reading (grounded):** §170-88 is a permissive conditional-use framework ("the Planning Board may
+  approve conditional uses as herein permitted"); a use listed **by-right** in I/CI is not a "conditional
+  use" there, so §170-88K's "only" scopes the *conditional* pathway (R-L/R-L2) and does not repeal the
+  express by-right I/CI listings — which survived a 2014 amendment (§170-117 amended 12-1-2014, self-storage
+  retained). Precedence clause governs conditional-use *standards*, not other zones' by-right grants.
+- **Weaker exclusivity reading:** treat §170-88K "only" as controlling → demote I/CI self_storage to
+  prohibited, leaving just R-L/R-L2 conditional (15 needles). If coordinator/Nache prefer this, flip
+  I & CI to prohibited in the apply script.
 
-**Source:** NJTPA Zoning Atlas 082025, statewide layer
-`gis.njtpa.org/server/rest/services/LandUse/NJTPA_Zoning_Atlas_082025/MapServer/0`
-(covers all 13 NJTPA counties incl. Hudson — a future Hudson re-scope option). Code field
-`Abbreviated_District_Name`, long name `Full_District_Name`, filter `County='Union'` = 2,464 polygons.
-Cloudflare-gated → curl+browser-UA (httpx/requests default-UA 403s).
+## #38 catches (coordinator's named districts were partly mislabeled)
+- **Livingston R-L / R-L2** = §170-115/116 "Research Laboratory" — office/research/institutional (closed
+  primary-use list), NOT residential despite the R- prefix. Correctly grounded as self-storage CONDITIONAL
+  (via §170-88K), li prohibited — NOT as residential and NOT as light-industrial. (Coordinator's caution
+  confirmed.)
+- **Millburn "C"** = §DRZ-606.1 **Conservation-Recreation** (the ~650-ac South Mountain Reservation), NOT a
+  commercial district → prohibited. The only Millburn needle is **CMO** (§DRZ-606.9): warehouses by-right +
+  self-storage unnamed + no global clause → warehouse convention → ss/mw conditional, li permitted.
+- **Roseland "C"/"CR"** = §30-30 **Conservation / Conservation-Recreation**, NOT commercial → prohibited.
+  The real Roseland needle is **RM** = §30-404.5 Research/Manufacturing (self-storage a named conditional
+  use §30-404.5c.1 → ss/mw conditional, li permitted). OB-2/OB-3/B-1/B-2 = office/business → prohibited.
 
-**Coverage (centroid-within, EPSG:4326): 122,796 / 123,738 = 99.2%** of Union's NULL-zoning parcels
-would bind. Union has 147,627 parcels; 4 towns already bound (Scotch Plains / Summit / Berkeley
-Heights / New Providence ≈ 23,889). Every remaining town binds ~100% EXCEPT:
-- **Winfield township 0/706** — genuinely absent from the Atlas (0 features anywhere; tiny enclave). Honest gap.
-- **Rahway 8,192/8,401 (97.5%)** — 209 parcels outside Rahway's 73 Atlas polygons (rail/water). Minor.
-
-**#38 code check (PASS):** Atlas codes match current ordinances — Westfield RS-6/8/10/12/16/24/40,
-RM-6/6D, GB-1/2/3, CBD, C; Summit R-5/6/10/15/43, MF/MFT, B/NB, ORC/RO-60/PROD; Cranford
-R-1..R-8, NC, ORC, D-C/D-T/D-B, C-2; Berkeley Heights OL, R-10/15/20, OR/OR-B, **LI**, DH/AH/HB.
-
-**#38 cross-jurisdiction slivers:** 66 matches (0.05%) where a parcel's centroid falls in a
-neighbor's Atlas polygon (e.g. 16 Westfield↔Mountainside border). Geographically correct; harmless —
-the needle join keys on `parcels.city`, so a sliver carrying a neighbor's zone can't false-match that
-neighbor's matrix. Leave as-is (unlike the Hudson JC-only clean; Union is whole-county in scope).
-
-**Bug caught + fixed during prep:** ArcGIS `resultOffset` paging WITHOUT `orderByFields` is unstable
-— page boundaries shift between requests, silently skipping/duplicating features (a re-download
-dropped Winfield + part of Rahway, non-deterministically). Fixed with `orderByFields=OBJECTID`;
-verified the paged download now retrieves all 2,464 unique OBJECTIDs and coverage is stable across runs.
-
-**Apply artifact (ready, held):** `backend/scripts/bind_nj_atlas082025.py` — dry-run by default;
-`--apply` writes `zoning_code` + `zoning_code_source='njtpa_atlas_082025'` write-once (only NULL rows,
-= replace=false). Fire on greenlight:
-`python scripts/bind_nj_atlas082025.py --jid 16dc5ad9-8211-47c6-bfad-93bf588b15e4 --county Union --apply`
+## Acres sanity note
+Several Livingston/Millburn residential zones carry absurd-acre lots (e.g. R-2 maxacre 79,900; R-1 9,467)
+— clearly bad assessor acreage, but all in prohibited residential zones so 0 needle impact. The needle
+zones (I/CI/CMO/RM + R-L/R-L2) have sane max acreages (CI 14.9, I 165.8 river/utility parcel, RM 34.5).
