@@ -1,5 +1,51 @@
 # Session A exceptions / discovery notes (cumulative)
 
+# ================= ESSEX COUNTY NJ (jid 67541a18…) — batch1 BLOCKED at Stage-1 (2026-07-14) =================
+
+**STOP / ESCALATE — Essex is NOT groundable as a matrix batch. The parcels are not zone-bound.**
+The session was scoped as "NJ name-bound → no rebind, ground top 3-4 towns." That assumption (true for
+Morris, where 177,464/177,532 parcels arrived with a `zoning_code` from the source pull) is **FALSE for
+Essex**. Diagnosis below is verify-before-declare (#42) — all counts are live queries, not inference.
+
+## The block (verified)
+- **Only Newark is zone-bound**: 41,957 / 175,932 Essex parcels have a non-NULL `zoning_code`, and ~all
+  are Newark (R-3/C-2/RDV/MX-1/EWR-airport/PORT). Every wealthy target town has **zoning_code = NULL,
+  assessor_zoning_code = NULL, zone_binding_method = NULL** for 100% of its parcels.
+- **Newark's wealth ring fails** (urban) → its 873 bound ≥1.5ac lots yield **0 wealth-gated needles** =
+  correct no-op. So the one bound town is a no-op and the towns with real needle potential are all unbound.
+- **`zoning_districts` geometry is Newark-only**: 2,966 rows (source='arcgis', raw_attributes `"City":
+  "Newark"`). A centroid spatial-bind test (`ST_Within(ST_Centroid(p.geom), zd.geom)`) returns **0
+  bindable parcels** for every wealthy town — no district polygon covers them.
+- **`zone_use_matrix`**: 0 human_reviewed rows for Essex. verify_batch → **needles=0**, gate PASS (nothing
+  poisonous), warn "only 23.8% of parcels have a zoning_code".
+
+## Wealth-eligible potential being left on the table (acres≥1.5 + dt10 HV≥475k + HHI≥100k)
+Livingston 794 · Fairfield 716 · Montclair 402 · Millburn 168 · West Caldwell 143 · Verona 106 ·
+West Orange 92 · North Caldwell 90 · Roseland 81 · Essex Fells 64 · Bloomfield 27 · Maplewood 25.
+These are large — Fairfield + Livingston alone rival a whole grounded county — but **unreachable until the
+parcel→zone link exists**. Grounding an ordinance matrix now produces 0 needles (nothing to join on).
+
+## Why the fetch-first playbook doesn't unblock it here
+`zoning_sources` for Essex (NJDCA directory, 20 rows) gives the wealthy towns only `pdf_map` +
+`ordinance` (eCode360) — **no `shapefile_url`, no `zoning_endpoint` FeatureServer**. Bounded probe done:
+Fairfield's public ArcGIS app is FEMA-flood only; the consultant org hosting it (services6/UcuMPLF9IlsigGHI)
+carries Paramus/Westwood (Bergen) zoning but **not** Fairfield/Livingston/etc. The top targets publish
+zoning as **PDF maps only**. So the ordinances give use tables but nothing binds a parcel to a district.
+
+## Unblock path (Stage-1 infra — coordinator decision; this is the Braintree/Hudson-parked town-GIS pattern)
+Per target town: (1) locate a zoning **polygon** source — town/county ArcGIS FeatureServer with a Zone
+field, OR a georeferenced shapefile (NJGIN/Rutgers njmaps host NJ *parcels* but not municipal *zoning*
+polygons); (2) ingest into `zoning_districts`; (3) spatial centroid-bind → populate `parcels.zoning_code`
+(#38: verify layer codes+geometry vs the CURRENT ordinance); (4) THEN ground the eCode360 use table +
+apply the NJ self-storage catch (global closed-list clause OR named-district confinement beats the
+warehouse convention — the Boonton rule). Ordinance URLs already captured in `zoning_sources`
+(Fairfield ecode360.com/35314662, Livingston attachment LI1238, etc.).
+
+**Recommendation:** do NOT ground Essex ordinances into the matrix yet (would create human rows that
+score 0 and give a false "grounded" signal). Either (a) fund the per-town zoning-polygon acquisition as a
+Stage-1 task, or (b) pivot this session to a county whose parcels arrived pre-bound. No matrix writes were
+made; no re-score run. Discovery scripts left uncommitted/removed.
+
 # ================= MORRIS COUNTY NJ (jid 746b7604…) — batchA1 (2026-07-14, shared w/ D) =================
 Partition: D = discovery ranks 1-4 (Kinnelon/Randolph/Boonton township/Long Hill); A = ranks 5-8
 (Morristown/Chatham township/Boonton town/Mountain Lakes). NJ name-bound → NO rebind. SKIP re-score
