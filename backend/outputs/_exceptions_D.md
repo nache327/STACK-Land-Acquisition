@@ -28,5 +28,17 @@ NORTH CAROLINA** (ADMIN = Monroe/Waxhaw/Weddington/Mint Hill/Indian Trail — Ch
 - **Westfield** — NO industrial district (all residential / General Business / Office / Commercial). 160
   wealth+1.5ac parcels are large residential lots → correct **no-op**, not a gap. Not grounded this batch.
 
+## RECONCILIATION FLAG for coordinator — binding source choice (UCNJ GIS vs NJTPA Atlas)
+The Essex session found a region-wide **NJTPA Atlas 082025** layer that reportedly covers all 13 counties
+INCLUDING Union (`_bind_essex_njtpa_atlas.py`, Essex bound 99.81%). I bound Union via the **official UCNJ
+county GIS** instead (`_bind_union_nj_zoning.py`, ZoneID = the ordinance's own codes, which is what my matrix
+rows key on). **DO NOT re-bind these 4 towns via a different source with different code strings** without
+re-reconciling the matrix — the needle join is `zone_use_matrix.zone_code = parcels.zoning_code` (exact), so
+an Atlas rebind that normalizes "LI"/"M-1"/"TBI-2" differently would silently un-bind my 24 needles. For the
+county-wide bind of the remaining 17 towns, either (a) extend the UCNJ bind (`--cities` empty) — consistent
+with these 4 — or (b) Atlas-bind and re-run `_apply_union_nj_batch1.py` reconciled to the Atlas codes.
+
 ## Genuine ambiguities
-(none yet — appended as encountered)
+- **New Providence RL** (13 parcels) and **SCOTCH PLAINS SCRPD** (57 parcels) grounded conservative-prohibited
+  (conf 0.70): stale/redevelopment codes without a parsed current use list. Revisit if a deal lands there.
+- **Berkeley Heights OR-A** (1 parcel, conf 0.65): repealed → MU; grounded prohibited pending MU use table.
