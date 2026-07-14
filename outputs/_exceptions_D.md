@@ -2,6 +2,24 @@
 
 Per-session file (not the shared queue).
 
+## Westchester NY — batch 3 (2026-07-09) — data-driven discovery
+
+Ranked un-grounded towns by wealth-ring commercial/industrial parcels; grounded the top 4 with genuine
+industrial/commercial ZONING (residential-heavy towns like Bedford/Somers/Scarsdale = correct no-ops,
+not forced). All eCode360 via curl+UA; use-schedule attachment PDFs parsed with pdfplumber; DOM-anchor
+method for interleaved schedules.
+
+| Town | Verdict | Basis |
+|---|---|---|
+| **Yorktown** | I-1 + I-2 → **conditional** (0.90, 55 parcels); C-1/2/2R/3/4/CC/O/OB → prohibited | §300-21 schedule places "Self-storage center ... §300-79" in **I-1 Light Industrial Park** + **I-2 Planned Light Industrial** (Planning Board special permit, dead-storage only, ≥2ac). §300-79's "M-1/M-1A/M-2" are LEGACY names for the current I-1/I-2 (DOM-verified via schedule district headers). Commercial C-2 family expressly excludes self-storage buildings (§300-21C(12)). |
+| Croton-on-Hudson | WDD/LI/C-1/C-2/WC/O-1 → **prohibited** (no-op) | Schedule of Uses (Attach. B) + Special Permit Schedule (Attach. D) name no self-storage/mini-warehouse; only generic "Warehousing, wholesaling, freight distribution" (§230-18). No-inference. |
+| New Castle (Chappaqua) | B-R/I-G/I-P/B-D/B-RP/B-RO-20 → **prohibited** (no-op) | Business & Industrial Use schedule (Attach. 060d) names self-storage/warehouse 0 times; only accessory/incidental storage. Ultra-wealthy, catch #52. |
+| Rye Brook | OB-1/2/3/S + C1/C1-P/H-1 → **prohibited** (no-op) | Schedule of Regulations use matrix (18 tables) names no self-storage use; "storage" only in restrictions ("no storage on non-office premises"). Office-campus/PUD village. |
+
+Batch-3 needle yield = Yorktown 55 conditional parcels (subject to wealth+size gate — see verify_batch).
+3 honest no-ops confirm the discovery filter (real industrial/commercial zoning ≠ self-storage permission
+in these NY towns; self-storage is consistently narrowly zoned).
+
 ## Westchester NY — batch 2 (2026-07-09)
 
 ### Grounded / resolved this batch
