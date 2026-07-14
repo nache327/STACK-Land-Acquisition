@@ -84,3 +84,17 @@ CF-WW: **West Whiteland's 3 I-1 needles rest on the warehouse⇒conditional CONV
 - Charlestown "I" = Institutional (not Industrial) → the 4 wealth-ring "I" parcels correctly NOT grounded as a needle (catch #38).
 - East Marlborough "ESI" = Educational/Scientific/Institutional → not an industrial needle (catch #38).
 - Upper Uwchlan "PI" → prohibited (NOT convention-conditional) because self-storage is named only in LI under a closed list (NB-Twp J25 rule) — avoided ~15 false convention-needles.
+
+---
+# CHESTER PA — Batch 3 (2026-07-14, SHARED w/ Session B) — 4 towns, +70 needles
+
+Partition: C took ranks 1-4. NAMED grounds preferred; catch #38 institutional saves; convention flagged.
+- West Chester Borough: ID self_storage PERMITTED by right (NAMED §112-304.A#27 "Mini storage"); CS CONDITIONAL (NAMED special exception §112-304.D#9); **IS = INSTITUTIONAL (catch #38, §112-312 — excluded)**; MU/NC prohibited. **+10 (ID 4 + CS 6)**.
+- East Nantmeal Twp: C self_storage CONDITIONAL (NAMED special exception §501.C.6); IA-1/IA-2 absent (named only in C → NB-J25); **EI = Institutional (#38)**. **+24 (C)**. ⚠ CURRENCY CAVEAT: 2011 ordinance (town's own hosted PDF; live site Cloudflare-gated, post-2011 recodification not ruled out).
+- West Vincent Twp: PC/LI CONDITIONAL via open unnamed-use catch-all §390-53B(13) (FLAG CF-WV, self-storage UNNAMED); LVCC prohibited; **M = Municipal (#38)**. **+22 (PC/LI)**.
+- Westtown Twp: C-1/C-2/M-U CONDITIONAL via warehouse convention (FLAG CF-WT, self-storage UNNAMED; "storage/distribution facilities" by-right §170-1101A(8)/§170-11A01A(8)); POC office-only + **T = Township parkland (#38)** prohibited. **+14 (C-1 7 + M-U 6 + C-2 1)**.
+
+## ⚠ PARTITION OVERLAP w/ Session B (coordinator: de-dup PRs)
+West Chester Borough + East Nantmeal Twp (my ranks 1-2) were ALSO grounded by B BEFORE my run — but B grounded ONLY the residential/no-op codes (West Chester NC-1/NC-2/NC-3/TC/PUC; East Nantmeal RA/AP/AR/FRR/R-1), all prohibited, ZERO needles. My run grounded the DISJOINT industrial/commercial NEEDLE codes (ID/CS/IS/MU; C/IA-1/IA-2/EI). **No clobber — rows are complementary** (disjoint zone_codes; verified). Both C's and B's PRs will contain apply scripts touching these 2 municipalities (different zone_codes → no git/data conflict, both can apply). Coordinator: confirm B does not re-ground my needle codes (ID/CS/C) with different verdicts. Uncontested clean towns: West Vincent + Westtown (B did not touch).
+
+## SKIPPED the re-score (shared county — coordinator runs ONE reconciling Chester re-score after B+C merge). verify_batch reads the matrix directly → needle counts accurate.
