@@ -2,6 +2,27 @@
 
 Per-session file (not the shared queue).
 
+## Westchester NY — batch 2 (2026-07-09)
+
+### Grounded / resolved this batch
+| Town | Verdict | Basis |
+|---|---|---|
+| Yonkers (industrial) | M/MG/I/PMD/IP + CBD/C/CM/OL → **prohibited** | **Resolves D-wc-1.** §43-27 Schedule of Use Regulations (full use list — 34 manufacturing uses) has NO self-storage row; §43-36.M authorizes "Self-storage warehouse" ONLY in BR/B/BA (2018). Self-storage NOT affirmatively provided in industrial (catch #57); no-inference (generic warehousing ≠ self-storage). Yonkers self-storage yield = BR/B/BA only. Catch #37: PMD = Planned Multi-Use, not Mfg. |
+| Tarrytown | WGBD/GB/NS/OB/ID/MU/HC/LB → **prohibited** (honest no-op) | Self-storage / self-service / mini-warehouse NAMED NOWHERE in Ch. 305 (commercial, industrial, WGBD, whole chapter). ID permits only generic "warehousing/storage in buildings" (no-inference). Catch #37: M-1/1.5/2/3/4 = Multifamily Residence, NOT manufacturing — not verdicted. 0 needles. |
+
+### D-wc-1 — RESOLVED (see above): Yonkers industrial does NOT add self-storage needles.
+### D-wc-2 (Tarrytown) — RESOLVED (see above): honest no-op.
+
+### ⚠ D-wc-3 — White Plains: Municode-only, API ApiKey-gated (NOT grounded this batch)
+White Plains zoning is on **Municode** (library.municode.com/ny/white_plains) — NOT eCode360 (WH1268 =
+error), NOT amlegal. Tried the banked Municode content-API unlock: `api.municode.com/CodesContent` needs
+a numeric productId/jobId + an **ApiKey** that the Angular SPA injects at runtime (shell HTML shows empty
+`ApiKey:`/`ApiUrl:` config placeholders; `/Clients/name`, `/Clients/stateAbbr/NY`, `/products/...` all
+404/400 without it). WebFetch on a JS SPA returns only the shell. Needle worth it: LI:134 + CB-1/2/3/4
++ B-1/2/3/6 + C-O in a very-high-wealth ring (~640 wealth+sized commercial). **Need:** the White Plains
+Municode productId + jobId (+ ApiKey if required), OR a coordinator paste of the LI/CB/B use table +
+any self-storage/self-service-storage/mini-warehouse definition. Deferred to a follow-up.
+
 ## Westchester NY — batch 1 (2026-07-09)
 
 ### Grounded this batch
