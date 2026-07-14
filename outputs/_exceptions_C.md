@@ -55,3 +55,15 @@ county_gis groundable wealth-gated needles are **EXHAUSTED** after Batch 1 (Monr
 2. **Ring-precompute-blocked:** the marquee wealthy jids (Greenwich/Stamford/Darien/Westport/New Canaan/Wilton separate jids) + Norwalk (county_gis) — 0 ring metrics.
 3. **True no-ops (correct, not gaps):** the 6 sub-$475k towns (Bethel/Brookfield/Trumbull/Danbury/Shelton/Stratford) + Weston + Easton + Fairfield-town.
 Recommend Fairfield county_gis moves to a holding state pending (1) a ring-precompute run on the marquee jids+Norwalk and (2) sourcing Redding/Ridgefield zoning geometry. Did NOT grind 0-needle groundings (discipline: industrial-without-wealth-ring = correct no-op, not a gap).
+
+---
+# CHESTER PA — Batch 1 (2026-07-14) — 4 towns grounded, +390 wealth-gated needles
+
+PA spatially bound → no rebind. All use tables via eCode360 print-endpoint (curl+UA). catch #38: I-codes confirmed INDUSTRIAL (not Institutional) in each town.
+- West Goshen Twp: self_storage PERMITTED by right (NAMED "Miniwarehouse or self-storage facility") in I-1/I-2/I-3/I-2-R/I-C/MPD; C-4/C-5 prohibited. **+207 needles.**
+- New Garden Twp: self_storage PERMITTED by right (NAMED §200-45.A(17)) in C/I; H/C/BP/ADZ prohibited. **+37.**
+- East Goshen Twp: self_storage CONDITIONAL (NAMED §240-19C(2)) in I-1; BP EXPRESSLY prohibited (§240-21C(2)(b)); I-2/C-* absent. **+19.**
+- Uwchlan Twp: self_storage CONDITIONAL in PI/PIC/PCID. **+127.**
+
+## TRANSPARENCY FLAG (not a blocker — coordinator review)
+CF-UW: **Uwchlan's 127 needles rest on the warehouse⇒conditional CONVENTION, not a named self-storage use.** Self-storage is UNNAMED townwide in Ch.265; PI/PIC/PCID permit "warehousing" by-right and the code is NOT a closed list (open conditional catch-all §509.5.f), so self_storage is reachable as a conditional use per the blessed convention (conf 0.65). This is weaker grounding than the other 3 towns (which name self-storage explicitly). Flagging for visibility; verdicts are conditional (not permitted), so they surface as conditional needles.
