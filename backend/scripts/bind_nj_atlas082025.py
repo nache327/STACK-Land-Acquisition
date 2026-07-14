@@ -153,17 +153,23 @@ async def run(jid: str, county: str, apply: bool) -> None:
         await conn.close()
         return
 
-    print(f"\n[APPLY] writing {len(updates)} zoning_code + provenance='{PROVENANCE}' (write-once)…")
+    print(f"\n[APPLY] writing {len(updates)} zoning_code + provenance='{PROVENANCE}' (write-once, batched)…")
+    # Batched UNNEST write: one UPDATE...FROM unnest(...) per BATCH rows instead of
+    # a per-row loop (245k round-trips → ~25 statements). Bit-identical semantics:
+    # write-once on NULL rows only, same provenance. parcels.id is bigint.
+    ids = [int(pid) for pid, _ in updates]
+    zcodes = [str(code) for _, code in updates]
+    BATCH = 10000
     written = 0
     async with conn.transaction():
-        for pid, code in updates:
+        for i in range(0, len(updates), BATCH):
             res = await conn.execute(
-                """UPDATE parcels SET zoning_code=$1, zoning_code_source=$2
-                   WHERE id=$3 AND zoning_code IS NULL""",
-                code, PROVENANCE, pid,
+                """UPDATE parcels p SET zoning_code = v.code, zoning_code_source = $3
+                     FROM (SELECT unnest($1::bigint[]) AS id, unnest($2::text[]) AS code) v
+                    WHERE p.id = v.id AND p.zoning_code IS NULL""",
+                ids[i:i + BATCH], zcodes[i:i + BATCH], PROVENANCE,
             )
-            if res.endswith("1"):
-                written += 1
+            written += int(res.split()[-1])  # "UPDATE N"
     print(f"[APPLY] rows written: {written}")
     now_bound = await conn.fetchval(
         "SELECT COUNT(*) FROM parcels WHERE jurisdiction_id=$1 AND zoning_code IS NOT NULL", jid)
