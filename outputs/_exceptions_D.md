@@ -2,6 +2,25 @@
 
 Per-session file (not the shared queue).
 
+## Morris NJ — batch 2 (2026-07-09) — deep-bench discovery
+
+Discovery-ranked remaining un-grounded towns; grounded the top 4 by real industrial-in-wealth-ring. All
+eCode360 curl+UA + DOM-anchor. Applied the NJ catch per town (global self-storage clause? district-
+specific assignment? — before the warehouse convention).
+
+| Town | Verdict | Basis |
+|---|---|---|
+| **Parsippany-Troy Hills township** | **LIW2/LIW5/LIW2-R3 + SED-3/3A/5/5A/10 → conditional** (~250); B/O/ROL prohibited | Self-storage named NOWHERE in Ch. 430 (checked LIW-2, SED, gen-regs, root, Zoneomics — 0), no global clause, no assignment. LIW-2 §430-162D/E + SED §430-141D/E permit warehousing/distribution by-right → warehouse-by-right convention → conditional. Biggest Morris pool. |
+| **Morris township** | **I-21 → conditional** (148); OL/B/PRC prohibited | §95-25A(5) I-21 "Wholesale business storage and warehouses" by-right; self-storage unnamed (0 in Ch. 95), no global clause → convention → conditional. OL warehouse is incidental-accessory-only (≤10%) → prohibited. |
+| **Lincoln Park borough** | **I/TI/PI → conditional** (87); CR/B/O-R/LB prohibited | §28-18.4A(1) I "All industrial uses permitted" + §28-18.2A(6) TI "Warehouses" by-right; self-storage unnamed (0 in Ch. 28) → convention → conditional. |
+| **Boonton town** | **C-1/C-2 → permitted** (67); I-1 prohibited despite warehouse | §300-110A(18)(d) "Self-storage facilities" is a PERMITTED use in C-1 (Hybrid Comm/Ind)/C-2. Self-storage is NAMED/ASSIGNED to C-1/C-2 → I-1 (warehouse-by-right §300-111A(4)) is PROHIBITED (affirmative-provision; convention does NOT apply when self-storage is named). |
+
+Batch-2 needle contribution is large (Parsippany LIW+SED ~250 conditional, Morris Twp I-21 148, Lincoln
+Park 87, Boonton C-1/C-2 67 permitted) — wealth-gated totals in verify_batch below. NJ CATCH confirmed
+robust: applied both branches — Boonton (named→assigned→I-1 prohibited) vs Parsippany/Morris-Twp/Lincoln
+Park (unnamed→warehouse-by-right→conditional). Note: Boonton phantom row `C-1A` written (0 parcels;
+harmless, no matching parcels).
+
 ## Morris NJ — batch 1 (2026-07-09) — wealthy-industrial discovery
 
 Discovery-ranked un-grounded towns by wealth-ring industrial/commercial parcels; grounded the top 4.
