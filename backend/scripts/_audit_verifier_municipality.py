@@ -39,8 +39,11 @@ VERIFIER_NOTE_MARK = "Site Scout Zoning Chat"
 
 
 async def main() -> None:
-    con = await asyncpg.connect(get_sync_dsn(), timeout=60, statement_cache_size=0)
+    con = await asyncpg.connect(get_sync_dsn(), timeout=120, statement_cache_size=0)
     try:
+        # Disable the server statement timeout: the city_list CTE scans the full
+        # (multi-million-row) parcels table and exceeds Supabase's default timeout.
+        await con.execute("SET statement_timeout=0")
         # All active human-reviewed rows, with their jurisdiction + county context
         # and whether municipality matches a real parcels.city (exact / any-case).
         rows = await con.fetch(
