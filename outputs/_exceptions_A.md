@@ -248,3 +248,31 @@ ring=0, unbound). Ordinance reachable (amlegal-Playwright). BIND path:
 3. Tract-batched ring for just those villages' tracts (NOT the 1.9M county) → ground.
 Prior: Kenilworth + Glencoe pure-residential (0 industrial); Wilmette/Northfield small commercial
 (Northfield Willow Rd office/light-industrial = the only plausible needle). Likely no-ops (Winnetka pattern).
+
+# ================= COOK NORTH SHORE bind+ground — PROGRESS + 2 infra blockers (2026-07-15 session A) =================
+Cook jid 1726fc6f. **DONE: parcels.city backfilled** for the 4 villages from `raw->>'CITYNAME'` (initcap,
+city_source='raw_cityname'): **Wilmette 10,933 / Glencoe 3,777 / Northfield 2,968 / Kenilworth 1,004 =
+18,682** (scoped by exact CITYNAME, NOT the 1.86M county). They're now identifiable/groundable.
+Ordinances = amlegal-Playwright reachable (proven on Winnetka). Two infra blockers remain:
+
+**BLOCKER 1 — zoning bind (GIS-Consortium proxy is a deep multi-hop discovery):** the villages are
+GIS-Consortium members but the proxy zoning layer isn't one hop from the member page. Path found so far:
+Wilmette portal (wilmette.gov/739) → ArcGIS Instant "Web Gallery" app **appid c3de6a068dff486a8901c198b5d553f4**
+(a GALLERY of maps, no single webmap/proxy in its config) → need to enumerate the gallery's group maps →
+open the ZONING web map → read its operational layer's `utility.arcgis.com/usrsvcs/servers/<guid>/rest/
+services/<F>/AGOL_<F>_Project/MapServer` (the CLAUDE.md proxy). Next step: fetch the app's group/folder,
+find the "Zoning" map item, pull its layer URL; then geopandas centroid-within bind (village city-scoped),
+#38 verify IL + coverage%. ⚠️ Do NOT bind services7.arcgis.com/R9CVCgaSS8Zy2txP/2021_Zoning_Districts =
+Brownsburg INDIANA. Alt: paste each village zoning map / amlegal use tables.
+
+**BLOCKER 2 — scoped ring:** `ring_metrics_precompute.precompute_ring_metrics_for_jurisdiction(jid)` has NO
+city/parcel-subset param (buckets ALL parcels WHERE jurisdiction_id=jid, uses the whole-county bbox) → on
+Cook it would run the gated 1.86M precompute. Needs a small wrapper: add `AND p.city = ANY(:villages)` to
+the tract-bucket query + use the villages' bbox, so ring runs for just the 18,682 village parcels' tracts
+(mostly warm from Winnetka's adjacent precompute). Without this, the in-ring gate-check (triage steps 3-4)
+can't run.
+
+**TRIAGE PRIOR (once unblocked):** Kenilworth (1,004; 8 ≥1.5ac) + Glencoe (3,777; 88) = pure-residential
+near-certain no-ops. Wilmette (604 ≥1.5ac) mostly residential + small commercial. **Northfield (586 ≥1.5ac;
+Willow Rd office/light-industrial) = the only plausible needle** — focus the in-ring-industrial check there.
+Whole cluster likely follows the Winnetka residential-no-op pattern.
