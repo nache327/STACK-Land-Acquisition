@@ -206,3 +206,27 @@ rank + exact failed routes + paste-specs:
 ### Handback
 - Plymouth MN 7cc5f175 = **16 needles** (CLEAN). Minnetonka/Cary/Apex = amlegal-blocked, paste-specs above.
   No re-score/CoStar (per instr).
+
+## Phase 6 — amlegal via Playwright (parcellogic/phase6-amlegal-playwright)
+Playwright headless (memory: project_playwright_defeats_cloudflare_js) renders past the amlegal
+Cloudflare-JS SPA that defeats curl/WebFetch/content-API. Grounded the 3 previously-blocked towns.
+Column-aligned by <td>/x-coordinate and validated vs a known row (#37).
+
+- **Minnetonka MN (3267204b…)** — NO-OP (0 needles). amlegal §300.x: B-1 Office (accessory storage
+  <=10% only) prohibited; **B-2 Limited Business names no self-storage/warehouse use** (accessory +
+  conditional "outside storage" only) prohibited; I-1 Industrial permits "warehouse, storage" by-right
+  (ss/mw conditional) but **0 in-ring** -> 0 needles. verify_batch CLEAN, gate PASS.
+- **Cary NC (Wake b05b7317)** — **37 needles**. LDO Table 5.1-1 "Mini-storage [6]" row (validated vs
+  "Office, business or professional" P-row): **ORD = S (Special Use -> conditional), I = P (permitted)**;
+  OI/GC/MXD blank -> prohibited. ORD+ORDCU = 37 in-ring conditional needles; I/ICU permitted (0 in-ring);
+  GC/GCCU/OI/OICU/MXD prohibited. (PDD excluded by Cary's own table.)
+- **Apex NC (Wake b05b7317)** — **16 needles**. UDO Table 4.2.2 "Self-service storage" row (pdfplumber
+  x-aligned, validated vs "Retail sales" P at PC/TF/LI/PUD): **P in TF and LI only** (supplemental
+  §4.4.5.G.14); PC/CB/O&I blank -> prohibited. LI+LI-CU (9) + TF+TF-CZ (7) = 16 in-ring needles;
+  PC/CB/O&I prohibited. (PUD-CZ excluded — parcel-specific.) NOTE the Apex UDO use table is a town-site
+  PDF (apexnc.org DocumentCenter/View/549), even cleaner than amlegal.
+
+### Handback
+- Minnetonka MN 3267204b = **0** (no-op, CLEAN). Cary (Wake) = **+37**. Apex (Wake) = **+16**.
+- Wake jid b05b7317 grounded total now = Raleigh 9 + Cary 37 + Apex 16 = **62 needles**.
+- No re-score/CoStar (per instr). No paste-specs needed — Playwright unblocked all three.
