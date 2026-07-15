@@ -422,6 +422,7 @@ async def precompute_ring_metrics(
     jurisdiction_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    cities: str | None = None,
 ) -> dict:
     """Pre-warm parcel_ring_metrics for every parcel in this jurisdiction.
 
@@ -491,10 +492,14 @@ async def precompute_ring_metrics(
             state["tracts_total"] = total
             await _save(job_id, state)
 
+        # Optional city-scoped precompute (comma-separated) — runs ring for just
+        # those cities' parcels/tracts inside a large county jid, avoiding the
+        # gated county-scale Mapbox cost. bbox is auto-derived from those parcels.
+        _cities = [c.strip() for c in cities.split(",")] if cities else None
         try:
             async with async_session_maker() as bg_db:
                 summary = await precompute_ring_metrics_for_jurisdiction(
-                    jurisdiction_id, bg_db, on_progress=_on_progress,
+                    jurisdiction_id, bg_db, on_progress=_on_progress, cities=_cities,
                 )
             state["tracts_computed"] = summary["tracts_computed"]
             state["tracts_total"] = summary["tracts_computed"]  # final total

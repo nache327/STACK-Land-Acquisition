@@ -276,3 +276,37 @@ can't run.
 near-certain no-ops. Wilmette (604 ≥1.5ac) mostly residential + small commercial. **Northfield (586 ≥1.5ac;
 Willow Rd office/light-industrial) = the only plausible needle** — focus the in-ring-industrial check there.
 Whole cluster likely follows the Winnetka residential-no-op pattern.
+
+# ================= COOK NORTHFIELD-FIRST — ring-wrapper BUILT; GIS-proxy zoning DEAD-END (2026-07-15 session A) =================
+**DONE — reusable ring-subset infra (the missing piece):** added `cities`/`bbox_override` kwargs to
+`ring_metrics_precompute.precompute_ring_metrics_for_jurisdiction` (auto-derives the cities' bbox; filters the
+parcel→tract bucket to `p.city = ANY(cities)` so ONLY those tracts get Mapbox isochrones) + threaded a
+`cities` (comma-list) query param through the sync `POST /jurisdictions/{jid}/_precompute-ring-metrics`
+endpoint. Runs per-city ring on any county jid without county-scale Mapbox cost. Backward-compatible
+(defaults None = original whole-jid). Scoping SQL verified: Northfield bbox=(-87.885,42.066,-87.752,42.151)
+= IL/Cook (#38 ✓), 2,968 parcels. **Can't execute locally (no MAPBOX_TOKEN, mapbox_enabled=False) — runs
+post-deploy:** `POST .../{cook_jid}/_precompute-ring-metrics?cities=Northfield` (then Wilmette/Glencoe/Kenilworth).
+
+**DEAD-END — Northfield IL zoning via GIS-Consortium proxy (thorough bounded hunt failed):**
+- Northfield IL is a GIS-Consortium member; its data is under **MGP's token-gated ArcGIS hub**
+  (`mgp-solutions-mgp.hub.arcgis.com`, linked from public.gisconsortium.org/members/.../northfield/). No
+  public REST proxy layer URL is exposed on the member/village pages; the `utility.arcgis.com/usrsvcs/
+  servers/<guid>/...` proxy needs the community-map-viewer <guid>, which isn't on any public page reached.
+- Wilmette's public map app = ArcGIS Instant "Web Gallery" **appid c3de6a068dff486a8901c198b5d553f4** (a
+  gallery, no single webmap/proxy in config).
+- **AGOL open search is a #38 minefield:** "Northfield zoning" returns only WRONG-STATE Northfields —
+  Vermont (owner Stone_CVRPC, VTZONING_*), Minnesota (tiles ULBqC49IEeIR01GF, "Northfield and Dundas"),
+  Michigan (services7 DAi79..., Northfield Township Master Plan), Massachusetts (MassGIS). NONE is IL/Cook.
+  Never bind these; never bind services7/R9CVCgaSS8Zy2txP/2021_Zoning_Districts (=Brownsburg INDIANA).
+
+**PASTE-SPEC to unblock Northfield grounding** (once a zoning source is in hand):
+- Zoning source needed: the Northfield IL (Cook) zoning **polygon layer** — either (a) the MGP/GIS-Consortium
+  community-map-viewer proxy MapServer (needs the viewer guid from a logged-in/hub session), (b) a village
+  zoning shapefile from northfieldil.org, or (c) georeference the village zoning-map PDF. Then geopandas
+  centroid-within bind on the 2,968 `city='Northfield'` parcels; #38 verify IL + coverage%.
+- Ordinance/use-table: Northfield IL Village Code (check amlegal — reachable via the Playwright fetcher).
+  Paste the **industrial/office district permitted+special use lists** (esp. the Willow Rd corridor district —
+  "I" / "O-R" / "R&D" / light-industrial) — specifically whether **self-service storage / mini-warehouse /
+  warehouse** is a permitted or special use there. Then: scoped ring (wrapper above) → in-ring ≥1.5ac gate →
+  ground. Prior: affluent village, Willow Rd = only plausible needle; likely a small needle or no-op.
+- Kenilworth/Glencoe/Wilmette: same GIS-proxy bind blocker; strong residential-no-op prior (Winnetka pattern).
