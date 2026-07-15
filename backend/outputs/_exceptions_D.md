@@ -225,3 +225,29 @@ acknowledged in §42-5 parking). BUT **no zoning spatial layer exists** (Oakland
 publish only Current Land Use + a PDF zoning map; MI-verified, #38 mapxpress look-alike rejected). ML footprint
 small (~5-6 labels near Telegraph/Wagner). **Blocked on Stage-1 binding** — needs PDF-digitize or assessor-code
 rebind. Small potential needle; park with Nassau pattern.
+
+---
+# CONTRA COSTA East County (Session D) — 2026-07-15
+
+Ring done county-wide; grounded 5 East County munis per-city (each own code, text-verified). +65 → **county 394**,
+verify_batch CLEAN / gate PASS, casing OK.
+- **Pinole 33** — OIMU "Personal Storage Facility" = P by-right (7) + CMU = C (23); **#38: "H-I"/"H-I -X" are
+  LEGACY pre-2010 codes folded into OIMU by the 2010 rewrite** → grounded conditional-reconcile (3); OPMU N.
+- **Oakley 23** — LI "Mini-storage Facility" = CUP + warehouse by-right. **#38: M-H = MOBILE HOME Residential
+  (§9.1.408), NOT manufacturing** — 56 in-ring M-H parcels are a no-op (trap avoided).
+- **Hercules 8** — CG Mini-Storage = CUP (§13-60 confines self-storage to CG+I). **PO/RD (21 in-ring) = li-only
+  NO-OP** (self-storage not named; "Storage Facilities" must serve Hercules businesses).
+- **Pittsburg 1** — IP/IL/IG ministorage = CUP, but only IG (1) is in-ring; **#38: T-1 (40 in-ring) = COUNTY
+  Mobile Home Park** (no Pittsburg T-1 district) → no-op; the real heavy industrial (waterfront) is out-of-ring.
+- **Antioch 0 in-ring (honest no-op)** — Mini-storage named/confined to M-2 (by-right)/M-1 (CUP)/MCR/WF, but
+  **M-1/M-2 (Wilbur Ave/river corridor) are OUT of the wealth ring**; in-ring set is C-2/C-3/S-P/P-D (self-storage
+  blank / indeterminate). M-1/M-2 grounded (permitted/conditional) for future ring changes.
+
+## Escalations / indeterminate
+- **Antioch "WSCD"** (12 in-ring parcels): NOT a codified Antioch district (absent from Title 9 Ch.5 / use table).
+  Grounded conservative-prohibited (conf 0.55). **Verify the true base zoning / specific-plan for these parcels.**
+- **Specific-plan / PD indeterminate** (grounded prohibited, revisit via the plan docs): Oakley SP-1 (68 in-ring)/
+  SP-4 East Cypress & Downtown specific plans; Antioch S-P (18)/P-D (24)/DTSP; Pittsburg PD/HPD. Self-storage
+  status is governed by each adopted plan, not the base code.
+- **Pinole H-I legacy** (3 in-ring): grounded conditional pending rebind of those parcels to OIMU (their current
+  district). Small; revisit at next Pinole data refresh.
