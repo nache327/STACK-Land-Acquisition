@@ -210,3 +210,41 @@ correct no-ops (all-residential towns, see above) or the two held items:
 - **Newton** = OPEN, awaiting Nache paste (Akamai-WAF-blocked current source; only stale 2014 draft freely fetchable).
 - **Hudson** = PARKED (stale M-code consolidating recodification; coordinator-ruled — needs town shapefile → spatial rebind).
 Middlesex is otherwise COMPLETE — next session pivots to a fresh county.
+
+# ================= HINSDALE / DuPage (Chicago Phase-6) — BLOCKED on bind (2026-07-15) =================
+jid 8e748965 = **all of DuPage County** (336,715 parcels, city=NULL, **NO `raw` blob**, ring=0, zoning
+UNBOUND). The real wall is the parcel→zone BIND, not the ordinance:
+- **Ordinance = REACHABLE** (NOT paste-gated): Hinsdale zoning is on amlegal
+  `codelibrary.amlegal.com/codes/hinsdaleil/latest/hinsdale_il_zoning/0-0-0-1` → fetch via the ordinance
+  fetcher's Playwright path (proven on Winnetka this session; beats the Cloudflare-JS wall).
+- **BIND = BLOCKED**: (a) Hinsdale village parcels are **unidentifiable in the DB** — city=NULL and there's
+  no `raw` to backfill a municipality from (unlike Cook's CITYNAME). (b) DuPage County GIS
+  `gis.dupageco.org/arcgis/rest/services/Zoning` has only `UnincorporatedZoningData` — Hinsdale
+  (incorporated) is NOT in it. (c) No CMAP regional parcel-zoning layer exists. No Hinsdale zoning polygon
+  FeatureServer surfaced.
+- **UNBLOCK NEEDED (one of):** (1) a Hinsdale village zoning polygon layer (check if Hinsdale is a
+  GIS-Consortium member → anonymous-proxy per CLAUDE.md), then spatial centroid-bind the DuPage parcels
+  whose centroid falls in the Hinsdale boundary; OR (2) a per-parcel zoning export from the village.
+
+**PASTE-SPEC (if a human grabs the use tables while the bind is solved):** amlegal Hinsdale Zoning Code —
+- District list (Art. II §2-101 / the "R/O/B" articles): **R-1..R-4** (single-family residential),
+  **O-1/O-2/O-3** (office), **B-1 Community Business, B-2 Central Business, B-3 General Business**.
+  ⚠️ Confirm there is **no industrial district** (search suggests none — like Winnetka).
+- Use tables to paste: **Art. V §5-102 "Permitted Uses"** (business districts B-1/B-2/B-3) + the O-district
+  permitted-use section + any §"Special Uses" — specifically whether **"self-service storage / mini-warehouse
+  / warehouse"** is a listed permitted or special use in B-3 (general business) or any O district. Prior: very
+  likely NONE (affluent residential village, no industrial) → a Winnetka/Darien-style 0-needle no-op.
+
+# ================= COOK NORTH SHORE villages (Chicago Phase-6) — BLOCKED on bind; unblock path (2026-07-15) =================
+Kenilworth/Glencoe/Wilmette/Northfield parcels sit in the **Cook County jid 1726fc6f** (1.86M, city=NULL,
+ring=0, unbound). Ordinance reachable (amlegal-Playwright). BIND path:
+1. Backfill `parcels.city` from `raw->>'CITYNAME'` (+ verify vs village boundary) to scope the 4 villages.
+2. Zoning: Cook County layer is UNINCORPORATED-only; the villages are **GIS-Consortium members**
+   (public.gisconsortium.org) → reach zoning via the anonymous proxy
+   `utility.arcgis.com/usrsvcs/servers/<guid>/rest/services/<F>/AGOL_<F>_Project/MapServer` (guid from each
+   village community-map-viewer). #38: verify layer is IN Illinois + dry-run coverage% before --apply.
+   ⚠️ Do NOT use `services7.arcgis.com/R9CVCgaSS8Zy2txP/2021_Zoning_Districts` — that is **Brownsburg INDIANA**
+   (the Nassau trap; keeps surfacing in generic searches).
+3. Tract-batched ring for just those villages' tracts (NOT the 1.9M county) → ground.
+Prior: Kenilworth + Glencoe pure-residential (0 industrial); Wilmette/Northfield small commercial
+(Northfield Willow Rd office/light-industrial = the only plausible needle). Likely no-ops (Winnetka pattern).
