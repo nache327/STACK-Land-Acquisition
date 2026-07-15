@@ -30,21 +30,28 @@ North Hills 0, East Hills ~0 — pure-residential estate zoning, same lesson as 
 **The industrial needle sits in the town unincorporated areas + Freeport/Glen Cove** — i.e. **3 town
 ordinances + 2 small city/village ones**, NOT 69 villages. Tractable.
 
-## Zoning sources located (bindable)
-- **Town of Oyster Bay** (biggest needle): FeatureServer
-  `https://services7.arcgis.com/R9CVCgaSS8Zy2txP/ArcGIS/rest/services/2021_Zoning_Districts/FeatureServer/0`
-  — 9,107 polygons, fields `ZONE_CLASS` (short) + `ZONE_CLASS_LONG`. Per the current 2012 ordinance.
-  Industrial zones: **I1 (Low Intensity Industrial), I2 (High Intensity Industrial), EC (Employment
-  Center)**; commercial C1/C2/HC/UC. **#38: M1/M2/M3 = Multiple-family Residential, NOT Manufacturing**
-  (same trap as Tarrytown). Ordinance: eCode360 **OY1221 Chapter 246**; use schedule = **§ 246-5.2
-  "Schedule of Use Regulations" (Attachment 17 — a large attachment table)**. Web-confirmed: "Warehouse,
-  distribution and storage uses" = **PP (Permitted Principal)** in the Industrial (I1/I2) category → the
-  needle is real; ground as warehouse-by-right ⇒ self-storage conditional (convention) UNLESS "self-service
-  storage" is separately named. ⚠️ NY-schedule caution (memory New Rochelle lesson): the use table is an
-  attachment PDF — parse it with the DOM/attachment anchor, NOT a naive text read.
-- **Town of Hempstead / Town of North Hempstead**: sources still to locate (each town has its own GIS +
-  ordinance; Hempstead-town has the most parcels but modest in-ring whse/ind — 34/13). Freeport + Glen Cove
-  = small municipal ordinances.
+## ⛔ ZONING SOURCE — BLOCKED (correction 2026-07-15, supersedes the earlier "FeatureServer located")
+**The zoning-source situation is worse than first reported. Nassau has NO accessible spatial zoning layer.**
+- ❌ **WRONG-JURISDICTION TRAP (do NOT use):** `services7.arcgis.com/R9CVCgaSS8Zy2txP/.../2021_Zoning_Districts`
+  is **Brownsburg / Hendricks County, INDIANA — NOT Town of Oyster Bay, NY.** A web search conflated it (it
+  happens to have I1/I2/EC/HC/M1-M3 codes + a "Town of Oyster Bay"-ish hit). Proof: its `Parcel_Info` records
+  read `PropertyCity=Brownsburg`, Indiana township names (Lincoln/Brown), Indiana parcel IDs
+  (`32-07-12-300-...`), and CRS wkid **2966 = Indiana East State Plane** (its geometry reprojects to
+  ~-86.4°,39.9° = Indiana, not -73.5°,40.9° = Nassau). A dry-run centroid bind gave **0% coverage** (correctly
+  — the geometry is 1,000 mi away), so **no parcels were bound** (verified Oyster Bay zoned=0). Had it been
+  applied blind it would have poisoned NY parcels with Indiana zoning. Catch #38 at the source layer.
+- ❌ Nassau County GIS (`gis.nassaucountyny.gov`) — parcels/`TownCity`/addresses only, **no zoning**.
+- ❌ NYS GIS Clearinghouse (`gisservices.its.ny.gov`) — Locators/Utilities only, no zoning.
+- ✅ **Real Town of Oyster Bay NY zoning = PDF maps only** (oysterbaytown.com/wp-content/uploads/Zone-Maps-all.pdf,
+  TOB-Zoning-Maps.pdf) + the **correct ordinance** eCode360 **OY1221 Chapter 246 §246-5.2 Schedule of Use
+  Regulations** (this IS Oyster Bay NY — verified title). #38 note still holds for the REAL town: M1/M2/M3 =
+  Multiple-family Residential. "Warehouse, distribution and storage" = PP in I1/I2 per the schedule.
+
+**⇒ Nassau grounding is BLOCKED on zoning-source acquisition.** No per-parcel or polygon zoning layer exists
+for the NY towns; zoning is PDF-map-only. To ground, someone must EITHER (a) georeference the town zoning-map
+PDFs into polygons (heavy GIS), (b) locate a hidden town/LRV REST zoning layer (not found via county/NYS/town
+sites), or (c) obtain a per-parcel zoning table (e.g. the town's Citizenserve/permitting export or a paste).
+This parallels the Essex-NJ Stage-1 escalation — except NY has no NJTPA-style regional aggregate to rescue it.
 
 ## Ready-to-execute plan for the grounding batch (next session)
 1. **Bind Oyster Bay zoning** (spatial centroid-within, geopandas — the `bind_nj_atlas082025.py` pattern):
@@ -58,8 +65,13 @@ ordinances + 2 small city/village ones**, NOT 69 villages. Tractable.
 4. `verify_batch` + `postingest_gate` + direct SELECT needle count (#42). NOTE: full-county needle LATERAL
    is slow on 420k — use the targeted per-(muni,zone) count over grounded permitted/conditional zones.
 
-## Handoff to coordinator
-- **jid c72002c7-1f3e-48e4-be98-04e420776fdb** — municipality-bound (city from MUNI_NAME); ring done;
-  zoning bind + grounding is a scoped multi-town batch (sources above). **Current wealth-gated needles: 0**
-  (no zoning bound yet — structurally 0 until step 1/2). Needle POTENTIAL proven real (Oyster Bay
-  ~120 whse + 105 ind in-ring is a top-tier target). No CoStar / re-score run (per instructions).
+## Handoff to coordinator (updated 2026-07-15)
+- **jid c72002c7-1f3e-48e4-be98-04e420776fdb** — municipality-bound (city from MUNI_NAME, 100%); ring done
+  (95.8%). **Current wealth-gated needles: 0** and **BLOCKED** — zoning cannot be bound: no county/NYS/regional
+  spatial zoning layer, towns are PDF-map-only, and the one "FeatureServer" a search surfaced is Brownsburg
+  INDIANA (wrong jurisdiction — flagged above, NOT bound). Needle POTENTIAL is real (Oyster Bay ~120 whse +
+  105 ind in-ring) but ungroundable until a zoning source is acquired.
+- **DECISION NEEDED:** Nassau is a Stage-1 zoning-acquisition project, not a same-session grounding batch.
+  Options: (a) PDF-map georeferencing per town, (b) hunt a hidden town/LRV REST zoning layer, (c) per-parcel
+  zoning paste/export. Recommend deprioritizing vs. pockets that only need ring+ground on already-bound jids
+  (per the 58-pocket ledger) until a zoning source is secured. No CoStar / re-score run (per instructions).
