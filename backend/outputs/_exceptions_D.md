@@ -64,3 +64,29 @@ no industrial district → no-op. These are small tails; grounded on request.
 - **New Providence RL** (13 parcels) and **SCOTCH PLAINS SCRPD** (57 parcels) grounded conservative-prohibited
   (conf 0.70): stale/redevelopment codes without a parsed current use list. Revisit if a deal lands there.
 - **Berkeley Heights OR-A** (1 parcel, conf 0.65): repealed → MU; grounded prohibited pending MU use table.
+
+---
+# PHASE 5 SOUTH (2026-07-15) — Williamson TN + Fulton GA (per-city SLCo jids)
+
+Ring-precompute run per-city (worker path). **407 wealth-gated needles across 4 cities, all verify_batch CLEAN / gate PASS:**
+- **Brentwood TN** [e0df78b2-de04-4e43-bf3b-c5244eb4613c] — **59** (C-3 Commercial Service-Warehouse; self-service storage named by-right §78-242(1)(b)).
+- **Franklin TN** [307285f8-9426-4f17-9e66-999c8e01218f] — **277** (LI 169 + RC12 92 + HI 16; self-storage named §5.1.4.V).
+- **Sandy Springs GA** [b49ac34f-6394-47ba-87e3-149b6ae0d706] — **29** (CX-3 cond 25 + CC-3 perm 4; self-service storage named Div. 7.2).
+- **Atlanta-Buckhead GA** [a5d68bcd-ce4b-446a-aefb-23613e6f9013] — **42** (O-I/O-I-C/C-3/C-3-C/I-1 perm + SPI-15 SA1 cond; Atlanta secured-/self-storage terms).
+
+## #38 catches (mislabeled family)
+- **Brentwood SI-1..SI-4 = "Service Institution"** (Religious/Educational/Cultural-Gov/Retirement) — institutional, NOT industrial despite large acreage → all prohibited (only C-3 is the warehouse district). "-IP" suffix = GIS annotation (base AR/OSRD residential). Big trap avoided.
+- **Franklin ER = Estate Residential** (NOT "Employment") and **CI = Civic Institutional** (NOT Commercial/Industrial).
+
+## ESCALATE — Franklin CI + RC12 (graphic-matrix reads, need human verification)
+Franklin's §5.1.3 use matrix is GRAPHIC DOTS (no text layer); the research agent read it via dot-detection.
+- **CI (Civic Institutional, 124 large parcels): HELD → grounded PROHIBITED.** The matrix *appears* to show self-storage/general-warehousing = half-circle (permitted-w/-standards) in CI, but that is semantically surprising for a civic-institutional district and rests on a dot read. NOT claimed as ~124 needles pending human spot-check of an actual CI-mapped parcel. **If verified permitted, re-ground CI → +N needles.**
+- **RC12 (Regional Commerce): grounded conditional (conf 0.72) = 92 of Franklin's 277 needles.** Self-storage half-circle read from the same graphic matrix; commercially plausible (regional-commerce), but confirm against the official matrix substrate. RC4/RC6 (self-storage not listed) grounded prohibited.
+- Franklin LI/HI self-storage (§5.1.4.V) is text-confirmed (the named use + definition are in the text layer) — high confidence.
+
+## INFRASTRUCTURE — ring-precompute worker stalls in bursts (coordinator: ring traffic control)
+Firing 4 per-city `_precompute-ring-metrics-worker` jobs in parallel: Brentwood + Sandy Springs completed first pass; **Franklin + Buckhead stalled partway** (frozen ~20 min after an initial burst) and required 2 re-enqueues each to reach 100% (each enqueue advances one chunk then stops — likely Mapbox rate/tract-cache bursting). All 4 now 100%. Recommend staggering per-city ring jobs (2 at a time) rather than 4-way parallel.
+
+## Notes
+- Buckhead 500-ft BeltLine-corridor exclusion (I-1/C-3/O-I self-storage) is a parcel-level caveat noted in verdicts; Buckhead is north of the BeltLine and existing facilities are grandfathered → not applied per-parcel.
+- Did NOT run CoStar close-out or re-score (per coordinator).
