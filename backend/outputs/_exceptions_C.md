@@ -117,3 +117,48 @@ office/mixed grounded prohibited. **1 wealth-gated needle.** verify_batch CLEAN,
 - **Wake NC** b05b7317… : bound (~225k Cary/Apex/Raleigh); Raleigh grounded = **9 needles**. Cary/Apex
   bound but NOT ground (planned-dev + unreadable use tables) — follow-up above. No re-score/CoStar (per instr).
 - **South Charlotte NC** c9af9445… : ring done; grounded = **1 needle** (near-no-op). No re-score/CoStar.
+
+## Phase 6 — Detroit / Oakland MI cluster (parcellogic/phase6-oakland-mi)
+5 Oakland County per-city jids. Acres healthy. Ring-precompute fired per city (worker path, MAX 2
+concurrent). **RESULT: entire cluster = NO-OP for self-storage** (as predicted — wealthy-residential
+enclaves; Detroit metro's real industrial is Troy/Auburn Hills, not these jids). NO city showed
+in-ring industrial, so per instructions NONE were ground. Ring-HV logged below for threshold calibration.
+
+### #38 CATCH (highlight)
+**Bloomfield Hills "I-1" = INSTITUTIONAL district, NOT Industrial** (Municode Ch.24 Art.II district
+list: "I-1 Institutional district"). Its 24 in-ring >=1.5ac wealth-pass parcels looked like an
+industrial needle cluster but are schools/churches/civic (Cranbrook country). Bloomfield Hills has NO
+industrial district at all (A-1..A-6 residential, B-1/C-1 commercial, O-1/O-2 office, I-1 Institutional,
+P-1 parking, RR railroad; "storage of commodities shall be expressly prohibited"). Correct no-op.
+(Note: Municode content API — api.municode.com/CodesContent — was WORKING this session despite the
+"broken" flag; used it read-only to confirm the I-1 definition.)
+
+### Ring-HV log (threshold-calibration data; dt=10 medians)
+| City (jid) | ring rows | med ring-HV | med ring-HHI | wealth-pass | industrial district? | verdict |
+|---|---|---|---|---|---|---|
+| Birmingham (97474794) | 8072/9778 | $544,868 | $149,370 | 8072 (all) | none (R/B/MX/O/PP/TZ) | NO-OP, verify CLEAN |
+| Bloomfield Hills (e914f6d4) | 1833/1833 | $652,128 | ~$168k | 1833 (all) | none (I-1=Institutional #38) | NO-OP, verify CLEAN |
+| Beverly Hills (53edb548) | 2729/4174 | $504,306 | $138,093 | 2729 (all) | none (R/B/O/PP) | NO-OP, verify CLEAN |
+| Franklin (ec91da85) | 1312/1312 | $477,078 | $137,889 | 1312 (all) | none (SF-Res/RO-1/C-1/Historic) | NO-OP (unbound; ordinance has no industrial) |
+| Bloomfield Twp (15ecf7aa) | 0 | — | — | — | unknown (unbound) | BLOCKED — see below |
+
+All four ranked cities are uniformly wealth-pass (every ringed parcel clears $475k HV / $100k HHI),
+so the wealth gate is NOT the limiter here — the limiter is the total absence of industrial/flex zoning.
+
+### Escalations / follow-ups
+- **Bloomfield Township (15ecf7aa)** — NOT completed: (a) parcels are zoning-UNBOUND (0%), and its
+  zoning is PDF-map-only (bloomfieldtwp.org — no ArcGIS REST zoning layer found), so no spatial bind;
+  (b) its ring-precompute never computed (stuck at 0 rows). Affluent residential township — expected
+  no-op, but needs a zoning-polygon source + a working ring run to confirm. Coordinator: source a
+  Bloomfield Twp / Oakland County incorporated zoning polygon layer (Access Oakland open data), bind,
+  re-fire ring.
+- **Ring-precompute worker stalls** — observed the worker completing only PARTIAL rings then stalling
+  (Birmingham 82.5%, Beverly Hills 65%; Bloomfield Hills needed 2 re-fires to finish; Bloomfield Twp
+  never started). Re-firing eventually completed the small jids. Computed rows are all valid. Flagging
+  for infra attention (per-city jids should complete in one pass). Not a blocker for the no-op verdicts.
+
+### Handback (jids + needles)
+- Birmingham 97474794 = **0** (no-op, CLEAN) · Bloomfield Hills e914f6d4 = **0** (no-op, CLEAN, #38 I-1=Institutional)
+  · Beverly Hills 53edb548 = **0** (no-op, CLEAN) · Franklin ec91da85 = **0** (no-op; unbound, ordinance has no industrial)
+  · Bloomfield Twp 15ecf7aa = BLOCKED (unbound + ring=0). No re-score/CoStar (per instr).
+Remaining Phase-6 singles ready to assign: Portland/Lake Oswego, Miami/Pinecrest, Park City/Snyderville.
