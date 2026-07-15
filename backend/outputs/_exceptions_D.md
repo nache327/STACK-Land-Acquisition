@@ -130,3 +130,46 @@ but unconfirmable; removes 92 needles (restorable if the authoritative graphic m
 ## RING infra (reconfirmed)
 Per-city worker ring jobs still stall in bursts (GV finished clean; HR needed 2 re-enqueues, stuck at 96.8%).
 Kept to ≤2 concurrent per the rule. Stagger; expect 1-2 re-enqueues per job.
+
+---
+# CONTRA COSTA COUNTY CA — Batch-1 (2026-07-15) — jid 7ad622d4-0d36-4fe5-ad8b-53352bdac162
+
+County-scale ring-precompute COMPLETE (387,492/387,492, coordinator-authorized single job, finished in one pass). **304 wealth-gated needles, casing CLEAN** (grounded cities):
+- **Concord: 223** (OBP 95, IMX 44, SC 25, IBP 22, L-I 20, H-I 16) — self-storage named UP/conditional in all business-park/industrial + SC.
+- **Walnut Creek: 36** (SC permitted 7 + B-P-100/200 CUP 29). Self-storage = "Mini-Storage" named, confined to S-C/B-P.
+- **Pacheco: 19** (C-M 11, L-I 5, C 3) · **Pleasant Hill: 11** (LI 6, C 5) · **Byron 5, Bay Point 4, Crocket 3, Knightsen/Danville/Bethel Island 1**.
+
+## #38 disambiguations (all confirmed from ordinance TEXT — big traps avoided)
+- **CA "M-##" = MULTIPLE-FAMILY RESIDENTIAL** (density du/acre), NOT Manufacturing: Walnut Creek M1/M3/M15/M25, Danville M-8/13/20/30, County M-6/9/12/17/29 → all prohibited. (Would have falsely armed ~hundreds.)
+- **County T-1 = Mobile Home Park, F-1 = Water Recreational, S = R-40, W-3 = Controlled HEAVY Industrial** (not water). T-1/F-1/S residential/rec → prohibited (killed the huge T-1/F-1 counts in Bay Point/Pacheco/San Pablo/Bethel Island/Discovery Bay).
+- Named-confinement respected: Concord WMX self-storage explicit "–" (prohibited) despite warehouse by-right.
+
+## GATE FAIL — pre-existing data, NOT this batch
+The post-ingest gate HARD-FAILs on "over-length zoning_code(s)" (23 distinct, e.g. "CG General Commercial",
+"IB Industrial Business", "CM-1 Commercial Mixed-Use Residential", "IW Industrial Water-Related"). These are
+**verbose descriptive strings the source GIS stored as zoning_code** for **Richmond (13,537 parcels), San Pablo
+(82), El Cerrito (33), El Sobrante (248)** — cities I did NOT ground (El Sobrante grounded prohibited-only,
+residential). **None affect the 304 needles** (all in Concord/WC/Pacheco/PH/Byron/etc. with clean short codes).
+It is a jurisdiction-wide pre-existing data characteristic, not a poison/mis-bind from this grounding.
+**Fix (follow-up): normalize those codes** (strip descriptive suffix, e.g. "IB Industrial Business" → "IB")
+**then re-run the gate.**
+
+## HANDED BACK — incorporated cities needing per-city research (in-ring industrial counts)
+Not grounded this batch (own code systems, need ordinance research):
+- **Richmond** — IB Industrial Business (13), IL Industrial Light (4), CM-5 Activity Center (21), CR Regional
+  Commercial (28), IW Industrial Water-Related. Real industrial + needs code normalization. Priority follow-up.
+- **Martinez** — H-I (81), L-I (22), M-PA/C-I (9). Own code; refinery-town heavy industrial.
+- **Oakley** — M-H (56), LI (23), SP-1..SP-4 (specific plans), C (66). (M-12/M-17/M-9 = county multifamily → prohibited.)
+- **Antioch** (P-D/S-P/C-2/C-3/WSCD), **Pittsburg** (IG/GQ; mostly T-1 mobile-home), **Hercules**, **Pinole**
+  (CMU/OIMU/OPMU/H-I), **San Pablo** (mostly T-1 + descriptive codes), **El Cerrito** (TOHIMU/TOMIMU form-based),
+  **Moraga** (CC/MCSP-*), **Lafayette** (C-1/C tiny), **Orinda** (DC tiny), **San Ramon** (ZM-GC/ZM-MU/ZM-MUCC),
+  **Brentwood-CA** (BBSP/PA-1/C-2/L-I), **Clayton** (L-C tiny). Most named-wealthy towns (Lafayette/Orinda/
+  Danville/San Ramon) are residential-wealth with thin/no industrial → likely small or no-op.
+
+## Accuracy notes
+- Concord Ch.18.50 (OBP/IBP/IMX/HI) use cells are from a 2016 codepublishing snapshot (Cloudflare-blocked live);
+  self-storage=UP + purpose statements match current — grounded conditional at conf 0.78 (SC current = 0.85).
+- County H-I / W-3: heavy-industrial manufacturing named by-right; warehouse/self-storage NOT clearly by-right
+  → conservatively ss/mw prohibited, li permitted (a-fortiori warehousing argument NOT applied; revisit if a deal lands).
+- 'None'-city parcels (865, NULL city) not grounded (buybox join needs city).
+- No re-score / no CoStar (per coordinator).
