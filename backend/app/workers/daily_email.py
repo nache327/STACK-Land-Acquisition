@@ -780,6 +780,26 @@ async def _send_digest_for_filter(
         # up parcels that score in during the day.
         return 0
 
+    # holdWorthALook (filter_json, Nache directive 2026-07-15): email ONLY the
+    # Actionable tier; Worth-a-Look parcels are held for in-app review. Subset
+    # BEFORE rendering AND before the notified_at stamp below — a held parcel
+    # must NOT be marked notified, or it would never re-surface once its soft
+    # flags clear (or the hold is lifted).
+    if bool((f.filter_json or {}).get("holdWorthALook")):
+        actionable, worth_a_look = _split_by_tier(parcels)
+        if worth_a_look:
+            logger.info(
+                "digest filter=%s: holdWorthALook — holding %d worth-a-look parcel(s) in-app",
+                f.name, len(worth_a_look),
+            )
+        parcels = actionable
+        if not parcels:
+            logger.info(
+                "digest filter=%s: holdWorthALook — no actionable parcels, not sending",
+                f.name,
+            )
+            return 0
+
     if not settings.digest_default_recipient:
         logger.warning(
             "digest filter=%s: %d parcels ready but DIGEST_DEFAULT_RECIPIENT is unset — not sending",

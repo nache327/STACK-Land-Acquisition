@@ -47,7 +47,8 @@ async def trigger_parse(
     from app.models.zone_use_matrix import ZoneUseMatrix
     from app.models.parcel import Parcel
     from sqlalchemy.dialects.postgresql import insert as pg_insert
-    from sqlalchemy import select as sa_select
+    from sqlalchemy import func, select as sa_select
+    from sqlalchemy.sql import literal_column
 
     # Fetch known zone codes
     rows = await db.execute(
@@ -115,7 +116,18 @@ async def trigger_parse(
             notes=zone.notes,
             classification_source=source,
         ).on_conflict_do_update(
-            constraint="uq_zone_matrix",
+            # uq_zone_matrix is a PARTIAL UNIQUE INDEX (not a constraint) —
+            # constraint="uq_zone_matrix" raises UndefinedObjectError on the
+            # first real conflict (an ordinance re-parse hitting an existing
+            # row). Match the indexed expression byte-for-byte instead:
+            # COALESCE(municipality, ''::text) WHERE deleted_at IS NULL.
+            # Same pattern as pipeline.py / zone_matrix_crosswalk.py.
+            index_elements=[
+                ZoneUseMatrix.jurisdiction_id,
+                ZoneUseMatrix.zone_code,
+                func.coalesce(ZoneUseMatrix.municipality, literal_column("''::text")),
+            ],
+            index_where=ZoneUseMatrix.deleted_at.is_(None),
             set_=dict(
                 zone_name=zone.name,
                 self_storage=zone.self_storage,
