@@ -162,3 +162,47 @@ so the wealth gate is NOT the limiter here — the limiter is the total absence 
   · Beverly Hills 53edb548 = **0** (no-op, CLEAN) · Franklin ec91da85 = **0** (no-op; unbound, ordinance has no industrial)
   · Bloomfield Twp 15ecf7aa = BLOCKED (unbound + ring=0). No re-score/CoStar (per instr).
 Remaining Phase-6 singles ready to assign: Portland/Lake Oswego, Miami/Pinecrest, Park City/Snyderville.
+
+## Phase 6 — Municode-reachable stragglers (parcellogic/phase6-municode-stragglers)
+
+### Plymouth MN (jid 7cc5f175-6218-4a7d-b196-70f043652968) — GROUNDED, 16 needles
+Municode content API (jobId 495800 / productId 15701) WORKING — used read-only. Ch. XXI Zoning.
+Ring done (28,001 dt=10). Self-storage is a NAMED use "Mini-storage facilities":
+  - **I-1 Light Industrial §21560.03 Permitted Uses: "Subd. 19. Mini-storage facilities"** (+ Subd. 30
+    "Warehousing and indoor storage", Subd. 1 Manufacturing) → ss/mw PERMITTED, li permitted → **16
+    wealth-gated needles**.
+  - C-5 Commercial/Industrial §21550.03 Subd. 14 "Mini-storage facilities" → ss/mw permitted (0 in-ring).
+  - I-2/I-3 (general/heavy industrial) → ss/mw permitted (0 in-ring).
+  - O Office / B-C Business Campus / C-1..C-4 / CC City Center → prohibited (no storage use; the only
+    "self-service" uses are car wash + laundromat).
+  - **#38 confirmed: P-I = PUBLIC/INSTITUTIONAL district (§21650), not industrial → prohibited (no-op).**
+verify_batch: needles=16, gate PASS, 100% coverage, casing OK, CLEAN.
+
+### Minnetonka MN / Cary NC / Apex NC — BLOCKED (amlegal, NOT Municode) — paste-specs below
+These three are on **codelibrary.amlegal.com**, not Municode. amlegal is a JS SPA: `curl` returns only
+the nav/CSS shell (no ordinance text), WebFetch returns HTTP 403, and no content API responds
+(`/api/clients/...` = 404; `?format=json` = shell). So NONE are auto-fetchable this session. Discovery-
+rank + exact failed routes + paste-specs:
+
+- **Minnetonka MN (3267204b-…)** — ring done (20,911), bound. In-ring: B-2 (4), B-1 (3); **I-1 industrial
+  has 0 in-ring** (no needle there); PID (Public/Institutional) 0 in-ring. B-1 = "Office Business District"
+  (§300.17) → offices, self-storage prohibited (safe). The swing is **B-2** (4 in-ring).
+  - Failed route: `https://codelibrary.amlegal.com/codes/minnetonka/latest/minnetonka_mn/0-0-0-21802` (SPA shell / WebFetch 403).
+  - PASTE-SPEC: paste the **B-2 district "Permitted Uses" + "Conditional Uses"** text (Ch. 3, §300.x
+    B-2), and confirm whether "self-service storage" / "mini-warehouse" is named. (Minnetonka §645
+    "Portable Storage Container Suppliers" + §845.020 "Outside Parking and Storage" exist — check if a
+    self-service storage FACILITY use is separately permitted in B-2.)
+- **Cary NC (in Wake b05b7317-…)** — bound (Phase-5). In-ring discrete districts GC(19)/ORD(37)/OI(20)/
+  MXD(14); PDD excluded by Cary's own table. Failed route: `https://codelibrary.amlegal.com/codes/cary/
+  latest/cary_nc/0-0-0-68609` (§5.1.2 Table 5.1-1 — collapsed HTML, columns OI/GC/ORD/I unreadable).
+  - PASTE-SPEC: paste the **Table 5.1-1 "Mini-storage" row AND the column header row (OI GC ORD I)**,
+    plus §5.2.4(A) mini-storage use-specific standard prose (names the districts).
+- **Apex NC (in Wake b05b7317-…)** — bound (Phase-5). In-ring discrete LI(8)/PC(38)/CB(15)/O&I(10);
+  PUD-CZ excluded (parcel-specific). Failed route: `https://codelibrary.amlegal.com/codes/apexnc/...`
+  UDO use matrix (SPA).
+  - PASTE-SPEC: paste the **UDO use-matrix "Self-service storage facility" row** (columns incl. LI/PC/CB)
+    + §4.4.5.G.14 supplemental standards. Ground non-PUD LI/PC/CB accordingly.
+
+### Handback
+- Plymouth MN 7cc5f175 = **16 needles** (CLEAN). Minnetonka/Cary/Apex = amlegal-blocked, paste-specs above.
+  No re-score/CoStar (per instr).
