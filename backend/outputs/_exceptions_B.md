@@ -1,25 +1,22 @@
-# Session B — Cook IL North Shore (Phase 4)
+# Session B exceptions — 58-pocket finish-in-place queue
 
-## (4a) Winnetka (jid d1c50553-1ec0-49b8-9e52-46186c200221) — RING DONE, grounding amlegal-blocked
-- **Ring-precompute COMPLETE** (fired per-city, ledger-authorized solo): job ded5121c, 9 tracts,
-  10.4s, parcels_written 20,776. This was the blocker — Winnetka was bound 94% (4,893/5,194) but had
-  ring=0. **Now 239 wealth&1.5ac** measurable (was 0).
-- Wealth&1.5ac by zone: **B2 102**, R2 75, R1 11, R4 8, R5 7, B1 2, R3 2. (C1/C2/D have 0 — sub-1.5ac.)
-  Zones: R1-R5 residential, B1/B2 business, C1/C2 commercial, D. (Ordinance: 5 SF + 2 MF + 2 commercial
-  + 1 industrial district.)
-- **Grounding BLOCKED (paste-gate):** Winnetka's Title 17 zoning is on amlegal
-  (codelibrary.amlegal.com/codes/winnetka), which serves district use-tables via a **Cloudflare JS
-  challenge** (not the UA-only gate) — curl+UA gets only the SPA shell / "Just a moment...". Village site
-  has no full-text ordinance PDF (only application packets + zoning map). Did NOT ground on a guess
-  (#37 verbatim-basis). **Likely a Darien-style no-op** (wealthy North Shore residential village; the
-  needle candidate B2 is the village-center business district, which almost certainly prohibits
-  self-storage) — but needs the verbatim Title 17 use table for B1/B2/C1/C2/D to confirm.
-  → HANDOFF: paste Title 17 commercial/industrial use tables, or fetch via a JS-capable path.
-
-## (4b) Cook County North Shore (jid 1726fc6f-9927-413e-b20e-936ab438de10) — coordinator-gated
-- Cook is ~1.9M parcels, mostly zoning-UNBOUND. The North Shore wealth towns other than Winnetka
-  (Kenilworth, Glencoe, Wilmette, Northfield) sit in this county jid and need **county-scale bind +
-  ring-precompute**. Per the 58-pocket ledger: "do NOT fire ring-precompute on giant county jids
-  (Cook 1.9M) ... ping coordinator before any COUNTY-scale precompute." NOT run solo.
-  → HANDOFF to coordinator: authorize/stage the Cook county bind + (tract-batched) ring-precompute,
-  then discovery-rank the North Shore in-ring industrial and ground.
+## (1) Darien CT (jid 9b27e214-367c-4652-8385-99b09fe38cd6) — DONE: bound + grounded no-op
+- SEPARATE jid from Fairfield county. parcels=5,831, ring dt10 DONE (all wealth-pass), was zoned=0.
+- **Bound 99.6%** (5,810/5,831) via `scripts/_bind_darien_ct.py` — town parcel-GIS ZONING attribute
+  (services7.arcgis.com/QoSt1vkU9IRboBnD `Darien_Current_Parcels`), APN join (our apn = '18850-'+PIN),
+  provenance `darien_ct_parcels_gis`. (No standalone zoning-districts layer exists; the generic
+  services.arcgis.com "Zoning_Districts" hit in search was an **Alaska** town — #38 wrong-jurisdiction,
+  discarded.)
+- **DEFINITIVE NO-OP: 0 self-storage needles.** Darien Zoning Law 2021 has a CLOSED LIST ("A prohibited
+  use includes any use not specifically permitted in a zoning district") and DEFINES self-storage as a
+  distinct use ("a warehouse ... shall not be considered a self-storage facility") that is listed as a
+  permitted use in NO district. Self-storage at 131 Hollow Tree Ridge Rd required a site-specific
+  Affordable-Housing amendment — confirming it is not a base-district use. Warehouse-by-right convention
+  OVERRIDDEN (town separates self-storage from warehouse explicitly). Wealthy residential town, self-storage
+  zoned out — same lesson as Greenwich/Hudson.
+- **#38 GIS-vs-ordinance code mismatch flagged:** the parcel-GIS ZONING field uses granular legacy codes
+  (CBD/DB/SB/NB/DO/DC/DMR/RNBD/MU) that do NOT appear as district names in the 2021 Zoning Law (consolidated
+  to C / MU-CC / MU-NC / I / MDR / REC). GIS codes are the operative parcel designations and the matrix keys
+  on them; self_storage=prohibited holds under the current law regardless of mapping. light_industrial set
+  conservatively prohibited (no parcel GIS-coded to the ordinance's C/I warehouse districts; li ≠ needle).
+- 19 zone rows grounded (all prohibited). verify_batch CLEAN, gate PASS, matrix_coverage 100%.
