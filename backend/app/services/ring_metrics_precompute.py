@@ -68,6 +68,8 @@ async def precompute_ring_metrics_for_jurisdiction(
     *,
     mapbox_client: MapboxIsochroneClient | None = None,
     on_progress: ProgressFn | None = None,
+    cities: list[str] | None = None,
+    bbox_override: tuple[float, float, float, float] | None = None,
 ) -> dict[str, Any]:
     """Pre-warm parcel_ring_metrics for every parcel in this jurisdiction.
 
@@ -91,13 +93,34 @@ async def precompute_ring_metrics_for_jurisdiction(
     j = await db.get(Jurisdiction, jurisdiction_id)
     if j is None:
         raise ValueError(f"Jurisdiction {jurisdiction_id} not found")
-    if not j.bbox:
-        raise ValueError(
-            f"Jurisdiction {j.name} has no bbox; cannot determine census tracts. "
-            "Re-ingest to populate it."
-        )
-
-    bbox = (j.bbox[0], j.bbox[1], j.bbox[2], j.bbox[3])
+    # bbox_override + cities: run a CITY-SCOPED precompute on a subset of a large
+    # county jid (e.g. a few North Shore villages inside the 1.86M Cook jid) —
+    # only those parcels' tracts get Mapbox isochrone calls, avoiding the gated
+    # county-scale cost. bbox_override bounds the TIGER tract load; cities filters
+    # the parcel→tract bucket. Both default None = original whole-jurisdiction run.
+    if bbox_override is not None:
+        bbox = bbox_override
+    elif cities:
+        # Derive the bbox from just the scoped cities' parcels so ensure_census_tracts
+        # loads only the relevant tracts (not the whole county).
+        ext = (await db.execute(
+            text(
+                "SELECT ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e) "
+                "FROM (SELECT ST_Extent(centroid::geometry) e FROM parcels "
+                "WHERE jurisdiction_id=:jid AND city = ANY(:cities::text[]) "
+                "AND centroid IS NOT NULL) s"
+            ).bindparams(jid=jurisdiction_id, cities=cities)
+        )).first()
+        if not ext or ext[0] is None:
+            raise ValueError(f"No parcels with centroids for cities={cities} in {j.name}")
+        bbox = (ext[0], ext[1], ext[2], ext[3])
+    else:
+        if not j.bbox:
+            raise ValueError(
+                f"Jurisdiction {j.name} has no bbox; cannot determine census tracts. "
+                "Re-ingest to populate it."
+            )
+        bbox = (j.bbox[0], j.bbox[1], j.bbox[2], j.bbox[3])
 
     # ── 1. Ensure tract geometries are loaded for the area ───────────────
     # ensure_census_tracts populates the census_tracts table with TIGER geoms
@@ -127,8 +150,9 @@ async def precompute_ring_metrics_for_jurisdiction(
             JOIN census_tracts t ON ST_Within(p.centroid, t.geom)
             WHERE p.jurisdiction_id = :jid
               AND p.centroid IS NOT NULL
+              AND (:cities::text[] IS NULL OR p.city = ANY(:cities::text[]))
             """
-        ).bindparams(jid=jurisdiction_id)
+        ).bindparams(jid=jurisdiction_id, cities=cities)
     )).all()
 
     if not tract_parcel_rows:
