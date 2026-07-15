@@ -173,3 +173,55 @@ Not grounded this batch (own code systems, need ordinance research):
   → conservatively ss/mw prohibited, li permitted (a-fortiori warehousing argument NOT applied; revisit if a deal lands).
 - 'None'-city parcels (865, NULL city) not grounded (buybox join needs city).
 - No re-score / no CoStar (per coordinator).
+
+---
+# CONTRA COSTA batch-2 + TRACK-2 (2026-07-15)
+
+## Contra Costa CA — code normalization + Richmond/Martinez grounding
+- **Normalized 21,458 parcels' verbose zoning_code strings → leading token** (`_normalize_contra_costa_codes.py`,
+  coordinator-authorized): "IB Industrial Business"→IB, "RL2 Single Family Low Density Residential"→RL2, etc.
+  0 codes >20 chars remain → **clears the batch-1 gate FAIL** (combining codes "A-2 -BS"/"C -CE"/"H-I -X" kept).
+- **Richmond** (`_apply_richmond_ca.py`): self-storage = named "Mini-Storage", CONDITIONAL (CUP) in **IB, IL,
+  IG, CG** (§15.04.204/.203; def §15.04.104.020); x in IW/ILL/CR/CC; not-listed (prohibited) in CM-1..CM-5.
+  Needles ≈ IB 13 + IL 4 + CG 3. **Named-confinement decisive: CM-5 (21 in-ring) + CR (28 in-ring) are NOT
+  needles** (self-storage not listed / =x). #38-adjacent: rejected "richmond.ca IL" = Richmond BC Canada.
+- **Martinez** (`_apply_martinez_ca.py`): self-storage named ONLY in **CC Central Commercial** (conditional,
+  §22.16.080.K.10) + M-combining districts that include CC. **H-I (81 in-ring) + L-I (22 in-ring) are
+  li-armed NO-OPs, NOT self-storage needles** — warehouse is CUP-only (§22.18.060.K, conditional-warehouse →
+  no convention) and self-storage is confined to CC. SC warehouse-by-right but self-storage confined to CC →
+  prohibited. Honest correction to the expected "H-I/L-I 81/22 needles".
+
+## HANDED BACK — East County / West County cities are NOT sub-$475k no-ops (need per-city research)
+Ring-HV check REFUTES the sub-$475k hypothesis — all clear the gate (median ring-HV):
+  Oakley $610k (812 wealth+1.5ac), Antioch $564k (495), Pittsburg $520k (145), Pinole $660k (194),
+  Hercules $652k (214). These have in-ring industrial and need per-city ordinance research (own code systems:
+  Oakley M-H/LI/SP-#, Antioch P-D/S-P/C-2/C-3/WSCD, Pittsburg IG/GQ, Pinole CMU/OIMU/OPMU/H-I, Hercules
+  P/QP/PC-R/CC/CG). **NOT no-ops — follow-up batch.** Residential-wealth no-ops (thin/no industrial):
+  Lafayette/Orinda/Danville/San Ramon (per batch-1). San Pablo/El Cerrito small + descriptive-code cities.
+
+## TRACK 2 — Nassau NY [c72002c7-1f3e-48e4-be98-04e420776fdb]: NO spatial zoning layer — PASTE-SPEC
+Municipality bind + ring are done, but **no verified NY zoning POLYGON layer exists** for Oyster Bay / North
+Hempstead / Hempstead (all publish only PDF Building Zone Maps + parcels-without-zoning).
+**#38 CONFIRMED:** the "City of Hempstead Zoning App" (services9.arcgis.com/CpGrZZm3P1y5qJHh/.../Zoning_view)
+is **Hempstead, TEXAS** (SR wkid 2278 Texas State Plane; geom lon -96.08/lat 30.08; "ETJ" Texas-only field). REJECTED.
+Real NY sources found: Town of Hempstead `ToH_Zoning_Maps` FeatureServer (services6.arcgis.com/bqUwpAFaDo5lm9eK)
+= a PDF map-sheet INDEX grid (fields IndexNo/FileName/Location, NO zone code) — unusable. North Hempstead /
+Oyster Bay / Nassau County ArcGIS = parcels + boundaries only, no zoning attribute.
+**PASTE-SPEC to bind Nassau (pick one per town):**
+  (1) **Ordinance use-tables** (already text-fetchable, no paste needed): Oyster Bay eCode360 (Ch.246 §246-5.2;
+      client guid 26884554), Hempstead eCode360 14495788, North Hempstead ordinance. These give the per-district
+      self-storage/warehouse verdicts.
+  (2) **Parcel→zone binding** (the missing piece) — one of:
+      (a) a **town-provided parcel-zoning export** (CSV/shapefile with parcel ID [Section-Block-Lot] + zone code), OR
+      (b) **georeference/digitize the town PDF Building Zone Maps** (oysterbaytown.com/wp-content/uploads/Zone-Maps-all.pdf;
+          hempsteadny.gov/548/Town-Map; northhempsteadny.gov zoning_maps) into zone polygons, then centroid spatial-join.
+  Export format needed for bind: `{apn/SBL, zone_code}` keyed to Nassau parcels' NCID/Section-Block-Lot. PARK until a
+  town furnishes parcel-zoning or the maps are digitized (like Hinsdale).
+
+## TRACK 2 — Bloomfield Twp MI [15ecf7aa]: NOT a no-op, but blocked on source
+Expected all-residential no-op is WRONG — Bloomfield Twp has an **ML Light Manufacturing** district (§42-3.1.12,
+"warehousing and wholesale establishments" by-right → self-storage conditional convention; self-storage
+acknowledged in §42-5 parking). BUT **no zoning spatial layer exists** (Oakland County GIS + township portal
+publish only Current Land Use + a PDF zoning map; MI-verified, #38 mapxpress look-alike rejected). ML footprint
+small (~5-6 labels near Telegraph/Wagner). **Blocked on Stage-1 binding** — needs PDF-digitize or assessor-code
+rebind. Small potential needle; park with Nassau pattern.
