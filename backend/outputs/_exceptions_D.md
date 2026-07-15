@@ -90,3 +90,43 @@ Firing 4 per-city `_precompute-ring-metrics-worker` jobs in parallel: Brentwood 
 ## Notes
 - Buckhead 500-ft BeltLine-corridor exclusion (I-1/C-3/O-I self-storage) is a parcel-level caveat noted in verdicts; Buckhead is north of the BeltLine and existing facilities are grandfathered → not applied per-parcel.
 - Did NOT run CoStar close-out or re-score (per coordinator).
+
+---
+# PHASE 5 DENVER + FRANKLIN CORRECTION (2026-07-15)
+
+## Franklin TN accuracy close-out — 277 → 185 needles
+Text-verified the graphic §5.1.3 dot-matrix reads (see commit): **CI REFUTED** (Flex Building industrial
+type is LI/HI-only §6.13; CI building types civic-only) → stays prohibited. **RC12 DEMOTED** to prohibited
+(#58) — self-storage is NOT a named use in text (§5.1.4.V lists no districts); dot-read corroborated-plausible
+but unconfirmable; removes 92 needles (restorable if the authoritative graphic matrix is human-verified).
+**LI/HI kept conditional** (text-corroborated: named §5.1.4.V + Flex Building §6.13). Franklin = **185** (LI 169 + HI 16).
+
+## Denver per-city pockets (ring-precompute per-city; RING RULE ≤2 jobs at once honored)
+- **Greenwood Village CO** [9fd6996b-a4c3-4433-a737-9c705bff92ed] — **3 needles**, verify CLEAN / gate PASS.
+  Self-storage EXPLICITLY named in ONE district only: **B-3 Community Business** (Special Use §16-16-30(2))
+  → ss/mw conditional. **Named-confinement (Boonton rule) applied**: T.C. has warehousing by-right
+  (§16-19-20(1)) but self-storage is confined to B-3 by the closed list (§16-1-10(b)(2)) → T.C./L-I grounded
+  li-permitted-only (NOT self-storage). A naive warehouse-convention read of T.C. would have falsely armed
+  ~113 parcels. **#38**: O-1/O-2 = Open Space (not Office); M-C = Mixed Commercial (not Metro Center).
+- **Highlands Ranch CO** [524b1948-f806-4007-b7e3-6ef7219c2b2c] — **1 needle** (GI). **GATE FAIL = benign
+  false-positive**: the domination check flags "PD covers 99.9%", but HR is a genuinely master-planned PD
+  community (Highlands Ranch Planned Development Guide) — NOT a mis-bound field. PD grounded **prohibited**
+  (conservative) so it creates no false needles. GI (§1402.01→LI §1302.16/§1302.30) + C (§1202.03) =
+  mini-warehouse/warehouse by-right. Ring at 96.8% (last PD chunk stalled; immaterial — PD is prohibited).
+  **ESCALATE**: self-storage IS permitted by-right in the HR **Industrial Park Planning Areas
+  (PA 75-78/80/81/84-88)** ("Service Industry" def #101 folds in warehousing+self-storage), but the bare
+  "PD" code cannot identify a parcel's PA → needs PA-level parcel mapping to isolate that real opportunity.
+
+## Handed back to coordinator (not grounded this session)
+- **Cherry Hills Village** [cea334ed-34b1-4211-a372-6182815733c8] — 0.1% zoned (essentially UNBOUND);
+  pure-residential horse-property enclave → expected no-op (like Paradise Valley/Rumson). Needs a CO zoning
+  source to formally confirm; low value (expected 0 needles). Deferred.
+- **Douglas County** [ec296fd0-...] (121,742 parcels, 0% zoned) + **Arapahoe County** [5c4b612c-...]
+  (211,557 parcels, 0% zoned) — large unbound county jids. The wealth pockets (Greenwood Village, Highlands
+  Ranch) are already covered by per-city jids, so the county binds are lower priority. Need a sourced CO
+  zoning layer + #38 CRS/coverage/sample-city dry-run BEFORE apply (Nassau/Indiana trap). Not attempted this
+  session (no clean source validated). Recommend DRCOG regional or per-county GIS, dry-run-first.
+
+## RING infra (reconfirmed)
+Per-city worker ring jobs still stall in bursts (GV finished clean; HR needed 2 re-enqueues, stuck at 96.8%).
+Kept to ≤2 concurrent per the rule. Stagger; expect 1-2 re-enqueues per job.
