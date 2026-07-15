@@ -45,8 +45,11 @@ correctly but yields ~0 needles — a **correct no-op**, not a gap. Loudoun VA (
 - **`municipality` MUST equal `parcels.city` EXACTLY** — the buybox join is case-sensitive. MA = UPPERCASE
   (`NEEDHAM`), PA/NJ/NY/CT = mixed-case with suffix (`Bensalem Township`, `Franklin township`). `SELECT DISTINCT
   city FROM parcels WHERE jurisdiction_id=<jid>` first. Wrong case silently scores 0.
-- **In-app Zoning Verifier is FROZEN** for grounding (writes municipality=NULL → county-wide fan-out until the
-  #494 fix deploys). Ground via scripts only.
+- **In-app Zoning Verifier: FIXED + deployed, freeze LIFTED 2026-07-15** (#494). It now requires a town
+  (canonical `parcels.city` selector) and threads `municipality` through apply-correction, hard-rejecting an
+  unscoped write except for single-place jurisdictions. Round-trip verified on prod (verdict → SELECT →
+  `municipality`=exact `parcels.city`). In-app re-verification is safe again; scripts remain fine too. Still
+  match `parcels.city` casing exactly (see the rule above).
 
 ## Fetch unlocks (try before escalating "no source")
 - **eCode360** (403s WebFetch) → `curl -sL -A "<browser UA>"`: section HTML + `/attachment/*.pdf`. For coded PA
