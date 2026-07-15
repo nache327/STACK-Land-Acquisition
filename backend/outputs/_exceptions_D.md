@@ -251,3 +251,48 @@ verify_batch CLEAN / gate PASS, casing OK.
   status is governed by each adopted plan, not the base code.
 - **Pinole H-I legacy** (3 in-ring): grounded conditional pending rebind of those parcels to OIMU (their current
   district). Small; revisit at next Pinole data refresh.
+
+---
+# BLOOMFIELD TWP MI [15ecf7aa-e9d4-4804-a64c-282f8b172701] — BLOCKED on zoning source; PASTE-SPEC + PARK (2026-07-15)
+
+Deep polygon hunt (Access-Oakland / SEMCOG / Oakland County ArcGIS all folders / GIS-Consortium / township
+ArcGIS org / ArcGIS Online broad / MI statewide) = **NO bindable zoning layer and NO PIN-keyed zoning
+attribute exists** for the Charter Township of Bloomfield. Regulatory zoning is published ONLY as static PDF
+maps. Not grounded (no verified source; nothing written to DB).
+
+**#38 near-miss REJECTED:** `Zoning_BloomfieldHills` (services9.arcgis.com/jGlVpYnGiHmSg9fR/.../Zoning_BloomfieldHills/FeatureServer/0,
+owner viewpropartner; SR 2253 MI-verified, has PIN+SITECITY+Zoning) is the neighboring **CITY of Bloomfield
+Hills** — SITECITY = "BLOOMFIELD HILLS"/"BEVERLY HILLS" only, PINs 1914-prefix (FIPS 09180) vs township's
+1924-prefix, zone codes A-1..A-6/B-1/C-1/I-1/O-1/O-2/P-1/RR (NO ML district), 1,853 features vs township's
+18,224 parcels. NOT the township.
+Sources with land-use-but-NOT-zoning: Oakland County `EnterpriseOpenParcelDataMapService/1` (Tax Parcel Plus:
+PIN+CLASSCODE tax-class, no zoning); SEMCOG 2024_Land_Use; OC Composite Master Plan. Township GIS = 404 (PDF only).
+
+## Ready-to-go state (everything EXCEPT zoning is done)
+- parcels: 18,224 ingested, **centroids present** (18,224), **ring done** (16,991 dt10), 4,393 ≥1.5ac.
+- city = 'CHARTER TOWNSHIP OF BLOOMFIELD' (UPPERCASE — match EXACTLY).
+- parcel key: **PIN** (10-digit, "1924" prefix) in parcels.raw.PIN + parcels.apn.
+- So a bind is a one-step spatial or attribute join the moment a source is furnished.
+
+## Zoning VERDICTS ready to apply once bound (text-verified, ordinance 2025-03-13)
+Warehouse-by-right convention (no closed-list; self-storage named nowhere as a use → no named-confinement):
+- **ML Light Manufacturing (§42-3.1.12.B.ii.a "Warehousing and wholesale establishments, and trucking
+  facilities" = permitted by-right)** → **ss/mw = CONDITIONAL, li = permitted, lgc = prohibited.** (self-storage
+  appears only in the §42-5.2 parking table item xvii — NOT a use grant.) ← THE NEEDLE ZONE.
+- RP Research Park: warehouse accessory-only + "fully enclosed industrial operations" = Special use → ss/mw
+  prohibited, li conditional.
+- B-1 (warehouse expressly prohibited §42-4.1.3), B-2/B-3/B-4, O-1 (§42-4.3.2), OR-1 (§42-4.4.1), RM, R-1/R-2/R-3,
+  PRD, P-1: all prohibited (no warehouse/self-storage; enclosed retail/office/residential).
+
+## PASTE-SPEC — to bind Bloomfield (Nache-gated; pick ONE)
+1. **Township zoning shapefile (best)** — request from Bloomfield Twp Planning Dept or their engineer (HRC,
+   Hubbell Roth & Clark). Need: zone-district polygons with a zone-code field (values incl. ML, RP, B-1..B-4,
+   O-1, OR-1, RM, R-1..R-3, PRD, P-1, MX/BPUD overlays). Then centroid spatial-join to the 18,224 parcels.
+2. **PIN→zone table** — a CSV/export of {PIN (10-digit "1924…"), zone_code} for township parcels (e.g. from
+   BS&A Online property cards or the township GIS dept). Then attribute-join on parcels.raw.PIN / apn. (BS&A
+   bsaonline.com/?uid=511 has per-parcel zoning on the card but NO bulk/spatial API — not viable to scrape 18k.)
+3. **Digitize the PDF zoning map** — bloomfieldtwp.org/media/rkspljft/zoningmap.pdf (24x36, updated 4-22-2025;
+   + zoning-map-11x17.pdf; + zoningmixedusedistrict.pdf). Georeference → zone polygons → centroid-join.
+Format needed either way: {parcel_key OR polygon, zone_code}. PARK like Nassau/Hinsdale until furnished. The
+ML needle is REAL (warehouse by-right) — worth binding when a source appears, but do NOT guess-bind (the only
+candidate layer was Bloomfield Hills city → #38).
