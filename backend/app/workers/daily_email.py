@@ -166,8 +166,21 @@ async def _eligible_filters(
 
 
 async def _top_parcels_for_filter(
-    db: AsyncSession, f: BuyboxFilter
+    db: AsyncSession,
+    f: BuyboxFilter,
+    *,
+    include_notified: bool = False,
+    limit: int | None = None,
 ) -> list[DigestParcel]:
+    """Select the top matched parcels for a filter.
+
+    Defaults reproduce the digest behavior: only un-notified parcels (so the
+    same parcel is never re-emailed) up to ``f.daily_email_top_n``.
+
+    The dashboard push-sync passes ``include_notified=True`` (it wants ALL
+    current eligible deals, re-synced idempotently, not just today's new ones)
+    and its own ``limit``. Both callers share this one SQL so the board shows
+    exactly what the email selects."""
     filter_json = f.filter_json or {}
     require_listed = bool(filter_json.get("requireListed"))
     # Opt-in: drop unpriced listings instead of surfacing them behind the
@@ -240,8 +253,19 @@ async def _top_parcels_for_filter(
     # dedupe: skip parcels already emailed as a real-time listing alert in
     # the last 14 days (58 Dunkard Church / 199 Grandview both hit this
     # dupe in the May 13-20 reviewer audit).
-    _eligible_predicates = """
+    # The notified_at gate and the 14-day alert-dedupe are the digest's
+    # "don't re-email the same parcel" logic. The dashboard push wants the
+    # complete current set (re-synced idempotently), so include_notified drops
+    # both — leaving only the score/acres eligibility predicates.
+    _notified_gate = "" if include_notified else """
               AND pbs.notified_at IS NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM notified_listings nl
+                 WHERE nl.filter_id = :fid
+                   AND nl.parcel_id = p.id
+                   AND nl.notified_at > NOW() - INTERVAL '14 days'
+              )"""
+    _eligible_predicates = f"""
               AND pbs.score >= :min_score
               AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL
                    OR p.acres IS NULL
@@ -249,12 +273,7 @@ async def _top_parcels_for_filter(
               AND (CAST(:max_acres AS DOUBLE PRECISION) IS NULL
                    OR p.acres IS NULL
                    OR p.acres <= CAST(:max_acres AS DOUBLE PRECISION))
-              AND NOT EXISTS (
-                SELECT 1 FROM notified_listings nl
-                 WHERE nl.filter_id = :fid
-                   AND nl.parcel_id = p.id
-                   AND nl.notified_at > NOW() - INTERVAL '14 days'
-              )
+              {_notified_gate}
     """
     if require_listed:
         # Listings-driven: forsale_listings (current, conf>=0.85) is the
@@ -421,7 +440,7 @@ async def _top_parcels_for_filter(
         {
             "fid": f.id,
             "min_score": _MIN_SCORE_LISTED if require_listed else _MIN_SCORE,
-            "lim": f.daily_email_top_n,
+            "lim": limit or f.daily_email_top_n,
             "require_listed": require_listed,
             "require_priced": require_priced,
             "min_acres": min_acres,
@@ -874,11 +893,26 @@ async def run_once(force: bool = False) -> dict:
                 logger.exception("digest filter=%s failed; continuing", f.name)
                 errors.append(f"{f.name}: {type(exc).__name__}: {exc}")
                 await db.rollback()
+
+    # Mirror the same deals onto the portfolio dashboard's Deal Pipeline board
+    # (separate Supabase). Best-effort: a push failure is logged but never sinks
+    # the digest's exit status (email is the priority; the board is secondary).
+    # No-op when PORTFOLIO_DASHBOARD_DATABASE_URL is unset. Lazy import breaks the
+    # dashboard_push ↔ daily_email import cycle.
+    dashboard_push_result = None
+    try:
+        from app.services.dashboard_push import run_push
+
+        dashboard_push_result = await run_push(force=True)
+    except Exception:
+        logger.exception("dashboard push failed; digest unaffected")
+
     return {
         "filters": filters_processed,
         "parcels": parcels_emailed,
         "eligible_total": eligible_total,
         "errors": errors,
+        "dashboard_push": dashboard_push_result,
     }
 
 
