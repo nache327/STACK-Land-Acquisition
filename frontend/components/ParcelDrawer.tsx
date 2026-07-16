@@ -737,6 +737,23 @@ function ListingCard({
   const contactLine = [listing.listing_broker_phone, listing.listing_broker_email]
     .filter(Boolean)
     .join(" · ");
+  // Owner contact from the CoStar report (distinct from the assessor owner
+  // shown in the parcel detail rows). Prefer live owner, fall back to recorded.
+  const ownerName = listing.owner_name || listing.recorded_owner_name;
+  const ownerContactLine = [
+    listing.owner_phone || listing.recorded_owner_phone,
+    listing.owner_contact,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const lastSaleLine = [
+    listing.last_sale_price != null
+      ? `$${listing.last_sale_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      : null,
+    listing.last_sale_date,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const statusColor =
     listing.sale_status?.toLowerCase() === "active"
       ? "#059669"
@@ -778,6 +795,31 @@ function ListingCard({
       {contactLine && (
         <div className="mt-0.5 text-xs text-slate-800">
           Contact: <span className="font-mono">{contactLine}</span>
+        </div>
+      )}
+      {(ownerName || ownerContactLine || listing.owner_address) && (
+        <div className="mt-2 border-t border-amber-200 pt-2 text-xs text-slate-800">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+            Owner (CoStar)
+          </div>
+          {ownerName && (
+            <div className="mt-0.5">
+              <strong>{ownerName}</strong>
+            </div>
+          )}
+          {ownerContactLine && (
+            <div className="mt-0.5">
+              <span className="font-mono">{ownerContactLine}</span>
+            </div>
+          )}
+          {listing.owner_address && (
+            <div className="mt-0.5 text-slate-600">{listing.owner_address}</div>
+          )}
+        </div>
+      )}
+      {lastSaleLine && (
+        <div className="mt-1 text-xs text-slate-700">
+          Last sale: <span className="font-mono">{lastSaleLine}</span>
         </div>
       )}
       {listing.co_listed_parcels && listing.co_listed_parcels.length > 1 && (

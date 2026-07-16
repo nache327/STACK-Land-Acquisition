@@ -52,6 +52,17 @@ class ListingRow:
     listing_broker_contact: str | None = None
     listing_broker_phone: str | None = None
     listing_broker_email: str | None = None
+    # Owner contact (from the CoStar report — distinct from the assessor
+    # owner on parcels.owner_name). Surfaced in-app for Stage-4 outreach.
+    owner_name: str | None = None
+    owner_phone: str | None = None
+    owner_contact: str | None = None
+    owner_address: str | None = None
+    recorded_owner_name: str | None = None
+    recorded_owner_phone: str | None = None
+    # Prior-sale history (distinct from the for-sale asking price in sale_price).
+    last_sale_price: Decimal | None = None
+    last_sale_date: str | None = None
     building_class: str | None = None
     zoning_listed: str | None = None
     market: str | None = None
