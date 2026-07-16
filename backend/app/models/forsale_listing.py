@@ -13,6 +13,7 @@ from decimal import Decimal
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -81,6 +82,17 @@ class ForsaleListing(Base):
     listing_broker_contact: Mapped[str | None] = mapped_column(Text, nullable=True)
     listing_broker_phone: Mapped[str | None] = mapped_column(Text, nullable=True)
     listing_broker_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Owner contact from the CoStar report (distinct from assessor
+    # parcels.owner_name). Added migration 0046 for Stage-4 outreach.
+    owner_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_phone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_contact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recorded_owner_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recorded_owner_phone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Prior-sale history (distinct from the for-sale asking price sale_price).
+    last_sale_price: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
+    last_sale_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     building_class: Mapped[str | None] = mapped_column(Text, nullable=True)
     zoning_listed: Mapped[str | None] = mapped_column(Text, nullable=True)
     market: Mapped[str | None] = mapped_column(Text, nullable=True)

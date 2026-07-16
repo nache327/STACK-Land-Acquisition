@@ -39,6 +39,12 @@ _FINGERPRINT_COLUMNS = (
 )
 
 
+def _join_addr(line1: str | None, csz: str | None) -> str | None:
+    """Combine 'Owner Address' + 'Owner City State Zip' into one string."""
+    parts = [p for p in (line1, csz) if p]
+    return ", ".join(parts) if parts else None
+
+
 class Parser:
     name = "costar"
 
@@ -77,11 +83,22 @@ class Parser:
         col_pplsf    = pick_column(cols, "Price Per Land (SF)", "Price Per Land SF")
         col_units    = pick_column(cols, "Number Of Units", "Number of Units", "Units")
         col_ppu      = pick_column(cols, "Price Per Unit")
-        col_broker_c = pick_column(cols, "Listing Broker Company", "Sale Listing Broker Company", "Sale Company Name")
+        col_broker_c = pick_column(cols, "Listing Broker Company", "Sale Listing Broker Company", "Sale Company Name", "Sales Company")
         # CoStar "Sale Company Contact" is the broker's name in their schema
-        col_broker_n = pick_column(cols, "Sale Company Contact", "Listing Broker Contact", "Sale Listing Broker", "Listing Broker")
-        col_broker_p = pick_column(cols, "Listing Broker Phone", "Sale Listing Broker Phone")
+        col_broker_n = pick_column(cols, "Sale Company Contact", "Listing Broker Contact", "Sale Listing Broker", "Listing Broker", "Sales Contact")
+        col_broker_p = pick_column(cols, "Listing Broker Phone", "Sale Listing Broker Phone", "Sale Company Phone", "Sales Contact Phone")
         col_broker_e = pick_column(cols, "Listing Broker Email", "Sale Listing Broker Email")
+        # Owner contact (CoStar owner columns) + recorded owner
+        col_owner_n  = pick_column(cols, "Owner Name")
+        col_owner_p  = pick_column(cols, "Owner Phone")
+        col_owner_ct = pick_column(cols, "Owner Contact")
+        col_owner_a1 = pick_column(cols, "Owner Address")
+        col_owner_a2 = pick_column(cols, "Owner City State Zip")
+        col_rown_n   = pick_column(cols, "Recorded Owner Name")
+        col_rown_p   = pick_column(cols, "Recorded Owner Phone")
+        # Prior sale history (NOT the for-sale asking price)
+        col_lsale_p  = pick_column(cols, "Last Sale Price")
+        col_lsale_d  = pick_column(cols, "Last Sale Date")
         col_class    = pick_column(cols, "Building Class", "Class")
         col_zoning   = pick_column(cols, "Zoning", "Zoning Code")
         col_market   = pick_column(cols, "Market", "Market Name")
@@ -144,6 +161,17 @@ class Parser:
                 listing_broker_contact=to_str(row.get(col_broker_n)) if col_broker_n else None,
                 listing_broker_phone=to_str(row.get(col_broker_p)) if col_broker_p else None,
                 listing_broker_email=to_str(row.get(col_broker_e)) if col_broker_e else None,
+                owner_name=to_str(row.get(col_owner_n)) if col_owner_n else None,
+                owner_phone=to_str(row.get(col_owner_p)) if col_owner_p else None,
+                owner_contact=to_str(row.get(col_owner_ct)) if col_owner_ct else None,
+                owner_address=_join_addr(
+                    to_str(row.get(col_owner_a1)) if col_owner_a1 else None,
+                    to_str(row.get(col_owner_a2)) if col_owner_a2 else None,
+                ),
+                recorded_owner_name=to_str(row.get(col_rown_n)) if col_rown_n else None,
+                recorded_owner_phone=to_str(row.get(col_rown_p)) if col_rown_p else None,
+                last_sale_price=to_decimal(row.get(col_lsale_p)) if col_lsale_p else None,
+                last_sale_date=to_str(row.get(col_lsale_d)) if col_lsale_d else None,
                 building_class=to_str(row.get(col_class)) if col_class else None,
                 zoning_listed=to_str(row.get(col_zoning)) if col_zoning else None,
                 market=to_str(row.get(col_market)) if col_market else None,

@@ -14,6 +14,14 @@ export interface JurisdictionListing {
   listing_broker_contact: string | null;
   listing_broker_phone: string | null;
   listing_broker_email: string | null;
+  owner_name: string | null;
+  owner_phone: string | null;
+  owner_contact: string | null;
+  owner_address: string | null;
+  recorded_owner_name: string | null;
+  recorded_owner_phone: string | null;
+  last_sale_price: number | null;
+  last_sale_date: string | null;
   matched_parcel_id: number | null;
   match_confidence: number | null;
   match_method: string | null;
