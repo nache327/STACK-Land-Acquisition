@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     # for every email-enabled filter. Set in Railway env.
     digest_default_recipient: str = ""
 
+    # Portfolio dashboard push-sync. When set, the digest run ALSO upserts each
+    # matched buy-box deal into the dashboard's SEPARATE Supabase (deal_prospect
+    # table) so they surface on the dashboard's Deal Pipeline tab. Plain
+    # postgres:// DSN (asyncpg connects directly, no SQLAlchemy). Unset = no-op.
+    portfolio_dashboard_database_url: str | None = None
+
     # Redis — REQUIRED. API + worker must use the SAME url for the queue to work.
     redis_url: str
 
