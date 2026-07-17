@@ -27,6 +27,7 @@ import asyncpg
 
 from app.config import settings
 from app.models.zone_use_matrix import UsePermission
+from app.services.use_verdicts import verdict_expr
 
 logger = logging.getLogger(__name__)
 
@@ -295,10 +296,17 @@ def _has_ss_overlay(overlay_tags: object) -> bool:
         return False
 
 
-_SELECT_PARCELS_SQL = """
+# The `storage_permission` expression is use-case-dependent: self_storage reads
+# its column directly (byte-identical to the historical query); luxury_garage_
+# condo derives from the sibling columns (see use_verdicts). The LATERAL always
+# selects all three sibling columns — the extra two are only read by the LGC
+# expression, so the self_storage output is unchanged. `{verdict_sql}` is filled
+# ONLY from the code-owned use_verdicts registry, never from user input.
+def _select_parcels_sql(verdict_sql: str) -> str:
+    return f"""
 SELECT
     p.id                AS parcel_id,
-    zum.self_storage::text AS storage_permission,
+    {verdict_sql} AS storage_permission,
     zum.classification_source AS classification_source,
     zum.confidence      AS verdict_confidence,
     zum.human_reviewed  AS human_reviewed,
@@ -321,7 +329,8 @@ LEFT JOIN LATERAL (
     -- NULL-municipality county-default row. Implemented as a LATERAL
     -- LIMIT 1 ordered by (municipality IS NULL ASC) so non-null rows
     -- sort first; LIMIT 1 collapses the result to whichever wins.
-    SELECT self_storage, classification_source::text AS classification_source,
+    SELECT self_storage, mini_warehouse, light_industrial,
+           classification_source::text AS classification_source,
            confidence, human_reviewed
       FROM zone_use_matrix
      WHERE jurisdiction_id = p.jurisdiction_id
@@ -367,58 +376,60 @@ SET score         = EXCLUDED.score,
 # session context.
 DEFAULT_ORG_ID            = uuid.UUID("00000000-0000-0000-0000-000000000001")
 SELF_STORAGE_USE_CASE_ID  = uuid.UUID("00000000-0000-0000-0000-000000000002")
+LGC_USE_CASE_ID           = uuid.UUID("00000000-0000-0000-0000-000000000003")
 
 
 async def auto_score_jurisdiction(jurisdiction_id: uuid.UUID) -> int:
-    """Score every parcel in a freshly-ingested jurisdiction against the
-    Default Organization's `self_storage` default BuyboxFilter.
+    """Score every parcel in a freshly-ingested jurisdiction against EACH of the
+    Default Organization's default BuyboxFilters — one per use case (self_storage
+    and luxury_garage_condo), so the dashboard's Score column lights up for
+    whichever asset the operator toggles to, immediately after ingest.
 
-    Used by the pipeline as the last step after parcels + zoning + matrix
-    + overlays are populated, so the dashboard's Score column lights up
-    immediately without a manual bootstrap run.
+    Each filter scores into its own ``parcel_buybox_scores`` rows (keyed by
+    ``(parcel_id, buybox_filter_id)``), so the LGC pass never disturbs the
+    self_storage scores.
 
-    Raises ``RuntimeError`` when no default BuyboxFilter exists for the
-    (default org × self_storage use case). Prior versions silently
-    returned 0 and a warning, which let real config gaps (e.g. nobody
-    marked a filter is_default=true) ride for weeks unnoticed across
-    every new jurisdiction ingest. Caller is expected to wrap in
-    try/except so a scoring failure can't fail the larger pipeline,
-    but the exception is now visible in job state via ``_stage_failed``.
+    Raises ``RuntimeError`` when NO default BuyboxFilter exists at all. Prior
+    versions silently returned 0 and a warning, which let real config gaps
+    (e.g. nobody marked a filter is_default=true) ride for weeks unnoticed
+    across every new jurisdiction ingest. Caller is expected to wrap in
+    try/except so a scoring failure can't fail the larger pipeline, but the
+    exception is now visible in job state via ``_stage_failed``.
     """
     conn = await asyncpg.connect(_raw_dsn())
     try:
         await conn.execute("SET statement_timeout = 0")
-        row = await conn.fetchrow(
+        rows = await conn.fetch(
             """
             SELECT id, filter_json
             FROM buybox_filters
             WHERE organization_id = $1::uuid
-              AND use_case_id     = $2::uuid
               AND is_default      = true
-            LIMIT 1
+            ORDER BY use_case_id
             """,
-            DEFAULT_ORG_ID, SELF_STORAGE_USE_CASE_ID,
+            DEFAULT_ORG_ID,
         )
     finally:
         await conn.close()
 
-    if row is None:
+    if not rows:
         msg = (
-            "auto_score_jurisdiction: no default BuyboxFilter for "
-            f"(default org {DEFAULT_ORG_ID} × self_storage use case "
-            f"{SELF_STORAGE_USE_CASE_ID}). Mark a filter is_default=true "
-            "via PATCH /api/buybox-filters/{id} or seed one via migration."
+            "auto_score_jurisdiction: no default BuyboxFilter for default org "
+            f"{DEFAULT_ORG_ID}. Mark a filter is_default=true via "
+            "PATCH /api/buybox-filters/{id} or seed one via migration."
         )
         logger.error(msg)
         raise RuntimeError(msg)
 
-    filter_json_raw = row["filter_json"]
-    if isinstance(filter_json_raw, str):
-        filter_json = json.loads(filter_json_raw)
-    else:
-        filter_json = filter_json_raw or {}
-
-    return await score_jurisdiction(jurisdiction_id, row["id"], filter_json)
+    total = 0
+    for row in rows:
+        filter_json_raw = row["filter_json"]
+        if isinstance(filter_json_raw, str):
+            filter_json = json.loads(filter_json_raw)
+        else:
+            filter_json = filter_json_raw or {}
+        total += await score_jurisdiction(jurisdiction_id, row["id"], filter_json)
+    return total
 
 
 async def score_jurisdiction(
@@ -470,7 +481,20 @@ async def score_jurisdiction(
             )
             return 0
         await conn.execute("SET statement_timeout = 0")
-        rows = await conn.fetch(_SELECT_PARCELS_SQL, jurisdiction_id, drive_time)
+        # Resolve the filter's use case to pick the verdict expression. Unknown
+        # / missing → self_storage, so the rendered SQL and results are
+        # byte-for-byte the historical query for every existing filter.
+        slug = await conn.fetchval(
+            """
+            SELECT uc.slug
+              FROM buybox_filters bf
+              JOIN use_cases uc ON uc.id = bf.use_case_id
+             WHERE bf.id = $1::uuid
+            """,
+            buybox_filter_id,
+        )
+        select_sql = _select_parcels_sql(verdict_expr(slug))
+        rows = await conn.fetch(select_sql, jurisdiction_id, drive_time)
         logger.info(
             "Scoring %d parcels for jurisdiction %s under filter %s (ring=%d min)",
             len(rows), jurisdiction_id, buybox_filter_id, drive_time,

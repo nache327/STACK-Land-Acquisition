@@ -18,7 +18,7 @@ import type { FilterState } from "@/components/FilterPanel";
 import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
 import type { CandidateParcelRow, CandidateParcelSearchRequest, SaturationBatchResult } from "@/lib/schemas";
 import type { ColorMode } from "@/lib/layers";
-import { api } from "@/lib/api";
+import { api, LGC_USE_CASE_ID } from "@/lib/api";
 import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
 import { fetchIsochrone, fetchCensusTracts, clearIsochroneCache, type IsochroneResult, type TractData } from "@/lib/isochrone";
@@ -244,7 +244,10 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   );
 
   const { data: jurisdictionBounds } = useJurisdictionBounds(jurisdictionId);
-  const { data: serverScores } = useParcelScores(jurisdictionId);
+  const { data: serverScores } = useParcelScores(
+    jurisdictionId,
+    assetUse === "luxury_garage_condo" ? LGC_USE_CASE_ID : undefined,
+  );
 
   // Per-jurisdiction feature flags. wealth_density_available is false when
   // the source publishes no assessed_value (UT UGRC cities) — we use it

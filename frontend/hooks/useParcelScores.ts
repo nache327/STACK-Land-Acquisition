@@ -18,9 +18,14 @@ import { api, type ServerParcelScore } from "@/lib/api";
  *  jurisdiction has >10K scored parcels, swap to pagination keyed by
  *  the parcel_ids actually visible in the viewport.
  */
-export function useParcelScores(jurisdictionId: string | null | undefined) {
+export function useParcelScores(
+  jurisdictionId: string | null | undefined,
+  useCaseId?: string,
+) {
   return useQuery({
-    queryKey: ["parcel-scores", jurisdictionId],
+    // useCaseId is part of the key so toggling the asset (self_storage ↔
+    // luxury_garage_condo) refetches the scores for that use case's filter.
+    queryKey: ["parcel-scores", jurisdictionId, useCaseId ?? "self_storage"],
     enabled: !!jurisdictionId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -28,6 +33,7 @@ export function useParcelScores(jurisdictionId: string | null | undefined) {
       const scores = await api.getJurisdictionScores(jurisdictionId, {
         minScore: 0,
         limit: 10_000,
+        useCaseId,
       });
       return new Map(scores.map((s) => [s.parcel_id, s]));
     },
