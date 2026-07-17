@@ -478,6 +478,7 @@ async def get_parcel_score(
 async def list_scores_for_jurisdiction(
     jurisdiction_id: uuid.UUID,
     filter_id: uuid.UUID | None = Query(default=None),
+    use_case_id: uuid.UUID | None = Query(default=None),
     min_score: int = Query(default=0, ge=0, le=100),
     limit: int = Query(default=500, ge=1, le=10_000),
     db: AsyncSession = Depends(get_db),
@@ -486,9 +487,16 @@ async def list_scores_for_jurisdiction(
 
     Useful for the dashboard's initial paint — gets us a leaderboard
     without round-tripping per parcel.
+
+    ``filter_id`` wins if given. Otherwise the default filter for
+    ``use_case_id`` (or the self_storage use case when that's also omitted)
+    is resolved — this is how the dashboard's asset toggle fetches LGC vs
+    self_storage scores without knowing the filter ids.
     """
     if filter_id is None:
-        filter_id = await _resolve_default_filter_id(db, SELF_STORAGE_USE_CASE_ID)
+        filter_id = await _resolve_default_filter_id(
+            db, use_case_id or SELF_STORAGE_USE_CASE_ID
+        )
         if filter_id is None:
             # No default filter for this org × use case. Used to 404, which
             # crashed the dashboard's react-query path. Return an empty

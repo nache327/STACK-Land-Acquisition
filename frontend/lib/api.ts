@@ -34,6 +34,12 @@ import {
   type ZoningDistrictList,
 } from "./schemas";
 
+/** Stable seed UUIDs for the Default Organization's use cases (backend
+ *  migrations 0015 / 0047). The dashboard asset toggle passes one of these to
+ *  the scores endpoint, which resolves the matching default buy-box filter. */
+export const SELF_STORAGE_USE_CASE_ID = "00000000-0000-0000-0000-000000000002";
+export const LGC_USE_CASE_ID = "00000000-0000-0000-0000-000000000003";
+
 /** A row from `parcel_buybox_scores` joined to a parcel — the same
  *  shape the backend returns from `/api/jurisdictions/{id}/scores`. */
 export interface ServerParcelScore {
@@ -453,11 +459,14 @@ export const api = {
 
   async getJurisdictionScores(
     jurisdictionId: string,
-    opts: { minScore?: number; limit?: number } = {}
+    opts: { minScore?: number; limit?: number; useCaseId?: string } = {}
   ): Promise<ServerParcelScore[]> {
     const params = new URLSearchParams();
     if (opts.minScore != null) params.set("min_score", String(opts.minScore));
     if (opts.limit != null) params.set("limit", String(opts.limit));
+    // Selects the default buy-box filter for this use case (self_storage vs
+    // luxury_garage_condo). Omitted → backend defaults to self_storage.
+    if (opts.useCaseId != null) params.set("use_case_id", opts.useCaseId);
     const qs = params.toString();
     return fetchJSON<ServerParcelScore[]>(
       `/api/jurisdictions/${jurisdictionId}/scores${qs ? `?${qs}` : ""}`,
