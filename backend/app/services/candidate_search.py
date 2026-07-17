@@ -68,6 +68,58 @@ _GARAGE_PERM_LABEL = case(
     else_="unclassified",
 )
 
+# LGC-EFFECTIVE verdict — the label used when target_use == luxury_garage_condo.
+# Derived at query time from the sibling use columns (self_storage,
+# mini_warehouse, light_industrial) rather than the stored
+# luxury_garage_condo column, which is gate-suppressed to 'prohibited' in
+# light-industrial / storage-dead zones (post-ingest catch #58). This encodes
+# the acquisition rule directly: a zone that allows warehouse/storage by right
+# or conditionally — or light industrial — is LGC-viable (claim that use, take
+# it under contract, argue the garage-condo entitlement with the municipality).
+# Tiers mirror ordinance_parser._apply_luxury_garage_inference and the audit
+# needle query; keep the three in sync.
+_LGC_EFFECTIVE_LABEL = case(
+    # No matrix row matched (outer join leaves every use column NULL) →
+    # unclassified, matching the storage label's "we don't know" branch and
+    # staying distinct from a determined 'prohibited'.
+    (
+        and_(
+            ZoneUseMatrix.self_storage.is_(None),
+            ZoneUseMatrix.mini_warehouse.is_(None),
+            ZoneUseMatrix.light_industrial.is_(None),
+        ),
+        "unclassified",
+    ),
+    (
+        or_(
+            ZoneUseMatrix.self_storage == UsePermission.permitted,
+            ZoneUseMatrix.mini_warehouse == UsePermission.permitted,
+        ),
+        "permitted",
+    ),
+    (
+        or_(
+            ZoneUseMatrix.self_storage == UsePermission.conditional,
+            ZoneUseMatrix.mini_warehouse == UsePermission.conditional,
+            ZoneUseMatrix.light_industrial == UsePermission.permitted,
+            ZoneUseMatrix.light_industrial == UsePermission.conditional,
+        ),
+        "conditional",
+    ),
+    (
+        or_(
+            ZoneUseMatrix.self_storage == UsePermission.unclear,
+            ZoneUseMatrix.mini_warehouse == UsePermission.unclear,
+            ZoneUseMatrix.light_industrial == UsePermission.unclear,
+        ),
+        "unclear",
+    ),
+    else_="prohibited",
+)
+
+# Verdict labels usable as a text filter target, keyed by asset use.
+_LGC_VERDICT_STRINGS = {"permitted", "conditional", "prohibited", "unclear", "unclassified"}
+
 
 def _sort_clause(sort: ParcelSearchSort) -> tuple[Any, ...]:
     if sort == ParcelSearchSort.acres_asc:
@@ -105,7 +157,13 @@ async def search_candidate_parcels(
     payload: CandidateParcelSearchRequest,
     db: AsyncSession,
 ) -> CandidateParcelSearchResponse:
-    target_column = TARGET_USE_COLUMN[payload.target_use]
+    is_lgc = payload.target_use == TargetUse.luxury_garage_condo
+    # For self_storage: keep the exact existing behavior — the raw enum column
+    # drives viability, _PERMISSION_LABEL (with the NJ MOD-IV fallback) drives
+    # the display label. For LGC: both come from the derived text expression.
+    target_column = TARGET_USE_COLUMN.get(payload.target_use, ZoneUseMatrix.self_storage)
+    target_permission_expr = _LGC_EFFECTIVE_LABEL if is_lgc else target_column
+    verdict_label_expr = _LGC_EFFECTIVE_LABEL if is_lgc else _PERMISSION_LABEL
     permission_join = and_(
         ZoneUseMatrix.jurisdiction_id == Parcel.jurisdiction_id,
         ZoneUseMatrix.zone_code == Parcel.zoning_code,
@@ -130,22 +188,30 @@ async def search_candidate_parcels(
         # jurisdiction. parcels.city is the per-parcel city/township.
         conditions.append(Parcel.city.in_(filters.cities))
     if filters.storage_permissions:
-        # Map frontend strings to UsePermission enum values for the filter
-        perm_map = {
-            "permitted": UsePermission.permitted,
-            "conditional": UsePermission.conditional,
-            "prohibited": UsePermission.prohibited,
-            "unclear": UsePermission.unclear,
-        }
-        mapped = [perm_map[p] for p in filters.storage_permissions if p in perm_map]
-        if "unclassified" in filters.storage_permissions:
-            # unclassified = no zone_use_matrix row at all
-            conditions.append(
-                or_(target_column.in_(mapped), target_column.is_(None))
-                if mapped else target_column.is_(None)
-            )
-        elif mapped:
-            conditions.append(target_column.in_(mapped))
+        if is_lgc:
+            # LGC filters on the derived text verdict (which already folds
+            # "unclassified" into its no-matrix-row branch), so no enum
+            # mapping / NULL-column special case is needed.
+            wanted = [p for p in filters.storage_permissions if p in _LGC_VERDICT_STRINGS]
+            if wanted:
+                conditions.append(target_permission_expr.in_(wanted))
+        else:
+            # Map frontend strings to UsePermission enum values for the filter
+            perm_map = {
+                "permitted": UsePermission.permitted,
+                "conditional": UsePermission.conditional,
+                "prohibited": UsePermission.prohibited,
+                "unclear": UsePermission.unclear,
+            }
+            mapped = [perm_map[p] for p in filters.storage_permissions if p in perm_map]
+            if "unclassified" in filters.storage_permissions:
+                # unclassified = no zone_use_matrix row at all
+                conditions.append(
+                    or_(target_column.in_(mapped), target_column.is_(None))
+                    if mapped else target_column.is_(None)
+                )
+            elif mapped:
+                conditions.append(target_column.in_(mapped))
     if filters.min_acres is not None:
         conditions.append(Parcel.acres >= filters.min_acres)
     if filters.max_acres is not None:
@@ -231,8 +297,8 @@ async def search_candidate_parcels(
             Parcel.in_wetland,
             Parcel.aadt,
             Parcel.has_structure,
-            target_column.label("target_permission"),
-            _PERMISSION_LABEL.label("storage_permission"),
+            target_permission_expr.label("target_permission"),
+            verdict_label_expr.label("storage_permission"),
             _GARAGE_PERM_LABEL.label("garage_permission"),
             has_listing_expr,
             # OOM quick-win: 0.00001 deg (~1m) left polygons near full-resolution,
