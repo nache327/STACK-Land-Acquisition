@@ -195,7 +195,7 @@ export type CandidateParcelSearchFilters = z.infer<typeof CandidateParcelSearchF
 
 export const CandidateParcelSearchRequestSchema = z.object({
   jurisdiction_id: z.string().uuid(),
-  target_use: z.literal("self_storage"),
+  target_use: z.enum(["self_storage", "luxury_garage_condo"]).default("self_storage"),
   filters: CandidateParcelSearchFiltersSchema.default({}),
   bbox: z.array(z.number()).length(4).nullable().optional(),
   search: z.string().nullable().optional(),

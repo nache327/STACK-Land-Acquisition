@@ -202,6 +202,18 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     return 10;
   });
 
+  // Which asset the map + parcel table are scored/verdicted for. Self-storage
+  // reads the grounded self_storage verdict; luxury garage condo derives its
+  // verdict from the sibling use columns server-side (see candidate_search
+  // _LGC_EFFECTIVE_LABEL). Persisted so the operator's choice survives reloads.
+  const [assetUse, setAssetUse] = useState<"self_storage" | "luxury_garage_condo">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("assetUse");
+      if (saved === "luxury_garage_condo" || saved === "self_storage") return saved;
+    }
+    return "self_storage";
+  });
+
   // Drive-time isochrone state
   const [driveTimeMode, setDriveTimeMode] = useState<DriveTimeMode>("off");
   const [isochroneData, setIsochroneData] = useState<IsochroneResult | null>(null);
@@ -289,12 +301,18 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
   }, [satThresholdHigh]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("assetUse", assetUse);
+    }
+  }, [assetUse]);
+
   const basePayload = useMemo<Omit<CandidateParcelSearchRequest, "bbox"> | null>(() => {
     if (!jurisdictionId) return null;
 
     return {
       jurisdiction_id: jurisdictionId,
-      target_use: "self_storage",
+      target_use: assetUse,
       filters: {
         ...(filters.zones.length > 0 ? { zones: filters.zones } : {}),
         ...(filters.zoneClasses.length > 0
@@ -328,7 +346,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
       // CandidateParcelRow shape.
       slim: false,
     };
-  }, [filters, jurisdictionId, buyBoxFilter.requireListed]);
+  }, [filters, jurisdictionId, buyBoxFilter.requireListed, assetUse]);
 
   const tablePayload = useMemo<CandidateParcelSearchRequest | null>(() => {
     if (!basePayload) return null;
@@ -929,7 +947,39 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
 
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950 px-5">
-        <a href="/" className="text-white font-semibold hover:text-slate-300 transition-colors">ParcelLogic</a>
+        <div className="flex items-center gap-3">
+          <a href="/" className="text-white font-semibold hover:text-slate-300 transition-colors">ParcelLogic</a>
+          {/* Asset toggle — re-slices the map + parcel table by the active
+              product. Garage Condo derives its verdict from the sibling use
+              columns server-side, so the storage-dead / light-industrial pool
+              surfaces here without changing the grounded self_storage data. */}
+          <div className="flex items-center rounded-lg border border-slate-700 bg-slate-900 p-0.5 text-xs font-medium">
+            {([
+              ["self_storage", "Self-Storage"],
+              ["luxury_garage_condo", "Garage Condo"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  if (assetUse !== value) {
+                    setAssetUse(value);
+                    setPage(1);
+                  }
+                }}
+                aria-pressed={assetUse === value}
+                className={[
+                  "rounded-md px-2.5 py-1 transition-colors",
+                  assetUse === value
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-400 hover:text-slate-200",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Background-loading pill — visible while zoning/overlays/ordinance are still running */}
         {(isBackground || bgComplete) && (

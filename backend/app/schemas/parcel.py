@@ -78,6 +78,13 @@ class ParcelFilter(BaseModel):
 
 class TargetUse(str, Enum):
     self_storage = "self_storage"
+    # Luxury garage condo. There is no reliable stored verdict for this use
+    # (the parser infers luxury_garage_condo, but catch #58 in the post-ingest
+    # gate forces it to 'prohibited' in the light-industrial / storage-dead
+    # zones that are the best LGC targets). So LGC-viability is DERIVED at
+    # query time from the trustworthy sibling columns in candidate_search —
+    # see _LGC_EFFECTIVE_LABEL there.
+    luxury_garage_condo = "luxury_garage_condo"
 
 
 class ParcelSearchSort(str, Enum):
