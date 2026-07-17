@@ -113,8 +113,32 @@ async def _alert_rows_for_filter(
     max_acres          = fj.get("maxAcres")
     max_price_per_acre = fj.get("maxPricePerAcre")
     max_total_price    = fj.get("maxTotalPrice")
+    # Incremental-only LGC lane (mirrors daily_email). When set, drop any
+    # listing whose parcel is storage-viable so a both-viable listing alerts
+    # only under the storage filter, never twice. Inject the matrix join +
+    # predicate ONLY when needed, so the self_storage alert SQL is byte-identical.
+    exclude_storage_viable = bool(fj.get("excludeStorageViable"))
+    _zum_join = ""
+    _incremental_pred = ""
+    if exclude_storage_viable:
+        _zum_join = """
+        LEFT JOIN LATERAL (
+            SELECT self_storage, mini_warehouse
+              FROM zone_use_matrix
+             WHERE jurisdiction_id = p.jurisdiction_id
+               AND zone_code      = p.zoning_code
+               AND (municipality IS NULL OR municipality = p.city)
+               AND deleted_at IS NULL
+             ORDER BY (municipality IS NULL) ASC
+             LIMIT 1
+        ) zum ON true"""
+        _incremental_pred = """
+          AND NOT COALESCE(
+                zum.self_storage::text  IN ('permitted', 'conditional')
+             OR zum.mini_warehouse::text IN ('permitted', 'conditional'),
+                FALSE)"""
     sql = text(
-        """
+        f"""
         SELECT
             l.id              AS listing_id,
             l.matched_parcel_id AS parcel_id,
@@ -155,7 +179,7 @@ async def _alert_rows_for_filter(
                AND status = 'ready'
              ORDER BY finished_at DESC NULLS LAST, created_at DESC
              LIMIT 1
-        ) latest_job ON true
+        ) latest_job ON true{_zum_join}
         WHERE l.jurisdiction_id = :jid
           AND l.is_current = true
           AND l.matched_parcel_id IS NOT NULL
@@ -180,7 +204,7 @@ async def _alert_rows_for_filter(
                    <= CAST(:max_price_per_acre AS DOUBLE PRECISION))
           AND (CAST(:max_total_price AS DOUBLE PRECISION) IS NULL
                OR l.sale_price IS NULL
-               OR l.sale_price <= CAST(:max_total_price AS DOUBLE PRECISION))
+               OR l.sale_price <= CAST(:max_total_price AS DOUBLE PRECISION)){_incremental_pred}
         ORDER BY pbs.score DESC, l.last_seen_at DESC
         """
     )
