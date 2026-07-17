@@ -44,8 +44,10 @@ from app.db import long_running_session_maker
 # legitimately-long-but-bounded query.
 from app.models.buybox_filter import BuyboxFilter
 from app.models.parcel_buybox_score import ParcelBuyboxScore
+from app.models.use_case import UseCase
 from app.services.email_resend import send_email
 from app.services.job_queue import redis_broker  # noqa: F401  (registers broker)
+from app.services.use_verdicts import verdict_expr
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +204,20 @@ async def _top_parcels_for_filter(
     # market-agnostic no-verdict deals. "exclude" gates them OUT (so the
     # general buy-box email doesn't double-list a needle). NULL-safe.
     storage_verdict_mode = filter_json.get("storageVerdictMode")
+    # Incremental-only LGC lane: when set, keep ONLY parcels where storage is
+    # NOT viable (self_storage/mini_warehouse neither permitted nor conditional).
+    # This restricts the LGC digest to the pool the storage digest never
+    # surfaces (light-industrial / storage-dead zones), so a both-viable parcel
+    # emails once — via the storage lane — never twice. Off for self_storage.
+    exclude_storage_viable = bool(filter_json.get("excludeStorageViable"))
+
+    # The "served verdict" expression is use-case-dependent: self_storage reads
+    # its column; luxury_garage_condo derives from the sibling columns. Resolve
+    # the filter's use-case slug (no lazy-load — an explicit scalar query) and
+    # pick the registry expression. For self_storage this is byte-identical to
+    # `zum.self_storage::text`, so the storage digest is unchanged.
+    slug = await db.scalar(select(UseCase.slug).where(UseCase.id == f.use_case_id))
+    verdict_sql = verdict_expr(slug)
 
     # Pre-narrow into a MATERIALIZED `eligible` CTE BEFORE the three
     # LATERAL joins (listing / zone-matrix / dashboard-job). The driving
@@ -315,7 +331,7 @@ async def _top_parcels_for_filter(
             ({verdict_basis_sql('zum')}) AS verdict_basis,
             ({lead_eligible_sql('zum')}) AS lead_eligible,
             (({lead_eligible_sql('zum')})
-             AND zum.self_storage::text = 'prohibited') AS storage_dead,
+             AND ({verdict_sql}) = 'prohibited') AS storage_dead,
             e.parcel_id     AS parcel_id,
             e.apn           AS apn,
             e.address       AS address,
@@ -341,7 +357,7 @@ async def _top_parcels_for_filter(
             (e.has_structure = TRUE OR COALESCE(e.improvement_value, 0) > 50000)
                 AS soft_has_building,
             (lst.sale_price IS NULL)                       AS soft_no_price,
-            (zum.self_storage::text = 'conditional')       AS soft_conditional,
+            (({verdict_sql}) = 'conditional')              AS soft_conditional,
             (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
                 AS soft_low_confidence,
             (e.in_flood_zone = TRUE)                       AS soft_flood,
@@ -366,8 +382,11 @@ async def _top_parcels_for_filter(
              LIMIT 1
         ) lst ON true
         LEFT JOIN LATERAL (
-            SELECT self_storage, confidence, human_reviewed,
-                   classification_source
+            -- self_storage + siblings: the sibling columns feed the LGC
+            -- verdict expression (verdict_sql). Extra columns are ignored by
+            -- the self_storage expression, so the storage digest is unchanged.
+            SELECT self_storage, mini_warehouse, light_industrial,
+                   confidence, human_reviewed, classification_source
               FROM zone_use_matrix
              WHERE jurisdiction_id = e.jurisdiction_id
                AND zone_code      = e.zoning_code
@@ -424,12 +443,23 @@ async def _top_parcels_for_filter(
           AND (
                 CAST(:storage_verdict_mode AS TEXT) IS NULL
              OR (CAST(:storage_verdict_mode AS TEXT) = 'only'
-                 AND zum.self_storage::text IN ('permitted', 'conditional')
+                 AND ({verdict_sql}) IN ('permitted', 'conditional')
                  AND zum.human_reviewed = TRUE)
              OR (CAST(:storage_verdict_mode AS TEXT) = 'exclude'
                  AND NOT COALESCE(
-                       zum.self_storage::text IN ('permitted', 'conditional')
+                       ({verdict_sql}) IN ('permitted', 'conditional')
                        AND zum.human_reviewed, FALSE))
+          )
+          -- Incremental-only LGC lane. When excludeStorageViable is set, drop
+          -- any parcel where storage itself is viable (permitted/conditional on
+          -- self_storage or mini_warehouse) so a both-viable parcel emails only
+          -- via the storage digest. NULL-safe; a no-op for self_storage filters.
+          AND (
+                NOT :exclude_storage_viable
+             OR NOT COALESCE(
+                   zum.self_storage::text  IN ('permitted', 'conditional')
+                OR zum.mini_warehouse::text IN ('permitted', 'conditional'),
+                   FALSE)
           )
         ORDER BY e.score DESC, e.parcel_id
         LIMIT :lim
@@ -448,6 +478,7 @@ async def _top_parcels_for_filter(
             "max_price_per_acre": max_price_per_acre,
             "max_total_price": max_total_price,
             "storage_verdict_mode": storage_verdict_mode,
+            "exclude_storage_viable": exclude_storage_viable,
         },
     )
     out: list[DigestParcel] = []
