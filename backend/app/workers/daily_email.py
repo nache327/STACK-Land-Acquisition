@@ -44,10 +44,8 @@ from app.db import long_running_session_maker
 # legitimately-long-but-bounded query.
 from app.models.buybox_filter import BuyboxFilter
 from app.models.parcel_buybox_score import ParcelBuyboxScore
-from app.models.use_case import UseCase
 from app.services.email_resend import send_email
 from app.services.job_queue import redis_broker  # noqa: F401  (registers broker)
-from app.services.use_verdicts import verdict_expr
 
 logger = logging.getLogger(__name__)
 
@@ -208,16 +206,10 @@ async def _top_parcels_for_filter(
     # NOT viable (self_storage/mini_warehouse neither permitted nor conditional).
     # This restricts the LGC digest to the pool the storage digest never
     # surfaces (light-industrial / storage-dead zones), so a both-viable parcel
-    # emails once — via the storage lane — never twice. Off for self_storage.
+    # emails once — via the storage lane — never twice. Off for self_storage;
+    # the LGC score itself (which ranks the lane) already encodes the LGC
+    # verdict, so the digest body stays self_storage-simple here.
     exclude_storage_viable = bool(filter_json.get("excludeStorageViable"))
-
-    # The "served verdict" expression is use-case-dependent: self_storage reads
-    # its column; luxury_garage_condo derives from the sibling columns. Resolve
-    # the filter's use-case slug (no lazy-load — an explicit scalar query) and
-    # pick the registry expression. For self_storage this is byte-identical to
-    # `zum.self_storage::text`, so the storage digest is unchanged.
-    slug = await db.scalar(select(UseCase.slug).where(UseCase.id == f.use_case_id))
-    verdict_sql = verdict_expr(slug)
 
     # Pre-narrow into a MATERIALIZED `eligible` CTE BEFORE the three
     # LATERAL joins (listing / zone-matrix / dashboard-job). The driving
@@ -331,7 +323,7 @@ async def _top_parcels_for_filter(
             ({verdict_basis_sql('zum')}) AS verdict_basis,
             ({lead_eligible_sql('zum')}) AS lead_eligible,
             (({lead_eligible_sql('zum')})
-             AND ({verdict_sql}) = 'prohibited') AS storage_dead,
+             AND zum.self_storage::text = 'prohibited') AS storage_dead,
             e.parcel_id     AS parcel_id,
             e.apn           AS apn,
             e.address       AS address,
@@ -357,7 +349,7 @@ async def _top_parcels_for_filter(
             (e.has_structure = TRUE OR COALESCE(e.improvement_value, 0) > 50000)
                 AS soft_has_building,
             (lst.sale_price IS NULL)                       AS soft_no_price,
-            (({verdict_sql}) = 'conditional')              AS soft_conditional,
+            (zum.self_storage::text = 'conditional')       AS soft_conditional,
             (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
                 AS soft_low_confidence,
             (e.in_flood_zone = TRUE)                       AS soft_flood,
@@ -385,7 +377,7 @@ async def _top_parcels_for_filter(
             -- self_storage + siblings: the sibling columns feed the LGC
             -- verdict expression (verdict_sql). Extra columns are ignored by
             -- the self_storage expression, so the storage digest is unchanged.
-            SELECT self_storage, mini_warehouse, light_industrial,
+            SELECT self_storage, mini_warehouse,
                    confidence, human_reviewed, classification_source
               FROM zone_use_matrix
              WHERE jurisdiction_id = e.jurisdiction_id
@@ -443,11 +435,11 @@ async def _top_parcels_for_filter(
           AND (
                 CAST(:storage_verdict_mode AS TEXT) IS NULL
              OR (CAST(:storage_verdict_mode AS TEXT) = 'only'
-                 AND ({verdict_sql}) IN ('permitted', 'conditional')
+                 AND zum.self_storage::text IN ('permitted', 'conditional')
                  AND zum.human_reviewed = TRUE)
              OR (CAST(:storage_verdict_mode AS TEXT) = 'exclude'
                  AND NOT COALESCE(
-                       ({verdict_sql}) IN ('permitted', 'conditional')
+                       zum.self_storage::text IN ('permitted', 'conditional')
                        AND zum.human_reviewed, FALSE))
           )
           -- Incremental-only LGC lane. When excludeStorageViable is set, drop
