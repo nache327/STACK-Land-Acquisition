@@ -186,6 +186,14 @@ async def _alert_rows_for_filter(
           AND l.match_confidence >= 0.85
           AND pbs.score >= :min_score
           AND nl.id IS NULL
+          -- Never alert on a deal the owner already closed out on the board
+          -- (passed / dead / under_contract), mirrored into deal_dispositions
+          -- by dashboard_push. Literal statuses → no new bind param.
+          AND NOT EXISTS (
+            SELECT 1 FROM deal_dispositions dd
+             WHERE dd.parcel_id = p.id
+               AND dd.status IN ('passed', 'dead', 'under_contract')
+          )
           -- Buy-box hard filters (mirror daily_email._top_parcels_for_filter).
           -- NULL knob = pass-through; NULL parcel acres = pass-through
           -- (acreage-missing parcels surface for manual review, same as

@@ -265,6 +265,12 @@ async def _top_parcels_for_filter(
     # "don't re-email the same parcel" logic. The dashboard push wants the
     # complete current set (re-synced idempotently), so include_notified drops
     # both — leaving only the score/acres eligibility predicates.
+    # Also drop deals the owner already closed out on the dashboard board
+    # (passed / dead / under_contract), mirrored back into deal_dispositions by
+    # dashboard_push. Lives in the digest-only gate, so the board push
+    # (include_notified=True) still re-syncs every card, incl. closed ones.
+    # Literal statuses → no new bind param (keeps the SQL-contract tests +
+    # their fake session working).
     _notified_gate = "" if include_notified else """
               AND pbs.notified_at IS NULL
               AND NOT EXISTS (
@@ -272,6 +278,11 @@ async def _top_parcels_for_filter(
                  WHERE nl.filter_id = :fid
                    AND nl.parcel_id = p.id
                    AND nl.notified_at > NOW() - INTERVAL '14 days'
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM deal_dispositions dd
+                 WHERE dd.parcel_id = p.id
+                   AND dd.status IN ('passed', 'dead', 'under_contract')
               )"""
     _eligible_predicates = f"""
               AND pbs.score >= :min_score

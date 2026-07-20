@@ -171,6 +171,51 @@ def _dashboard_dsn() -> str | None:
     return dsn.replace("postgresql+asyncpg://", "postgresql://", 1)
 
 
+def _pl_dsn() -> str:
+    """ParcelLogic's own asyncpg DSN (plain postgres form)."""
+    return settings.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+
+async def _sync_dispositions_back(dashboard_conn) -> int:
+    """Mirror the dashboard board's decided dispositions into ParcelLogic's
+    ``deal_dispositions`` so the digest + listing alerts can suppress deals the
+    owner already closed out — closing the one-way-sync gap.
+
+    Pulls every ``deal_prospect`` row whose status isn't the default 'new',
+    upserts them, then deletes any local row no longer decided on the board (a
+    deal reverted to 'new' or removed) so suppression never sticks stale after
+    an un-pass. Best-effort: the caller swallows failures so a disposition-sync
+    hiccup never sinks the push/digest."""
+    decided = await dashboard_conn.fetch(
+        "SELECT parcel_id, status, decided_at FROM deal_prospect "
+        "WHERE status IS NOT NULL AND status <> 'new'"
+    )
+    conn = await asyncpg.connect(_pl_dsn())
+    try:
+        async with conn.transaction():
+            if decided:
+                await conn.executemany(
+                    """
+                    INSERT INTO deal_dispositions (parcel_id, status, decided_at, synced_at)
+                    VALUES ($1::bigint, $2::text, $3::timestamptz, now())
+                    ON CONFLICT (parcel_id) DO UPDATE
+                       SET status     = EXCLUDED.status,
+                           decided_at = EXCLUDED.decided_at,
+                           synced_at  = now()
+                    """,
+                    [(r["parcel_id"], r["status"], r["decided_at"]) for r in decided],
+                )
+            # Drop local rows the board no longer marks decided, so an un-passed
+            # deal can surface again. Empty list → deletes all (nothing decided).
+            await conn.execute(
+                "DELETE FROM deal_dispositions WHERE NOT (parcel_id = ANY($1::bigint[]))",
+                [r["parcel_id"] for r in decided],
+            )
+    finally:
+        await conn.close()
+    return len(decided)
+
+
 async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     """Sync current buy-box deals into the dashboard's deal_prospect table.
 
@@ -217,27 +262,42 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
                 if prev is None or (d.score or 0) > (prev[0].score or 0):
                     best[d.parcel_id] = (d, sup.get(d.parcel_id, {}))
 
+    # No early-return on empty rows: the disposition read-back below must run
+    # even with 0 fresh deals (a passed/dead deal can exist with nothing new to
+    # push today). The push itself is guarded by `if rows:`.
     rows = [
         _row_for(d, s, _asset_label(uses.get(pid, set())))
         for pid, (d, s) in best.items()
     ]
-    if not rows:
-        logger.info("dashboard_push: 0 deals to sync (%d filter(s))", len(filters))
-        return {"status": "ok", "synced": 0, "filters": len(filters)}
 
     sql = _upsert_sql()
     conn = await asyncpg.connect(dsn, ssl="require")
+    dispositions = 0
     try:
-        async with conn.transaction():
-            for r in rows:
-                await conn.execute(sql, *[r[c] for c in _FACT_COLUMNS])
+        if rows:
+            async with conn.transaction():
+                for r in rows:
+                    await conn.execute(sql, *[r[c] for c in _FACT_COLUMNS])
+        # Pull the board's dispositions back regardless of whether there were new
+        # facts to push — a passed/dead deal can exist with 0 fresh deals today.
+        # Best-effort: a read-back failure must not fail the push/digest.
+        try:
+            dispositions = await _sync_dispositions_back(conn)
+        except Exception:
+            logger.exception("dashboard_push: disposition read-back failed; push unaffected")
     finally:
         await conn.close()
 
     logger.info(
-        "dashboard_push: synced %d deal(s) across %d filter(s)", len(rows), len(filters)
+        "dashboard_push: synced %d deal(s) across %d filter(s); %d disposition(s) pulled back",
+        len(rows), len(filters), dispositions,
     )
-    return {"status": "ok", "synced": len(rows), "filters": len(filters)}
+    return {
+        "status": "ok",
+        "synced": len(rows),
+        "filters": len(filters),
+        "dispositions": dispositions,
+    }
 
 
 def main() -> None:
