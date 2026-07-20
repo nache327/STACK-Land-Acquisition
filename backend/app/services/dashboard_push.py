@@ -12,8 +12,14 @@ so a re-sync never clobbers the user's decisions. Idempotent.
 
 No-op unless ``PORTFOLIO_DASHBOARD_DATABASE_URL`` is set.
 
+Board sync is DECOUPLED from email: filters feed the board via their own
+``filter_json.dashboardEnabled`` flag, independent of ``daily_email_enabled``.
+A filter can populate the board without emailing (dashboard-only) and vice
+versa. (Historically the push rode ``_eligible_filters``, gated on
+``daily_email_enabled`` — turning off a digest silently darkened the board.)
+
 Run modes:
-  * ``python -m app.services.dashboard_push``              — all email-enabled filters
+  * ``python -m app.services.dashboard_push``              — all dashboard-enabled filters
   * ``python -m app.services.dashboard_push --filter-id N`` — one filter (backfill/test)
   * called automatically at the end of ``daily_email.run_once`` (once/day at the
     digest send hour), so the board refreshes on the same cadence as the email.
@@ -35,7 +41,6 @@ from app.models.buybox_filter import BuyboxFilter
 from app.models.use_case import UseCase
 from app.workers.daily_email import (
     DigestParcel,
-    _eligible_filters,
     _parcel_link,
     _top_parcels_for_filter,
 )
@@ -259,13 +264,28 @@ async def _cleanup_delisted(dashboard_conn) -> int:
     return len(stale)
 
 
+async def _dashboard_filters(db) -> list[BuyboxFilter]:
+    """Filters that feed the Deal Pipeline board.
+
+    Selected by the ``dashboardEnabled`` flag in ``filter_json``, INDEPENDENT of
+    ``daily_email_enabled`` — board-sync and email are separate toggles. There is
+    no 23h cooldown here (that gates re-EMAILS): the board always reflects the
+    full current set of dashboard-enabled filters."""
+    stmt = (
+        select(BuyboxFilter)
+        .where(BuyboxFilter.filter_json["dashboardEnabled"].astext == "true")
+        .order_by(BuyboxFilter.updated_at.desc())
+    )
+    return list((await db.execute(stmt)).scalars())
+
+
 async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     """Sync current buy-box deals into the dashboard's deal_prospect table.
 
-    ``force`` (default True) ignores the digest's 23h cooldown — the board should
-    reflect the full current set regardless of when the email last sent.
-    ``filter_id`` restricts to one filter (backfill / testing) regardless of its
-    enabled flag."""
+    ``force`` is retained for caller/CLI compatibility but no longer affects
+    filter selection: the board always reflects the full current set of
+    dashboard-enabled filters (there is no board-side cooldown). ``filter_id``
+    restricts to one filter (backfill / testing) regardless of its flags."""
     t0 = time.monotonic()
     dsn = _dashboard_dsn()
     if not dsn:
@@ -285,7 +305,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             ).scalar_one_or_none()
             filters = [f] if f else []
         else:
-            filters = await _eligible_filters(db, force=force)
+            filters = await _dashboard_filters(db)
         for f in filters:
             slug = await db.scalar(
                 select(UseCase.slug).where(UseCase.id == f.use_case_id)
