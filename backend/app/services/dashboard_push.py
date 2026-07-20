@@ -31,6 +31,7 @@ from sqlalchemy import select, text
 from app.config import settings
 from app.db import long_running_session_maker
 from app.models.buybox_filter import BuyboxFilter
+from app.models.use_case import UseCase
 from app.workers.daily_email import (
     DigestParcel,
     _eligible_filters,
@@ -50,7 +51,7 @@ _PUSH_LIMIT = 500
 _FACT_COLUMNS = [
     "parcel_id", "apn", "jurisdiction_id", "jurisdiction_name",
     "address", "city", "state", "zip", "owner_name", "acres",
-    "score", "tier", "verdict_basis", "factors", "soft_flags",
+    "score", "tier", "verdict_basis", "asset_type", "factors", "soft_flags",
     "listing_source", "sale_price", "price_per_ac", "days_on_market",
     "broker_company", "broker_contact", "broker_phone", "broker_email",
     "lat", "lng", "parcellogic_link",
@@ -92,7 +93,19 @@ async def _supplement(db, parcel_ids: list[int]) -> dict[int, dict]:
     return {r._mapping["parcel_id"]: dict(r._mapping) for r in rows}
 
 
-def _row_for(p: DigestParcel, sup: dict) -> dict:
+def _asset_label(uses: set[str]) -> str:
+    """Collapse the set of use-case slugs a parcel qualified under into the
+    board's asset_type value."""
+    has_lgc = "luxury_garage_condo" in uses
+    has_ss = "self_storage" in uses
+    if has_lgc and has_ss:
+        return "both"
+    if has_lgc:
+        return "luxury_garage_condo"
+    return "self_storage"
+
+
+def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
     """Flatten a DigestParcel + supplement into a deal_prospect fact row."""
     has_listing = bool(p.listing_source)
     address = (sup.get("listing_address") if has_listing else None) or p.address
@@ -114,6 +127,7 @@ def _row_for(p: DigestParcel, sup: dict) -> dict:
         "score": p.score,
         "tier": p.tier,
         "verdict_basis": p.verdict_basis,
+        "asset_type": asset_type,
         "factors": json.dumps(p.factors or []),
         "soft_flags": json.dumps(
             [{"emoji": e, "label": lbl} for e, lbl in (p.soft_flags or [])]
@@ -170,8 +184,11 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
         return {"status": "skipped", "reason": "no_dsn"}
 
     # Dedupe by parcel_id (a parcel can match multiple filters; the board shows
-    # one card, highest score wins).
+    # one card, highest score wins). `uses` accumulates every use-case slug the
+    # parcel qualified under across all filters, so a parcel eligible under both
+    # a self_storage AND a luxury_garage_condo filter lands as asset_type='both'.
     best: dict[int, tuple[DigestParcel, dict]] = {}
+    uses: dict[int, set[str]] = {}
     async with long_running_session_maker() as db:
         if filter_id is not None:
             f = (
@@ -181,6 +198,10 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
         else:
             filters = await _eligible_filters(db, force=force)
         for f in filters:
+            slug = await db.scalar(
+                select(UseCase.slug).where(UseCase.id == f.use_case_id)
+            )
+            asset = "luxury_garage_condo" if slug == "luxury_garage_condo" else "self_storage"
             deals = await _top_parcels_for_filter(
                 db, f, include_notified=True, limit=_PUSH_LIMIT
             )
@@ -191,11 +212,15 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
                 )
             sup = await _supplement(db, [d.parcel_id for d in deals])
             for d in deals:
+                uses.setdefault(d.parcel_id, set()).add(asset)
                 prev = best.get(d.parcel_id)
                 if prev is None or (d.score or 0) > (prev[0].score or 0):
                     best[d.parcel_id] = (d, sup.get(d.parcel_id, {}))
 
-    rows = [_row_for(d, s) for d, s in best.values()]
+    rows = [
+        _row_for(d, s, _asset_label(uses.get(pid, set())))
+        for pid, (d, s) in best.items()
+    ]
     if not rows:
         logger.info("dashboard_push: 0 deals to sync (%d filter(s))", len(filters))
         return {"status": "ok", "synced": 0, "filters": len(filters)}
