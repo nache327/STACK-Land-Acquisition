@@ -75,6 +75,13 @@ class DigestParcel:
     listing_broker_contact: str | None = None
     listing_broker_phone: str | None = None
     listing_broker_email: str | None = None
+    # Owner contact from the matched listing (CoStar owner data). For land the
+    # actionable outreach channel is owner phone / direct mail — broker email is
+    # absent in the source. Surfaced on the dashboard board so listed deals are
+    # callable; the digest email render does not use these.
+    owner_phone: str | None = None
+    owner_address: str | None = None
+    owner_contact: str | None = None
     # Most-recent ready job_id for the jurisdiction. The dashboard
     # route is /dashboard/[jobId] and passes the segment straight to
     # GET /api/jobs/:id. Previous versions used jurisdiction_id here,
@@ -354,6 +361,9 @@ async def _top_parcels_for_filter(
             lst.listing_broker_contact  AS listing_broker_contact,
             lst.listing_broker_phone    AS listing_broker_phone,
             lst.listing_broker_email    AS listing_broker_email,
+            lst.owner_phone             AS owner_phone,
+            lst.owner_address           AS owner_address,
+            lst.owner_contact           AS owner_contact,
             latest_job.id               AS dashboard_job_id,
             -- Soft flags (computed in SQL so the WHERE-level filter and
             -- the email render see the same booleans).
@@ -376,7 +386,8 @@ async def _top_parcels_for_filter(
         LEFT JOIN LATERAL (
             SELECT source, sale_price, days_on_market,
                    listing_broker_company, listing_broker_contact,
-                   listing_broker_phone, listing_broker_email
+                   listing_broker_phone, listing_broker_email,
+                   owner_phone, owner_address, owner_contact
               FROM forsale_listings
              WHERE matched_parcel_id = e.parcel_id
                AND is_current = true
@@ -508,6 +519,9 @@ async def _top_parcels_for_filter(
                 listing_broker_contact=m["listing_broker_contact"],
                 listing_broker_phone=m["listing_broker_phone"],
                 listing_broker_email=m["listing_broker_email"],
+                owner_phone=m["owner_phone"],
+                owner_address=m["owner_address"],
+                owner_contact=m["owner_contact"],
                 dashboard_job_id=(
                     str(m["dashboard_job_id"]) if m["dashboard_job_id"] else None
                 ),
