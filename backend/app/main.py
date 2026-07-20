@@ -18,6 +18,7 @@ from app.api import (
     jobs,
     jurisdictions,
     listings,
+    needles,
     ordinances,
     parcels,
     pdf_parser,
@@ -101,6 +102,7 @@ app.include_router(zoning_districts.router, prefix="/api")
 app.include_router(buybox.router, prefix="/api")
 app.include_router(census_proxy.router, prefix="/api")
 app.include_router(listings.router, prefix="/api")
+app.include_router(needles.router, prefix="/api")
 app.include_router(admin_backfill.router, prefix="/api", dependencies=[Depends(require_secret)])
 app.include_router(admin_op5.router, prefix="/api")
 app.include_router(admin_op5_matrix.router, prefix="/api", dependencies=[Depends(require_secret)])
