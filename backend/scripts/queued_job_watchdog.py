@@ -242,11 +242,56 @@ async def _refresh_locked() -> int:
         await conn.close()  # releases the advisory lock
 
 
+def _write_heartbeat(watchdog_code: int, refresh_code: int, digest_code: int) -> None:
+    """Record one row per tick so cron liveness is observable from the DB.
+
+    The ops cron rides restartPolicyType=NEVER one-shots with no external
+    health signal, so "is the cron firing?" (and "did it fire at 12:00 UTC?")
+    was only answerable from Railway logs. This heartbeat is UNCONDITIONAL —
+    independent of the hour gate, email flags, and the dashboard DSN — so a
+    missing heartbeat means the cron itself did not run, full stop. Best-effort:
+    a heartbeat failure never sinks the tick (and if the table doesn't exist yet
+    because the web service hasn't migrated, the INSERT just no-ops via except)."""
+    try:
+        asyncio.run(_write_heartbeat_async(watchdog_code, refresh_code, digest_code))
+    except Exception as exc:  # noqa: BLE001 — never let the heartbeat sink the tick
+        print(f"heartbeat write failed: {exc}", file=sys.stderr)
+
+
+async def _write_heartbeat_async(
+    watchdog_code: int, refresh_code: int, digest_code: int
+) -> None:
+    import os
+    import socket
+
+    import asyncpg
+
+    from app.config import settings
+
+    dsn = (
+        settings.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        .replace(":6543/", ":5432/")
+    )
+    conn = await asyncpg.connect(dsn)
+    try:
+        await conn.execute(
+            "INSERT INTO ops_cron_heartbeat "
+            "(watchdog_code, refresh_code, digest_code, host) VALUES ($1, $2, $3, $4)",
+            watchdog_code,
+            refresh_code,
+            digest_code,
+            os.getenv("RAILWAY_SERVICE_NAME") or socket.gethostname(),
+        )
+    finally:
+        await conn.close()
+
+
 def main() -> None:
     args = parse_args()
     watchdog_code = asyncio.run(run(args.stale_after_minutes))
     refresh_code = _run_refresh_tick()  # before the digest, so its scores are fresh
     digest_code = _run_digest_tick()
+    _write_heartbeat(watchdog_code, refresh_code, digest_code)  # cron-liveness trace
     # Exit-code precedence: a stuck-jobs query failure (2) is the loudest
     # signal and wins. Otherwise surface a digest failure, then a refresh
     # failure, then fall back to the watchdog's own code (0 = clean, 1 = stuck).
