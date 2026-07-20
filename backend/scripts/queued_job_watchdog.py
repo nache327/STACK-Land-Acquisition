@@ -166,17 +166,96 @@ def _run_digest_tick() -> int:
         return 1
 
 
+def _run_refresh_tick() -> int:
+    """Once/day, BEFORE the digest: fresh-score the LGC email lane's listed parcels
+    and refresh the needle snapshot, so ``/needles`` and the LGC Hot deals email
+    reflect CURRENT listings + grounding. A copied/stale score silently drifts as
+    new CoStar listings land (a real bug we hit — a newly-listed parcel was missing
+    its +15 listing boost), so this always re-scores through the canonical scorer.
+
+    Piggybacks the watchdog tick (like the digest) because the config-as-code cron
+    never took effect on Railway. Gated to ``DIGEST_SEND_HOUR_UTC`` + a 23h
+    staleness check on needle_snapshot so it runs once/day, and single-flighted
+    with a pg advisory lock so overlapping 10-min ticks never double-run the heavy
+    (~7 min) work. Failure never sinks the tick."""
+    import os
+
+    try:
+        send_hour = int(os.getenv("DIGEST_SEND_HOUR_UTC", "12"))
+        if not 0 <= send_hour <= 23:
+            send_hour = 12
+    except (TypeError, ValueError):
+        send_hour = 12
+    from datetime import timezone
+
+    if datetime.now(timezone.utc).hour != send_hour:
+        return 0
+    try:
+        return asyncio.run(_refresh_locked())
+    except Exception as exc:  # noqa: BLE001 — never let refresh sink the tick
+        print(f"refresh tick failed: {exc}", file=sys.stderr)
+        return 1
+
+
+async def _refresh_locked() -> int:
+    import subprocess
+    from datetime import timezone
+
+    import asyncpg
+
+    from app.config import settings
+
+    # Session-mode (5432) DSN so the advisory lock actually holds (the 6543
+    # transaction pooler resets locks between statements).
+    dsn = (
+        settings.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        .replace(":6543/", ":5432/")
+    )
+    conn = await asyncpg.connect(dsn)
+    try:
+        if not await conn.fetchval(
+            "SELECT pg_try_advisory_lock(hashtextextended('nightly_refresh', 42))"
+        ):
+            return 0  # another tick is already refreshing
+        ts = await conn.fetchval("SELECT max(computed_at) FROM needle_snapshot")
+        if ts is not None and (datetime.now(timezone.utc) - ts) < timedelta(hours=23):
+            return 0  # already refreshed today
+        scripts_dir = Path(__file__).resolve().parent
+        backend_dir = scripts_dir.parent
+        code = 0
+        # LGC listed-scores FIRST (so they're fresh before the digest selects
+        # them); then the needle snapshot, whose computed_at drives the gate above.
+        for script in ("refresh_lgc_hotdeals_scores.py", "precompute_needles.py"):
+            try:
+                proc = subprocess.run(
+                    [sys.executable, str(scripts_dir / script)],
+                    cwd=str(backend_dir), timeout=1800,
+                )
+                if proc.returncode != 0:
+                    print(f"refresh: {script} exited {proc.returncode}", file=sys.stderr)
+                    code = 1
+            except Exception as exc:  # noqa: BLE001
+                print(f"refresh: {script} failed to launch: {exc}", file=sys.stderr)
+                code = 1
+        return code
+    finally:
+        await conn.close()  # releases the advisory lock
+
+
 def main() -> None:
     args = parse_args()
     watchdog_code = asyncio.run(run(args.stale_after_minutes))
+    refresh_code = _run_refresh_tick()  # before the digest, so its scores are fresh
     digest_code = _run_digest_tick()
     # Exit-code precedence: a stuck-jobs query failure (2) is the loudest
-    # signal and wins. Otherwise surface a digest failure (non-zero), then
-    # fall back to the watchdog's own code (0 = clean, 1 = stuck jobs).
+    # signal and wins. Otherwise surface a digest failure, then a refresh
+    # failure, then fall back to the watchdog's own code (0 = clean, 1 = stuck).
     if watchdog_code == 2:
         raise SystemExit(2)
     if digest_code != 0:
         raise SystemExit(digest_code)
+    if refresh_code != 0:
+        raise SystemExit(refresh_code)
     raise SystemExit(watchdog_code)
 
 
