@@ -62,6 +62,38 @@ _NEEDLE_LATERAL = """
      AND prm.median_hhi >= 100000
 """
 
+# LGC-effective needle (ADDITIVE — 1e). Same wealth/acre gate, but the verdict
+# is DERIVED from the sibling columns (ss/mw permitted-or-conditional OR light
+# industrial permitted-or-conditional), because the stored luxury_garage_condo
+# column is catch-#58-suppressed in exactly the LI/storage-dead zones that are
+# LGC's best targets. Mirrors use_verdicts._LGC_VERDICT_SQL (permitted|conditional
+# tiers). Reported alongside — never replaces — the self_storage tally above.
+_NEEDLE_LATERAL_LGC = """
+    FROM parcels p
+    JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+    JOIN LATERAL (
+        SELECT self_storage::text AS ss, mini_warehouse::text AS mw,
+               light_industrial::text AS li
+          FROM zone_use_matrix m
+         WHERE m.jurisdiction_id = p.jurisdiction_id
+           AND m.zone_code = p.zoning_code
+           AND (m.municipality IS NULL OR m.municipality = p.city)
+           AND m.deleted_at IS NULL
+           AND m.human_reviewed
+         ORDER BY (m.municipality IS NULL) ASC
+         LIMIT 1
+    ) v ON true
+   WHERE p.jurisdiction_id = $1::uuid
+     AND (
+         v.ss IN ('permitted', 'conditional')
+         OR v.mw IN ('permitted', 'conditional')
+         OR v.li IN ('permitted', 'conditional')
+     )
+     AND p.acres >= 1.5
+     AND prm.median_home_value >= 475000
+     AND prm.median_hhi >= 100000
+"""
+
 
 async def main() -> int:
     ap = argparse.ArgumentParser()
@@ -118,6 +150,12 @@ async def main() -> int:
             star = "  <-" if spotlight and r["city"] in spotlight else ""
             print(f"  {r['city']}: {r['n']}{star}")
         print(f"  TOTAL needles: {total}")
+        # LGC-effective tally (additive; sibling-derived — see _NEEDLE_LATERAL_LGC)
+        lgc_total = await conn.fetchval(
+            f"SELECT count(*) {_NEEDLE_LATERAL_LGC}", jid
+        )
+        print(f"  TOTAL LGC-effective needles (additive): {lgc_total}"
+              f"  (+{lgc_total - total} vs storage)")
 
         # 3. ON-NEEDLE COSTAR listings
         print("\n--- 3. ON-NEEDLE CURRENT COSTAR LISTINGS (digest-ready pool) ---")
