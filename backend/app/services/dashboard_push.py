@@ -60,6 +60,11 @@ _FACT_COLUMNS = [
     "score", "tier", "verdict_basis", "asset_type", "factors", "soft_flags",
     "listing_source", "sale_price", "price_per_ac", "days_on_market",
     "broker_company", "broker_contact", "broker_phone", "broker_email",
+    # Owner contact from the matched listing (CoStar owner data) — the
+    # actionable outreach channel for land (phone + direct mail). Named
+    # *_listing / owner_phone / owner_address to avoid colliding with the
+    # dashboard-owned MANUAL `owner_contact` disposition column (never pushed).
+    "owner_phone", "owner_address", "owner_contact_listing",
     "lat", "lng", "parcellogic_link",
 ]
 _JSONB_COLUMNS = {"factors", "soft_flags"}
@@ -146,6 +151,9 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
         "broker_contact": p.listing_broker_contact,
         "broker_phone": p.listing_broker_phone,
         "broker_email": p.listing_broker_email,
+        "owner_phone": p.owner_phone,
+        "owner_address": p.owner_address,
+        "owner_contact_listing": p.owner_contact,
         "lat": p.lat,
         "lng": p.lng,
         "parcellogic_link": _parcel_link(p),
