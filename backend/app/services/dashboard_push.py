@@ -216,6 +216,48 @@ async def _sync_dispositions_back(dashboard_conn) -> int:
     return len(decided)
 
 
+async def _cleanup_delisted(dashboard_conn) -> int:
+    """Remove board cards whose CoStar listing has delisted — but ONLY the ones
+    the owner never triaged (status still 'new') and that a listing surfaced in
+    the first place (listing_source set). A card moved to ANY other status
+    (reviewing / loi_sent / watching / under_contract / passed / dead) is
+    preserved no matter what. Self-correcting: if the parcel re-lists, the next
+    push re-adds it as a fresh 'new' card. Best-effort.
+
+    run_push only ever UPSERTs, so without this a listing-sourced card lingers on
+    the board forever after the listing comes off market — the audit's
+    'delisted parcels never removed' gap."""
+    candidates = await dashboard_conn.fetch(
+        "SELECT parcel_id FROM deal_prospect "
+        "WHERE listing_source IS NOT NULL AND status = 'new'"
+    )
+    if not candidates:
+        return 0
+    ids = [r["parcel_id"] for r in candidates]
+    # Which candidates STILL have a current matched listing in ParcelLogic?
+    pl = await asyncpg.connect(_pl_dsn())
+    try:
+        still = await pl.fetch(
+            "SELECT DISTINCT matched_parcel_id FROM forsale_listings "
+            "WHERE matched_parcel_id = ANY($1::bigint[]) "
+            "AND is_current = true AND match_confidence >= 0.85",
+            ids,
+        )
+    finally:
+        await pl.close()
+    still_listed = {r["matched_parcel_id"] for r in still}
+    stale = [pid for pid in ids if pid not in still_listed]
+    if stale:
+        # Re-assert status='new' + listing_source in the DELETE so a card the
+        # owner triaged between the SELECT and now is never removed.
+        await dashboard_conn.execute(
+            "DELETE FROM deal_prospect WHERE parcel_id = ANY($1::bigint[]) "
+            "AND status = 'new' AND listing_source IS NOT NULL",
+            stale,
+        )
+    return len(stale)
+
+
 async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     """Sync current buy-box deals into the dashboard's deal_prospect table.
 
@@ -273,6 +315,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     sql = _upsert_sql()
     conn = await asyncpg.connect(dsn, ssl="require")
     dispositions = 0
+    delisted = 0
     try:
         if rows:
             async with conn.transaction():
@@ -285,18 +328,25 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             dispositions = await _sync_dispositions_back(conn)
         except Exception:
             logger.exception("dashboard_push: disposition read-back failed; push unaffected")
+        # Sweep off untouched cards whose listing has delisted. Best-effort.
+        try:
+            delisted = await _cleanup_delisted(conn)
+        except Exception:
+            logger.exception("dashboard_push: delisted cleanup failed; push unaffected")
     finally:
         await conn.close()
 
     logger.info(
-        "dashboard_push: synced %d deal(s) across %d filter(s); %d disposition(s) pulled back",
-        len(rows), len(filters), dispositions,
+        "dashboard_push: synced %d deal(s) across %d filter(s); %d disposition(s) pulled back; "
+        "%d delisted card(s) removed",
+        len(rows), len(filters), dispositions, delisted,
     )
     return {
         "status": "ok",
         "synced": len(rows),
         "filters": len(filters),
         "dispositions": dispositions,
+        "delisted_removed": delisted,
     }
 
 
