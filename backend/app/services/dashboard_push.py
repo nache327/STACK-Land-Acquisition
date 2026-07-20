@@ -24,6 +24,7 @@ import asyncio
 import json
 import logging
 import sys
+import time
 
 import asyncpg
 from sqlalchemy import select, text
@@ -265,6 +266,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     reflect the full current set regardless of when the email last sent.
     ``filter_id`` restricts to one filter (backfill / testing) regardless of its
     enabled flag."""
+    t0 = time.monotonic()
     dsn = _dashboard_dsn()
     if not dsn:
         logger.info("dashboard_push: PORTFOLIO_DASHBOARD_DATABASE_URL unset — skipping")
@@ -333,6 +335,18 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             delisted = await _cleanup_delisted(conn)
         except Exception:
             logger.exception("dashboard_push: delisted cleanup failed; push unaffected")
+        # Record push-health so the board can show "last synced" and a stale/failed
+        # sync is visible. Best-effort; a missing push_run table (migration lag)
+        # must not fail the sync.
+        try:
+            await conn.execute(
+                "INSERT INTO push_run (status, deals_synced, dispositions, "
+                "delisted_removed, filters, duration_ms) VALUES ('ok',$1,$2,$3,$4,$5)",
+                len(rows), dispositions, delisted, len(filters),
+                int((time.monotonic() - t0) * 1000),
+            )
+        except Exception:
+            logger.exception("dashboard_push: push_run record failed; sync unaffected")
     finally:
         await conn.close()
 
