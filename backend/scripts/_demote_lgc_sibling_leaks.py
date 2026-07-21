@@ -79,13 +79,13 @@ async def main(apply: bool) -> None:
                    SET luxury_garage_condo = 'prohibited',
                        notes = trim(both E'\\n' from coalesce(notes,'') || E'\\n' || $2),
                        updated_at = now()
-                 WHERE id = ANY($1::uuid[])
+                 WHERE id = ANY($1::int[])
                 """,
                 ids, _NOTE,
             )
         audit = {
             "ran_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-            "demoted_ids": [str(i) for i in ids],
+            "demoted_ids": ids,
             "demoted": [f"{r['jur']}/{r['municipality']}/{r['zone_code']}" for r in demote],
             "exempt": [f"{r['jur']}/{r['municipality']}/{r['zone_code']}" for r in exempt],
         }
