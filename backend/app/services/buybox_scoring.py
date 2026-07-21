@@ -27,7 +27,7 @@ import asyncpg
 
 from app.config import settings
 from app.models.zone_use_matrix import UsePermission
-from app.services.use_verdicts import verdict_expr
+from app.services.use_verdicts import LGC_SLUG, verdict_expr
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,9 @@ class ScoredParcel:
     verdict_basis: str = "ungrounded muni"
 
 
-def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> ScoredParcel:
+def score_for_parcel(
+    p: ParcelInputs, filter_json: dict | None = None, asset_label: str = "Storage"
+) -> ScoredParcel:
     """Compute a 0-100 composite score for a single parcel.
 
     `filter_json` is the BuyboxFilter.filter_json blob — the same shape
@@ -131,15 +133,15 @@ def score_for_parcel(p: ParcelInputs, filter_json: dict | None = None) -> Scored
     # Storage permission
     sp = (effective_permission or "").lower()
     if sp == UsePermission.permitted.value:
-        factors.append({"label": "Storage", "delta": 30, "reason": "Permitted by zoning"})
+        factors.append({"label": asset_label, "delta": 30, "reason": "Permitted by zoning"})
     elif sp == UsePermission.conditional.value:
-        factors.append({"label": "Storage", "delta": 15, "reason": "Conditional use"})
+        factors.append({"label": asset_label, "delta": 15, "reason": "Conditional use"})
     elif sp == UsePermission.prohibited.value:
-        factors.append({"label": "Storage", "delta": -25, "reason": "Prohibited by zoning"})
+        factors.append({"label": asset_label, "delta": -25, "reason": "Prohibited by zoning"})
     elif sp == UsePermission.unclear.value:
-        factors.append({"label": "Storage", "delta": 0, "reason": "Ordinance unclear — verify"})
+        factors.append({"label": asset_label, "delta": 0, "reason": "Ordinance unclear — verify"})
     else:
-        factors.append({"label": "Storage", "delta": 0, "reason": "No matrix entry yet"})
+        factors.append({"label": asset_label, "delta": 0, "reason": "No matrix entry yet"})
 
     if overlay_applied:
         factors.append({
@@ -493,6 +495,7 @@ async def score_jurisdiction(
             """,
             buybox_filter_id,
         )
+        asset_label = "Garage" if slug == LGC_SLUG else "Storage"
         select_sql = _select_parcels_sql(verdict_expr(slug))
         rows = await conn.fetch(select_sql, jurisdiction_id, drive_time)
         logger.info(
@@ -529,7 +532,7 @@ async def score_jurisdiction(
                 verdict_matched=r["storage_permission"] is not None,
                 overlay_ss=_has_ss_overlay(r["overlay_tags"]),
             )
-            s = score_for_parcel(inputs, filter_json)
+            s = score_for_parcel(inputs, filter_json, asset_label=asset_label)
             scored.append((
                 s.parcel_id, buybox_filter_id, s.score, s.tier,
                 json.dumps(s.factors),

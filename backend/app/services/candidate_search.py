@@ -90,6 +90,17 @@ _LGC_EFFECTIVE_LABEL = case(
         ),
         "unclassified",
     ),
+    # QC veto (Brink Rd): a human-verified storage prohibition blocks sibling-derived LGC
+    # promotion — a co-resident (often heuristic) light_industrial value must not resurrect
+    # LGC once a human read the use table and found storage-type uses prohibited. Mirrors
+    # use_verdicts._LGC_VERDICT_SQL. Un-human-reviewed storage-dead zones still promote below.
+    (
+        and_(
+            ZoneUseMatrix.self_storage == UsePermission.prohibited,
+            ZoneUseMatrix.human_reviewed.is_(True),
+        ),
+        "prohibited",
+    ),
     (
         or_(
             ZoneUseMatrix.self_storage == UsePermission.permitted,

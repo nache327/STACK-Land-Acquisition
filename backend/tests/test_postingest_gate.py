@@ -67,31 +67,33 @@ class TestGateReport:
 
 
 class TestSiblingConsistencyCatch58:
-    from app.services.postingest_gate import sibling_consistency_violation as _f
+    # Catch #58 v2: keyed on a HUMAN-verified self_storage prohibition (mini_warehouse no
+    # longer required); an un-reviewed storage-dead zone is the legitimate LGC thesis, kept.
 
-    def test_billerica_shaped_trips(self):
+    def test_human_prohibited_storage_trips(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
-        # lgc conditional (inferred from li), ss+mw prohibited, no named-garage basis
+        # A human found ss prohibited, but lgc stayed conditional (inferred from li), no named
+        # garage use → the Brink Rd leak.
         basis = "lgc conditional by inference from light_industrial; closed-list; no named garage use"
-        assert f("prohibited", "prohibited", "conditional", basis) is True
+        assert f("prohibited", "conditional", basis, human_reviewed=True) is True
 
-    def test_marlborough_shaped_does_not_trip(self):
+    def test_named_garage_use_exempt(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
         # lgc permitted on the NAMED 'hobby vehicle storage' use — legit, exempt
         basis = "lgc permitted 0.95: 'hobby vehicle storage' named by-right in 650-18A(36)"
-        assert f("prohibited", "prohibited", "permitted", basis) is False
+        assert f("prohibited", "permitted", basis, human_reviewed=True) is False
 
-    def test_conditional_sibling_not_flagged(self):
+    def test_unreviewed_storage_dead_zone_not_flagged(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
-        # Stoughton/Braintree/Dedham: ss=conditional (not prohibited) => consistent, no trip
-        assert f("conditional", "conditional", "conditional", "inferred") is False
+        # NOT human-reviewed: the legitimate storage-dead-industrial LGC thesis — keep it.
+        assert f("prohibited", "conditional", "inferred from light_industrial", human_reviewed=False) is False
+
+    def test_storage_not_prohibited_not_flagged(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # ss=conditional (not prohibited) => consistent, no trip
+        assert f("conditional", "conditional", "inferred", human_reviewed=True) is False
 
     def test_lgc_prohibited_not_flagged(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
-        # Billerica/Wilmington post-reconcile: lgc prohibited => nothing to flag
-        assert f("prohibited", "prohibited", "prohibited", "any basis") is False
-
-    def test_one_sibling_prohibited_not_enough(self):
-        from app.services.postingest_gate import sibling_consistency_violation as f
-        # only ss prohibited, mw conditional => not the both-prohibited leak signature
-        assert f("prohibited", "conditional", "conditional", "inferred") is False
+        # lgc already prohibited => nothing to flag
+        assert f("prohibited", "prohibited", "any basis", human_reviewed=True) is False
