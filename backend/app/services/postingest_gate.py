@@ -54,17 +54,18 @@ _NAMED_GARAGE_MARKERS = (
 )
 
 
-def sibling_consistency_violation(ss, mw, lgc, basis_text) -> bool:
-    """Catch #58, automated: a luxury_garage_condo verdict of permitted/conditional
-    while BOTH storage siblings (self_storage, mini_warehouse) are prohibited is a
-    consistency leak — UNLESS lgc rests on a named garage use. Garage-condo is
-    leased dead storage, the same use-family as self-storage; if the ordinance
-    prohibits ss/mw (a definitive negative, e.g. closed-list), an inferred lgc that
-    stays permitted/conditional contradicts it. Named-use lgc (Marlborough) is
-    exempt. `basis_text` = the row's notes + citation quotes, lowercased here."""
+def sibling_consistency_violation(ss, lgc, basis_text, human_reviewed=False) -> bool:
+    """Catch #58 v2, automated: a stored luxury_garage_condo verdict of permitted/conditional
+    while a HUMAN found self_storage prohibited is a consistency leak — UNLESS lgc rests on a
+    named garage use. Garage-condo is leased dead storage, the same use-family as self-storage;
+    when a human read the use table and prohibited storage, an inferred lgc that stays
+    permitted/conditional contradicts that authoritative finding (the Brink Rd leak). Keyed on
+    self_storage alone (mini_warehouse no longer required — a mis-set mw must not mask the leak)
+    and on human_reviewed (an un-reviewed storage-dead zone is the legitimate LGC thesis, kept).
+    Named-use lgc (Marlborough) is exempt. `basis_text` = the row's notes + citation quotes."""
     if (lgc or "").lower() not in ("permitted", "conditional"):
         return False
-    if (ss or "").lower() != "prohibited" or (mw or "").lower() != "prohibited":
+    if (ss or "").lower() != "prohibited" or not human_reviewed:
         return False
     text = (basis_text or "").lower()
     return not any(m in text for m in _NAMED_GARAGE_MARKERS)
@@ -164,20 +165,21 @@ async def run_postingest_gate(conn, jurisdiction_id: uuid.UUID | str) -> GateRep
     # basis, is the Billerica-shaped inference leak. Basis text = notes + citation
     # quotes.
     lgc_rows = await conn.fetch(
-        """SELECT municipality, zone_code, self_storage::text ss, mini_warehouse::text mw,
-                  luxury_garage_condo::text lgc, coalesce(notes,'') AS notes,
-                  coalesce(citations::text,'') AS cites
+        """SELECT municipality, zone_code, self_storage::text ss,
+                  luxury_garage_condo::text lgc, human_reviewed,
+                  coalesce(notes,'') AS notes, coalesce(citations::text,'') AS cites
              FROM zone_use_matrix
             WHERE jurisdiction_id=$1::uuid AND deleted_at IS NULL
               AND luxury_garage_condo IN ('permitted','conditional')""", jid)
     leaks = [
         f"{r['municipality']}/{r['zone_code']}"
         for r in lgc_rows
-        if sibling_consistency_violation(r["ss"], r["mw"], r["lgc"], r["notes"] + " " + r["cites"])
+        if sibling_consistency_violation(
+            r["ss"], r["lgc"], r["notes"] + " " + r["cites"], r["human_reviewed"])
     ]
     if leaks:
-        rep.fail(f"catch-#58 sibling leak — lgc permitted/conditional (inference basis) while "
-                 f"ss+mw prohibited: {leaks[:5]}{' …' if len(leaks) > 5 else ''} ({len(leaks)} rows)")
+        rep.fail(f"catch-#58 sibling leak — lgc permitted/conditional while a human found "
+                 f"self_storage prohibited: {leaks[:5]}{' …' if len(leaks) > 5 else ''} ({len(leaks)} rows)")
 
     # 4. Matrix coverage — SOFT
     covered = await conn.fetchval(
