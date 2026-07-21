@@ -72,10 +72,17 @@ class TestSiblingConsistencyCatch58:
 
     def test_human_prohibited_storage_trips(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
-        # A human found ss prohibited, but lgc stayed conditional (inferred from li), no named
-        # garage use → the Brink Rd leak.
+        # A human found ss prohibited on a NON-industrial zone (li conditional/spurious), lgc
+        # stayed conditional, no named garage use → the Brink Rd leak.
         basis = "lgc conditional by inference from light_industrial; closed-list; no named garage use"
-        assert f("prohibited", "conditional", basis, human_reviewed=True) is True
+        assert f("prohibited", "conditional", basis, human_reviewed=True, li="conditional") is True
+
+    def test_genuinely_industrial_zone_exempt(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # ss prohibited but light_industrial='permitted' → a real industrial zone (Fairfax I-2,
+        # Somerset Manufacturing) → garage-condo is the legit LGC thesis, NOT a leak.
+        assert f("prohibited", "conditional", "manufacturing permitted; self-storage prohibited",
+                 human_reviewed=True, li="permitted") is False
 
     def test_named_garage_use_exempt(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
