@@ -35,11 +35,14 @@ LGC_SLUG = "luxury_garage_condo"
 _LGC_VERDICT_SQL = """CASE
     WHEN zum.self_storage IS NULL AND zum.mini_warehouse IS NULL
          AND zum.light_industrial IS NULL THEN NULL
-    -- QC veto (Brink Rd): a HUMAN read the use table and found storage-type uses
-    -- prohibited, so a co-resident (often heuristic) light_industrial/sibling value must
-    -- not resurrect LGC. Un-human-reviewed storage-dead industrial zones still promote
-    -- below (the legitimate LGC thesis) and surface as Unverified.
-    WHEN zum.self_storage::text = 'prohibited' AND zum.human_reviewed THEN 'prohibited'
+    -- QC veto (Brink Rd): a HUMAN found storage-type uses prohibited AND the zone isn't
+    -- genuinely industrial (light_industrial not 'permitted') → LGC prohibited. This stops a
+    -- spurious light_industrial='conditional' on an agricultural/retail zone (Montgomery AR)
+    -- from resurrecting LGC, WHILE keeping real industrial zones (light_industrial='permitted':
+    -- Fairfax I-2, Somerset/Monmouth Manufacturing, Montgomery IH25) garage-viable — the LGC
+    -- thesis. Un-human-reviewed rows still promote below and surface as Unverified.
+    WHEN zum.self_storage::text = 'prohibited' AND zum.human_reviewed
+         AND zum.light_industrial::text IS DISTINCT FROM 'permitted' THEN 'prohibited'
     WHEN zum.self_storage::text = 'permitted'
          OR zum.mini_warehouse::text = 'permitted' THEN 'permitted'
     WHEN zum.self_storage::text = 'conditional'

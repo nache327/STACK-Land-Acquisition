@@ -48,6 +48,8 @@ async def main(apply: bool) -> None:
                AND m.human_reviewed IS TRUE
                AND m.self_storage::text = 'prohibited'
                AND m.luxury_garage_condo::text IN ('permitted', 'conditional')
+               -- keep genuinely industrial zones (light_industrial='permitted') garage-viable
+               AND m.light_industrial::text IS DISTINCT FROM 'permitted'
              ORDER BY j.name, m.municipality NULLS FIRST, m.zone_code
             """
         )
