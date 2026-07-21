@@ -47,9 +47,10 @@ from app.workers.daily_email import (
 
 logger = logging.getLogger(__name__)
 
-# Cap per filter — the board is a triage queue, not a data dump. Listed-deal
-# filters return well under this; log if we ever truncate (no silent caps).
-_PUSH_LIMIT = 500
+# Cap per filter — the board is a triage queue, not a data dump. Raised to fit the full
+# LGC Hot deals lane, which exceeded the old 500 cap ("board truncated" warnings). Still a
+# real ceiling: if a lane exceeds this we log a truncation warning (no silent caps).
+_PUSH_LIMIT = 2000
 
 # Fact columns pushed to deal_prospect, in positional-parameter order.
 # parcel_id is the conflict key; the disposition columns are intentionally
