@@ -104,6 +104,13 @@ class DigestParcel:
     #                  '🚫 storage-dead (generic land)' instead of vanishing.
     verdict_basis: str | None = None
     storage_dead: bool = False
+    # Effective use-verdict for THIS lane's asset (self_storage reads its own
+    # column; luxury_garage_condo derives from siblings via use_verdicts).
+    # 'permitted'/'conditional' = actionable (viable) tier; 'unclear' or NULL
+    # (ungrounded muni) = the quarantined "verify / worth a look" tier. A
+    # 'prohibited' verdict never reaches here — it is hard-gated out of the
+    # candidate query (a prohibited use is not a deal, regardless of score).
+    use_verdict: str | None = None
     # Hot Deals v2 soft flags — surfaced in the email as warnings, not
     # selection filters. Each is a (emoji, short_label) pair so the
     # renderer can iterate without re-mapping. Empty list means the
@@ -178,6 +185,7 @@ async def _top_parcels_for_filter(
     *,
     include_notified: bool = False,
     limit: int | None = None,
+    slug: str | None = None,
 ) -> list[DigestParcel]:
     """Select the top matched parcels for a filter.
 
@@ -187,7 +195,19 @@ async def _top_parcels_for_filter(
     The dashboard push-sync passes ``include_notified=True`` (it wants ALL
     current eligible deals, re-synced idempotently, not just today's new ones)
     and its own ``limit``. Both callers share this one SQL so the board shows
-    exactly what the email selects."""
+    exactly what the email selects.
+
+    ``slug`` is the use-case slug (self_storage / luxury_garage_condo). It
+    selects the effective-verdict SQL expression (``use_verdicts.verdict_expr``)
+    used for BOTH the hard prohibited-out gate and the exposed ``use_verdict``
+    tier column. None defaults to self_storage (unknown slugs can never score
+    against nothing)."""
+    from app.services.use_verdicts import verdict_expr
+
+    # Effective verdict for this lane, evaluated on the `zum` LATERAL row below.
+    # self_storage -> zum.self_storage::text; luxury_garage_condo -> sibling-
+    # derived CASE (needs zum.light_industrial, added to the LATERAL).
+    verdict_sql = verdict_expr(slug)
     filter_json = f.filter_json or {}
     require_listed = bool(filter_json.get("requireListed"))
     # Opt-in: drop unpriced listings instead of surfacing them behind the
@@ -342,6 +362,10 @@ async def _top_parcels_for_filter(
             ({lead_eligible_sql('zum')}) AS lead_eligible,
             (({lead_eligible_sql('zum')})
              AND zum.self_storage::text = 'prohibited') AS storage_dead,
+            -- Effective use-verdict for this lane (permitted/conditional =
+            -- viable; unclear/NULL = verify tier). Prohibited is hard-gated
+            -- out in the WHERE below, so it never appears here.
+            ({verdict_sql}) AS use_verdict,
             e.parcel_id     AS parcel_id,
             e.apn           AS apn,
             e.address       AS address,
@@ -399,7 +423,8 @@ async def _top_parcels_for_filter(
             -- self_storage + siblings: the sibling columns feed the LGC
             -- verdict expression (verdict_sql). Extra columns are ignored by
             -- the self_storage expression, so the storage digest is unchanged.
-            SELECT self_storage, mini_warehouse,
+            -- light_industrial is required by the luxury_garage_condo verdict.
+            SELECT self_storage, mini_warehouse, light_industrial,
                    confidence, human_reviewed, classification_source
               FROM zone_use_matrix
              WHERE jurisdiction_id = e.jurisdiction_id
@@ -425,6 +450,14 @@ async def _top_parcels_for_filter(
         -- Listing-dependent filters stay here: they need lst, which only
         -- exists after the LATERAL join above.
         WHERE (NOT :require_listed OR lst.source IS NOT NULL)
+          -- Hard viability gate (2026-07-21 directive): a parcel whose effective
+          -- use-verdict for THIS lane is 'prohibited' is not a deal, regardless
+          -- of score — never surfaces. IS DISTINCT FROM keeps NULL (ungrounded
+          -- muni) + unclear, which land in the quarantined verify tier. This
+          -- supersedes the soft -25 factor + the storage_dead "generic land" tag
+          -- (score alone let a big listed prohibited parcel rank as a deal,
+          -- contradicting the needle definition of permitted/conditional).
+          AND (({verdict_sql}) IS DISTINCT FROM 'prohibited')
           -- Opt-in: drop unpriced listings entirely (sale_price NULL or 0).
           -- Off by default; gate is a no-op until a filter sets
           -- requirePriced=true in its filter_json. (NOTE: this literal is an
@@ -530,6 +563,7 @@ async def _top_parcels_for_filter(
                 soft_flags=_soft_flags_from_row(m),
                 verdict_basis=m["verdict_basis"],
                 storage_dead=bool(m["storage_dead"]),
+                use_verdict=m["use_verdict"],
             )
         )
     return out
@@ -840,7 +874,10 @@ def _render_html(filter_name: str, parcels: list[DigestParcel]) -> str:
 async def _send_digest_for_filter(
     db: AsyncSession, f: BuyboxFilter, force: bool = False,
 ) -> int:
-    parcels = await _top_parcels_for_filter(db, f)
+    from app.models.use_case import UseCase
+
+    slug = await db.scalar(select(UseCase.slug).where(UseCase.id == f.use_case_id))
+    parcels = await _top_parcels_for_filter(db, f, slug=slug)
     if not parcels:
         logger.info("digest filter=%s: no eligible parcels — skipping", f.name)
         # Still bump last_email_sent_at? No — leave it so a later run picks

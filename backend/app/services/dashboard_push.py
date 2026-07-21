@@ -58,7 +58,7 @@ _PUSH_LIMIT = 2000
 _FACT_COLUMNS = [
     "parcel_id", "apn", "jurisdiction_id", "jurisdiction_name",
     "address", "city", "state", "zip", "owner_name", "acres",
-    "score", "tier", "verdict_basis", "asset_type", "factors", "soft_flags",
+    "score", "tier", "verdict_basis", "use_verdict", "asset_type", "factors", "soft_flags",
     "listing_source", "sale_price", "price_per_ac", "days_on_market",
     "broker_company", "broker_contact", "broker_phone", "broker_email",
     # Owner contact from the matched listing (CoStar owner data) — the
@@ -139,6 +139,10 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
         "score": p.score,
         "tier": p.tier,
         "verdict_basis": p.verdict_basis,
+        # Effective use-verdict → the board's viable-vs-verify tier. prohibited
+        # is hard-gated out upstream, so this is permitted/conditional (viable)
+        # or unclear/NULL (verify / worth a look).
+        "use_verdict": p.use_verdict,
         "asset_type": asset_type,
         "factors": json.dumps(p.factors or []),
         "soft_flags": json.dumps(
@@ -321,7 +325,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             )
             asset = "luxury_garage_condo" if slug == "luxury_garage_condo" else "self_storage"
             deals = await _top_parcels_for_filter(
-                db, f, include_notified=True, limit=_PUSH_LIMIT
+                db, f, include_notified=True, limit=_PUSH_LIMIT, slug=slug
             )
             if len(deals) >= _PUSH_LIMIT:
                 logger.warning(
