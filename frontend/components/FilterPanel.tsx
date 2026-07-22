@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, type LocateResult } from "@/lib/api";
 import { ZONE_CLASS_COLORS, ZONE_CLASS_LABELS } from "@/lib/layers";
 import type { ZoneClass } from "@/lib/schemas";
 
@@ -57,15 +57,49 @@ export const DEFAULT_FILTERS: FilterState = {
 interface FilterPanelProps {
   jurisdictionId: string | null;
   onChange: (filters: FilterState) => void;
+  // Fired when the user picks a result from the APN/address locate dropdown.
+  // The parent flies the map to it and opens the parcel drawer.
+  onLocate?: (result: LocateResult) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
+export function FilterPanel({ jurisdictionId, onChange, onLocate }: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
+  // ── APN / address locate (Enter in the search box) ──────────────────────────
+  const [locateResults, setLocateResults] = useState<LocateResult[] | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateErr, setLocateErr] = useState<string | null>(null);
+
+  async function runLocate() {
+    const q = filters.search.trim();
+    if (!q) {
+      setLocateResults(null);
+      return;
+    }
+    setLocating(true);
+    setLocateErr(null);
+    try {
+      const res = await api.locateParcels(q, jurisdictionId, 8);
+      setLocateResults(res);
+    } catch (e) {
+      setLocateErr(e instanceof Error ? e.message : "Search failed");
+      setLocateResults([]);
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  function pickResult(r: LocateResult) {
+    setLocateResults(null);
+    onLocate?.(r);
+  }
 
   useEffect(() => {
     setFilters(DEFAULT_FILTERS);
+    setLocateResults(null);
+    setLocateErr(null);
   }, [jurisdictionId]);
 
   const { data: zoneSummary, isLoading: summaryLoading } = useQuery({
@@ -171,9 +205,66 @@ export function FilterPanel({ jurisdictionId, onChange }: FilterPanelProps) {
           type="text"
           value={filters.search}
           onChange={(e) => update({ search: e.target.value })}
-          placeholder="APN or address"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              runLocate();
+            } else if (e.key === "Escape") {
+              setLocateResults(null);
+            }
+          }}
+          placeholder="APN or address — press Enter"
           className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
         />
+        {locating && (
+          <p className="mt-1.5 text-[11px] text-slate-500">Searching…</p>
+        )}
+        {locateErr && (
+          <p className="mt-1.5 text-[11px] text-red-400">{locateErr}</p>
+        )}
+        {locateResults !== null && !locating && locateResults.length === 0 && !locateErr && (
+          <p className="mt-1.5 text-[11px] text-amber-400">
+            No parcel found. Try the full street address with city &amp; state.
+          </p>
+        )}
+        {locateResults && locateResults.length > 0 && (
+          <ul className="mt-1.5 max-h-72 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800/95">
+            {locateResults.map((r) => {
+              const crossJur =
+                !!jurisdictionId && r.jurisdiction_id !== jurisdictionId;
+              return (
+                <li key={r.parcel_id}>
+                  <button
+                    type="button"
+                    onClick={() => pickResult(r)}
+                    className="flex w-full flex-col gap-0.5 border-b border-slate-700/60 px-3 py-2 text-left last:border-0 hover:bg-slate-700/60 focus:bg-slate-700/60 focus:outline-none"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm text-white">
+                        {r.address || r.apn || "(parcel)"}
+                      </span>
+                      <span
+                        className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-slate-300 ring-1 ring-slate-600"
+                        title={`matched by ${r.match_method}`}
+                      >
+                        {r.match_method}
+                      </span>
+                    </span>
+                    <span className="truncate text-[11px] text-slate-400">
+                      {[r.city, r.state].filter(Boolean).join(", ")}
+                      {r.owner_name ? ` · ${r.owner_name}` : ""}
+                    </span>
+                    {crossJur && (
+                      <span className="truncate text-[10px] text-amber-400">
+                        in {r.jurisdiction_name ?? "another jurisdiction"}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <div className="border-t border-slate-800" />

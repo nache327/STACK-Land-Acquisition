@@ -18,7 +18,7 @@ import type { FilterState } from "@/components/FilterPanel";
 import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
 import type { CandidateParcelRow, CandidateParcelSearchRequest, SaturationBatchResult } from "@/lib/schemas";
 import type { ColorMode } from "@/lib/layers";
-import { api, LGC_USE_CASE_ID } from "@/lib/api";
+import { api, LGC_USE_CASE_ID, type LocateResult } from "@/lib/api";
 import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
 import { fetchIsochrone, fetchCensusTracts, clearIsochroneCache, type IsochroneResult, type TractData } from "@/lib/isochrone";
@@ -874,6 +874,19 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
   }
 
+  // APN / address locate result picked from the FilterPanel dropdown: fly the
+  // map to its centroid and open the drawer. Works cross-jurisdiction too — the
+  // drawer fetches parcel detail by id, and the map simply pans to the point
+  // (the parcel won't be highlighted in another jurisdiction's layer, but the
+  // detail + location are what the broker-address lookup is after).
+  function handleLocate(r: LocateResult) {
+    if (r.lat != null && r.lng != null) {
+      setFlyToOverride({ centroid: [r.lng, r.lat], nonce: Date.now() });
+    }
+    setSelectedParcelId(r.parcel_id);
+    setDrawerOpen(true);
+  }
+
   // Centroid computation lifted out of the useMemo so handleParcelClick
   // can call it inline against the table row's geom. Same shape as the
   // useMemo at selectedParcelCentroid.
@@ -1109,7 +1122,11 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             onRecompute={handleRecompute}
             wealthDensityAvailable={wealthDensityAvailable}
           />
-          <FilterPanel jurisdictionId={jurisdictionId} onChange={setFilters} />
+          <FilterPanel
+            jurisdictionId={jurisdictionId}
+            onChange={setFilters}
+            onLocate={handleLocate}
+          />
 
           {/* Saturation Settings */}
           <div className="border-t border-slate-800 p-3">
