@@ -103,14 +103,20 @@ _BACKFILL_SATURATION_SQL = text(
 async def _jurisdiction_ids(session_factory, only: str | None) -> list[str]:
     if only:
         return [only]
+    # Enumerate from the small jurisdictions table (instant) rather than a
+    # GROUP BY over all ~millions of parcels (which blows the statement
+    # timeout). Order by needle count so board-relevant counties process
+    # first — if the long tail runs late, the data that matters is already in.
+    # Empty jurisdictions are cheap-skipped later (bbox None).
     async with session_factory() as db:
+        await db.execute(text("SET statement_timeout = 0"))
         rows = (await db.execute(text(
             """
-            SELECT jurisdiction_id::text, COUNT(*) AS n
-              FROM parcels
-             WHERE jurisdiction_id IS NOT NULL AND centroid IS NOT NULL
-             GROUP BY jurisdiction_id
-             ORDER BY n DESC
+            SELECT j.id::text
+              FROM jurisdictions j
+              LEFT JOIN needle_snapshot ns ON ns.jurisdiction_id = j.id
+             ORDER BY COALESCE(ns.storage_needles, 0) + COALESCE(ns.lgc_needles, 0) DESC,
+                      j.id
             """
         ))).all()
     return [r[0] for r in rows]
