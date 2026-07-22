@@ -84,6 +84,8 @@ async def _supplement(db, parcel_ids: list[int]) -> dict[int, dict]:
             """
         SELECT p.id AS parcel_id,
                p.city AS parcel_city, p.state AS parcel_state,
+               p.owner_mailing_address AS owner_mailing_address,
+               p.owner_mailing_csz AS owner_mailing_csz,
                lst.address AS listing_address, lst.city AS listing_city,
                lst.state AS listing_state, lst.zip AS listing_zip,
                lst.price_per_ac AS price_per_ac
@@ -115,6 +117,18 @@ def _asset_label(uses: set[str]) -> str:
     if has_lgc:
         return "luxury_garage_condo"
     return "self_storage"
+
+
+def _owner_mailing(sup: dict) -> str | None:
+    """Compose the assessor owner MAILING address (street + city/state/zip) from
+    the _supplement row, as a single line to match the board's owner_address
+    field. Used as the fallback for off-market needle cards that have no CoStar
+    listing owner (the 2026-07-22 owner-mailing backfill populated these on
+    parcels for ~93% of needles)."""
+    street = (sup.get("owner_mailing_address") or "").strip()
+    csz = (sup.get("owner_mailing_csz") or "").strip()
+    combined = ", ".join(x for x in (street, csz) if x)
+    return combined or None
 
 
 def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
@@ -157,7 +171,11 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
         "broker_phone": p.listing_broker_phone,
         "broker_email": p.listing_broker_email,
         "owner_phone": p.owner_phone,
-        "owner_address": p.owner_address,
+        # Owner mailing address: prefer the CoStar listing owner (has phone too),
+        # else fall back to the assessor owner-mailing backfilled on the parcel —
+        # so off-market needle cards show a mailable owner address, not just the
+        # ~104 CoStar-listed deals. owner_name already flows via DigestParcel.
+        "owner_address": p.owner_address or _owner_mailing(sup),
         "owner_contact_listing": p.owner_contact,
         "lat": p.lat,
         "lng": p.lng,
