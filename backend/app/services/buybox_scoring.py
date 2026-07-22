@@ -61,6 +61,12 @@ ACRE_PEAK = 20.0         # bonus at the plateau
 ACRE_EDGE = 5.0          # bonus at ACRE_MAX (decayed from the plateau)
 ACRE_OVERSIZE = -15.0    # flat penalty above ACRE_MAX
 
+# 3-mile population floor (Nache's "too rural" kill). Below this, both lanes
+# get a hard penalty — self-storage needs rooftops, LGC needs a population base
+# too. NULL (unmeasured) is a transparent 0, never a penalty.
+POP3MI_FLOOR = 30_000
+POP3MI_PENALTY = -20.0
+
 
 def _acreage_delta(acres: float) -> float:
     """Signed acreage contribution to the composite score."""
@@ -92,6 +98,10 @@ class ParcelInputs:
     homes_over_1m: int | None = None
     homes_over_2m: int | None = None
     homes_over_5m: int | None = None
+    # Area-weighted population within 3 miles (parcel_radial_metrics @ 3.0).
+    # None when not yet backfilled — treated as a transparent 0-delta factor,
+    # NOT a penalty, so an unmeasured parcel isn't wrongly buried.
+    pop_3mi: int | None = None
     # Listing details — populated when the parcel has a current matched
     # listing (from any source) with match_confidence >= 0.85. Source-
     # agnostic by design: LoopNet vs CoStar doesn't change the boost.
@@ -204,6 +214,15 @@ def score_for_parcel(
     # Vacant land bonus
     if p.has_structure is False:
         factors.append({"label": "Vacant", "delta": 5, "reason": "No existing structure"})
+
+    # 3-mile population floor — "too rural" kill (both lanes). Transparent
+    # 0-delta when unmeasured so a not-yet-backfilled parcel isn't buried.
+    if p.pop_3mi is None:
+        factors.append({"label": "3-mi population", "delta": 0,
+                        "reason": "Not yet measured"})
+    elif p.pop_3mi < POP3MI_FLOOR:
+        factors.append({"label": "3-mi population", "delta": POP3MI_PENALTY,
+                        "reason": f"{p.pop_3mi:,} < {POP3MI_FLOOR:,} floor"})
 
     # Filter-driven AADT threshold penalty (if user requires high traffic
     # and parcel falls below, big penalty so they sort to bottom)
@@ -351,6 +370,7 @@ SELECT
     prm.homes_over_1m,
     prm.homes_over_2m,
     prm.homes_over_5m,
+    prm3.population    AS pop_3mi,
     lst.source         AS listing_source,
     lst.sale_price     AS listing_sale_price,
     lst.days_on_market AS listing_dom
@@ -375,6 +395,9 @@ LEFT JOIN LATERAL (
 LEFT JOIN parcel_ring_metrics prm
     ON prm.parcel_id = p.id
    AND prm.drive_time_minutes = $2::int
+LEFT JOIN parcel_radial_metrics prm3
+    ON prm3.parcel_id = p.id
+   AND prm3.radius_miles = 3.0
 LEFT JOIN LATERAL (
     SELECT source, sale_price, days_on_market
       FROM forsale_listings
@@ -546,6 +569,7 @@ async def score_jurisdiction(
                 homes_over_1m=r["homes_over_1m"],
                 homes_over_2m=r["homes_over_2m"],
                 homes_over_5m=r["homes_over_5m"],
+                pop_3mi=r["pop_3mi"],
                 listing_source=r["listing_source"],
                 listing_sale_price=(
                     float(r["listing_sale_price"])

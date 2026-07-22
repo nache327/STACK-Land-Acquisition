@@ -237,6 +237,11 @@ async def _top_parcels_for_filter(
     # the LGC score itself (which ranks the lane) already encodes the LGC
     # verdict, so the digest body stays self_storage-simple here.
     exclude_storage_viable = bool(filter_json.get("excludeStorageViable"))
+    # "Too rural" floor (both lanes): drop parcels whose 3-mile population is
+    # below this. NULL = no gate. Parcels with no measured 3-mi population yet
+    # (parcel_radial_metrics not backfilled) pass through, flagged
+    # soft_pop_unmeasured, so a coverage gap doesn't silently hide real deals.
+    min_pop_3mi = filter_json.get("minPop3mi")
 
     # Pre-narrow into a MATERIALIZED `eligible` CTE BEFORE the three
     # LATERAL joins (listing / zone-matrix / dashboard-job). The driving
@@ -404,7 +409,10 @@ async def _top_parcels_for_filter(
             -- hard filters via the `OR p.acres IS NULL` branches, so we
             -- surface them — but flagged, which demotes them to
             -- "Worth a Look" rather than polluting Actionable.
-            (e.acres IS NULL)                              AS soft_acres_unverified
+            (e.acres IS NULL)                              AS soft_acres_unverified,
+            -- 3-mi population not yet backfilled: surfaced but flagged, so a
+            -- coverage gap reads as "verify" rather than silently dropping.
+            (prm3.population IS NULL)                      AS soft_pop_unmeasured
         FROM eligible e
         JOIN jurisdictions j ON j.id = e.jurisdiction_id
         LEFT JOIN LATERAL (
@@ -434,6 +442,9 @@ async def _top_parcels_for_filter(
              ORDER BY (municipality IS NULL) ASC
              LIMIT 1
         ) zum ON true
+        LEFT JOIN parcel_radial_metrics prm3
+            ON prm3.parcel_id = e.parcel_id
+           AND prm3.radius_miles = 3.0
         LEFT JOIN LATERAL (
             -- The dashboard route is /dashboard/[jobId]; the URL
             -- segment is the jobs.id, not the jurisdiction_id. Resolve
@@ -508,6 +519,15 @@ async def _top_parcels_for_filter(
                 OR zum.mini_warehouse::text IN ('permitted', 'conditional'),
                    FALSE)
           )
+          -- "Too rural" floor (both lanes). NULL bind -> no gate. A parcel with
+          -- no measured 3-mi population passes (surfaced as soft_pop_unmeasured);
+          -- a measured value below the floor is hard-dropped. CAST to INT for
+          -- the same asyncpg AmbiguousParameterError reason as the gates above.
+          AND (
+                CAST(:min_pop_3mi AS INT) IS NULL
+             OR prm3.population IS NULL
+             OR prm3.population >= CAST(:min_pop_3mi AS INT)
+          )
         ORDER BY e.score DESC, e.parcel_id
         LIMIT :lim
         """
@@ -526,6 +546,7 @@ async def _top_parcels_for_filter(
             "max_total_price": max_total_price,
             "storage_verdict_mode": storage_verdict_mode,
             "exclude_storage_viable": exclude_storage_viable,
+            "min_pop_3mi": min_pop_3mi,
         },
     )
     out: list[DigestParcel] = []
@@ -581,6 +602,7 @@ _SOFT_FLAG_RULES: list[tuple[str, str, str]] = [
     ("soft_flood",          "🌊",  "in flood zone"),
     ("soft_wetland",        "🐸",  "in wetland"),
     ("soft_acres_unverified", "📐", "acres unverified"),
+    ("soft_pop_unmeasured", "📉", "3-mi population unmeasured"),
 ]
 
 
