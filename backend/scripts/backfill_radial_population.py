@@ -43,11 +43,16 @@ _BACKFILL_SQL = text(
     """
     INSERT INTO parcel_radial_metrics (parcel_id, radius_miles, population)
     SELECT p.id, :radius_miles,
-           COALESCE(SUM(
+           -- NO coalesce-to-0: when zero populated tracts intersect the ring
+           -- (a census data gap, e.g. tract population not loaded), SUM is
+           -- NULL and we store NULL = "unmeasured" (passes the gate, flagged)
+           -- rather than 0 = "too rural" (penalized + dropped). Only a genuine
+           -- populated-tract intersection yields a number.
+           SUM(
                ct.population::float
                * ST_Area(ST_Intersection(ct.geom, rg.ring)::geography)
                / NULLIF(ST_Area(ct.geom::geography), 0)
-           ), 0)::int AS pop
+           )::int AS pop
       FROM parcels p
       CROSS JOIN LATERAL (
            SELECT ST_Buffer(p.centroid::geography, :radius_m)::geometry AS ring
@@ -56,7 +61,7 @@ _BACKFILL_SQL = text(
              ON ST_Intersects(ct.geom, rg.ring)
             AND ct.population IS NOT NULL
             AND ct.population > 0
-     WHERE p.jurisdiction_id = :jid
+     WHERE p.jurisdiction_id = CAST(:jid AS uuid)
        AND p.centroid IS NOT NULL
      GROUP BY p.id
     ON CONFLICT (parcel_id, radius_miles) DO UPDATE
@@ -85,7 +90,7 @@ _BACKFILL_SATURATION_SQL = text(
             FROM parcels p
             LEFT JOIN competitor_facilities cf
               ON ST_DWithin(cf.geom::geography, p.centroid::geography, :radius_m)
-           WHERE p.jurisdiction_id = :jid
+           WHERE p.jurisdiction_id = CAST(:jid AS uuid)
              AND p.centroid IS NOT NULL
            GROUP BY p.id
       ) sub
@@ -116,7 +121,7 @@ async def _bbox(db, jid: str) -> tuple[float, float, float, float] | None:
         """
         SELECT ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e)
           FROM (SELECT ST_Extent(centroid) AS e FROM parcels
-                 WHERE jurisdiction_id = :jid::uuid AND centroid IS NOT NULL) s
+                 WHERE jurisdiction_id = CAST(:jid AS uuid) AND centroid IS NOT NULL) s
         """
     ), {"jid": jid})).first()
     if not row or row[0] is None:
