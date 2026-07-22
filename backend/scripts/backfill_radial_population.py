@@ -31,6 +31,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # no
 
 from _db import get_dsn  # noqa: E402
 
+from app.config import settings  # noqa: E402
 from app.services.census import ensure_census_tracts  # noqa: E402
 
 RADIUS_MILES = 3.0
@@ -60,6 +61,36 @@ _BACKFILL_SQL = text(
      GROUP BY p.id
     ON CONFLICT (parcel_id, radius_miles) DO UPDATE
        SET population = EXCLUDED.population, computed_at = now()
+    """
+)
+
+# Second pass: competitor storage sqft within 3 miles + sqft-per-capita, using
+# the same competitor_facilities distance query + default-sqft as
+# saturation._compute_single_ring. Runs after the population pass so the row
+# exists and prm3.population is available for the per-capita divide. Feeds the
+# lane-split saturation factor in buybox_scoring.
+_BACKFILL_SATURATION_SQL = text(
+    """
+    UPDATE parcel_radial_metrics prm
+       SET competitor_sqft = sub.total_sqft,
+           sqft_per_capita = CASE
+               WHEN prm.population > 0 AND sub.total_sqft > 0
+                    THEN ROUND(sub.total_sqft::numeric / prm.population, 2)
+               WHEN prm.population > 0 THEN 0
+               ELSE NULL END,
+           computed_at = now()
+      FROM (
+          SELECT p.id AS parcel_id,
+                 COALESCE(SUM(COALESCE(cf.sq_ft, :sqft_default)), 0)::bigint AS total_sqft
+            FROM parcels p
+            LEFT JOIN competitor_facilities cf
+              ON ST_DWithin(cf.geom::geography, p.centroid::geography, :radius_m)
+           WHERE p.jurisdiction_id = :jid
+             AND p.centroid IS NOT NULL
+           GROUP BY p.id
+      ) sub
+     WHERE prm.parcel_id = sub.parcel_id
+       AND prm.radius_miles = :radius_miles
     """
 )
 
@@ -123,9 +154,15 @@ async def main() -> None:
                 "radius_m": RADIUS_MILES * _MILES_TO_METERS,
                 "jid": jid,
             })
+            sat = await db.execute(_BACKFILL_SATURATION_SQL, {
+                "radius_miles": RADIUS_MILES,
+                "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                "sqft_default": settings.competitor_sqft_default,
+                "jid": jid,
+            })
             await db.commit()
-            print(f"  [{i}/{len(jids)}] {jid}  rows={res.rowcount}  tracts={n_tracts}  "
-                  f"({time.monotonic() - t0:.1f}s)", flush=True)
+            print(f"  [{i}/{len(jids)}] {jid}  rows={res.rowcount}  sat={sat.rowcount}  "
+                  f"tracts={n_tracts}  ({time.monotonic() - t0:.1f}s)", flush=True)
 
     await engine.dispose()
     print("Done.", flush=True)

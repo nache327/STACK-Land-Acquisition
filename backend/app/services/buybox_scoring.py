@@ -27,7 +27,7 @@ import asyncpg
 
 from app.config import settings
 from app.models.zone_use_matrix import UsePermission
-from app.services.use_verdicts import LGC_SLUG, verdict_expr
+from app.services.use_verdicts import LGC_SLUG, SELF_STORAGE_SLUG, verdict_expr
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,18 @@ ACRE_OVERSIZE = -15.0    # flat penalty above ACRE_MAX
 POP3MI_FLOOR = 30_000
 POP3MI_PENALTY = -20.0
 
+# Lane-aware demand signals (2026-07-22). Storage needs rooftops + an
+# underserved competitive market; LGC (luxury garage condo) draws from HNW
+# depth, and a storage-oversupplied market is neutral-to-good for it (Nache's
+# Boothwyn read: high saturation → "maybe not storage but a decent LGC site").
+LGC_HNW_FLOOR = 500       # HNW households in ring for +0
+LGC_HNW_FULL = 5_000      # HNW households for the full bonus
+LGC_HNW_MAX_BONUS = 15.0
+# Saturation (sqft/capita @ 3mi) split — storage lane only. Thresholds come
+# from settings so they track the saturation panel's colors.
+SAT_UNDERSERVED_BONUS = 8.0
+SAT_OVERSUPPLIED_PENALTY = -15.0
+
 
 def _acreage_delta(acres: float) -> float:
     """Signed acreage contribution to the composite score."""
@@ -102,6 +114,13 @@ class ParcelInputs:
     # None when not yet backfilled — treated as a transparent 0-delta factor,
     # NOT a penalty, so an unmeasured parcel isn't wrongly buried.
     pop_3mi: int | None = None
+    # HNW households in the FILTER's drive-time ring (parcel_ring_metrics),
+    # and competitor storage sqft-per-capita @ 3mi (parcel_radial_metrics).
+    # Feed the lane-aware factors below.
+    hnw_households: int | None = None
+    sqft_per_capita_3mi: float | None = None
+    # Which asset lane this score is for — selects the demand math.
+    lane: str = SELF_STORAGE_SLUG
     # Listing details — populated when the parcel has a current matched
     # listing (from any source) with match_confidence >= 0.85. Source-
     # agnostic by design: LoopNet vs CoStar doesn't change the boost.
@@ -139,6 +158,9 @@ class ScoredParcel:
 def score_for_parcel(
     p: ParcelInputs, filter_json: dict | None = None, asset_label: str = "Storage"
 ) -> ScoredParcel:
+    # `lane` rides on ParcelInputs (defaults to self_storage) so the existing
+    # callers and unit tests that build a ParcelInputs don't need to change; the
+    # lane-aware factors below are no-ops for a self_storage default.
     """Compute a 0-100 composite score for a single parcel.
 
     `filter_json` is the BuyboxFilter.filter_json blob — the same shape
@@ -281,6 +303,58 @@ def score_for_parcel(
                     "reason": f"Only {actual:,} in ring (min {min_v:,})",
                 })
 
+    # ── Lane-aware demand factors ────────────────────────────────────────
+    # LGC lane: HNW-household depth is the demand driver (homes_over_* are NULL
+    # everywhere, so we use hnw_households which IS populated). Bonus-only —
+    # HNW coverage is good but not universal, so absence never penalizes.
+    if p.lane == LGC_SLUG and p.hnw_households is not None:
+        span = LGC_HNW_FULL - LGC_HNW_FLOOR
+        frac = max(min((p.hnw_households - LGC_HNW_FLOOR) / span, 1.0), 0.0)
+        delta = round(frac * LGC_HNW_MAX_BONUS, 1)
+        if delta > 0:
+            factors.append({
+                "label": "HNW depth",
+                "delta": delta,
+                "reason": f"{p.hnw_households:,} HNW households in ring",
+            })
+
+    # Storage lane: reward an underserved market, penalize an oversupplied one.
+    # LGC is neutral to saturation (a storage-saturated area can still absorb a
+    # garage-condo product), so no factor there.
+    if p.lane == SELF_STORAGE_SLUG and p.sqft_per_capita_3mi is not None:
+        if p.sqft_per_capita_3mi >= settings.saturation_threshold_high:
+            factors.append({
+                "label": "Saturation",
+                "delta": SAT_OVERSUPPLIED_PENALTY,
+                "reason": f"{p.sqft_per_capita_3mi:.1f} sqft/capita — oversupplied",
+            })
+        elif p.sqft_per_capita_3mi < settings.saturation_threshold_low:
+            factors.append({
+                "label": "Saturation",
+                "delta": SAT_UNDERSERVED_BONUS,
+                "reason": f"{p.sqft_per_capita_3mi:.1f} sqft/capita — underserved",
+            })
+
+    # Price-per-acre (listed parcels only) — absolute bands. Nache priced every
+    # listing instantly ($1.8M good / $3.9M "high but maybe"); the score should
+    # too. County-median normalization is deferred (noisy off ~600 listings).
+    if p.listing_sale_price and p.acres and p.acres > 0:
+        ppa = p.listing_sale_price / p.acres
+        if ppa <= 150_000:
+            delta = 8.0
+        elif ppa <= 400_000:
+            delta = 0.0
+        elif ppa <= 800_000:
+            delta = -8.0
+        else:
+            delta = -15.0
+        if delta != 0.0:
+            factors.append({
+                "label": "$/acre",
+                "delta": delta,
+                "reason": f"${ppa/1000:.0f}K/ac",
+            })
+
     # Listing boost — fires when this parcel has any current matched
     # listing (source-agnostic). Filter knob `listing_score_boost`
     # (default 0; the digest worker / admin UI sets it to ~15 once the
@@ -370,7 +444,9 @@ SELECT
     prm.homes_over_1m,
     prm.homes_over_2m,
     prm.homes_over_5m,
+    prm.hnw_households,
     prm3.population    AS pop_3mi,
+    prm3.sqft_per_capita AS sqft_per_capita_3mi,
     lst.source         AS listing_source,
     lst.sale_price     AS listing_sale_price,
     lst.days_on_market AS listing_dom
@@ -569,7 +645,13 @@ async def score_jurisdiction(
                 homes_over_1m=r["homes_over_1m"],
                 homes_over_2m=r["homes_over_2m"],
                 homes_over_5m=r["homes_over_5m"],
+                hnw_households=r["hnw_households"],
                 pop_3mi=r["pop_3mi"],
+                sqft_per_capita_3mi=(
+                    float(r["sqft_per_capita_3mi"])
+                    if r["sqft_per_capita_3mi"] is not None else None
+                ),
+                lane=(slug or SELF_STORAGE_SLUG),
                 listing_source=r["listing_source"],
                 listing_sale_price=(
                     float(r["listing_sale_price"])
