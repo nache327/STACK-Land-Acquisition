@@ -67,6 +67,13 @@ _FACT_COLUMNS = [
     # dashboard-owned MANUAL `owner_contact` disposition column (never pushed).
     "owner_phone", "owner_address", "owner_contact_listing",
     "lat", "lng", "parcellogic_link",
+    # Assessor situs (parcels.address/city) alongside the listing-preferred
+    # `address` above. When a parcel has a CoStar listing, `address` shows the
+    # marketing/listing address (e.g. "400 Campus Drive") which can differ from
+    # the situs the operator clicked ("91 Cottontail Ln"); surfacing both kills
+    # the "is this the same property?" doubt. The card renders situs as a
+    # secondary line when it differs from address.
+    "situs_address", "situs_city",
 ]
 _JSONB_COLUMNS = {"factors", "soft_flags"}
 # NUMERIC target columns — cast the bind to float8 so asyncpg encodes a Python
@@ -162,6 +169,9 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
         "lat": p.lat,
         "lng": p.lng,
         "parcellogic_link": _parcel_link(p),
+        # Situs is always the assessor address/city, regardless of listing.
+        "situs_address": p.address,
+        "situs_city": sup.get("parcel_city"),
     }
 
 
