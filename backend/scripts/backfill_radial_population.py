@@ -153,9 +153,31 @@ async def _bbox(db, jid: str) -> tuple[float, float, float, float] | None:
     return (float(row[0]), float(row[1]), float(row[2]), float(row[3]))
 
 
+async def _already_done(db, jid: str) -> bool:
+    """True if this jurisdiction already has 3-mi radial rows. Each jurisdiction
+    commits atomically (one transaction), so 'has any row' == 'fully done' —
+    this makes the whole backfill resumable: re-running skips completed
+    jurisdictions and continues where an interrupted run left off."""
+    result = await db.execute(text(
+        """
+        SELECT EXISTS (
+            SELECT 1 FROM parcel_radial_metrics pr
+              JOIN parcels p ON p.id = pr.parcel_id
+             WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+               AND pr.radius_miles = 3.0
+             LIMIT 1
+        )
+        """
+    ), {"jid": jid})
+    return bool(result.scalar())
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser(description="Backfill 3-mi radial population.")
     ap.add_argument("--jurisdiction", type=str, default=None)
+    ap.add_argument("--redo", action="store_true",
+                    help="Reprocess jurisdictions even if already backfilled "
+                         "(default: skip done ones so the run is resumable).")
     args = ap.parse_args()
 
     engine = create_async_engine(get_dsn(), pool_pre_ping=True)
@@ -168,6 +190,9 @@ async def main() -> None:
         t0 = time.monotonic()
         async with session_factory() as db:
             await db.execute(text("SET statement_timeout = 0"))
+            if not args.redo and await _already_done(db, jid):
+                print(f"  [{i}/{len(jids)}] {jid}  already done — skip", flush=True)
+                continue
             bbox = await _bbox(db, jid)
             if bbox is None:
                 print(f"  [{i}/{len(jids)}] {jid}  no geometry — skip", flush=True)
