@@ -46,6 +46,11 @@ class Parcel(Base):
     lat: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     lng: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     owner_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Owner MAILING address (distinct from the situs `address` above) — promoted
+    # from the source assessor row in `raw` by scripts/_backfill_parcel_owner_mailing.py
+    # (Bucket A of the 2026-07-22 owner-mailing audit). Powers off-market direct mail.
+    owner_mailing_address: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    owner_mailing_csz: Mapped[str | None] = mapped_column(String(256), nullable=True)
     acres: Mapped[float | None] = mapped_column(Numeric(10, 3), nullable=True)
     zoning_code: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     zone_class: Mapped[ZoneClass | None] = mapped_column(
