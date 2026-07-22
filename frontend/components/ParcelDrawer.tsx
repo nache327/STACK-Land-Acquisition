@@ -89,6 +89,7 @@ export function ParcelDrawer({
       apn: parcel?.apn ?? "",
       zoneCode: parcel?.zoning_code ?? null,
       jurisdictionId,
+      municipality: parcel?.city ?? null,
     });
 
   const { data: saturation, isLoading: satLoading } = useParcelSaturation(

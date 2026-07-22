@@ -3,7 +3,11 @@
  * No external API. Reads our DB via the FastAPI backend.
  *
  * POST /api/verify-layer1
- * Body: { jurisdictionId: string, zoneCode: string }
+ * Body: { jurisdictionId: string, zoneCode: string, municipality?: string }
+ *
+ * municipality (= parcels.city, case-sensitive) is forwarded so the backend
+ * reads the SAME municipality-scoped zone_use_matrix row the Site Score uses
+ * (fallback_default=true prefers it, falls back to the NULL county-default).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { scoreLayer1DB, type Layer1Result, type UseStatus } from "@/lib/verification";
@@ -11,18 +15,25 @@ import { scoreLayer1DB, type Layer1Result, type UseStatus } from "@/lib/verifica
 const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function POST(req: NextRequest) {
-  let jurisdictionId: string, zoneCode: string;
+  let jurisdictionId: string, zoneCode: string, municipality: string;
   try {
     const body = await req.json();
     jurisdictionId = String(body.jurisdictionId ?? "");
     zoneCode = String(body.zoneCode ?? "");
+    municipality = String(body.municipality ?? "");
     if (!jurisdictionId || !zoneCode) throw new Error("missing fields");
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   try {
-    const url = `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}`;
+    const params = new URLSearchParams();
+    if (municipality) {
+      params.set("municipality", municipality);
+      params.set("fallback_default", "true");
+    }
+    const qs = params.toString();
+    const url = `${BACKEND}/api/jurisdictions/${jurisdictionId}/zones/${encodeURIComponent(zoneCode)}${qs ? `?${qs}` : ""}`;
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(8_000),
@@ -40,6 +51,7 @@ export async function POST(req: NextRequest) {
         classificationSource: "unclear",
         confidence: null,
         humanReviewed: false,
+        grounded: false,
         notes: null,
         permitType: null,
         score: 0,
@@ -57,10 +69,12 @@ export async function POST(req: NextRequest) {
 
     const row = await res.json();
 
-    const classificationSource: Layer1Result["classificationSource"] =
-      (["llm", "rule", "human", "unclear"].includes(row.classification_source)
-        ? row.classification_source
-        : "unclear") as Layer1Result["classificationSource"];
+    // Pass the raw zone_use_matrix source enum through — do NOT collapse
+    // grounded sources (op5_factory, llm_rule, crosswalk, …) to "unclear".
+    // scoreLayer1DB decides trust via isGrounded, not a hard-coded whitelist.
+    const classificationSource: string = String(row.classification_source ?? "unclear");
+    const humanReviewed: boolean = row.human_reviewed ?? false;
+    const confidence: number | null = row.confidence ?? null;
 
     const toUseStatus = (v: string | null | undefined): UseStatus => {
       if (v === "permitted" || v === "conditional" || v === "prohibited") return v;
@@ -69,10 +83,11 @@ export async function POST(req: NextRequest) {
 
     const selfStorageStatus = toUseStatus(row.self_storage);
 
-    const { score, permitType } = scoreLayer1DB({
+    const { score, permitType, grounded } = scoreLayer1DB({
       selfStorageStatus,
       classificationSource,
-      confidence: row.confidence ?? null,
+      confidence,
+      humanReviewed,
     });
 
     const result: Layer1Result = {
@@ -84,8 +99,9 @@ export async function POST(req: NextRequest) {
       lightIndustrialStatus: toUseStatus(row.light_industrial),
       luxuryGarageStatus: toUseStatus(row.luxury_garage_condo),
       classificationSource,
-      confidence: row.confidence ?? null,
-      humanReviewed: row.human_reviewed ?? false,
+      confidence,
+      humanReviewed,
+      grounded,
       notes: row.notes ?? null,
       permitType,
       score,
@@ -106,6 +122,7 @@ export async function POST(req: NextRequest) {
       classificationSource: "unclear",
       confidence: null,
       humanReviewed: false,
+      grounded: false,
       notes: null,
       permitType: null,
       score: 0,
