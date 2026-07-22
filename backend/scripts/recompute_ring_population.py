@@ -71,7 +71,7 @@ _POP_IN_POLY = text(
 
 
 async def _surfaced(db, jid: str | None, limit: int) -> list[tuple[int, float, float, str]]:
-    where_j = "AND p.jurisdiction_id = :jid::uuid" if jid else ""
+    where_j = "AND p.jurisdiction_id = CAST(:jid AS uuid)" if jid else ""
     rows = (await db.execute(text(
         f"""
         SELECT p.id,
