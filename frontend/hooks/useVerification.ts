@@ -15,12 +15,16 @@ interface UseVerificationOptions {
   apn: string;
   zoneCode: string | null;
   jurisdictionId: string;
+  // parcels.city (case-sensitive) — forwarded so Layer 1 reads the same
+  // municipality-scoped zone_use_matrix row the Site Score used.
+  municipality?: string | null;
 }
 
 export function useVerification({
   apn,
   zoneCode,
   jurisdictionId,
+  municipality,
 }: UseVerificationOptions) {
   const [state, setState] = useState<VerificationState | null>(() =>
     zoneCode ? readCache(apn, zoneCode) : null
@@ -66,7 +70,7 @@ export function useVerification({
       const res = await fetch("/api/verify-layer1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jurisdictionId, zoneCode }),
+        body: JSON.stringify({ jurisdictionId, zoneCode, municipality: municipality ?? undefined }),
       });
 
       if (!res.ok) throw new Error(`Layer 1 failed: ${res.status}`);
@@ -93,7 +97,7 @@ export function useVerification({
     } finally {
       setLayer1Loading(false);
     }
-  }, [apn, zoneCode, jurisdictionId, state, buildState]);
+  }, [apn, zoneCode, jurisdictionId, municipality, state, buildState]);
 
   // Run Layer 3 (ordinance AI) — only on explicit user request
   const runLayer3 = useCallback(async () => {

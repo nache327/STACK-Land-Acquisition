@@ -140,6 +140,7 @@ export const ParcelRowSchema = z.object({
   jurisdiction_id: z.string().uuid(),
   apn: z.string(),
   address: z.string().nullable(),
+  city: z.string().nullable().optional(),
   owner_name: z.string().nullable(),
   acres: z.number().nullable(),
   zoning_code: z.string().nullable(),

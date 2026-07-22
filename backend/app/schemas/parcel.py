@@ -15,6 +15,9 @@ class ParcelRead(BaseModel):
     jurisdiction_id: uuid.UUID
     apn: str
     address: str | None
+    # parcels.city (case-sensitive). Surfaced so the drawer can thread it to
+    # the Zoning Verifier, which reads the municipality-scoped matrix row.
+    city: str | None = None
     owner_name: str | None
     acres: float | None
     zoning_code: str | None

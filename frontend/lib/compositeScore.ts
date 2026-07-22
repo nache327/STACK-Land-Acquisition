@@ -73,13 +73,15 @@ export function computeScore(parcel: ScoreInput): CompositeScore {
       factors.push({ label: "Storage", delta: 0, reason: "No matrix entry yet" });
   }
 
-  // Acreage bonus — bigger lots score higher (max +20 at 30 acres)
+  // Acreage curve — peaks in the buildable sweet spot, penalizes oversize.
+  // Mirror of _acreage_delta / ACRE_* in backend/app/services/buybox_scoring.py
+  // (keep byte-for-byte equivalent so the drawer matches parcel_buybox_scores).
   if (parcel.acres != null && parcel.acres > 0) {
-    const bonus = clamp01(parcel.acres / 30) * 20;
+    const delta = acreageDelta(parcel.acres);
     factors.push({
       label: "Acres",
-      delta: round1(bonus),
-      reason: `${parcel.acres.toFixed(1)} ac`,
+      delta,
+      reason: `${parcel.acres.toFixed(1)} ac${parcel.acres > ACRE_MAX ? " (oversize)" : ""}`,
     });
   }
 
@@ -139,6 +141,26 @@ export const TIER_BADGE_CLASSES: Record<ScoreTier, string> = {
   weak: "bg-amber-100 text-amber-700",
   avoid: "bg-red-100 text-red-700",
 };
+
+// Acreage curve constants — mirror of ACRE_* in
+// backend/app/services/buybox_scoring.py. Keep in lock-step.
+const ACRE_SWEET_LOW = 2.0;
+const ACRE_SWEET_HIGH = 8.0;
+export const ACRE_MAX = 15.0;
+const ACRE_PEAK = 20.0;
+const ACRE_EDGE = 5.0;
+const ACRE_OVERSIZE = -15.0;
+
+/** Signed acreage contribution — mirror of _acreage_delta in buybox_scoring.py. */
+export function acreageDelta(acres: number): number {
+  if (acres < ACRE_SWEET_LOW) return round1((acres / ACRE_SWEET_LOW) * ACRE_PEAK);
+  if (acres <= ACRE_SWEET_HIGH) return ACRE_PEAK;
+  if (acres <= ACRE_MAX) {
+    const span = ACRE_MAX - ACRE_SWEET_HIGH;
+    return round1(ACRE_PEAK - ((acres - ACRE_SWEET_HIGH) / span) * (ACRE_PEAK - ACRE_EDGE));
+  }
+  return ACRE_OVERSIZE;
+}
 
 function clamp01(x: number): number {
   if (x < 0) return 0;

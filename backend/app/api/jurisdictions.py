@@ -37,7 +37,7 @@ class _BulkReviewBody(BaseModel):
     source_ids: list[uuid.UUID] = Field(..., max_length=50)
     rejected_reason: str | None = None
 from fastapi.responses import JSONResponse
-from sqlalchemy import delete, func, select, text, update
+from sqlalchemy import delete, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api._auth import require_secret
@@ -260,12 +260,41 @@ async def get_zone(
     jurisdiction_id: uuid.UUID,
     zone_code: str,
     municipality: str | None = None,
+    fallback_default: bool = False,
     db: AsyncSession = Depends(get_db),
 ) -> ZoneUseMatrix:
-    result = await db.execute(
-        select(ZoneUseMatrix).where(
-            *_zone_select_where(jurisdiction_id, zone_code, municipality)
+    # Default (PATCH-compatible) semantics: exact (jur, code, municipality)
+    # triplet, where municipality=None means the NULL county-default row only.
+    if not (fallback_default and municipality is not None):
+        result = await db.execute(
+            select(ZoneUseMatrix).where(
+                *_zone_select_where(jurisdiction_id, zone_code, municipality)
+            )
         )
+        zone = result.scalar_one_or_none()
+        if zone is None:
+            raise HTTPException(status_code=404, detail="Zone not found")
+        return zone
+
+    # Read semantics for verification/scoring: prefer the municipality-scoped
+    # row, fall back to the NULL county-default. Mirrors the buybox scorer's
+    # LATERAL (buybox_scoring._select_parcels_sql) so the Zoning Verification
+    # box reads the SAME row the Site Score did. municipality is passed verbatim
+    # (parcels.city) — the join is case-sensitive by design.
+    result = await db.execute(
+        select(ZoneUseMatrix)
+        .where(
+            ZoneUseMatrix.jurisdiction_id == jurisdiction_id,
+            ZoneUseMatrix.zone_code == zone_code,
+            ZoneUseMatrix.deleted_at.is_(None),
+            or_(
+                ZoneUseMatrix.municipality == municipality,
+                ZoneUseMatrix.municipality.is_(None),
+            ),
+        )
+        # NULL-municipality sorts last, so a township-specific row wins.
+        .order_by(ZoneUseMatrix.municipality.is_(None).asc())
+        .limit(1)
     )
     zone = result.scalar_one_or_none()
     if zone is None:

@@ -50,6 +50,30 @@ def tier_for(score: int) -> str:
     return "avoid"
 
 
+# ─── Acreage curve ───────────────────────────────────────────────────────
+# Peaked, not monotonic: a 160-ac parcel is NOT better than a 5-ac one for a
+# self-storage / LGC pad. Mirror these constants + _acreage_delta in
+# frontend/lib/compositeScore.ts (keep byte-for-byte equivalent).
+ACRE_SWEET_LOW = 2.0     # start of the flat +ACRE_PEAK plateau
+ACRE_SWEET_HIGH = 8.0    # end of the plateau
+ACRE_MAX = 15.0          # above this = oversize, hard penalty
+ACRE_PEAK = 20.0         # bonus at the plateau
+ACRE_EDGE = 5.0          # bonus at ACRE_MAX (decayed from the plateau)
+ACRE_OVERSIZE = -15.0    # flat penalty above ACRE_MAX
+
+
+def _acreage_delta(acres: float) -> float:
+    """Signed acreage contribution to the composite score."""
+    if acres < ACRE_SWEET_LOW:
+        return round(acres / ACRE_SWEET_LOW * ACRE_PEAK, 1)     # ramp 0 → +peak
+    if acres <= ACRE_SWEET_HIGH:
+        return ACRE_PEAK                                         # sweet spot
+    if acres <= ACRE_MAX:
+        span = ACRE_MAX - ACRE_SWEET_HIGH
+        return round(ACRE_PEAK - (acres - ACRE_SWEET_HIGH) / span * (ACRE_PEAK - ACRE_EDGE), 1)
+    return ACRE_OVERSIZE                                         # oversize
+
+
 # ─── Per-parcel scoring ──────────────────────────────────────────────────
 
 @dataclass
@@ -150,10 +174,16 @@ def score_for_parcel(
             "reason": "Self-Service Storage overlay — special-permit path",
         })
 
-    # Acreage bonus — bigger lots score higher (max +20 at 30 acres)
+    # Acreage curve — peaks in the buildable sweet spot, penalizes oversize.
+    # A 2-8 ac lot is the target; below 2 ac ramps up; 8-15 ac decays toward
+    # the ceiling; anything over 15 ac is not a self-storage / LGC site (too
+    # big to make sense at our basis) and is pushed down hard so it stops
+    # sorting as "Excellent". See ACRE_* constants for the mirror in
+    # frontend/lib/compositeScore.ts (must stay in lock-step).
     if p.acres is not None and p.acres > 0:
-        bonus = round(min(p.acres / 30, 1.0) * 20, 1)
-        factors.append({"label": "Acres", "delta": bonus, "reason": f"{p.acres:.1f} ac"})
+        delta = _acreage_delta(p.acres)
+        reason = f"{p.acres:.1f} ac" + (" (oversize)" if p.acres > ACRE_MAX else "")
+        factors.append({"label": "Acres", "delta": delta, "reason": reason})
 
     # AADT bonus — visibility (5K = 0 pts, 50K = full +15)
     if p.aadt is not None and p.aadt > 0:
