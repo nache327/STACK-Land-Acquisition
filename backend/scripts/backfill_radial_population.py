@@ -41,29 +41,47 @@ _MILES_TO_METERS = 1609.344
 # but batched over every parcel in a jurisdiction and written to the table.
 _BACKFILL_SQL = text(
     """
+    -- Tract-centric (matches the drive-time ring precompute convention): the
+    -- 3-mile ring population is computed ONCE per census tract centroid, then
+    -- assigned to every parcel that tract contains. This is O(tracts² +
+    -- parcels) with index-assisted lookups instead of the O(parcels × tracts)
+    -- per-parcel buffer+area-weight (which took 35+ min on a single big
+    -- county). The bbox envelope bounds the tract set to the jurisdiction plus
+    -- a ~7mi margin so a 3-mile ring near the edge still sees its neighbours.
+    --
+    -- NULL semantics: a parcel NOT contained by any loaded tract (census data
+    -- gap) gets NO row -> NULL = "unmeasured" (passes the gate, flagged). A
+    -- parcel whose tract IS loaded but has no populated neighbour within 3mi
+    -- gets 0 = genuinely rural (correctly dropped). The containment join is
+    -- what separates the two, so COALESCE(...,0) here is safe.
+    WITH tc_all AS (
+        SELECT geoid, ST_Centroid(geom)::geography AS gc
+          FROM census_tracts
+         WHERE geom && ST_MakeEnvelope(:xmin, :ymin, :xmax, :ymax, 4326)
+    ),
+    tc_pop AS (
+        SELECT geoid, ST_Centroid(geom)::geography AS gc, population
+          FROM census_tracts
+         WHERE population IS NOT NULL AND population > 0
+           AND geom && ST_MakeEnvelope(:xmin, :ymin, :xmax, :ymax, 4326)
+    ),
+    ring_pop AS (
+        SELECT a.geoid, COALESCE(SUM(b.population), 0)::int AS pop
+          FROM tc_all a
+          LEFT JOIN tc_pop b ON ST_DWithin(a.gc, b.gc, :radius_m)
+         GROUP BY a.geoid
+    )
     INSERT INTO parcel_radial_metrics (parcel_id, radius_miles, population)
-    SELECT p.id, :radius_miles,
-           -- NO coalesce-to-0: when zero populated tracts intersect the ring
-           -- (a census data gap, e.g. tract population not loaded), SUM is
-           -- NULL and we store NULL = "unmeasured" (passes the gate, flagged)
-           -- rather than 0 = "too rural" (penalized + dropped). Only a genuine
-           -- populated-tract intersection yields a number.
-           SUM(
-               ct.population::float
-               * ST_Area(ST_Intersection(ct.geom, rg.ring)::geography)
-               / NULLIF(ST_Area(ct.geom::geography), 0)
-           )::int AS pop
+    SELECT p.id, :radius_miles, rp.pop
       FROM parcels p
-      CROSS JOIN LATERAL (
-           SELECT ST_Buffer(p.centroid::geography, :radius_m)::geometry AS ring
-      ) rg
-      LEFT JOIN census_tracts ct
-             ON ST_Intersects(ct.geom, rg.ring)
-            AND ct.population IS NOT NULL
-            AND ct.population > 0
+      JOIN LATERAL (
+           SELECT ct.geoid FROM census_tracts ct
+            WHERE ST_Contains(ct.geom, p.centroid)
+            LIMIT 1
+      ) pt ON true
+      JOIN ring_pop rp ON rp.geoid = pt.geoid
      WHERE p.jurisdiction_id = CAST(:jid AS uuid)
        AND p.centroid IS NOT NULL
-     GROUP BY p.id
     ON CONFLICT (parcel_id, radius_miles) DO UPDATE
        SET population = EXCLUDED.population, computed_at = now()
     """
@@ -160,10 +178,16 @@ async def main() -> None:
             except Exception as e:
                 print(f"  [{i}/{len(jids)}] {jid}  census fetch failed: {e}", flush=True)
                 n_tracts = -1
+            # Expand the bbox ~0.12° (~8mi > the 3mi ring) so an edge parcel's
+            # ring still sees neighbouring tracts.
+            xmin, ymin, xmax, ymax = bbox
+            m = 0.12
             res = await db.execute(_BACKFILL_SQL, {
                 "radius_miles": RADIUS_MILES,
                 "radius_m": RADIUS_MILES * _MILES_TO_METERS,
                 "jid": jid,
+                "xmin": xmin - m, "ymin": ymin - m,
+                "xmax": xmax + m, "ymax": ymax + m,
             })
             sat = await db.execute(_BACKFILL_SATURATION_SQL, {
                 "radius_miles": RADIUS_MILES,
