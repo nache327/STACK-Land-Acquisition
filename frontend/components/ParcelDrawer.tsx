@@ -271,7 +271,14 @@ export function ParcelDrawer({
         <SaturationPanel saturation={saturation ?? null} isLoading={satLoading} />
 
         {/* Buy Box Match — all active filter dimensions vs this parcel */}
-        {buyBoxMatch && <BuyBoxMatchPanel match={buyBoxMatch} />}
+        {buyBoxMatch && (
+          <BuyBoxMatchPanel
+            match={buyBoxMatch}
+            pop3mi={
+              saturation?.rings.find((r) => r.radius_miles === 3)?.population ?? null
+            }
+          />
+        )}
 
         {/* Three-Layer Verification */}
         <VerificationPanel
@@ -451,8 +458,14 @@ function fmtValue(n: number | null, format: RowFormat): string {
 
 function BuyBoxMatchPanel({
   match,
+  pop3mi,
 }: {
   match: NonNullable<ParcelDrawerProps["buyBoxMatch"]>;
+  /** Area-weighted 3-mile population (from the saturation panel). Used to
+   *  sanity-check the drive-time ring — a 10-min drive covers well beyond a
+   *  3-mile radius in suburbia, so dt population < 3-mi population is
+   *  impossible and flags a stale/mis-anchored ring row. */
+  pop3mi?: number | null;
 }) {
   const {
     driveTimeMinutes,
@@ -463,6 +476,24 @@ function BuyBoxMatchPanel({
     precomputeStatus,
     parcelEligible,
   } = match;
+
+  // Ring-integrity signal. Amber, non-blocking — the numbers still render, but
+  // we tell the operator not to trust them (Nache caught 11k@10-min next to
+  // 49k@3-mi and rightly distrusted the whole card).
+  const staleReason: string | null = useMemo(() => {
+    if (!ring) return null;
+    if (
+      pop3mi != null && pop3mi > 5000 &&
+      ring.totalPopulation > 0 && ring.totalPopulation < pop3mi
+    ) {
+      return `${driveTimeMinutes}-min drive population (${ring.totalPopulation.toLocaleString()}) is below the 3-mile population (${pop3mi.toLocaleString()}) — impossible; recompute pending`;
+    }
+    if (ring.lastComputed) {
+      const ageDays = (Date.now() - new Date(ring.lastComputed).getTime()) / 86_400_000;
+      if (ageDays > 180) return `Ring data is ${Math.round(ageDays)} days old — recompute pending`;
+    }
+    return null;
+  }, [ring, pop3mi, driveTimeMinutes]);
 
   const rows: MatchRow[] = useMemo(() => {
     const out: MatchRow[] = [];
@@ -575,6 +606,12 @@ function BuyBoxMatchPanel({
       <h3 className="mb-2 font-semibold text-slate-700 text-xs uppercase tracking-wide">
         Buy Box Match · {driveTimeMinutes}-min drive
       </h3>
+
+      {staleReason && (
+        <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800">
+          ⚠ Ring data stale — {staleReason}
+        </div>
+      )}
 
       {!ring ? (
         <div className="text-xs text-slate-400">
