@@ -27,9 +27,24 @@ from app.schemas.parcel import (
     ParcelRead,
 )
 from app.services.candidate_search import search_candidate_parcels
+from app.services.parcel_locate import locate_parcels
 from app.services.zoning_system import get_zoning_from_db
+from pydantic import BaseModel, Field
 
 router = APIRouter(tags=["parcels"])
+
+
+class ParcelLocateRequest(BaseModel):
+    """Free-text APN / address lookup for the map search box."""
+    query: str = Field(..., min_length=1, max_length=256)
+    # Bias the fast APN/address tiers to one jurisdiction (the loaded buy box).
+    # The geocode fallback always runs cross-jurisdiction regardless.
+    jurisdiction_id: uuid.UUID | None = None
+    limit: int = Field(8, ge=1, le=25)
+
+
+class ParcelLocateResponse(BaseModel):
+    results: list[dict]
 
 
 # ── /parcels/search response cache ───────────────────────────────────────────
@@ -151,6 +166,23 @@ async def candidate_parcel_search(
             "X-Cache": "MISS",
         },
     )
+
+
+@router.post("/parcels/locate", response_model=ParcelLocateResponse)
+async def locate_parcel(
+    payload: ParcelLocateRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ParcelLocateResponse:
+    """Find the parcel(s) matching a pasted APN or street address.
+
+    Distinct from /parcels/search (the buy-box filter): this is a goto/locate for
+    a broker-supplied address. Tiers APN → normalized address → geocode→contains,
+    and can resolve outside the loaded jurisdiction via the geocode fallback.
+    """
+    results = await locate_parcels(
+        db, payload.query, jurisdiction_id=payload.jurisdiction_id, limit=payload.limit
+    )
+    return ParcelLocateResponse(results=results)
 
 
 _storage_perm_expr = case(

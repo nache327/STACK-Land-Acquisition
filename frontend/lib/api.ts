@@ -164,6 +164,21 @@ export interface AdjudicationListParams {
   offset?: number;
 }
 
+export interface LocateResult {
+  parcel_id: number;
+  jurisdiction_id: string;
+  jurisdiction_name: string | null;
+  apn: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  owner_name: string | null;
+  lat: number | null;
+  lng: number | null;
+  match_method: "apn" | "address" | "geocode";
+  score: number;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -280,6 +295,28 @@ export const api = {
       body: JSON.stringify(payload),
     });
     return CandidateParcelSearchResponseSchema.parse(raw);
+  },
+
+  // Free-text APN / address lookup for the map search box (broker paste).
+  // Tiers APN → normalized address → geocode; jurisdiction_id biases the fast
+  // tiers, but the geocode fallback resolves cross-jurisdiction too.
+  async locateParcels(
+    query: string,
+    jurisdictionId?: string | null,
+    limit = 8
+  ): Promise<LocateResult[]> {
+    const res = await fetchJSON<{ results: LocateResult[] }>(
+      "/api/parcels/locate",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          query,
+          jurisdiction_id: jurisdictionId ?? null,
+          limit,
+        }),
+      }
+    );
+    return res.results ?? [];
   },
 
   // ---- zones --------------------------------------------------------------
