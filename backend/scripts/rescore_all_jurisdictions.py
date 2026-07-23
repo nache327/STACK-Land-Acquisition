@@ -39,18 +39,22 @@ async def _jurisdiction_ids(only: uuid.UUID | None) -> list[uuid.UUID]:
         return [only]
     conn = await asyncpg.connect(get_sync_dsn())
     try:
+        # Enumerate from the small jurisdictions table (instant), needle-priority
+        # first — NOT a GROUP BY over all ~millions of parcels, which blows the
+        # statement timeout. Empty jurisdictions score 0 rows, harmless.
+        await conn.execute("SET statement_timeout = 0")
         rows = await conn.fetch(
             """
-            SELECT jurisdiction_id, COUNT(*) AS n
-              FROM parcels
-             WHERE jurisdiction_id IS NOT NULL
-             GROUP BY jurisdiction_id
-             ORDER BY n DESC
+            SELECT j.id
+              FROM jurisdictions j
+              LEFT JOIN needle_snapshot ns ON ns.jurisdiction_id = j.id
+             ORDER BY COALESCE(ns.storage_needles, 0) + COALESCE(ns.lgc_needles, 0) DESC,
+                      j.id
             """
         )
     finally:
         await conn.close()
-    return [r["jurisdiction_id"] for r in rows]
+    return [r["id"] for r in rows]
 
 
 async def main() -> None:

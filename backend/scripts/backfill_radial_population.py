@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent))
 
 from sqlalchemy import text  # noqa: E402
+from sqlalchemy.pool import NullPool  # noqa: E402
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # noqa: E402
 
 from _db import get_dsn  # noqa: E402
@@ -178,9 +179,19 @@ async def main() -> None:
     ap.add_argument("--redo", action="store_true",
                     help="Reprocess jurisdictions even if already backfilled "
                          "(default: skip done ones so the run is resumable).")
+    ap.add_argument("--skip-saturation", action="store_true",
+                    help="Only backfill population (skip the slow competitor "
+                         "sqft/saturation pass). Population drives the 30k floor; "
+                         "run saturation separately.")
     args = ap.parse_args()
 
-    engine = create_async_engine(get_dsn(), pool_pre_ping=True)
+    # NullPool: hold NO idle connections between jurisdictions. The script is
+    # sequential (one session at a time), so a persistent pool only risks
+    # leaking session-mode connections into Supabase's pgbouncer if the process
+    # is killed. NullPool opens+closes per checkout, so an abrupt kill leaks at
+    # most one connection, not a whole pool. (Fixes the pool-exhaustion incident
+    # from repeated interrupted runs.)
+    engine = create_async_engine(get_dsn(), poolclass=NullPool)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     jids = await _jurisdiction_ids(session_factory, args.jurisdiction)
@@ -214,14 +225,23 @@ async def main() -> None:
                 "xmin": xmin - m, "ymin": ymin - m,
                 "xmax": xmax + m, "ymax": ymax + m,
             })
-            sat = await db.execute(_BACKFILL_SATURATION_SQL, {
-                "radius_miles": RADIUS_MILES,
-                "radius_m": RADIUS_MILES * _MILES_TO_METERS,
-                "sqft_default": settings.competitor_sqft_default,
-                "jid": jid,
-            })
+            # Saturation pass is an O(parcels × competitors) spatial join that
+            # is pathologically slow for huge-metro bboxes (10+ min on Chicago)
+            # and, sharing this transaction, blocks the already-computed
+            # population commit. Population drives the 30k floor + display (the
+            # priority); saturation is a storage-lane score refinement. Skip it
+            # here so population lands fast; backfill saturation separately.
+            sat_rc = "skipped"
+            if not args.skip_saturation:
+                sat = await db.execute(_BACKFILL_SATURATION_SQL, {
+                    "radius_miles": RADIUS_MILES,
+                    "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                    "sqft_default": settings.competitor_sqft_default,
+                    "jid": jid,
+                })
+                sat_rc = sat.rowcount
             await db.commit()
-            print(f"  [{i}/{len(jids)}] {jid}  rows={res.rowcount}  sat={sat.rowcount}  "
+            print(f"  [{i}/{len(jids)}] {jid}  rows={res.rowcount}  sat={sat_rc}  "
                   f"tracts={n_tracts}  ({time.monotonic() - t0:.1f}s)", flush=True)
 
     await engine.dispose()
