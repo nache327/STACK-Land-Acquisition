@@ -57,20 +57,47 @@ async def _jurisdiction_ids(only: uuid.UUID | None) -> list[uuid.UUID]:
     return [r["id"] for r in rows]
 
 
+async def _recently_scored(conn, jid: uuid.UUID, hours: int = 12) -> bool:
+    """True if this jurisdiction already has buybox scores computed within the
+    last `hours` — i.e. re-scored in this sweep session. Makes the full run
+    resumable: a restart with --resume skips completed jurisdictions and
+    continues where an interrupted/paused run left off."""
+    return bool(await conn.fetchval(
+        f"""
+        SELECT EXISTS (
+            SELECT 1 FROM parcel_buybox_scores pbs
+              JOIN parcels p ON p.id = pbs.parcel_id
+             WHERE p.jurisdiction_id = $1
+               AND pbs.computed_at > now() - interval '{hours} hours'
+             LIMIT 1
+        )
+        """, jid))
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser(description="Re-score all jurisdictions.")
     ap.add_argument("--jurisdiction", type=str, default=None,
                     help="Only re-score this jurisdiction UUID.")
+    ap.add_argument("--resume", action="store_true",
+                    help="Skip jurisdictions already scored in the last 12h "
+                         "(resume a paused/interrupted full run).")
     args = ap.parse_args()
     only = uuid.UUID(args.jurisdiction) if args.jurisdiction else None
 
     jids = await _jurisdiction_ids(only)
     print(f"Re-scoring {len(jids)} jurisdiction(s)…", flush=True)
 
+    skip_conn = await asyncpg.connect(get_sync_dsn()) if args.resume else None
+    if skip_conn is not None:
+        await skip_conn.execute("SET statement_timeout = 0")
+
     total = 0
     failures: list[tuple[uuid.UUID, str]] = []
     for i, jid in enumerate(jids, 1):
         t0 = time.monotonic()
+        if skip_conn is not None and await _recently_scored(skip_conn, jid):
+            print(f"  [{i}/{len(jids)}] {jid}  already scored — skip", flush=True)
+            continue
         try:
             n = await auto_score_jurisdiction(jid)
             total += n
@@ -79,6 +106,9 @@ async def main() -> None:
         except Exception as e:  # keep going; report at the end
             failures.append((jid, str(e)))
             print(f"  [{i}/{len(jids)}] {jid}  FAILED: {e}", flush=True)
+
+    if skip_conn is not None:
+        await skip_conn.close()
 
     print(f"\nDone. {total:,} parcel-scores upserted across {len(jids)} "
           f"jurisdiction(s).", flush=True)
