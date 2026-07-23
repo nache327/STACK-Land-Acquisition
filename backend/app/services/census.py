@@ -16,6 +16,7 @@ import logging
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import geopandas as gpd
 import httpx
@@ -246,27 +247,37 @@ async def _fetch_tiger_tracts_for_state(
     spatial-filter to bbox, return list of {geoid, name, wkt}.
     """
     url = f"{_TIGER_BASE}/tl_2022_{state_fips}_tract.zip"
-    logger.warning("Downloading TIGER/Line tracts for state %s from %s", state_fips, url)
 
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            zip_bytes = resp.content
-    except Exception as exc:
-        logger.warning("TIGER/Line download failed for state %s: %s", state_fips, exc)
-        return []
+    # Disk cache: the TIGER tract file is a fixed 2022-vintage artifact per
+    # state, so cache it and reuse across calls instead of re-downloading the
+    # whole state ZIP every time (was the dominant per-jurisdiction cost in
+    # batch backfills, and re-downloaded per jurisdiction for the live ring
+    # worker too). Keyed by state_fips; safe because the URL never changes.
+    cache_dir = Path(tempfile.gettempdir()) / "tiger_cache_2022"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = cache_dir / f"tl_2022_{state_fips}_tract.zip"
 
-    try:
-        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
-            tmp.write(zip_bytes)
-            tmp_path = tmp.name
+    if not cache_path.exists() or cache_path.stat().st_size == 0:
+        logger.warning("Downloading TIGER/Line tracts for state %s from %s", state_fips, url)
         try:
-            gdf = gpd.read_file(f"zip://{tmp_path}")
-        finally:
-            os.unlink(tmp_path)
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                cache_path.write_bytes(resp.content)
+        except Exception as exc:
+            logger.warning("TIGER/Line download failed for state %s: %s", state_fips, exc)
+            # Remove a partial/empty file so the next call retries the download.
+            cache_path.unlink(missing_ok=True)
+            return []
+    else:
+        logger.info("TIGER/Line state %s: using cached shapefile", state_fips)
+
+    try:
+        gdf = gpd.read_file(f"zip://{cache_path}")
     except Exception as exc:
         logger.warning("TIGER/Line parse failed for state %s: %s", state_fips, exc)
+        # Corrupt cache — drop it so the next call re-downloads.
+        cache_path.unlink(missing_ok=True)
         return []
 
     from shapely.geometry import box as shapely_box
