@@ -56,10 +56,18 @@ def tier_for(score: int) -> str:
 # frontend/lib/compositeScore.ts (keep byte-for-byte equivalent).
 ACRE_SWEET_LOW = 2.0     # start of the flat +ACRE_PEAK plateau
 ACRE_SWEET_HIGH = 8.0    # end of the plateau
-ACRE_MAX = 15.0          # above this = oversize, hard penalty
+ACRE_MAX = 15.0          # above this = oversize
 ACRE_PEAK = 20.0         # bonus at the plateau
 ACRE_EDGE = 5.0          # bonus at ACRE_MAX (decayed from the plateau)
-ACRE_OVERSIZE = -15.0    # flat penalty above ACRE_MAX
+# Oversize: GRADUATED penalty scaling with acres past the 15ac gate — barely
+# dinged just over (16ac ≈ +4), steeply tanked for the giants (100ac ≈ -46,
+# floored at -60). A flat penalty treated 16ac and 259ac alike, which let a
+# high-pop/wealth 33ac parcel still read 80. Paired with OVERSIZE_SCORE_CAP so
+# ANY parcel the board's maxAcres gate drops also can't read deal-grade on the
+# card (display honesty — same score-vs-gate alignment as the verdict gate).
+ACRE_OVERSIZE_SLOPE = 0.6   # penalty per acre above ACRE_MAX
+ACRE_OVERSIZE_FLOOR = -60.0  # deepest acreage penalty
+OVERSIZE_SCORE_CAP = 69     # oversize parcels can never read >= 70 on the card
 
 # 3-mile population floor (Nache's "too rural" kill). Below this, both lanes
 # get a hard penalty — self-storage needs rooftops, LGC needs a population base
@@ -89,7 +97,9 @@ def _acreage_delta(acres: float) -> float:
     if acres <= ACRE_MAX:
         span = ACRE_MAX - ACRE_SWEET_HIGH
         return round(ACRE_PEAK - (acres - ACRE_SWEET_HIGH) / span * (ACRE_PEAK - ACRE_EDGE), 1)
-    return ACRE_OVERSIZE                                         # oversize
+    # Oversize: graduated ramp down from +ACRE_EDGE at the 15ac gate, floored.
+    return round(max(ACRE_EDGE - (acres - ACRE_MAX) * ACRE_OVERSIZE_SLOPE,
+                     ACRE_OVERSIZE_FLOOR), 1)
 
 
 # ─── Per-parcel scoring ──────────────────────────────────────────────────
@@ -378,6 +388,14 @@ def score_for_parcel(
     raw = sum(f["delta"] for f in factors)
     score = max(0, min(100, round(raw)))
 
+    # Oversize card-cap (display honesty): the board's maxAcres gate already
+    # drops >15ac parcels, so their card score must not read deal-grade either.
+    # The graduated _acreage_delta tanks the giants on its own; this cap catches
+    # the borderline-oversize-with-strong-signals case (e.g. a 33ac permitted
+    # LGC parcel with HNW depth + listing that would otherwise land ~80).
+    if p.acres is not None and p.acres > ACRE_MAX:
+        score = min(score, OVERSIZE_SCORE_CAP)
+
     # Lead-eligibility gate (catch #49): a score computed on a heuristic
     # verdict is DEMOTED, never deleted — the row persists with the reason,
     # and the basis tag makes the provenance visible wherever the score shows.
@@ -530,12 +548,20 @@ async def auto_score_jurisdiction(jurisdiction_id: uuid.UUID) -> int:
     conn = await asyncpg.connect(_raw_dsn())
     try:
         await conn.execute("SET statement_timeout = 0")
+        # Score the is_default seed filters AND the dashboardEnabled board
+        # filters ("Hot deals" / "LGC Hot deals"). The board reads scores keyed
+        # to the dashboardEnabled filter's OWN id (daily_email._top_parcels_for
+        # _filter joins on buybox_filter_id = board filter id), so leaving them
+        # out of auto-scoring let the board go stale while the seed defaults got
+        # refreshed. Ledger: auto-scored filter set MUST cover the board-read
+        # filters. (DISTINCT so a filter that is both flags is scored once.)
         rows = await conn.fetch(
             """
-            SELECT id, filter_json
+            SELECT DISTINCT id, filter_json, use_case_id
             FROM buybox_filters
             WHERE organization_id = $1::uuid
-              AND is_default      = true
+              AND (is_default = true
+                   OR (filter_json ->> 'dashboardEnabled') = 'true')
             ORDER BY use_case_id
             """,
             DEFAULT_ORG_ID,
