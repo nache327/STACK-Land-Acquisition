@@ -111,7 +111,12 @@ export function computeScore(parcel: ScoreInput): CompositeScore {
   }
 
   const raw = factors.reduce((s, f) => s + f.delta, 0);
-  const score = Math.max(0, Math.min(100, Math.round(raw)));
+  let score = Math.max(0, Math.min(100, Math.round(raw)));
+  // Oversize card-cap (mirror buybox_scoring.py): a parcel past the maxAcres
+  // gate must not read deal-grade on the card.
+  if (parcel.acres != null && parcel.acres > ACRE_MAX) {
+    score = Math.min(score, OVERSIZE_SCORE_CAP);
+  }
   return { score, tier: tierFor(score), factors };
 }
 
@@ -149,7 +154,12 @@ const ACRE_SWEET_HIGH = 8.0;
 export const ACRE_MAX = 15.0;
 const ACRE_PEAK = 20.0;
 const ACRE_EDGE = 5.0;
-const ACRE_OVERSIZE = -15.0;
+// Graduated oversize penalty (mirror of ACRE_OVERSIZE_* in buybox_scoring.py):
+// barely dinged just past 15ac, steeply tanked for the giants, floored.
+const ACRE_OVERSIZE_SLOPE = 0.6;
+const ACRE_OVERSIZE_FLOOR = -60.0;
+// Oversize parcels can never read >= 70 on the card (mirror OVERSIZE_SCORE_CAP).
+export const OVERSIZE_SCORE_CAP = 69;
 
 /** Signed acreage contribution — mirror of _acreage_delta in buybox_scoring.py. */
 export function acreageDelta(acres: number): number {
@@ -159,7 +169,8 @@ export function acreageDelta(acres: number): number {
     const span = ACRE_MAX - ACRE_SWEET_HIGH;
     return round1(ACRE_PEAK - ((acres - ACRE_SWEET_HIGH) / span) * (ACRE_PEAK - ACRE_EDGE));
   }
-  return ACRE_OVERSIZE;
+  // Oversize: graduated ramp down from +ACRE_EDGE at the gate, floored.
+  return round1(Math.max(ACRE_EDGE - (acres - ACRE_MAX) * ACRE_OVERSIZE_SLOPE, ACRE_OVERSIZE_FLOOR));
 }
 
 function clamp01(x: number): number {
