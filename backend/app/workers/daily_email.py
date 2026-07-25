@@ -365,6 +365,12 @@ async def _top_parcels_for_filter(
         SELECT
             ({verdict_basis_sql('zum')}) AS verdict_basis,
             ({lead_eligible_sql('zum')}) AS lead_eligible,
+            -- Deliberately reads self_storage on BOTH lanes (not the lane's own
+            -- verdict): it means "a grounded verdict prohibits self-storage
+            -- here". On the storage lane prohibited is hard-gated out of the
+            -- WHERE, so this can only fire on the LGC lane — where it is the
+            -- useful "LGC-viable via sibling columns, but storage is banned"
+            -- signal, not a wrong-asset flag.
             (({lead_eligible_sql('zum')})
              AND zum.self_storage::text = 'prohibited') AS storage_dead,
             -- Effective use-verdict for this lane (permitted/conditional =
@@ -399,7 +405,13 @@ async def _top_parcels_for_filter(
             (e.has_structure = TRUE OR COALESCE(e.improvement_value, 0) > 50000)
                 AS soft_has_building,
             (lst.sale_price IS NULL)                       AS soft_no_price,
-            (zum.self_storage::text = 'conditional')       AS soft_conditional,
+            -- Lane-aware: the entitlement-risk flag must describe the asset the
+            -- card is FOR. This read zum.self_storage on both lanes, so an LGC
+            -- card could show "conditional zoning" while its LGC verdict was
+            -- permitted (or hide it while the LGC verdict was conditional).
+            -- On the self_storage lane {verdict_sql} IS zum.self_storage::text,
+            -- so the storage lane's SQL is unchanged.
+            (({verdict_sql}) = 'conditional')               AS soft_conditional,
             (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
                 AS soft_low_confidence,
             (e.in_flood_zone = TRUE)                       AS soft_flood,
