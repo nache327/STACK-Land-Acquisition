@@ -234,16 +234,34 @@ export function ParcelDrawer({
               }
             />
           )}
-          {parcel.storage_permission && (
-            <Row
-              label="Storage"
-              value={
-                parcel.storage_permission.charAt(0).toUpperCase() +
-                parcel.storage_permission.slice(1) +
-                (!parcel.zoning_code && parcel.land_use_code ? " (via MOD-IV)" : "")
-              }
-            />
-          )}
+          {parcel.storage_permission && (() => {
+            // A MOD-IV verdict is a LAND-USE proxy, not an ordinance reading:
+            // the scorer joins zone_use_matrix on zoning_code, which is NULL
+            // here, so the Site Score panel below reports "No matrix entry yet
+            // +0" for this same parcel. Say so, rather than showing a chip
+            // identical to a grounded verdict and leaving the user to reconcile
+            // two numbers that look contradictory.
+            const viaModIv = !parcel.zoning_code && !!parcel.land_use_code;
+            const label =
+              parcel.storage_permission.charAt(0).toUpperCase() +
+              parcel.storage_permission.slice(1);
+            return (
+              <>
+                <Row
+                  label="Storage"
+                  value={viaModIv ? `${label} — via MOD-IV land use` : label}
+                />
+                {viaModIv && (
+                  <p className="text-xs text-amber-700 -mt-2">
+                    Not zoning-verified: inferred from the NJ MOD-IV property
+                    class because this county has no ingested zoning. The Site
+                    Score deliberately excludes it (shows &ldquo;No matrix entry
+                    yet&rdquo;) until real zoning is bound.
+                  </p>
+                )}
+              </>
+            );
+          })()}
           <Row label="Acres" value={parcel.acres?.toFixed(3)} />
           <Row
             label="Flood Zone"
