@@ -111,6 +111,16 @@ class DigestParcel:
     # 'prohibited' verdict never reaches here — it is hard-gated out of the
     # candidate query (a prohibited use is not a deal, regardless of score).
     use_verdict: str | None = None
+    # Triage facts the operator actually reads (2026-07-25 audit A-2). These were
+    # computed in SQL and thrown away: the board card carried score + price +
+    # acres but none of the wealth/demand context the buy box is defined by, so
+    # "is this in a wealth pocket?" wasn't answerable from the card. Pushed to
+    # deal_prospect and rendered alongside the score.
+    ring_median_home_value: int | None = None
+    ring_median_hhi: int | None = None
+    ring_hnw_households: int | None = None
+    pop_3mi: int | None = None
+    sqft_per_capita_3mi: float | None = None
     # Hot Deals v2 soft flags — surfaced in the email as warnings, not
     # selection filters. Each is a (emoji, short_label) pair so the
     # renderer can iterate without re-mapping. Empty list means the
@@ -237,11 +247,20 @@ async def _top_parcels_for_filter(
     # the LGC score itself (which ranks the lane) already encodes the LGC
     # verdict, so the digest body stays self_storage-simple here.
     exclude_storage_viable = bool(filter_json.get("excludeStorageViable"))
-    # "Too rural" floor (both lanes): drop parcels whose 3-mile population is
-    # below this. NULL = no gate. Parcels with no measured 3-mi population yet
-    # (parcel_radial_metrics not backfilled) pass through, flagged
-    # soft_pop_unmeasured, so a coverage gap doesn't silently hide real deals.
+    # "Too rural" floor (both lanes). SOFT: parcels below it are surfaced with
+    # soft_below_pop_floor (and already carry -20 in the score) rather than being
+    # dropped, because the persisted 3-mi population is a tract-centric
+    # approximation that disagrees with the panel's area-weighted figure — a
+    # hard drop on a shaky number removed real deals with no trace. Unmeasured
+    # gets soft_pop_unmeasured. NULL bind = no flag at all.
     min_pop_3mi = filter_json.get("minPop3mi")
+    # Wealth gate (dt=10 ring), also SOFT — see the SQL comment on
+    # soft_below_home_value. These filter_json keys existed on every seeded board
+    # filter but no backend path had ever read them; the client-side buy-box
+    # panel was the only consumer, so the board could surface a parcel whose ring
+    # wealth was nowhere near the buy box with nothing on the card saying so.
+    min_home_value = filter_json.get("minMedianHomeValue")
+    min_hhi = filter_json.get("minMedianHHI")
 
     # Pre-narrow into a MATERIALIZED `eligible` CTE BEFORE the three
     # LATERAL joins (listing / zone-matrix / dashboard-job). The driving
@@ -424,7 +443,44 @@ async def _top_parcels_for_filter(
             (e.acres IS NULL)                              AS soft_acres_unverified,
             -- 3-mi population not yet backfilled: surfaced but flagged, so a
             -- coverage gap reads as "verify" rather than silently dropping.
-            (prm3.population IS NULL)                      AS soft_pop_unmeasured
+            (prm3.population IS NULL)                      AS soft_pop_unmeasured,
+            -- Measured BELOW the too-rural floor. Was a hard drop; now a flag,
+            -- because the persisted number is a tract-centric approximation
+            -- (see backfill_radial_population's docstring) and dropping on it
+            -- removed real deals with no trace. Still -20 in the score.
+            (CAST(:min_pop_3mi AS INT) IS NOT NULL
+             AND prm3.population IS NOT NULL
+             AND prm3.population < CAST(:min_pop_3mi AS INT))
+                AS soft_below_pop_floor,
+            -- WEALTH GATE, soft. The product's one metric is the WEALTH-gated
+            -- needle (dt=10 median_home_value >= 475k AND median_hhi >= 100k),
+            -- but no backend selection path had ever applied it: those
+            -- thresholds live in filter_json and were read only by the
+            -- client-side buy-box panel, so a $210k-home-value parcel could
+            -- reach the board at score 78 with nothing saying so. Surfaced as
+            -- flags (-> Verify tier) rather than a hard gate because dt=10 rings
+            -- are the known-suspect input (tract-centroid isochrones, no TTL,
+            -- systematic under-measurement at bbox edges); hard-gating on them
+            -- could silently drop a genuine needle. Harden after the ring repair.
+            (CAST(:min_home_value AS INT) IS NOT NULL
+             AND prm10.median_home_value IS NOT NULL
+             AND prm10.median_home_value < CAST(:min_home_value AS INT))
+                AS soft_below_home_value,
+            (CAST(:min_hhi AS INT) IS NOT NULL
+             AND prm10.median_hhi IS NOT NULL
+             AND prm10.median_hhi < CAST(:min_hhi AS INT))
+                AS soft_below_hhi,
+            -- Wealth thresholds configured but the ring has no measurement:
+            -- unknown, not disqualified.
+            ((CAST(:min_home_value AS INT) IS NOT NULL
+              OR CAST(:min_hhi AS INT) IS NOT NULL)
+             AND (prm10.median_home_value IS NULL OR prm10.median_hhi IS NULL))
+                AS soft_wealth_unmeasured,
+            prm10.median_home_value                        AS ring_median_home_value,
+            prm10.median_hhi                               AS ring_median_hhi,
+            prm10.hnw_households                           AS ring_hnw_households,
+            prm3.population                                AS pop_3mi,
+            prm3.sqft_per_capita                           AS sqft_per_capita_3mi
         FROM eligible e
         JOIN jurisdictions j ON j.id = e.jurisdiction_id
         LEFT JOIN LATERAL (
@@ -457,6 +513,12 @@ async def _top_parcels_for_filter(
         LEFT JOIN parcel_radial_metrics prm3
             ON prm3.parcel_id = e.parcel_id
            AND prm3.radius_miles = 3.0
+        -- dt=10 drive-time ring: the wealth signal the needle definition gates
+        -- on (median_home_value / median_hhi) plus HNW depth for the LGC lane.
+        -- Additive LEFT JOIN on the PK (parcel_id, drive_time_minutes).
+        LEFT JOIN parcel_ring_metrics prm10
+            ON prm10.parcel_id = e.parcel_id
+           AND prm10.drive_time_minutes = 10
         LEFT JOIN LATERAL (
             -- The dashboard route is /dashboard/[jobId]; the URL
             -- segment is the jobs.id, not the jurisdiction_id. Resolve
@@ -531,15 +593,13 @@ async def _top_parcels_for_filter(
                 OR zum.mini_warehouse::text IN ('permitted', 'conditional'),
                    FALSE)
           )
-          -- "Too rural" floor (both lanes). NULL bind -> no gate. A parcel with
-          -- no measured 3-mi population passes (surfaced as soft_pop_unmeasured);
-          -- a measured value below the floor is hard-dropped. CAST to INT for
-          -- the same asyncpg AmbiguousParameterError reason as the gates above.
-          AND (
-                CAST(:min_pop_3mi AS INT) IS NULL
-             OR prm3.population IS NULL
-             OR prm3.population >= CAST(:min_pop_3mi AS INT)
-          )
+          -- NOTE: the "too rural" 3-mi population floor is deliberately NOT a
+          -- hard predicate here. It is surfaced as the soft_below_pop_floor flag
+          -- (and already costs -20 in the score) because the persisted
+          -- population is a tract-centric approximation that disagrees with the
+          -- panel's area-weighted number — hard-dropping on it silently removed
+          -- real deals. Re-harden once backfill_radial_population computes
+          -- per-parcel area-weighted values. Same reasoning for the wealth gate.
         ORDER BY e.score DESC, e.parcel_id
         LIMIT :lim
         """
@@ -559,6 +619,8 @@ async def _top_parcels_for_filter(
             "storage_verdict_mode": storage_verdict_mode,
             "exclude_storage_viable": exclude_storage_viable,
             "min_pop_3mi": min_pop_3mi,
+            "min_home_value": min_home_value,
+            "min_hhi": min_hhi,
         },
     )
     out: list[DigestParcel] = []
@@ -597,9 +659,22 @@ async def _top_parcels_for_filter(
                 verdict_basis=m["verdict_basis"],
                 storage_dead=bool(m["storage_dead"]),
                 use_verdict=m["use_verdict"],
+                ring_median_home_value=_as_int(m["ring_median_home_value"]),
+                ring_median_hhi=_as_int(m["ring_median_hhi"]),
+                ring_hnw_households=_as_int(m["ring_hnw_households"]),
+                pop_3mi=_as_int(m["pop_3mi"]),
+                sqft_per_capita_3mi=(
+                    float(m["sqft_per_capita_3mi"])
+                    if m["sqft_per_capita_3mi"] is not None else None
+                ),
             )
         )
     return out
+
+
+def _as_int(v) -> int | None:
+    """NULL-safe int coercion for numeric ring columns (Decimal in asyncpg)."""
+    return int(v) if v is not None else None
 
 
 # ─── Soft-flag derivation ────────────────────────────────────────────────
@@ -615,6 +690,14 @@ _SOFT_FLAG_RULES: list[tuple[str, str, str]] = [
     ("soft_wetland",        "🐸",  "in wetland"),
     ("soft_acres_unverified", "📐", "acres unverified"),
     ("soft_pop_unmeasured", "📉", "3-mi population unmeasured"),
+    # Below the buy box rather than outside it. These four replace what used to
+    # be either a silent hard drop (population) or nothing at all (wealth), so a
+    # marginal parcel now lands in the Verify tier with its reason attached
+    # instead of vanishing — or, worse, sitting in Actionable unlabelled.
+    ("soft_below_pop_floor",   "🏚️", "below 3-mi population floor (too rural)"),
+    ("soft_below_home_value",  "🏷️", "ring home value below buy box"),
+    ("soft_below_hhi",         "💵", "ring household income below buy box"),
+    ("soft_wealth_unmeasured", "❔",  "ring wealth unmeasured"),
 ]
 
 
