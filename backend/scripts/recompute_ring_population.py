@@ -37,9 +37,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent))
 
 from sqlalchemy import text  # noqa: E402
+from sqlalchemy.pool import NullPool  # noqa: E402
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # noqa: E402
 
-from _db import get_dsn  # noqa: E402
+from _db import get_sync_dsn  # noqa: E402
 
 from app.services.census import ensure_census_tracts  # noqa: E402
 from app.services.mapbox_isochrone import fetch_isochrone  # noqa: E402
@@ -92,18 +93,57 @@ async def _surfaced(db, jid: str | None, limit: int) -> list[tuple[int, float, f
     return [(r[0], float(r[1]), float(r[2]), r[3]) for r in rows]
 
 
+async def _by_ids(db, ids: list[int]) -> list[tuple[int, float, float, str]]:
+    """Resolve an explicit parcel-id list (the --ids / detector-pipe path)."""
+    rows = (await db.execute(text(
+        """
+        SELECT p.id,
+               ST_X(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) AS lng,
+               ST_Y(ST_Centroid(COALESCE(p.centroid, ST_Centroid(p.geom)))) AS lat,
+               p.jurisdiction_id::text AS jid
+          FROM parcels p
+         WHERE p.id = ANY(:ids)
+           AND COALESCE(p.centroid, p.geom) IS NOT NULL
+         ORDER BY p.id
+        """
+    ), {"ids": ids})).all()
+    return [(r[0], float(r[1]), float(r[2]), r[3]) for r in rows]
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jurisdiction", type=str, default=None)
     ap.add_argument("--limit", type=int, default=1000)
+    ap.add_argument("--ids", type=str, default=None,
+                    help="Comma-separated parcel ids, or '-' to read whitespace-"
+                         "separated ids from stdin. This is the documented pipe "
+                         "target of detect_stale_ring_metrics.py --ids-only, "
+                         "which previously had nowhere to pipe TO: this script "
+                         "only ever selected its own surfaced set.")
     args = ap.parse_args()
 
-    engine = create_async_engine(get_dsn(), pool_pre_ping=True)
+    explicit_ids: list[int] | None = None
+    if args.ids:
+        raw = sys.stdin.read() if args.ids.strip() == "-" else args.ids
+        explicit_ids = [int(tok) for tok in raw.replace(",", " ").split() if tok.strip()]
+        if not explicit_ids:
+            print("--ids given but no parcel ids parsed", flush=True)
+            return
+
+    # get_sync_dsn (session mode, :5432) NOT get_dsn: on the TRANSACTION pooler
+    # (:6543) a `SET statement_timeout = 0` applies only to the current implicit
+    # transaction, so the heavy _surfaced scan below then ran under the server
+    # default and was killed. That is the real cause of this script "timing out".
+    # NullPool for the same leak-safety reason as backfill_radial_population.
+    engine = create_async_engine(get_sync_dsn(), poolclass=NullPool)
     sf = async_sessionmaker(engine, expire_on_commit=False)
 
     async with sf() as db:
         await db.execute(text("SET statement_timeout = 0"))
-        parcels = await _surfaced(db, args.jurisdiction, args.limit)
+        parcels = (
+            await _by_ids(db, explicit_ids) if explicit_ids is not None
+            else await _surfaced(db, args.jurisdiction, args.limit)
+        )
 
     print(f"Recomputing ring population for {len(parcels)} surfaced parcel(s)…", flush=True)
 
@@ -133,7 +173,13 @@ async def main() -> None:
                 if geom is None:
                     continue
                 pop = (await db.execute(_POP_IN_POLY, {"wkt": geom.wkt})).scalar() or 0
-                await db.execute(_UPSERT_POP, {"pid": pid, "dt": dt, "pop": pop or None})
+                # Write `pop` AS COMPUTED. `pop or None` turned a legitimate 0
+                # into NULL and the UPSERT's DO UPDATE then overwrote a
+                # previously-good population with NULL. A 0 from a real isochrone
+                # is a finding worth recording; skip only a genuine None.
+                if pop is None:
+                    continue
+                await db.execute(_UPSERT_POP, {"pid": pid, "dt": dt, "pop": pop})
             await db.commit()
             fixed += 1
             if i % 50 == 0 or i == len(parcels):

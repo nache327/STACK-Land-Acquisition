@@ -8,12 +8,25 @@ it means the isochrone was anchored on the wrong tract centroid, or a tract
 isochrone failed and left a stale/partial row. Nache found 11k@10-min next
 to 49k@3-mi on a live card; that's exactly the ratio this flags.
 
-Report-only. Emits parcel_ids for recompute_ring_population.py to fix.
+CAVEAT on the comparison: the two sides use different conventions — dt=10 is a
+whole-tract SUM over the isochrone, the 3-mi side is (currently) a tract-centric
+approximation. Both over-count relative to true area-weighting, so this biases
+toward FALSE NEGATIVES (it under-reports staleness) rather than false alarms.
+Fine for triage; don't read the ratio as an exact error measure.
+
+Report-only. Emits parcel_ids for recompute_ring_population.py to fix:
+
+    python scripts/detect_stale_ring_metrics.py --ids-only \\
+      | python scripts/recompute_ring_population.py --ids -
+
+(That pipe was documented here long before --ids existed on the other side; it
+works as of the 2026-07-25 audit remediation.)
 
 USAGE (from backend/):
     python scripts/detect_stale_ring_metrics.py                    # all
     python scripts/detect_stale_ring_metrics.py --jurisdiction <uuid>
     python scripts/detect_stale_ring_metrics.py --ids-only         # bare ids
+    python scripts/detect_stale_ring_metrics.py --limit 20000      # widen the cap
 """
 from __future__ import annotations
 
@@ -40,6 +53,14 @@ async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jurisdiction", type=str, default=None)
     ap.add_argument("--ids-only", action="store_true")
+    ap.add_argument("--limit", type=int, default=5000,
+                    help="Max rows to return (default 5000). The query has no "
+                         "natural bound: it joins ring x radial x parcels across "
+                         "every parcel and ORDER BYs a computed ratio (an "
+                         "unindexable full sort), then conn.fetch() materializes "
+                         "the WHOLE result set in memory for a 50-row printout. "
+                         "That, not the statement_timeout, is why this script "
+                         "appeared to hang.")
     args = ap.parse_args()
 
     conn = await asyncpg.connect(get_sync_dsn())
@@ -67,6 +88,7 @@ async def main() -> None:
                   OR prm.computed_at < NOW() - INTERVAL '{STALE_DAYS} days'
                )
              ORDER BY (prm.population::float / NULLIF(prm3.population, 0)) ASC
+             LIMIT {int(args.limit)}
             """,
             *params,
         )
@@ -88,6 +110,10 @@ async def main() -> None:
               f"ratio={ratio:.2f}  {r['computed_at']:%Y-%m-%d}")
     if len(rows) > 50:
         print(f"  … +{len(rows) - 50} more (use --ids-only to pipe to recompute)")
+    if len(rows) == args.limit:
+        # No silent caps: say so when the result set was truncated.
+        print(f"  ⚠ hit --limit {args.limit}: there may be more. Re-run with a "
+              f"higher --limit or narrow with --jurisdiction.")
 
 
 if __name__ == "__main__":
