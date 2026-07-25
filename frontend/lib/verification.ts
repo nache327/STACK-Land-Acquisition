@@ -48,19 +48,31 @@ export interface Layer1Result {
 // Grounded classification sources — keep in lock-step with
 // GROUNDED_SOURCES in backend/app/services/verdict_gate.py.
 export const GROUNDED_SOURCES = ["human", "llm", "llm_rule", "op5_factory"];
-const LEAD_CONFIDENCE_FLOOR = 0.5;
 
-/** Whether a verdict is trusted enough to score at full weight / auto-verify. */
+/**
+ * Whether a verdict is trusted enough to score at full weight / auto-verify.
+ *
+ * MUST stay byte-equivalent to `verdict_gate.is_grounded(source, human_reviewed)`:
+ *   grounded iff human_reviewed OR source ∈ GROUNDED_SOURCES.
+ *
+ * Deliberately does NOT consider `confidence`. In verdict_gate, confidence only
+ * demotes an UNGROUNDED verdict (gate_verdict's REASON_LOW_CONFIDENCE branch is
+ * reached only after is_grounded() returns false) — a grounded verdict is never
+ * gated on confidence ("the armed-pool invariant"). An earlier version of this
+ * function also required confidence >= 0.5, which meant a grounded row with
+ * NULL confidence (very common for op5_factory / llm_rule) was scored
+ * `35 * 0.25 = 9` here while the backend gave it full weight and
+ * lead_eligible=true — reproducing the original "44/100 Needs Verification" on
+ * exactly the parcels we HAVE grounded. Do not reintroduce a confidence term
+ * without adding the same term to verdict_gate.is_grounded.
+ */
 export function isGrounded(params: {
   classificationSource: string;
   confidence: number | null;
   humanReviewed: boolean;
 }): boolean {
   if (params.humanReviewed) return true;
-  return (
-    GROUNDED_SOURCES.includes(params.classificationSource) &&
-    (params.confidence ?? 0) >= LEAD_CONFIDENCE_FLOOR
-  );
+  return GROUNDED_SOURCES.includes(params.classificationSource);
 }
 
 export interface Layer2Result {
@@ -193,9 +205,13 @@ export function computeComposite(
     flags.push("⚠ Rule-based classification — click 'Verify Now' for AI ordinance analysis");
   }
 
+  // Only count layers that actually RESOLVED. Previously `layer2` was counted
+  // whenever the object existed — and computeLayer2 always returns an object —
+  // so `layersChecked >= 2` was always true and this safety cap never fired.
+  // A single unresolved source must not read as corroborated.
   const layersChecked = [
-    layer1,
-    layer2,
+    layer1?.status === "complete" ? layer1 : null,
+    layer2?.status === "complete" ? layer2 : null,
     layer3.status !== "not-run" ? layer3 : null,
   ].filter(Boolean).length;
   if (layersChecked < 2) score = Math.min(score, 65);
@@ -205,9 +221,19 @@ export function computeComposite(
   // waiting for a manual Layer-3 AI pass. Without this, thousands of
   // already-grounded needles read "Needs Verification" forever. The CUP
   // demotion below still applies to conditional verdicts.
+  // A conditional/CUP use is never "fully permitted" — it still needs a permit
+  // hearing, so it must not reach the VERIFIED band at all. Determined BEFORE
+  // the grounded floor so the score and the label can't disagree (previously the
+  // floor pushed a conditional verdict to 85 and only the status was demoted,
+  // rendering the contradictory "85/100 · Likely Viable — Verify Ordinance").
+  const isConditional =
+    layer3.selfStorageStatus === "CUP_REQUIRED" ||
+    layer1?.permitType === "conditional";
+
   if (layer1?.grounded && layer2?.matchType === "exact") {
-    score = Math.max(score, 85);
+    score = Math.max(score, isConditional ? 84 : 85);
   }
+  if (isConditional) score = Math.min(score, 84);
 
   let status: OverallStatus;
   if (score >= 85) status = "VERIFIED";
@@ -216,11 +242,9 @@ export function computeComposite(
   else if (score >= 1) status = "WEAK";
   else status = "UNVERIFIED";
 
-  // A conditional/CUP use is never "fully permitted" — cap it at PROBABLE
-  // even when grounded, since it still needs a permit hearing.
-  const isConditional =
-    layer3.selfStorageStatus === "CUP_REQUIRED" ||
-    layer1?.permitType === "conditional";
+  // Belt-and-braces: the 84 score cap above already keeps a conditional verdict
+  // out of the VERIFIED band, but keep the status demotion so any future scoring
+  // change can't quietly present a CUP use as fully permitted.
   if (isConditional && status === "VERIFIED") {
     status = "PROBABLE";
   }
@@ -228,8 +252,19 @@ export function computeComposite(
   return { compositeScore: score, overallStatus: status, conflictFlags: flags };
 }
 
-// ── Layer 2 — zone code integrity check ──────────────────────────────────────
-
+// ── Layer 2 — zone-code recognition check ────────────────────────────────────
+//
+// What this layer DOES establish: the parcel's zone code (from the city ArcGIS
+// bind on `parcels.zoning_code`) is recognized in `zone_use_matrix` for this
+// jurisdiction/municipality — i.e. we hold an adopted-ordinance record for the
+// district this parcel actually sits in, so the Layer-1 verdict is about the
+// right district.
+//
+// What it does NOT establish: an independent second opinion on the verdict. The
+// backend looks the row up BY zone_code, so a "match" is definitional. Callers
+// must therefore pass `dbZoneCode = null` unless Layer 1 completed (see
+// useVerification.buildState) — otherwise a no-coverage parcel would collect
+// this layer's points for a comparison that never happened.
 export function computeLayer2(
   cityZoneCode: string | null,
   dbZoneCode: string | null
@@ -243,6 +278,9 @@ export function computeLayer2(
       dataSource: "Site Scout DB (from city ArcGIS)",
       overlayConflict: false,
       score: 0,
+      note: !cityZoneCode
+        ? "Parcel has no bound zone code"
+        : "No matrix record for this zone — nothing to corroborate",
     };
   }
 
@@ -256,7 +294,7 @@ export function computeLayer2(
       dataSource: "Site Scout DB (from city ArcGIS)",
       overlayConflict: false,
       score: 35,
-      note: "Zone code confirmed in database",
+      note: `Zone "${cityZoneCode}" recognized in the ordinance matrix`,
     };
   }
 
@@ -329,8 +367,37 @@ export function layer3FromZoneRow(
 // ── localStorage cache (30-day TTL) ──────────────────────────────────────────
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-// v2: grounded scoring + auto-VERIFIED landed; retire cached v1 (44/100) states.
-const cacheKey = (apn: string, zoneCode: string) => `verify2:${apn}:${zoneCode}`;
+// Cache generation. Bump whenever scoring semantics change so stale states
+// can't keep rendering a number the current engine would never produce.
+//   v1 -> v2: grounded scoring + auto-VERIFIED (retired the 44/100 states).
+//   v2 -> v3: isGrounded no longer requires confidence>=0.5; Layer 2 only
+//             scores when Layer 1 resolved; conditional capped at 84.
+const CACHE_PREFIX = "verify3";
+const LEGACY_CACHE_PREFIXES = ["verify", "verify2"];
+const cacheKey = (apn: string, zoneCode: string) =>
+  `${CACHE_PREFIX}:${apn}:${zoneCode}`;
+
+/**
+ * Drop every entry written by a previous cache generation. Bumping the prefix
+ * alone only ORPHANS the old keys — they sit in localStorage until their (never
+ * enforced) TTL, eating the quota that makes writeCache silently fail. Safe to
+ * call repeatedly; cheap (one pass over localStorage keys).
+ */
+export function purgeLegacyCache(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const doomed: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      const prefix = k.split(":")[0];
+      if (LEGACY_CACHE_PREFIXES.includes(prefix)) doomed.push(k);
+    }
+    doomed.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // localStorage unavailable / quota weirdness — nothing to do
+  }
+}
 
 export function readCache(apn: string, zoneCode: string): VerificationState | null {
   if (typeof window === "undefined") return null;

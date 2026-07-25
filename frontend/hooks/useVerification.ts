@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   computeComposite,
   computeLayer2,
+  purgeLegacyCache,
   readCache,
   writeCache,
   type Layer1Result,
@@ -33,13 +34,29 @@ export function useVerification({
   const [layer3Loading, setLayer3Loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Reclaim the quota held by superseded cache generations (see
+  // purgeLegacyCache). Runs once per mount; a no-op after the first sweep.
+  useEffect(() => {
+    purgeLegacyCache();
+  }, []);
+
   const buildState = useCallback(
     (
       layer1: Layer1Result | null,
       layer3: Layer3Result,
       currentZoneCode: string
     ): VerificationState => {
-      const layer2 = computeLayer2(currentZoneCode, layer1?.zoneCode ?? null);
+      // Layer 2 = "is this parcel's zone code RECOGNIZED in our matrix?".
+      // It is only meaningful when Layer 1 actually found a row: the backend
+      // matches on zone_code, so `layer1.zoneCode` echoes what we queried and a
+      // naive compare would always be "exact" — including on the 404
+      // (no-coverage) and timeout paths, which used to hand a parcel we know
+      // nothing about a free +35 and "Zone code confirmed in database". Pass
+      // null unless Layer 1 completed, so those cases score 0 / unavailable.
+      const layer2 = computeLayer2(
+        currentZoneCode,
+        layer1?.status === "complete" ? (layer1.zoneCode ?? null) : null
+      );
       const { compositeScore, overallStatus, conflictFlags } = computeComposite(
         layer1,
         layer2,
