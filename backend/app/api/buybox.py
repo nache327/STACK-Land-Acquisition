@@ -122,7 +122,19 @@ async def update_filter(
     if payload.name is not None:
         f.name = payload.name
     if payload.filter_json is not None:
-        f.filter_json = payload.filter_json
+        # MERGE, don't replace. Server-managed gate keys live in filter_json
+        # alongside the UI-editable knobs: minPop3mi (too-rural floor),
+        # maxAcres/minAcres (the oversize gate), dashboardEnabled (which also
+        # enrols the filter in auto_score_jurisdiction), storageVerdictMode,
+        # requirePriced, maxPricePerAcre, maxTotalPrice. The frontend's
+        # BuyBoxFilter type does not carry those, so any UI save built from
+        # DEFAULT_FILTER used to STRIP them — silently disarming the gates and,
+        # by dropping dashboardEnabled, un-enrolling the filter from scoring so
+        # the board goes stale again. A shallow merge keeps unknown keys and
+        # still lets a caller change any key it does send. To delete a key,
+        # send it explicitly as null.
+        merged = {**(f.filter_json or {}), **payload.filter_json}
+        f.filter_json = {k: v for k, v in merged.items() if v is not None}
     if payload.is_default is not None:
         f.is_default = payload.is_default
     if payload.daily_email_enabled is not None:

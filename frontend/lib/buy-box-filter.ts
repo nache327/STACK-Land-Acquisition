@@ -28,6 +28,34 @@ export interface BuyBoxFilter {
   // ahead of unlisted ones (within whatever score / sort the user has
   // chosen). Doesn't filter — see requireListed for that.
   sortListedFirst?: boolean;
+
+  // ── Server-managed keys ────────────────────────────────────────────────
+  // These live in the same filter_json blob but are set by scripts/migrations
+  // (set_board_filter_defaults.py, the seed migrations) and read by the digest/
+  // board selection SQL — NOT by this client evaluator. They are declared here
+  // so a filter object round-tripping through the UI carries them instead of
+  // dropping them: PATCH /buybox-filters now merges rather than replaces, but a
+  // typed field is the second line of defence (and makes them visible to
+  // anyone editing this file).
+  //
+  // Dropping any of these silently disarms a gate; dropping dashboardEnabled
+  // additionally un-enrols the filter from auto_score_jurisdiction, which is
+  // how the board's scores went stale while the seed filters stayed fresh.
+  /** Too-rural floor: 3-mile population below this is flagged/penalized. */
+  minPop3mi?: number | null;
+  /** Oversize gate — parcels above this are dropped from the board. */
+  maxAcres?: number | null;
+  minAcres?: number | null;
+  /** 'only' | 'exclude' — storage-needles track selector. */
+  storageVerdictMode?: string | null;
+  excludeStorageViable?: boolean | null;
+  requirePriced?: boolean | null;
+  maxPricePerAcre?: number | null;
+  maxTotalPrice?: number | null;
+  /** "true" enrols this filter in the board push AND in auto-scoring. */
+  dashboardEnabled?: string | boolean | null;
+  /** Hold the digest when only soft-flagged parcels made the cut. */
+  holdWorthALook?: boolean | null;
 }
 
 export type EvaluationStatus = "match" | "borderline" | "fail" | "computing";
