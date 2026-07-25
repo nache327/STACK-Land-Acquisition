@@ -220,10 +220,18 @@ async def compute_batch_saturation(
     )
     rows = result.fetchall()
 
+    # Same guard as the single-parcel path: a computed 0.0 is only "underserved"
+    # if this geography has competitor data at all. Checked once for the whole
+    # batch (they share a bbox) rather than per parcel.
+    any_competitors = any((r[1] or 0) > 0 for r in rows)
     output: dict[int, dict] = {}
     for row in rows:
         pid, _facility_count, _total_sqft, _population, sqft_per_person = row
         spp = float(sqft_per_person) if sqft_per_person is not None else None
+        # 0.0 with no competitor anywhere in the batch = unsynced market, not an
+        # empty one. Present as unknown so it can't earn a green badge / bonus.
+        if spp == 0.0 and not any_competitors:
+            spp = None
         output[pid] = {
             "sqft_per_person": spp,
             "color": _saturation_color(spp),
@@ -271,10 +279,16 @@ async def _compute_single_ring(
     # Population via census area-weighted interpolation
     population = await compute_population_in_ring(centroid_wkt, radius_miles, db)
 
+    # 0 sq ft is only meaningful as "underserved" when we know this geography HAS
+    # competitor coverage. competitor_facilities is filled by a per-jurisdiction
+    # operator-triggered sync, so in a county where that sync never ran EVERY
+    # ring returns 0 -> green "Underserved" badge (and, via the persisted
+    # sqft_per_capita, a +8 score bonus) for a market nobody has measured.
+    # Unmeasured must present as unknown (None -> gray), not as the best case.
     sqft_per_person: float | None = None
     if population > 0 and total_sqft > 0:
         sqft_per_person = round(total_sqft / population, 2)
-    elif population > 0:
+    elif population > 0 and await _geography_has_competitor_data(centroid_wkt, db):
         sqft_per_person = 0.0
 
     return RingResult(
@@ -284,6 +298,33 @@ async def _compute_single_ring(
         total_sqft=total_sqft,
         sqft_per_person=sqft_per_person,
     )
+
+
+async def _geography_has_competitor_data(centroid_wkt: str, db: AsyncSession) -> bool:
+    """True when competitor_facilities holds anything within a wide radius of
+    this point (~25 mi), i.e. this market has actually been synced.
+
+    Distinguishes "we looked and there is no storage nearby" (a genuine
+    underserved signal worth a green badge and a score bonus) from "nobody has
+    imported competitors for this county yet" (unknown — must read gray). The
+    radius is deliberately much larger than any saturation ring: a real metro
+    always has *some* facility within 25 miles, so a miss means missing data
+    rather than an empty market.
+    """
+    row = (await db.execute(
+        text("""
+            SELECT EXISTS (
+                SELECT 1 FROM competitor_facilities
+                 WHERE ST_DWithin(
+                     geom::geography,
+                     ST_GeomFromText(:centroid_wkt, 4326)::geography,
+                     :wide_m
+                 )
+            )
+        """),
+        {"centroid_wkt": centroid_wkt, "wide_m": 25 * _MILES_TO_METERS},
+    )).first()
+    return bool(row[0]) if row else False
 
 
 def _saturation_color(sqft_per_person: float | None) -> str:
