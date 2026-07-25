@@ -1,6 +1,19 @@
-"""3-mile population floor digest gate — asserts _top_parcels_for_filter wires
-the `minPop3mi` filter_json key into the SQL gate + bound params, and that it
-never disturbs the frozen storage-needles substrings.
+"""3-mi population + dt=10 wealth gates: SOFT (flag, don't drop).
+
+History. The population floor originally hard-dropped any parcel whose measured
+3-mi population was below minPop3mi. The 2026-07-25 audit showed the persisted
+number is a tract-centric approximation that disagrees with the area-weighted
+figure the drawer's Saturation panel shows — so the hard drop was silently
+removing real deals on the strength of a number the operator couldn't even see.
+It is now a soft flag (the score still applies -20).
+
+The wealth thresholds (minMedianHomeValue / minMedianHHI) had the opposite
+problem: they were present on every seeded board filter and read by NOTHING on
+the backend — only the client-side buy-box panel — so the product's defining
+wealth gate was absent from the one path that hands parcels to a human. They are
+now surfaced as soft flags too, deliberately NOT hard gates, because their input
+(dt=10 tract-centroid rings, no TTL) is the known-suspect data; hard-gating on it
+could drop a genuine needle. Harden after the ring repair.
 
 Same fake-session contract style as test_storage_needles_gate.py: capture the
 candidate query's (sql, params) without a live DB.
@@ -8,7 +21,7 @@ candidate query's (sql, params) without a live DB.
 import asyncio
 import types
 
-from app.workers.daily_email import _top_parcels_for_filter
+from app.workers.daily_email import _SOFT_FLAG_RULES, _top_parcels_for_filter
 
 
 class _FakeResult:
@@ -45,22 +58,28 @@ def _run(filter_json):
     raise AssertionError("candidate query not captured")
 
 
-def test_gate_clause_present_and_cast():
+# ── Population floor: flag, never drop ───────────────────────────────────
+
+def test_pop_floor_is_not_a_hard_predicate():
+    """The regression this guards: re-introducing the WHERE clause would once
+    again make a shaky approximation silently delete deals."""
     sql, _ = _run({"requireListed": True, "minPop3mi": 30000})
-    assert ":min_pop_3mi" in sql
-    # asyncpg needs the type; every reference must be CAST to INT.
+    assert "prm3.population >= CAST(:min_pop_3mi AS INT)" not in sql
+
+
+def test_pop_floor_surfaces_as_a_soft_flag():
+    sql, _ = _run({"requireListed": True, "minPop3mi": 30000})
+    assert "soft_below_pop_floor" in sql
+    assert "soft_pop_unmeasured" in sql
+    # asyncpg needs the type on every reference.
     assert "CAST(:min_pop_3mi AS INT)" in sql
     assert ":min_pop_3mi IS NULL" not in sql  # bare/un-cast form forbidden
-    # Missing measurement passes (surfaced, flagged), measured-below is dropped.
-    assert "prm3.population IS NULL" in sql
-    assert "prm3.population >= CAST(:min_pop_3mi AS INT)" in sql
 
 
 def test_radial_join_present():
     sql, _ = _run({"requireListed": True, "minPop3mi": 30000})
     assert "parcel_radial_metrics prm3" in sql
     assert "prm3.radius_miles = 3.0" in sql
-    assert "soft_pop_unmeasured" in sql
 
 
 def test_value_binds():
@@ -68,13 +87,85 @@ def test_value_binds():
     assert params["min_pop_3mi"] == 30000
 
 
-def test_absent_key_is_none_no_gate_effect():
+def test_absent_key_is_none_no_flag_effect():
     _, params = _run({"requireListed": True})
     assert params["min_pop_3mi"] is None
 
 
+# ── Wealth gate: soft, and actually wired ────────────────────────────────
+
+def test_wealth_thresholds_are_read_from_filter_json():
+    """They were dead config for the entire life of the board."""
+    _, params = _run({
+        "requireListed": True,
+        "minMedianHomeValue": 475000,
+        "minMedianHHI": 100000,
+    })
+    assert params["min_home_value"] == 475000
+    assert params["min_hhi"] == 100000
+
+
+def test_wealth_ring_is_joined_at_drive_time_10():
+    sql, _ = _run({"requireListed": True, "minMedianHomeValue": 475000})
+    assert "parcel_ring_metrics prm10" in sql
+    assert "prm10.drive_time_minutes = 10" in sql
+
+
+def test_wealth_flags_present_and_soft():
+    sql, _ = _run({
+        "requireListed": True,
+        "minMedianHomeValue": 475000,
+        "minMedianHHI": 100000,
+    })
+    assert "soft_below_home_value" in sql
+    assert "soft_below_hhi" in sql
+    assert "soft_wealth_unmeasured" in sql
+    # Soft means no WHERE-level rejection on the wealth columns.
+    assert "prm10.median_home_value >= CAST(:min_home_value AS INT)" not in sql
+    assert "prm10.median_hhi >= CAST(:min_hhi AS INT)" not in sql
+
+
+def test_wealth_binds_are_cast():
+    sql, _ = _run({"requireListed": True, "minMedianHomeValue": 475000, "minMedianHHI": 100000})
+    assert "CAST(:min_home_value AS INT)" in sql
+    assert "CAST(:min_hhi AS INT)" in sql
+
+
+def test_absent_wealth_keys_are_none():
+    _, params = _run({"requireListed": True})
+    assert params["min_home_value"] is None
+    assert params["min_hhi"] is None
+
+
+def test_new_flags_are_registered_for_rendering():
+    """A flag column that isn't in _SOFT_FLAG_RULES is computed and discarded —
+    it would never reach the email or demote the deal to the Verify tier."""
+    registered = {col for col, _emoji, _label in _SOFT_FLAG_RULES}
+    for col in (
+        "soft_below_pop_floor",
+        "soft_below_home_value",
+        "soft_below_hhi",
+        "soft_wealth_unmeasured",
+    ):
+        assert col in registered, f"{col} computed in SQL but not rendered"
+
+
+def test_triage_columns_selected_for_the_board_card():
+    """The board card needs the wealth/demand context, not just score+price."""
+    sql, _ = _run({"requireListed": True})
+    for col in (
+        "ring_median_home_value",
+        "ring_median_hhi",
+        "ring_hnw_households",
+        "pop_3mi",
+        "sqft_per_capita_3mi",
+    ):
+        assert col in sql
+
+
+# ── The freeze still holds ───────────────────────────────────────────────
+
 def test_frozen_storage_substrings_intact():
-    # The pop gate must be purely additive — the storage-needles freeze holds.
     sql, _ = _run({"requireListed": True, "storageVerdictMode": "only", "minPop3mi": 30000})
     assert sql.count("CAST(:storage_verdict_mode AS TEXT)") == 3
     assert "zum.self_storage::text IN ('permitted', 'conditional')" in sql

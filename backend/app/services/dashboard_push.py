@@ -74,11 +74,19 @@ _FACT_COLUMNS = [
     # the "is this the same property?" doubt. The card renders situs as a
     # secondary line when it differs from address.
     "situs_address", "situs_city",
+    # Triage context (2026-07-25 audit A-2). The card previously carried score,
+    # price and acres — but none of the wealth/demand facts the buy box is
+    # DEFINED by, so three of the six things the operator actually triages on
+    # (3-mi population, ring wealth, saturation) were unanswerable from the card
+    # and the `factors` JSON couldn't disambiguate "fine" from "unmeasured".
+    # NULL always means unmeasured here, never zero.
+    "ring_median_home_value", "ring_median_hhi", "ring_hnw_households",
+    "pop_3mi", "sqft_per_capita_3mi",
 ]
 _JSONB_COLUMNS = {"factors", "soft_flags"}
 # NUMERIC target columns — cast the bind to float8 so asyncpg encodes a Python
 # float (it demands Decimal for a bare numeric param); PG coerces float8→numeric.
-_FLOAT_COLUMNS = {"acres", "sale_price", "price_per_ac"}
+_FLOAT_COLUMNS = {"acres", "sale_price", "price_per_ac", "sqft_per_capita_3mi"}
 
 
 async def _supplement(db, parcel_ids: list[int]) -> dict[int, dict]:
@@ -190,6 +198,13 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
         # Situs is always the assessor address/city, regardless of listing.
         "situs_address": p.address,
         "situs_city": sup.get("parcel_city"),
+        # Triage context. All NULL-safe: NULL = unmeasured, which the card must
+        # render as "—"/unknown rather than as a zero or a failure.
+        "ring_median_home_value": p.ring_median_home_value,
+        "ring_median_hhi": p.ring_median_hhi,
+        "ring_hnw_households": p.ring_hnw_households,
+        "pop_3mi": p.pop_3mi,
+        "sqft_per_capita_3mi": p.sqft_per_capita_3mi,
     }
 
 

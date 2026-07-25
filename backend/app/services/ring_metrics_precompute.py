@@ -126,7 +126,22 @@ async def precompute_ring_metrics_for_jurisdiction(
     # ensure_census_tracts populates the census_tracts table with TIGER geoms
     # + B01003_001E population. We'll layer the other ACS variables on top
     # below — in memory, not in the table, since this is a one-shot job.
-    await ensure_census_tracts(bbox, db)
+    #
+    # BUFFER the bbox first. An isochrone anchored near the jurisdiction edge
+    # reaches WELL outside the parcel bbox — up to ~15 minutes of driving — and
+    # step 2 below already buffers by 0.3° when bucketing parcels into tracts.
+    # This call did not, so those outer tracts were never LOADED: the rings
+    # aggregated only the tracts inside the raw bbox and systematically
+    # UNDER-measured population/HV/HHI for every edge parcel. That bias runs
+    # against the product (it pushes edge wealth pockets below the needle's
+    # wealth gate) and is a prime suspect for the dt=10-vs-3mi discrepancies.
+    xmin, ymin, xmax, ymax = bbox
+    _BBOX_PAD_DEG = 0.3  # ~15-min drive at highway speed; matches step 2
+    await ensure_census_tracts(
+        (xmin - _BBOX_PAD_DEG, ymin - _BBOX_PAD_DEG,
+         xmax + _BBOX_PAD_DEG, ymax + _BBOX_PAD_DEG),
+        db,
+    )
     await db.commit()  # ensure tracts visible to subsequent queries
 
     if on_progress is not None:
@@ -186,6 +201,26 @@ async def precompute_ring_metrics_for_jurisdiction(
     summary["acs_counties_with_data"] = len(
         {(g[:2], g[2:5]) for g in acs_by_geoid.keys()}
     )
+
+    # Make an ACS shortfall LOUD. _load_acs_for_counties logs each failed county
+    # and continues, and these two counters were computed and then read by
+    # nobody — so an ACS outage during a precompute quietly produced rings with
+    # NULL wealth for a whole county. Every parcel there then fails the needle's
+    # wealth gate (NULL is not >= 475000), i.e. the county's needle count drops
+    # to ~0 and looks like a *finding* rather than an outage. Surface it as an
+    # error + a summary flag the caller/job-state can act on.
+    summary["acs_counties_missing"] = (
+        summary["acs_counties"] - summary["acs_counties_with_data"]
+    )
+    if summary["acs_counties_missing"]:
+        summary["acs_incomplete"] = True
+        logger.error(
+            "ring precompute: ACS data missing for %d of %d counties — the rings "
+            "written by this run will have NULL wealth for the affected tracts, "
+            "which reads downstream as 'fails the wealth gate'. Re-run this "
+            "jurisdiction once the Census API recovers.",
+            summary["acs_counties_missing"], summary["acs_counties"],
+        )
 
     # ── 4. Per-tract compute (in parallel, bounded) ──────────────────────
     sem = asyncio.Semaphore(_TRACT_CONCURRENCY)
@@ -390,6 +425,16 @@ async def _bulk_upsert_metrics(
     written = 0
     for i in range(0, len(metrics), chunk_size):
         chunk = metrics[i : i + chunk_size]
+        # falsy -> NULL is DELIBERATE, do not "fix" it to write 0 as 0.
+        # compute_ring_metrics sums only tracts with household_count > 0, so when
+        # ACS data is absent (fetch failed / county 404) `valid` is empty and
+        # every aggregate comes back 0. That 0 means "we have no demographics
+        # here", NOT "zero people live here" — persisting it as a measured 0
+        # would be a false measurement, exactly the poison that made unmeasured
+        # 3-mi populations read as "too rural" and unmeasured saturation read as
+        # "underserved". NULL is the honest encoding; the ACS shortfall is
+        # surfaced separately (summary["acs_incomplete"] + an error log) so the
+        # gap is visible instead of silent.
         payload = [
             {
                 "pid": pid,

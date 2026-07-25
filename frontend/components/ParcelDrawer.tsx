@@ -618,9 +618,17 @@ function BuyBoxMatchPanel({
   }, [filter, ring, parcelAadt, wealthDensityAvailable]);
 
   // Per-row verdict
-  const rowStatus = (r: MatchRow): "pass" | "fail" | "borderline" | "none" => {
+  const rowStatus = (
+    r: MatchRow,
+  ): "pass" | "fail" | "borderline" | "none" | "unmeasured" => {
     if (r.inactive || r.threshold == null) return "none";
-    if (r.actual == null) return "fail";
+    // Unmeasured != disqualified. This returned "fail", so a parcel whose ring
+    // row simply had no hnw_households (a coverage gap, and every seeded filter
+    // sets minHnwHouseholds) rendered a red ✗ and dragged the whole panel to
+    // "Fail" — presenting "we never measured this" as "this property fails your
+    // buy box". Now it reads as unknown, and the overall verdict degrades to
+    // "borderline" (verify) rather than a false rejection.
+    if (r.actual == null) return "unmeasured";
     if (r.actual >= r.threshold) return "pass";
     if (r.actual >= r.threshold * 0.9) return "borderline";
     return "fail";
@@ -640,8 +648,11 @@ function BuyBoxMatchPanel({
     } else {
       const hardFails = statuses.filter((s) => s === "fail").length;
       const borderline = statuses.filter((s) => s === "borderline").length;
+      const unmeasured = statuses.filter((s) => s === "unmeasured").length;
       if (hardFails > 0) verdict = "fail";
-      else if (borderline > 0) verdict = "borderline";
+      // An unmeasured dimension can't confirm a match, but it also isn't a
+      // rejection — surface it as "verify" so a coverage gap reads as unknown.
+      else if (borderline > 0 || unmeasured > 0) verdict = "borderline";
       else verdict = "match";
     }
   }
@@ -706,12 +717,21 @@ function BuyBoxMatchPanel({
                   s === "pass" ? "✓" :
                   s === "fail" ? "✗" :
                   s === "borderline" ? "~" :
+                  // "?" not "✗": this dimension was never measured for this
+                  // parcel, which is a coverage gap on our side, not a property
+                  // that misses the buy box.
+                  s === "unmeasured" ? "?" :
                   "";
                 const markerClass =
                   s === "pass" ? "text-emerald-600" :
                   s === "fail" ? "text-red-600" :
                   s === "borderline" ? "text-amber-600" :
+                  s === "unmeasured" ? "text-slate-400" :
                   "text-slate-300";
+                const markerTitle =
+                  s === "unmeasured"
+                    ? "Not measured for this parcel — coverage gap, not a failure"
+                    : undefined;
                 return (
                   <tr key={r.key} className="border-t border-slate-100 first:border-t-0">
                     <td className="py-1 text-slate-500">{r.label}</td>
@@ -721,7 +741,12 @@ function BuyBoxMatchPanel({
                     <td className="py-1 text-right font-mono tabular-nums text-slate-400">
                       {r.threshold == null ? "—" : fmtValue(r.threshold, r.format)}
                     </td>
-                    <td className={`py-1 text-right font-semibold ${markerClass}`}>{marker}</td>
+                    <td
+                      className={`py-1 text-right font-semibold ${markerClass}`}
+                      title={markerTitle}
+                    >
+                      {marker}
+                    </td>
                   </tr>
                 );
               })}
