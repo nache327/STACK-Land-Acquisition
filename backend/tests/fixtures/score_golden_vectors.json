@@ -1,0 +1,117 @@
+{
+  "_comment": [
+    "SHARED golden vectors for the composite-score mirror.",
+    "Asserted by BOTH backend/tests/test_acreage_curve.py::test_golden_vectors_match_backend",
+    "and frontend/tests/compositeScore.test.ts. If buybox_scoring.py and",
+    "compositeScore.ts drift, one of the two suites fails.",
+    "",
+    "IMPORTANT: only inputs the FRONTEND placeholder implements may appear here",
+    "(storage_permission, acres, aadt, in_flood_zone, in_wetland, has_structure).",
+    "The backend has additional factor families (3-mi pop floor, wealth density,",
+    "LGC HNW depth, saturation, $/acre, listing boost, SS overlay) that the",
+    "placeholder deliberately does NOT implement — those are covered by backend",
+    "tests only, and the placeholder is never used for ranking (see the batch",
+    "scores endpoint). Adding such an input here would make the mirror unfair."
+  ],
+  "vectors": [
+    {
+      "name": "sweet-spot permitted (4ac) - maxes on zoning+acres alone",
+      "input": {"storage_permission": "permitted", "acres": 4.0, "has_structure": false},
+      "score": 100,
+      "tier": "excellent"
+    },
+    {
+      "name": "sweet-spot conditional (4ac)",
+      "input": {"storage_permission": "conditional", "acres": 4.0, "has_structure": false},
+      "score": 90,
+      "tier": "excellent"
+    },
+    {
+      "name": "sub-sweet ramp (1ac permitted)",
+      "input": {"storage_permission": "permitted", "acres": 1.0, "has_structure": false},
+      "score": 95,
+      "tier": "excellent"
+    },
+    {
+      "name": "decay band (12ac permitted)",
+      "input": {"storage_permission": "permitted", "acres": 12.0, "has_structure": false},
+      "score": 96,
+      "tier": "excellent"
+    },
+    {
+      "name": "at the gate (15ac permitted)",
+      "input": {"storage_permission": "permitted", "acres": 15.0, "has_structure": false},
+      "score": 90,
+      "tier": "excellent"
+    },
+    {
+      "name": "barely oversize (16ac permitted) - capped below deal grade",
+      "input": {"storage_permission": "permitted", "acres": 16.0, "has_structure": false},
+      "score": 69,
+      "tier": "strong"
+    },
+    {
+      "name": "Edison 33ac permitted - capped",
+      "input": {"storage_permission": "permitted", "acres": 33.0, "has_structure": false},
+      "score": 69,
+      "tier": "strong"
+    },
+    {
+      "name": "Skillman 160ac permitted - floored penalty, capped",
+      "input": {"storage_permission": "permitted", "acres": 160.0, "has_structure": false},
+      "score": 25,
+      "tier": "weak"
+    },
+    {
+      "name": "Hillsborough 259ac permitted - floored",
+      "input": {"storage_permission": "permitted", "acres": 259.0, "has_structure": false},
+      "score": 25,
+      "tier": "weak"
+    },
+    {
+      "name": "prohibited in sweet spot",
+      "input": {"storage_permission": "prohibited", "acres": 4.0, "has_structure": false},
+      "score": 50,
+      "tier": "decent"
+    },
+    {
+      "name": "unclear verdict, structure present, no acres bonus band",
+      "input": {"storage_permission": "unclear", "acres": 4.0, "has_structure": true},
+      "score": 70,
+      "tier": "strong"
+    },
+    {
+      "name": "flood + wetland penalties on a sweet-spot permitted parcel",
+      "input": {"storage_permission": "permitted", "acres": 4.0, "has_structure": false,
+                "in_flood_zone": true, "in_wetland": true},
+      "score": 65,
+      "tier": "strong"
+    },
+    {
+      "name": "traffic bonus (50k AADT, full +15)",
+      "input": {"storage_permission": "conditional", "acres": 4.0, "has_structure": false,
+                "aadt": 50000},
+      "score": 100,
+      "tier": "excellent"
+    },
+    {
+      "name": "low traffic below the 5k floor contributes nothing",
+      "input": {"storage_permission": "conditional", "acres": 2.0, "has_structure": true,
+                "aadt": 4000},
+      "score": 85,
+      "tier": "excellent"
+    },
+    {
+      "name": "half-integer rounding case (11.95ac conditional) - py/js must agree",
+      "input": {"storage_permission": "conditional", "acres": 11.95, "has_structure": true},
+      "score": 77,
+      "tier": "strong"
+    },
+    {
+      "name": "no verdict row at all (None) - zoning contributes 0",
+      "input": {"storage_permission": null, "acres": 4.0, "has_structure": false},
+      "score": 75,
+      "tier": "strong"
+    }
+  ]
+}
