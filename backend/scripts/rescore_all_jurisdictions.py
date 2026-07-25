@@ -114,6 +114,10 @@ async def main() -> None:
                     help="Skip the first N jurisdictions in the (deterministic) "
                          "needle-priority order — instant resume with no per-row "
                          "DB lookups. Prefer this over --resume for a clean pause.")
+    ap.add_argument("--end-index", type=int, default=None,
+                    help="Stop before this index (exclusive) in the ordered list. "
+                         "With --start-index, bounds a worker to a disjoint slice "
+                         "for safe 2-worker parallelism (no overlap/redo).")
     ap.add_argument("--filter", type=str, default=None,
                     help="Comma-separated buybox_filter UUIDs to score directly "
                          "(e.g. the dashboardEnabled board filters). When omitted, "
@@ -135,10 +139,11 @@ async def main() -> None:
 
     jids_all = await _jurisdiction_ids(only)
     start = max(args.start_index, 0)
-    jids = jids_all[start:]
+    end = args.end_index if args.end_index is not None else len(jids_all)
+    jids = jids_all[start:end]
     n_all = len(jids_all)
     print(f"Re-scoring {len(jids)} of {n_all} jurisdiction(s) "
-          f"(starting at index {start})…", flush=True)
+          f"(index {start}..{end})…", flush=True)
 
     skip_conn = await asyncpg.connect(get_sync_dsn()) if args.resume else None
     if skip_conn is not None:

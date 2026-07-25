@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -386,7 +387,13 @@ def score_for_parcel(
             })
 
     raw = sum(f["delta"] for f in factors)
-    score = max(0, min(100, round(raw)))
+    # Half-UP rounding, deliberately NOT Python's round() (half-to-EVEN).
+    # _acreage_delta returns exact tenths, so factor sums land on exact .5
+    # values often (e.g. 50 + 15 + 11.5 = 76.5). Python's banker's rounding
+    # would give 76 while the frontend mirror's Math.round gives 77 — a
+    # visible off-by-one that can also flip a tier boundary. math.floor(x+0.5)
+    # matches JS exactly. Keep in lock-step with compositeScore.ts.
+    score = max(0, min(100, math.floor(raw + 0.5)))
 
     # Oversize card-cap (display honesty): the board's maxAcres gate already
     # drops >15ac parcels, so their card score must not read deal-grade either.

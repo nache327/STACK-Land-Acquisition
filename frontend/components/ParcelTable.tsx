@@ -20,8 +20,9 @@ import {
 } from "@/lib/compositeScore";
 
 type RowWithScore = CandidateParcelRow & {
-  _score: CompositeScore;
-  _scoreSource: "server" | "client";
+  // null = no server score for this parcel + filter (renders "—", sorts last).
+  _score: CompositeScore | null;
+  _scoreSource: "server" | "none";
 };
 
 const columnHelper = createColumnHelper<RowWithScore>();
@@ -32,9 +33,11 @@ interface ParcelTableProps {
   selectedId?: number | null;
   selectedIds?: Set<number>;
   onSelectionChange?: (ids: Set<number>) => void;
-  /** Pre-computed server scores keyed by parcel_id. When a parcel's
-   *  score is in this map we use it directly; otherwise we fall back
-   *  to the client-side `computeScore` formula. */
+  /** Server scores keyed by parcel_id, for the parcels on screen (see
+   *  useParcelScores). A parcel missing from this map is genuinely unscored and
+   *  renders "—": we deliberately do NOT client-compute a substitute, because
+   *  `compositeScore.computeScore` implements only a subset of the backend's
+   *  factors and reads high, which used to let unscored rows out-sort real ones. */
   serverScores?: Map<number, ServerParcelScore>;
   /** When true, prepend a listed-first key to whatever sort the user
    *  has chosen. Bound to filter.sortListedFirst from BuyBoxPanel. */
@@ -76,7 +79,8 @@ export function ParcelTable({
             _scoreSource: "server",
           };
         }
-        return { ...p, _score: computeScore(p), _scoreSource: "client" };
+        // No server row → unscored. Sorts last (score null) and renders "—".
+        return { ...p, _score: null, _scoreSource: "none" };
       }),
     [parcels, serverScores],
   );
@@ -134,12 +138,24 @@ export function ParcelTable({
       ),
       size: 36,
     }),
-    columnHelper.accessor((row) => row._score.score, {
+    // Unscored rows sort to the bottom in both directions (-1 < any real score,
+    // which is >= 0) rather than masquerading as a 0 or an estimate.
+    columnHelper.accessor((row) => row._score?.score ?? -1, {
       id: "score",
       header: "Score",
       sortDescFirst: true,
       cell: ({ row }) => {
         const s = row.original._score;
+        if (!s) {
+          return (
+            <span
+              className="text-xs text-slate-400"
+              title="Not scored yet for this asset/filter — run scoring for this jurisdiction"
+            >
+              —
+            </span>
+          );
+        }
         return (
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${TIER_BADGE_CLASSES[s.tier]}`}

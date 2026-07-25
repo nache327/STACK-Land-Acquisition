@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import and_, asc, case, desc, func, literal_column, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.models.forsale_listing import ForsaleListing
 from app.models.parcel import Parcel
@@ -177,6 +178,23 @@ async def search_candidate_parcels(
     target_column = TARGET_USE_COLUMN.get(payload.target_use, ZoneUseMatrix.self_storage)
     target_permission_expr = _LGC_EFFECTIVE_LABEL if is_lgc else target_column
     verdict_label_expr = _LGC_EFFECTIVE_LABEL if is_lgc else _PERMISSION_LABEL
+    # Municipality-aware, exactly-one-row join — must stay equivalent to the
+    # LATERAL in buybox_scoring._select_parcels_sql (and daily_email's), or the
+    # map/table shows a different verdict than the Site Score computed.
+    #
+    # A parcel has at most TWO candidate rows (uq_zone_matrix is unique on
+    # (jurisdiction_id, zone_code, COALESCE(municipality,''))): its
+    # municipality-specific row and the NULL-municipality county default.
+    # Without the municipality predicate this join emitted BOTH — duplicating
+    # the parcel in the results, double-counting it in count_stmt, and letting
+    # the planner pick whichever row it liked (often the county default
+    # 'prohibited' while parcel_buybox_scores said 'permitted' from the muni
+    # row). The anti-join below expresses the scorer's precedence — prefer the
+    # municipality-specific row, fall back to the county default only when no
+    # municipality row exists for this parcel — while keeping the primary
+    # ZoneUseMatrix entity unaliased so the module-level label/verdict
+    # expressions still bind to it.
+    _zum_muni_specific = aliased(ZoneUseMatrix)
     permission_join = and_(
         ZoneUseMatrix.jurisdiction_id == Parcel.jurisdiction_id,
         ZoneUseMatrix.zone_code == Parcel.zoning_code,
@@ -185,6 +203,27 @@ async def search_candidate_parcels(
         # fallback / "unclassified" branch the same way it does when
         # no matrix row exists at all.
         ZoneUseMatrix.deleted_at.is_(None),
+        # Only rows that govern THIS parcel: its own municipality, or the
+        # county-wide default.
+        or_(
+            ZoneUseMatrix.municipality.is_(None),
+            ZoneUseMatrix.municipality == Parcel.city,
+        ),
+        # ...and of those, exactly one: suppress the county default when a
+        # municipality-specific row exists for this parcel's city.
+        or_(
+            ZoneUseMatrix.municipality.isnot(None),
+            ~(
+                select(literal_column("1"))
+                .where(
+                    _zum_muni_specific.jurisdiction_id == Parcel.jurisdiction_id,
+                    _zum_muni_specific.zone_code == Parcel.zoning_code,
+                    _zum_muni_specific.municipality == Parcel.city,
+                    _zum_muni_specific.deleted_at.is_(None),
+                )
+                .exists()
+            ),
+        ),
     )
 
     conditions: list[Any] = [

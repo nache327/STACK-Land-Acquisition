@@ -54,6 +54,10 @@ interface ParcelDrawerProps {
   /** Server-side score for this parcel from `parcel_buybox_scores`.
    *  When present, overrides the placeholder client-side `computeScore`. */
   serverScore?: ServerParcelScore;
+  /** Which asset lane the dashboard's toggle is on — labels the zoning factor
+   *  "Garage" vs "Storage" in the estimate fallback (the server score carries
+   *  its own label). */
+  assetLabel?: "Storage" | "Garage";
   /** Everything needed to render the unified Buy Box Match panel.
    *  `ring` is null when precompute hasn't reached this parcel yet. */
   buyBoxMatch?: {
@@ -82,6 +86,7 @@ export function ParcelDrawer({
   onToggleShortlist,
   onShowRing,
   serverScore,
+  assetLabel = "Storage",
   buyBoxMatch,
 }: ParcelDrawerProps) {
   const { state, layer1Loading, layer3Loading, error, runLayer1, runLayer3, reset } =
@@ -121,8 +126,8 @@ export function ParcelDrawer({
         })),
       };
     }
-    return computeScore(parcel);
-  }, [parcel, serverScore]);
+    return computeScore(parcel, assetLabel);
+  }, [parcel, serverScore, assetLabel]);
 
   // Auto-run Layer 1 when drawer opens with a new parcel
   useEffect(() => {
@@ -200,10 +205,39 @@ export function ParcelDrawer({
                 })}
               </tbody>
             </table>
+            {/* Provenance (catch #49): a score is never shown without the
+                authority behind its verdict. These columns are persisted per
+                score row and served by POST /api/parcels/scores; the digest and
+                the board have always shown them, the primary UI never did. */}
+            {serverScore?.verdict_basis && (
+              <p className="mt-2 text-[10px]">
+                <span
+                  className={
+                    serverScore.lead_eligible === false
+                      ? "rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-800"
+                      : "rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
+                  }
+                  title={
+                    serverScore.lead_eligible === false
+                      ? `Demoted: ${serverScore.gate_reason ?? "not lead-eligible"} — verdict is not ordinance-grounded`
+                      : "Verdict is ordinance- or human-grounded"
+                  }
+                >
+                  {serverScore.verdict_basis}
+                  {serverScore.lead_eligible === false ? " · demoted" : ""}
+                </span>
+              </p>
+            )}
             <p className="mt-2 text-[10px] text-slate-400">
               {serverScore
                 ? `Server-computed ${new Date(serverScore.computed_at).toLocaleDateString()}`
-                : "Client-computed (no server score yet — backend will populate after next scoring run)"}
+                : // Honest about what this is: the client formula implements only
+                  // a subset of the server's factors (no 3-mi population floor,
+                  // wealth density, HNW depth, saturation, $/acre or listing
+                  // boost), so it reads high. It is an estimate for a parcel
+                  // that has no score row for the selected asset/filter — never
+                  // used for ranking (the table shows "—" instead).
+                  "Estimate only — partial formula, no server score for this asset/filter yet"}
             </p>
           </div>
         )}
@@ -234,16 +268,34 @@ export function ParcelDrawer({
               }
             />
           )}
-          {parcel.storage_permission && (
-            <Row
-              label="Storage"
-              value={
-                parcel.storage_permission.charAt(0).toUpperCase() +
-                parcel.storage_permission.slice(1) +
-                (!parcel.zoning_code && parcel.land_use_code ? " (via MOD-IV)" : "")
-              }
-            />
-          )}
+          {parcel.storage_permission && (() => {
+            // A MOD-IV verdict is a LAND-USE proxy, not an ordinance reading:
+            // the scorer joins zone_use_matrix on zoning_code, which is NULL
+            // here, so the Site Score panel below reports "No matrix entry yet
+            // +0" for this same parcel. Say so, rather than showing a chip
+            // identical to a grounded verdict and leaving the user to reconcile
+            // two numbers that look contradictory.
+            const viaModIv = !parcel.zoning_code && !!parcel.land_use_code;
+            const label =
+              parcel.storage_permission.charAt(0).toUpperCase() +
+              parcel.storage_permission.slice(1);
+            return (
+              <>
+                <Row
+                  label="Storage"
+                  value={viaModIv ? `${label} — via MOD-IV land use` : label}
+                />
+                {viaModIv && (
+                  <p className="text-xs text-amber-700 -mt-2">
+                    Not zoning-verified: inferred from the NJ MOD-IV property
+                    class because this county has no ingested zoning. The Site
+                    Score deliberately excludes it (shows &ldquo;No matrix entry
+                    yet&rdquo;) until real zoning is bound.
+                  </p>
+                )}
+              </>
+            );
+          })()}
           <Row label="Acres" value={parcel.acres?.toFixed(3)} />
           <Row
             label="Flood Zone"

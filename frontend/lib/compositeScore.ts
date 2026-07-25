@@ -50,27 +50,33 @@ export interface CompositeScore {
 
 export type ScoreTier = "excellent" | "strong" | "decent" | "weak" | "avoid";
 
-export function computeScore(parcel: ScoreInput): CompositeScore {
+export function computeScore(
+  parcel: ScoreInput,
+  /** Lane label for the zoning factor — mirrors score_jurisdiction's
+   *  `"Garage" if slug == LGC_SLUG else "Storage"`. Without it an LGC estimate
+   *  labelled its zoning factor "Storage". */
+  assetLabel: "Storage" | "Garage" = "Storage",
+): CompositeScore {
   const factors: ScoreFactor[] = [
     { label: "Base", delta: 50, reason: "Baseline" },
   ];
 
-  // Storage permission — biggest single factor
+  // Zoning permission — biggest single factor
   switch (parcel.storage_permission) {
     case "permitted":
-      factors.push({ label: "Storage", delta: 30, reason: "Permitted by zoning" });
+      factors.push({ label: assetLabel, delta: 30, reason: "Permitted by zoning" });
       break;
     case "conditional":
-      factors.push({ label: "Storage", delta: 15, reason: "Conditional use" });
+      factors.push({ label: assetLabel, delta: 15, reason: "Conditional use" });
       break;
     case "prohibited":
-      factors.push({ label: "Storage", delta: -25, reason: "Prohibited by zoning" });
+      factors.push({ label: assetLabel, delta: -25, reason: "Prohibited by zoning" });
       break;
     case "unclear":
-      factors.push({ label: "Storage", delta: 0, reason: "Ordinance unclear — verify" });
+      factors.push({ label: assetLabel, delta: 0, reason: "Ordinance unclear — verify" });
       break;
     default:
-      factors.push({ label: "Storage", delta: 0, reason: "No matrix entry yet" });
+      factors.push({ label: assetLabel, delta: 0, reason: "No matrix entry yet" });
   }
 
   // Acreage curve — peaks in the buildable sweet spot, penalizes oversize.

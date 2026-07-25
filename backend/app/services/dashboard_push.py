@@ -334,10 +334,15 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
         return {"status": "skipped", "reason": "no_dsn"}
 
     # Dedupe by parcel_id (a parcel can match multiple filters; the board shows
-    # one card, highest score wins). `uses` accumulates every use-case slug the
-    # parcel qualified under across all filters, so a parcel eligible under both
-    # a self_storage AND a luxury_garage_condo filter lands as asset_type='both'.
+    # one card). Precedence is by LANE, not by score — self_storage wins over
+    # luxury_garage_condo, because scores from different filters aren't on a
+    # comparable scale (see the loop below). `uses` accumulates every use-case
+    # slug the parcel qualified under across all filters, so a parcel eligible
+    # under both a self_storage AND an LGC filter lands as asset_type='both'.
     best: dict[int, tuple[DigestParcel, dict]] = {}
+    # Which lane's row currently backs each card — drives the deterministic
+    # self_storage-wins precedence below (see the comment there).
+    best_asset: dict[int, str] = {}
     uses: dict[int, set[str]] = {}
     async with long_running_session_maker() as db:
         if filter_id is not None:
@@ -363,9 +368,22 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             sup = await _supplement(db, [d.parcel_id for d in deals])
             for d in deals:
                 uses.setdefault(d.parcel_id, set()).add(asset)
-                prev = best.get(d.parcel_id)
-                if prev is None or (d.score or 0) > (prev[0].score or 0):
+                prev_asset = best_asset.get(d.parcel_id)
+                # Which lane's row backs a dual-qualified card? NOT max(score):
+                # a self_storage score and an LGC score come from different
+                # filter_json (different bonuses/thresholds), so they are not on
+                # a comparable scale — comparing them let an LGC row's
+                # use_verdict/factors describe a card labelled 'both', and the
+                # winner flipped as either filter's config changed. Explicit
+                # precedence instead: self_storage wins, because it is the
+                # ordinance-grounded verdict (the LGC verdict is derived from
+                # sibling columns). `uses` still records both lanes, so
+                # asset_type='both' is unaffected.
+                if prev_asset is None or (
+                    asset == "self_storage" and prev_asset != "self_storage"
+                ):
                     best[d.parcel_id] = (d, sup.get(d.parcel_id, {}))
+                    best_asset[d.parcel_id] = asset
 
     # No early-return on empty rows: the disposition read-back below must run
     # even with 0 fresh deals (a passed/dead deal can exist with nothing new to
