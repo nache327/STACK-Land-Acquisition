@@ -49,6 +49,13 @@ export interface ServerParcelScore {
   tier: "excellent" | "strong" | "decent" | "weak" | "avoid" | string;
   factors: Array<{ label: string; delta: number; reason: string }>;
   computed_at: string;
+  // Lead-eligibility provenance (catch #49). Persisted per score row and now
+  // served by POST /api/parcels/scores, so the UI can show a score together
+  // with the authority behind its verdict instead of the number alone.
+  // null = scored before the gate existed (re-score to populate).
+  verdict_basis?: string | null;
+  lead_eligible?: boolean | null;
+  gate_reason?: string | null;
 }
 
 // One cached drive-time ring row from the shared server cache
@@ -508,6 +515,31 @@ export const api = {
     return fetchJSON<ServerParcelScore[]>(
       `/api/jurisdictions/${jurisdictionId}/scores${qs ? `?${qs}` : ""}`,
     );
+  },
+
+  /** Server scores for an EXPLICIT parcel set.
+   *
+   *  Prefer this over getJurisdictionScores for anything that ranks or displays
+   *  a score: the jurisdiction-wide call is `ORDER BY score DESC LIMIT n`, so in
+   *  a real county it returns only the top slice and the rest of the parcels
+   *  have no server score at all. Asking for the ids on screen means a parcel
+   *  either has its real score or is honestly shown as unscored — never the
+   *  frontend placeholder's inflated estimate.
+   */
+  async getScoresForParcels(
+    parcelIds: number[],
+    opts: { useCaseId?: string; filterId?: string } = {},
+  ): Promise<ServerParcelScore[]> {
+    if (parcelIds.length === 0) return [];
+    return fetchJSON<ServerParcelScore[]>(`/api/parcels/scores`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        parcel_ids: parcelIds,
+        use_case_id: opts.useCaseId,
+        filter_id: opts.filterId,
+      }),
+    });
   },
 
   async getSaturationBatch(

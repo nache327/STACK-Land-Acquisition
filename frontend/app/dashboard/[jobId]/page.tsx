@@ -244,10 +244,6 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   );
 
   const { data: jurisdictionBounds } = useJurisdictionBounds(jurisdictionId);
-  const { data: serverScores } = useParcelScores(
-    jurisdictionId,
-    assetUse === "luxury_garage_condo" ? LGC_USE_CASE_ID : undefined,
-  );
 
   // Per-jurisdiction feature flags. wealth_density_available is false when
   // the source publishes no assessed_value (UT UGRC cities) — we use it
@@ -390,6 +386,24 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   // on mapParcels (saturation, parcelCollection rebuild, setData, setFeatureState)
   // don't re-run + re-upload the whole GeoJSON on every unrelated render during a pan.
   const mapParcels = useMemo(() => mapResults?.items ?? [], [mapResults]);
+
+  // Server scores for exactly what's on screen (table rows + map features + the
+  // open drawer's parcel). Fetching by id instead of "top N for the
+  // jurisdiction" is what stops the un-served tail from falling back to the
+  // inflated client placeholder and out-sorting real scores — see
+  // useParcelScores.
+  const scoredParcelIds = useMemo(() => {
+    const ids = new Set<number>();
+    parcels.forEach((p) => ids.add(p.parcel_id));
+    mapParcels.forEach((p) => ids.add(p.parcel_id));
+    if (selectedParcelId != null) ids.add(selectedParcelId);
+    return Array.from(ids);
+  }, [parcels, mapParcels, selectedParcelId]);
+
+  const { data: serverScores } = useParcelScores(
+    scoredParcelIds,
+    assetUse === "luxury_garage_condo" ? LGC_USE_CASE_ID : undefined,
+  );
 
   // Deep-link from email digest: ?parcel_id=<id> selects the parcel,
   // opens the drawer, and flies to its centroid. Read once on mount.
@@ -1257,6 +1271,7 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
           onClose={() => setDrawerOpen(false)}
           onShowRing={() => setFlyTrigger((n) => n + 1)}
           serverScore={parcelDetail ? serverScores?.get(parcelDetail.id) : undefined}
+          assetLabel={assetUse === "luxury_garage_condo" ? "Garage" : "Storage"}
           buyBoxMatch={(() => {
             if (!parcelDetail) return null;
             const ring = precomputeData.get(String(parcelDetail.id))?.rings[

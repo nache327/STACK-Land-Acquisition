@@ -36,6 +36,19 @@ class ParcelScoreRead(BaseModel):
         from_attributes = True
 
 
+class ParcelScoresBatchRequest(BaseModel):
+    """Fetch server scores for an explicit parcel set (POST /parcels/scores).
+
+    The jurisdiction-wide GET is ORDER BY score DESC LIMIT n, so it truncates in
+    any real county and the un-served tail used to fall back to the frontend's
+    inflated placeholder formula. Callers pass the ids actually on screen.
+    """
+    parcel_ids: list[int] = Field(..., min_length=1, max_length=10_000)
+    # filter_id wins; else the default filter for use_case_id; else self_storage.
+    filter_id: uuid.UUID | None = None
+    use_case_id: uuid.UUID | None = None
+
+
 class BuyboxFilterRead(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID

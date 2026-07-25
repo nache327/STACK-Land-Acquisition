@@ -35,6 +35,7 @@ from app.schemas.buybox import (
     BuyboxFilterRead,
     BuyboxFilterUpdate,
     ParcelScoreRead,
+    ParcelScoresBatchRequest,
 )
 
 router = APIRouter(tags=["buybox"])
@@ -532,6 +533,57 @@ async def list_scores_for_jurisdiction(
     result = await db.execute(
         sql,
         {"jid": jurisdiction_id, "fid": filter_id, "min_score": min_score, "lim": limit},
+    )
+    return [ParcelBuyboxScore(**dict(row._mapping)) for row in result]
+
+
+@router.post("/parcels/scores", response_model=list[ParcelScoreRead])
+async def scores_for_parcels(
+    payload: ParcelScoresBatchRequest,
+    db: AsyncSession = Depends(get_db),
+) -> list[ParcelBuyboxScore]:
+    """Server scores for an EXPLICIT set of parcel ids.
+
+    Why this exists: `list_scores_for_jurisdiction` is `ORDER BY score DESC
+    LIMIT :lim` (max 10k). `score_jurisdiction` scores EVERY parcel in a
+    jurisdiction — hundreds of thousands in a county — so in any real
+    jurisdiction the map/table received only the top 10k and every other parcel
+    fell through to the frontend's placeholder formula. That placeholder
+    implements ~6 of the backend's ~13 factor families (no 3-mi population
+    floor, no wealth density, no LGC HNW depth, no saturation, no $/acre, no
+    listing boost), so it reads 20-40 points HIGH — and the inflated tail then
+    sorted ABOVE genuinely better parcels that did have a server row.
+
+    Fetching by the ids actually on screen removes the truncation entirely: a
+    parcel either has a real score or renders as "—". Returns only rows that
+    exist; callers must not synthesise a score for the misses.
+    """
+    if not payload.parcel_ids:
+        return []
+
+    filter_id = payload.filter_id
+    if filter_id is None:
+        filter_id = await _resolve_default_filter_id(
+            db, payload.use_case_id or SELF_STORAGE_USE_CASE_ID
+        )
+        if filter_id is None:
+            return []
+
+    # verdict_basis / lead_eligible / gate_reason are persisted per score row
+    # (catch #49) but were never served, so the primary UI showed a score with
+    # no provenance while the digest and the board both showed it. Serve them.
+    sql = text(
+        """
+        SELECT pbs.parcel_id, pbs.buybox_filter_id, pbs.score,
+               pbs.tier, pbs.factors, pbs.computed_at,
+               pbs.verdict_basis, pbs.lead_eligible, pbs.gate_reason
+        FROM parcel_buybox_scores pbs
+        WHERE pbs.buybox_filter_id = :fid
+          AND pbs.parcel_id = ANY(:pids)
+        """
+    )
+    result = await db.execute(
+        sql, {"fid": filter_id, "pids": list(payload.parcel_ids)}
     )
     return [ParcelBuyboxScore(**dict(row._mapping)) for row in result]
 
