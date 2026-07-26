@@ -3,30 +3,40 @@
 Precomputes the "population within 3 miles" that the scorer's too-rural factor
 and the digest's minPop3mi gate read, so neither needs a live census query.
 
-WHAT THIS ACTUALLY COMPUTES (do not mistake it for the panel's number):
-a TRACT-CENTRIC approximation — the 3-mile ring population is computed once per
-census-tract centroid and assigned to every parcel that tract contains, summing
-each neighbouring tract's FULL population when its centroid falls inside the
-ring. It is NOT `census.compute_population_in_ring`, which buffers the PARCEL
-and area-weights each tract by its intersection share; the drawer's Saturation
-panel shows that one. The two therefore disagree — most in rural/large-tract
-geographies — while wearing the same "3-mi population" label, which is a live
-trust bug (a card can read "12,400 < 30,000 floor  -20" beside a panel saying
-49,000). Making them one number is a follow-up: compute per-parcel
-area-weighted, batched by snapped centroid for speed.
+TWO MODES. Prefer --area-weighted; the default is kept only so an in-flight
+migration can be compared side-by-side before switching over.
 
-The earlier form of this docstring claimed the two were "the exact same math",
-which is what let the divergence go unnoticed.
+  --area-weighted (RECOMMENDED)
+      Per-parcel area-weighted areal interpolation — the SAME quantity
+      census.compute_population_in_ring returns, i.e. the number the drawer's
+      Saturation panel shows the operator. One number, one label. Made
+      affordable by snapping centroids to a grid (one ring per cell) and by
+      skipping ST_Intersection for tracts wholly inside the ring.
+
+  default (TRACT-CENTRIC, legacy)
+      The 3-mile ring is computed once per census-tract centroid and assigned to
+      every parcel that tract contains, summing each neighbouring tract's FULL
+      population when its centroid falls in the ring. Cheap, and WRONG wherever
+      tracts are large: MEASURED against the reference on the five walkthrough
+      parcels it overstates by +3.4% to +47.2% (Skillman: stored 16,812 vs true
+      11,421 — and 11,421 is exactly what the live card showed). ~62% of all
+      parcels stored as population=0 have a populated tract centroid within 3mi
+      of the PARCEL, i.e. their 0 is an artifact of a distant anchor centroid.
+
+An earlier form of this docstring claimed the two were "the exact math", which is
+what let the divergence go unnoticed under a shared label.
 
 Set-based: one INSERT…SELECT per jurisdiction (not a per-parcel loop). Ensures
 census tracts are loaded first (idempotent upsert), then runs with
 statement_timeout disabled. Resumable — re-running skips jurisdictions that
-already have rows unless --redo.
+already have rows unless --redo. NEVER writes a value it cannot measure (see the
+NULL semantics on each query).
 
 USAGE (from backend/):
-    python scripts/backfill_radial_population.py                    # all
-    python scripts/backfill_radial_population.py --jurisdiction <uuid>
-    python scripts/backfill_radial_population.py --skip-saturation
+    python scripts/backfill_radial_population.py --area-weighted        # all
+    python scripts/backfill_radial_population.py --area-weighted --jurisdiction <uuid>
+    python scripts/backfill_radial_population.py --area-weighted --skip-saturation
+    python scripts/backfill_radial_population.py --area-weighted --grid-deg 0.001
 """
 from __future__ import annotations
 
@@ -103,6 +113,81 @@ _BACKFILL_SQL = text(
             LIMIT 1
       ) pt ON true
       JOIN ring_pop rp ON rp.geoid = pt.geoid
+     WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+       AND p.centroid IS NOT NULL
+    ON CONFLICT (parcel_id, radius_miles) DO UPDATE
+       SET population = EXCLUDED.population, computed_at = now()
+    """
+)
+
+# ── AREA-WEIGHTED population (--area-weighted) ───────────────────────────────
+#
+# The honest number: per-parcel, area-weighted areal interpolation — the SAME
+# quantity census.compute_population_in_ring returns, which is what the drawer's
+# Saturation panel shows. Replaces the tract-centric approximation above, whose
+# error we measured at ~62% of stored zeros (a parcel in a huge Utah desert tract
+# read 0 while 7 populated tract centroids sat within 3 miles of the parcel
+# ITSELF, because the ring was anchored on the distant tract centroid).
+#
+# Two optimisations make per-parcel affordable at millions of rows:
+#
+#   1. GRID SNAP. Population within 3 miles varies smoothly, so compute one ring
+#      per DISTINCT snapped centroid (default 0.0025° ≈ 278m) and share it across
+#      parcels in that cell. Parcels cluster hard, so this collapses hundreds of
+#      thousands of parcels into thousands of ring computations — while staying
+#      far finer-grained than a census tract (the thing that made the old
+#      approximation wrong).
+#   2. CONTAINS SHORTCUT. A tract wholly inside the ring contributes its FULL
+#      population — no ST_Intersection needed. Only boundary-crossing tracts pay
+#      for the expensive area computation, and there are few per ring.
+#
+# NULL semantics are unchanged and still load-bearing: the caller guarantees the
+# jurisdiction has populated tract coverage before this runs, so a snapped point
+# whose ring intersects no populated tract is genuinely ~0 (LEFT JOIN + COALESCE),
+# while a jurisdiction we cannot measure is skipped entirely and stays NULL.
+#
+# NOTE this drops the "anchor tract" concept altogether, so the own-tract
+# exclusion bug the tract-centric query needed a guard for cannot occur here.
+# Residual known limitation: a tract with NULL population contributes nothing, so
+# a ring overlapping unmeasured tracts is a LOWER bound.
+_BACKFILL_AREA_WEIGHTED_SQL = text(
+    """
+    WITH pts AS (
+        SELECT DISTINCT ST_SnapToGrid(p.centroid, :grid_deg) AS gp
+          FROM parcels p
+         WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+           AND p.centroid IS NOT NULL
+    ),
+    rings AS (
+        SELECT gp, ST_Buffer(gp::geography, :radius_m)::geometry AS ring
+          FROM pts
+    ),
+    pop AS (
+        SELECT r.gp,
+               COALESCE(SUM(
+                   CASE
+                     -- tract fully inside the ring: whole population, no
+                     -- ST_Intersection (the expensive part)
+                     WHEN ST_Contains(r.ring, ct.geom) THEN ct.population::float
+                     -- boundary tract: area-weighted share, exactly as
+                     -- census.compute_population_in_ring does it
+                     ELSE ct.population::float
+                          * ST_Area(ST_Intersection(ct.geom, r.ring)::geography)
+                          / NULLIF(ST_Area(ct.geom::geography), 0)
+                   END
+               ), 0)::int AS pop
+          FROM rings r
+          LEFT JOIN census_tracts ct
+                 ON ct.geom && r.ring
+                AND ST_Intersects(ct.geom, r.ring)
+                AND ct.population IS NOT NULL
+                AND ct.population > 0
+         GROUP BY r.gp
+    )
+    INSERT INTO parcel_radial_metrics (parcel_id, radius_miles, population)
+    SELECT p.id, :radius_miles, pop.pop
+      FROM parcels p
+      JOIN pop ON pop.gp = ST_SnapToGrid(p.centroid, :grid_deg)
      WHERE p.jurisdiction_id = CAST(:jid AS uuid)
        AND p.centroid IS NOT NULL
     ON CONFLICT (parcel_id, radius_miles) DO UPDATE
@@ -249,6 +334,24 @@ async def _already_done(db, jid: str) -> bool:
 async def main() -> None:
     ap = argparse.ArgumentParser(description="Backfill 3-mi radial population.")
     ap.add_argument("--jurisdiction", type=str, default=None)
+    ap.add_argument("--area-weighted", action="store_true",
+                    help="Use per-parcel AREA-WEIGHTED interpolation (matches "
+                         "census.compute_population_in_ring, i.e. the number the "
+                         "drawer's Saturation panel shows) instead of the "
+                         "tract-centric approximation. Slower but honest; the "
+                         "approximation was measured wrong for ~62%% of stored "
+                         "zeros. Validate against the panel before making it the "
+                         "default.")
+    ap.add_argument("--grid-deg", type=float, default=0.0025,
+                    help="Grid-snap cell size in degrees for --area-weighted. "
+                         "MEASURED on the 5 reference parcels vs "
+                         "census.compute_population_in_ring (Somerset ring-"
+                         "computation counts for 117k parcels): "
+                         "0.005deg/555m -> max err 3.3%%, mean 1.9%%, 3,275 rings; "
+                         "0.0025deg/278m -> max 2.2%%, mean 0.7%%, 10,330 rings "
+                         "(DEFAULT: hits the +-2%% target); "
+                         "0.001deg/111m -> max 0.6%%, mean 0.4%%, 37,131 rings. "
+                         "Even the finest grid is ~3x cheaper than per-parcel.")
     ap.add_argument("--skip-saturation", action="store_true",
                     help="Population pass only. The competitor-sqft pass is an "
                          "O(parcels x competitors) join that can stall for many "
@@ -314,12 +417,20 @@ async def main() -> None:
                 )
                 continue
 
-            res = await db.execute(_BACKFILL_SQL, {
-                "radius_miles": RADIUS_MILES,
-                "radius_m": RADIUS_MILES * _MILES_TO_METERS,
-                "jid": jid,
-                **env,
-            })
+            if args.area_weighted:
+                res = await db.execute(_BACKFILL_AREA_WEIGHTED_SQL, {
+                    "radius_miles": RADIUS_MILES,
+                    "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                    "jid": jid,
+                    "grid_deg": args.grid_deg,
+                })
+            else:
+                res = await db.execute(_BACKFILL_SQL, {
+                    "radius_miles": RADIUS_MILES,
+                    "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                    "jid": jid,
+                    **env,
+                })
             # Saturation: only when this geography actually HAS competitor data.
             # Otherwise leave sqft_per_capita NULL — "not measured" — instead of
             # writing 0, which reads as a perfectly underserved market (+8 score
