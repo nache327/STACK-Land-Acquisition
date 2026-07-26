@@ -312,6 +312,25 @@ async def _has_competitor_coverage(db, env: dict) -> bool:
     return bool(row[0]) if row else False
 
 
+async def _migrated_after(db, jid, cutoff) -> bool:
+    """True when this jurisdiction's radial rows were (re)computed at/after
+    `cutoff` - i.e. already handled by the current migration run.
+
+    Lets a long --redo migration resume after a transient failure instead of
+    starting over. Keyed on computed_at, which every write path bumps.
+    """
+    result = await db.execute(text(
+        """
+        SELECT COALESCE(MAX(pr.computed_at) >= :cutoff, FALSE)
+          FROM parcel_radial_metrics pr
+          JOIN parcels p ON p.id = pr.parcel_id
+         WHERE p.jurisdiction_id = CAST(:jid AS uuid)
+           AND pr.radius_miles = 3.0
+        """
+    ), {"jid": jid, "cutoff": cutoff})
+    return bool(result.scalar())
+
+
 async def _already_done(db, jid: str) -> bool:
     """True if this jurisdiction already has 3-mi radial rows. Each jurisdiction
     commits atomically (one transaction), so 'has any row' == 'fully done' —
@@ -361,7 +380,33 @@ async def main() -> None:
     ap.add_argument("--redo", action="store_true",
                     help="Reprocess jurisdictions even if already backfilled "
                          "(default: skip done ones so the run is resumable).")
+    ap.add_argument("--redo-after", type=str, default=None,
+                    help="Resumable --redo. Skip a jurisdiction whose radial rows "
+                         "were already computed at/after this ISO timestamp - i.e. "
+                         "already migrated by THIS run. Without it, restarting a "
+                         "--redo migration after a transient failure redoes every "
+                         "jurisdiction from the top, and this pass costs ~4-7 min "
+                         "per large county. Example: --redo-after 2026-07-26T00:00:00")
+    ap.add_argument("--retries", type=int, default=4,
+                    help="Per-jurisdiction retries on TRANSIENT connection errors "
+                         "(the network has been dropping mid-query). A logic error "
+                         "still aborts immediately.")
     args = ap.parse_args()
+
+    # asyncpg will not cast a text bind to timestamptz, so parse --redo-after
+    # into a real tz-aware datetime up front (and fail fast on a bad value
+    # rather than mid-migration).
+    redo_after_dt = None
+    if args.redo_after:
+        from datetime import datetime, timezone
+        try:
+            redo_after_dt = datetime.fromisoformat(args.redo_after)
+        except ValueError:
+            print(f"--redo-after: not an ISO timestamp: {args.redo_after!r}")
+            return
+        if redo_after_dt.tzinfo is None:
+            redo_after_dt = redo_after_dt.replace(tzinfo=timezone.utc)
+    args.redo_after_dt = redo_after_dt
 
     # NullPool: hold NO idle connections between jurisdictions. The script is
     # sequential (one session at a time), so a persistent pool buys nothing and
@@ -375,85 +420,116 @@ async def main() -> None:
     jids = await _jurisdiction_ids(session_factory, args.jurisdiction)
     print(f"Backfilling 3-mi population for {len(jids)} jurisdiction(s)…", flush=True)
 
+    _TRANSIENT = ("connection", "closed", "getaddrinfo", "timeout",
+                  "terminating", "server closed")
+
     for i, jid in enumerate(jids, 1):
-        t0 = time.monotonic()
-        async with session_factory() as db:
-            await db.execute(text("SET statement_timeout = 0"))
-            if not args.redo and await _already_done(db, jid):
-                print(f"  [{i}/{len(jids)}] {jid}  already done — skip", flush=True)
-                continue
-            bbox = await _bbox(db, jid)
-            if bbox is None:
-                print(f"  [{i}/{len(jids)}] {jid}  no geometry — skip", flush=True)
-                continue
-            # Load/refresh census coverage for the jurisdiction bbox first.
-            census_failed = False
+        # Each jurisdiction is an independently retryable unit. The network has
+        # been dropping connections mid-query (ConnectionDoesNotExistError), and
+        # at ~4-7 min per large county a single drop used to abort the whole
+        # multi-hour migration. Retry transient failures; let a real error abort.
+        for attempt in range(1, max(args.retries, 1) + 1):
             try:
-                n_tracts = await ensure_census_tracts(bbox, db)
-            except Exception as e:
-                print(f"  [{i}/{len(jids)}] {jid}  census fetch failed: {e}", flush=True)
-                n_tracts = -1
-                census_failed = True
-            # Expand the bbox ~0.12° (~8mi > the 3mi ring) so an edge parcel's
-            # ring still sees neighbouring tracts.
-            xmin, ymin, xmax, ymax = bbox
-            m = 0.12
-            env = {"xmin": xmin - m, "ymin": ymin - m,
-                   "xmax": xmax + m, "ymax": ymax + m}
-
-            # HARD PRECONDITION: never write when we can't measure. A measured
-            # population below the 30k floor is a hard board drop, so writing 0
-            # for a county whose ACS load failed silently removed every one of
-            # its parcels from the board. Previously this path logged the failure
-            # and ran the INSERT anyway, and _already_done() then marked the
-            # poisoned county complete forever (only --redo would revisit it).
-            populated = await _populated_tracts_in_env(db, env)
-            if census_failed or populated == 0:
-                why = "census fetch failed" if census_failed else "no populated tracts in bbox"
-                print(
-                    f"  [{i}/{len(jids)}] {jid}  SKIPPED ({why}) — leaving population "
-                    f"NULL rather than writing 0; re-run once census data loads",
-                    flush=True,
-                )
-                continue
-
-            if args.area_weighted:
-                res = await db.execute(_BACKFILL_AREA_WEIGHTED_SQL, {
-                    "radius_miles": RADIUS_MILES,
-                    "radius_m": RADIUS_MILES * _MILES_TO_METERS,
-                    "jid": jid,
-                    "grid_deg": args.grid_deg,
-                })
-            else:
-                res = await db.execute(_BACKFILL_SQL, {
-                    "radius_miles": RADIUS_MILES,
-                    "radius_m": RADIUS_MILES * _MILES_TO_METERS,
-                    "jid": jid,
-                    **env,
-                })
-            # Saturation: only when this geography actually HAS competitor data.
-            # Otherwise leave sqft_per_capita NULL — "not measured" — instead of
-            # writing 0, which reads as a perfectly underserved market (+8 score
-            # bonus, green badge) for every storage parcel in the county.
-            sat_rc: object = "skipped"
-            if args.skip_saturation:
-                sat_rc = "skipped (--skip-saturation)"
-            elif not await _has_competitor_coverage(db, env):
-                sat_rc = "skipped (no competitor data — left NULL)"
-            else:
-                sat = await db.execute(_BACKFILL_SATURATION_SQL, {
-                    "radius_miles": RADIUS_MILES,
-                    "radius_m": RADIUS_MILES * _MILES_TO_METERS,
-                    "sqft_default": settings.competitor_sqft_default,
-                    "jid": jid,
-                })
-                sat_rc = sat.rowcount
-            await db.commit()
-            print(f"  [{i}/{len(jids)}] {jid}  rows={res.rowcount}  sat={sat_rc}  "
-                  f"tracts={n_tracts}  ({time.monotonic() - t0:.1f}s)", flush=True)
+                await _one_jurisdiction(session_factory, args, jids, i, jid)
+                break
+            except Exception as e:  # noqa: BLE001
+                msg = str(e).lower()
+                if attempt < args.retries and any(t in msg for t in _TRANSIENT):
+                    print(f"  [{i}/{len(jids)}] {jid}  transient "
+                          f"{type(e).__name__}, retry {attempt}/{args.retries}",
+                          flush=True)
+                    await asyncio.sleep(8)
+                    continue
+                print(f"  [{i}/{len(jids)}] {jid}  FAILED ({type(e).__name__}): {e}",
+                      flush=True)
+                break
 
     await engine.dispose()
     print("Done.", flush=True)
+
+
+async def _one_jurisdiction(session_factory, args, jids, i, jid) -> None:
+    """Migrate/backfill ONE jurisdiction. Raises on failure so the caller can
+    retry transient connection drops without losing the whole run."""
+    t0 = time.monotonic()
+    async with session_factory() as db:
+        await db.execute(text("SET statement_timeout = 0"))
+        if args.redo_after_dt and await _migrated_after(db, jid, args.redo_after_dt):
+            print(f"  [{i}/{len(jids)}] {jid}  already migrated this run — skip",
+                  flush=True)
+            return
+        if not args.redo and await _already_done(db, jid):
+            print(f"  [{i}/{len(jids)}] {jid}  already done — skip", flush=True)
+            return
+        bbox = await _bbox(db, jid)
+        if bbox is None:
+            print(f"  [{i}/{len(jids)}] {jid}  no geometry — skip", flush=True)
+            return
+        # Load/refresh census coverage for the jurisdiction bbox first.
+        census_failed = False
+        try:
+            n_tracts = await ensure_census_tracts(bbox, db)
+        except Exception as e:
+            print(f"  [{i}/{len(jids)}] {jid}  census fetch failed: {e}", flush=True)
+            n_tracts = -1
+            census_failed = True
+        # Expand the bbox ~0.12° (~8mi > the 3mi ring) so an edge parcel's
+        # ring still sees neighbouring tracts.
+        xmin, ymin, xmax, ymax = bbox
+        m = 0.12
+        env = {"xmin": xmin - m, "ymin": ymin - m,
+               "xmax": xmax + m, "ymax": ymax + m}
+
+        # HARD PRECONDITION: never write when we can't measure. A measured
+        # population below the 30k floor is a hard board drop, so writing 0
+        # for a county whose ACS load failed silently removed every one of
+        # its parcels from the board. Previously this path logged the failure
+        # and ran the INSERT anyway, and _already_done() then marked the
+        # poisoned county complete forever (only --redo would revisit it).
+        populated = await _populated_tracts_in_env(db, env)
+        if census_failed or populated == 0:
+            why = "census fetch failed" if census_failed else "no populated tracts in bbox"
+            print(
+                f"  [{i}/{len(jids)}] {jid}  SKIPPED ({why}) — leaving population "
+                f"NULL rather than writing 0; re-run once census data loads",
+                flush=True,
+            )
+            return
+
+        if args.area_weighted:
+            res = await db.execute(_BACKFILL_AREA_WEIGHTED_SQL, {
+                "radius_miles": RADIUS_MILES,
+                "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                "jid": jid,
+                "grid_deg": args.grid_deg,
+            })
+        else:
+            res = await db.execute(_BACKFILL_SQL, {
+                "radius_miles": RADIUS_MILES,
+                "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                "jid": jid,
+                **env,
+            })
+        # Saturation: only when this geography actually HAS competitor data.
+        # Otherwise leave sqft_per_capita NULL — "not measured" — instead of
+        # writing 0, which reads as a perfectly underserved market (+8 score
+        # bonus, green badge) for every storage parcel in the county.
+        sat_rc: object = "skipped"
+        if args.skip_saturation:
+            sat_rc = "skipped (--skip-saturation)"
+        elif not await _has_competitor_coverage(db, env):
+            sat_rc = "skipped (no competitor data — left NULL)"
+        else:
+            sat = await db.execute(_BACKFILL_SATURATION_SQL, {
+                "radius_miles": RADIUS_MILES,
+                "radius_m": RADIUS_MILES * _MILES_TO_METERS,
+                "sqft_default": settings.competitor_sqft_default,
+                "jid": jid,
+            })
+            sat_rc = sat.rowcount
+        await db.commit()
+        print(f"  [{i}/{len(jids)}] {jid}  rows={res.rowcount}  sat={sat_rc}  "
+              f"tracts={n_tracts}  ({time.monotonic() - t0:.1f}s)", flush=True)
 
 
 if __name__ == "__main__":
