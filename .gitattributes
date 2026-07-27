@@ -1,0 +1,10 @@
+# Shell scripts MUST keep LF endings. Dev machines here are Windows with
+# core.autocrlf on, which would check these out with CRLF — and a CRLF shebang
+# fails as `/usr/bin/env: bad interpreter: No such file or directory`, both in
+# Git Bash and anywhere the script runs in a container. The failure looks like a
+# missing interpreter, not a line-ending problem, so it costs real time.
+*.sh text eol=lf
+
+# Same reasoning for container/entrypoint files that shells parse.
+Dockerfile* text eol=lf
+*.bash text eol=lf
