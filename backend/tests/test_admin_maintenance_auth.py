@@ -121,11 +121,26 @@ def test_every_maintenance_route_is_covered_here():
     """If a route is added to the router, this fails until it is added above —
     so the perimeter check cannot silently fall behind the surface. Compares
     against FastAPI's templated paths (…/runs/{run_id}), mapping the concrete
-    paths used in ROUTES onto them."""
+    paths used in ROUTES onto them.
+
+    Enumerates the ROUTER, not the assembled `app`. Scanning `app.routes` for a
+    path substring was unreliable: it passed locally and in an isolated run but
+    came back EMPTY in CI's full-suite run, failing with
+    `assert set() == {5 routes}` — while the 17 HTTP tests above, which hit those
+    same paths, all got real 401/503 responses in the same session. So the routes
+    were genuinely mounted and reachable; only the enumeration was flaky. The
+    router's own `.routes` is fixed at import and cannot be perturbed by whatever
+    the rest of the suite does to the shared app object, and it is the more direct
+    expression of the thing under test: the ROUTER's surface versus this file's
+    list. Mounting is proven by the request-level tests, not by introspection.
+    """
+    from app.api import admin_maintenance
+
+    # Router paths carry no prefix (`/admin/maintenance/...`); main.py mounts the
+    # router with prefix="/api", which is what ROUTES spells out.
     live = {
-        (m.lower(), r.path)
-        for r in app.routes
-        if "admin/maintenance" in getattr(r, "path", "")
+        (m.lower(), "/api" + r.path)
+        for r in admin_maintenance.router.routes
         for m in (getattr(r, "methods", set()) or set())
         if m.lower() in {"get", "post", "put", "patch", "delete"}
     }
@@ -135,5 +150,7 @@ def test_every_maintenance_route_is_covered_here():
         for m, p, _ in ROUTES
     }
     assert live == covered, (
-        f"uncovered: {live - covered}; stale entries: {covered - live}"
+        f"router exposes {sorted(live)}\n"
+        f"this file covers {sorted(covered)}\n"
+        f"uncovered: {sorted(live - covered)}; stale entries: {sorted(covered - live)}"
     )

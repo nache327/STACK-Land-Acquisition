@@ -1,0 +1,21 @@
+# Triaged gitleaks findings, one fingerprint per line.
+# This is the mechanism for retiring a specific finding — allowlist.fingerprints
+# in .gitleaks.toml is NOT a supported field (the config loads and the finding
+# still fires, which is exactly what happened on run 30303816682).
+#
+# Why anything is here at all: pull_request events scan only the PR diff, so
+# history is never re-examined. The workflow_dispatch trigger scans FULL history
+# (~1442 commits) and surfaced one old finding. Untriaged, every dispatch run
+# fails on a known false positive — and a check that is always red is a check
+# nobody reads, which is how a real leak gets missed.
+#
+# FALSE POSITIVE, triaged 2026-07-27. generic-api-key fired on a `key:` PROPERTY
+# in a since-deleted admin runbook module. The value is a 13-char domain slug
+# shaped <phase><n>_<state>_<town>; that file had 8 `key:` entries, all
+# slug-shaped, and this is the only one containing a digit — which is what pushed
+# its entropy (3.55) over the rule's threshold. Not a credential, nothing to
+# rotate, and the file is no longer on main.
+#
+# Scoped to this exact commit+path+rule+line, so any other finding — including a
+# genuine secret in that same file — still fails the build.
+38e3b0fbb7db5fd3bf5c5a7517073bd35ddd1aad:frontend/lib/admin/municipalityRunbook.ts:generic-api-key:78
