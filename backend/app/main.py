@@ -24,6 +24,7 @@ from app.api import (
     pdf_parser,
     shortlist,
     zoning_districts,
+    admin_maintenance,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -92,6 +93,11 @@ app.add_middleware(
 app.include_router(competition.router, prefix="/api")
 # Operator/CLI-only routers — gated by the shared-secret (frontend never calls these).
 app.include_router(debug.router, prefix="/api", dependencies=[Depends(require_secret)])
+# Long maintenance jobs (radial backfills, full re-scores, ring recomputes) run in
+# the dramatiq worker so they survive Nache's laptop sleeping. Operator-only.
+app.include_router(
+    admin_maintenance.router, prefix="/api", dependencies=[Depends(require_secret)]
+)
 app.include_router(jobs.router, prefix="/api")
 app.include_router(jurisdictions.router, prefix="/api")
 app.include_router(ordinances.router, prefix="/api")

@@ -203,3 +203,31 @@ def process_listing_match(jurisdiction_id: str, source: str = "costar") -> None:
 
 def enqueue_listing_match(jurisdiction_id: uuid.UUID, source: str = "costar") -> None:
     process_listing_match.send(str(jurisdiction_id), source)
+
+
+@dramatiq.actor(
+    # NO retries: these jobs mutate large amounts of data and are individually
+    # resumable, so a silent automatic replay is worse than a visible failure —
+    # re-enqueue deliberately after reading ops_job_run.
+    max_retries=0,
+    # 10 HOURS. The whole point of this actor is jobs a laptop cannot host: the
+    # area-weighted radial migration ran ~7h across 151 jurisdictions and a full
+    # re-score is the same order. Every other actor here is minutes-to-an-hour;
+    # do not copy this limit onto anything smaller.
+    time_limit=10 * 60 * 60 * 1000,
+    # Deliberately the DEFAULT queue, not a dedicated "maintenance" one. The
+    # Procfile runs `dramatiq app.worker` with no --queues, and a job that
+    # silently never gets consumed is a far worse failure than sharing a queue.
+    # Cost of sharing: one long job occupies 1 of the worker's 4 slots
+    # (2 processes x 2 threads), leaving 3 for pipeline/ingest work.
+)
+def run_maintenance_job(run_id: int, job_name: str, args: dict | None = None) -> None:
+    """Execute an allowlisted long maintenance script in the worker.
+
+    Job names and every parameter are validated in
+    app.services.maintenance_jobs — this actor deliberately holds no command
+    strings of its own.
+    """
+    from app.services.maintenance_jobs import execute_run
+
+    asyncio.run(execute_run(run_id, job_name, args or {}))
