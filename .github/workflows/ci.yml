@@ -5,6 +5,13 @@ on:
     branches: [main, "phase/**"]
   pull_request:
     branches: [main]
+  # On-demand full-suite run on ANY branch. Without this, a feature-branch push
+  # runs nothing and the first real signal is the PR — which is how a red CI got
+  # discovered late. This is also the sanctioned substitute for reproducing the
+  # DB-dependent tests locally: it already has Python 3.12 + postgis, on hardware
+  # that isn't a laptop at 99% disk.
+  #   gh workflow run CI --ref <branch>
+  workflow_dispatch:
 
 jobs:
   # -------------------------------------------------------------------------
