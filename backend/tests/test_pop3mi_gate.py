@@ -58,22 +58,45 @@ def _run(filter_json):
     raise AssertionError("candidate query not captured")
 
 
-# ── Population floor: flag, never drop ───────────────────────────────────
+# ── Population floor: HYSTERESIS BAND (drop clearly-below, flag the band) ──
 
-def test_pop_floor_is_not_a_hard_predicate():
-    """The regression this guards: re-introducing the WHERE clause would once
-    again make a shaky approximation silently delete deals."""
+def test_floor_is_never_a_step_function_at_the_threshold():
+    """The regression this guards: hard-dropping at exactly the floor decides
+    ~119k parcels (0.67%, those within 2% of 30k) by measurement noise, and a
+    wrong drop is invisible. The predicate must key on the BAND edge, not the
+    raw floor."""
     sql, _ = _run({"requireListed": True, "minPop3mi": 30000})
     assert "prm3.population >= CAST(:min_pop_3mi AS INT)" not in sql
+    assert "prm3.population >= CAST(:pop_hard_floor AS INT)" in sql
 
 
-def test_pop_floor_surfaces_as_a_soft_flag():
+def test_band_edges_are_computed_from_the_floor():
+    _, params = _run({"requireListed": True, "minPop3mi": 30000})
+    assert params["pop_hard_floor"] == 27000     # 30000 * (1 - 0.10)
+    assert params["pop_soft_ceiling"] == 33000   # 30000 * (1 + 0.10)
+
+
+def test_clearly_below_the_band_is_hard_dropped():
+    """The point of re-hardening: genuinely rural parcels leave the board."""
+    sql, _ = _run({"requireListed": True, "minPop3mi": 30000})
+    assert "CAST(:pop_hard_floor AS INT)" in sql
+    # ...and unmeasured still passes, never dropped
+    assert "prm3.population IS NULL" in sql
+
+
+def test_inside_the_band_is_flagged_not_dropped():
     sql, _ = _run({"requireListed": True, "minPop3mi": 30000})
     assert "soft_below_pop_floor" in sql
+    assert "CAST(:pop_soft_ceiling AS INT)" in sql
     assert "soft_pop_unmeasured" in sql
-    # asyncpg needs the type on every reference.
-    assert "CAST(:min_pop_3mi AS INT)" in sql
     assert ":min_pop_3mi IS NULL" not in sql  # bare/un-cast form forbidden
+
+
+def test_no_floor_configured_means_no_drop_and_no_flag():
+    _, params = _run({"requireListed": True})
+    assert params["min_pop_3mi"] is None
+    assert params["pop_hard_floor"] is None
+    assert params["pop_soft_ceiling"] is None
 
 
 def test_radial_join_present():

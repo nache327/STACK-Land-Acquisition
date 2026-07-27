@@ -167,6 +167,17 @@ _MIN_SCORE = 40
 # sale, broker contact attached" — only Strong-tier+ scores qualify.
 _MIN_SCORE_LISTED = 70
 
+# Hysteresis half-width around the 3-mi population floor, as a fraction. Only
+# parcels BELOW floor*(1-BAND) are hard-dropped; the band around the floor is
+# soft-flagged instead of decided by measurement noise. See the long rationale
+# in _top_parcels_for_filter where min_pop_3mi is read.
+#
+# 0.10 is deliberately wider than the migration's measured worst-case error
+# (<=2.6% mean per jurisdiction, ~2% grid-snap residual): near a threshold the
+# asymmetry matters, because a wrong DROP is invisible while a wrong KEEP just
+# costs a look. Tighten toward 0.05 if the Verify tier becomes noisy.
+_POP_FLOOR_BAND = 0.10
+
 
 async def _eligible_filters(
     db: AsyncSession, force: bool = False
@@ -247,13 +258,37 @@ async def _top_parcels_for_filter(
     # the LGC score itself (which ranks the lane) already encodes the LGC
     # verdict, so the digest body stays self_storage-simple here.
     exclude_storage_viable = bool(filter_json.get("excludeStorageViable"))
-    # "Too rural" floor (both lanes). SOFT: parcels below it are surfaced with
-    # soft_below_pop_floor (and already carry -20 in the score) rather than being
-    # dropped, because the persisted 3-mi population is a tract-centric
-    # approximation that disagrees with the panel's area-weighted figure — a
-    # hard drop on a shaky number removed real deals with no trace. Unmeasured
-    # gets soft_pop_unmeasured. NULL bind = no flag at all.
+    # "Too rural" floor (both lanes), applied as a HYSTERESIS BAND rather than a
+    # step at the threshold:
+    #
+    #     pop <  floor*(1-BAND)   -> HARD DROP     (clearly rural; the real signal)
+    #     within +-BAND of floor  -> soft flag     (inside the measurement's own
+    #                                               error bar; Verify tier, never
+    #                                               silently dropped)
+    #     pop >= floor*(1+BAND)   -> clean pass
+    #     NULL                    -> soft_pop_unmeasured (never dropped)
+    #
+    # Why a band. The floor was hard, then softened when the persisted number was
+    # found to be a tract-centric approximation overstating by up to +47%. It is
+    # now per-parcel area-weighted (validated at scale: <=2.6% mean error across
+    # all 139 jurisdictions), so the hard drop is justified again — EXCEPT near
+    # the threshold. The grid-snap that makes the migration affordable leaves a
+    # ~2% residual, and ~119k parcels (0.67%) sit within 2% of 30k: a step
+    # function there decides them by measurement noise, and a wrong drop is
+    # invisible. BAND=10% is deliberately WIDER than the measured worst-case
+    # error, erring toward keep-visible over wrong-drop. Tighten to 5% if the
+    # Verify tier gets noisy.
     min_pop_3mi = filter_json.get("minPop3mi")
+    # Band edges derived from the floor. None when no floor is configured, so the
+    # binds stay NULL and neither the drop nor the flag fires.
+    pop_hard_floor = (
+        int(round(float(min_pop_3mi) * (1.0 - _POP_FLOOR_BAND)))
+        if min_pop_3mi is not None else None
+    )
+    pop_soft_ceiling = (
+        int(round(float(min_pop_3mi) * (1.0 + _POP_FLOOR_BAND)))
+        if min_pop_3mi is not None else None
+    )
     # Wealth gate (dt=10 ring), also SOFT — see the SQL comment on
     # soft_below_home_value. These filter_json keys existed on every seeded board
     # filter but no backend path had ever read them; the client-side buy-box
@@ -444,13 +479,15 @@ async def _top_parcels_for_filter(
             -- 3-mi population not yet backfilled: surfaced but flagged, so a
             -- coverage gap reads as "verify" rather than silently dropping.
             (prm3.population IS NULL)                      AS soft_pop_unmeasured,
-            -- Measured BELOW the too-rural floor. Was a hard drop; now a flag,
-            -- because the persisted number is a tract-centric approximation
-            -- (see backfill_radial_population's docstring) and dropping on it
-            -- removed real deals with no trace. Still -20 in the score.
+            -- Inside the uncertainty BAND around the floor: kept, but flagged
+            -- into the Verify tier. Anything clearly below is hard-dropped in
+            -- the WHERE; anything clearly above passes clean. This flag is
+            -- exactly the "we cannot tell which side of the floor this is on"
+            -- population. Still -20 in the score.
             (CAST(:min_pop_3mi AS INT) IS NOT NULL
              AND prm3.population IS NOT NULL
-             AND prm3.population < CAST(:min_pop_3mi AS INT))
+             AND prm3.population <  CAST(:pop_soft_ceiling AS INT)
+             AND prm3.population >= CAST(:pop_hard_floor AS INT))
                 AS soft_below_pop_floor,
             -- WEALTH GATE, soft. The product's one metric is the WEALTH-gated
             -- needle (dt=10 median_home_value >= 475k AND median_hhi >= 100k),
@@ -593,13 +630,21 @@ async def _top_parcels_for_filter(
                 OR zum.mini_warehouse::text IN ('permitted', 'conditional'),
                    FALSE)
           )
-          -- NOTE: the "too rural" 3-mi population floor is deliberately NOT a
-          -- hard predicate here. It is surfaced as the soft_below_pop_floor flag
-          -- (and already costs -20 in the score) because the persisted
-          -- population is a tract-centric approximation that disagrees with the
-          -- panel's area-weighted number — hard-dropping on it silently removed
-          -- real deals. Re-harden once backfill_radial_population computes
-          -- per-parcel area-weighted values. Same reasoning for the wealth gate.
+          -- "Too rural" HARD drop — only for parcels CLEARLY below the floor,
+          -- i.e. under floor*(1-_POP_FLOOR_BAND). Parcels inside the band around
+          -- the floor are kept and soft-flagged (see soft_below_pop_floor): the
+          -- population is now per-parcel area-weighted and validated at scale,
+          -- but its residual error is ~2% and ~119k parcels sit within 2% of the
+          -- floor, so a step function there would decide them by noise. NULL
+          -- (unmeasured) always passes. CAST for the same asyncpg
+          -- AmbiguousParameterError reason as the gates above.
+          AND (
+                CAST(:min_pop_3mi AS INT) IS NULL
+             OR prm3.population IS NULL
+             OR prm3.population >= CAST(:pop_hard_floor AS INT)
+          )
+          -- The wealth gate stays SOFT (flags only) until the dt=10 rings get
+          -- the same treatment this population number just received.
         ORDER BY e.score DESC, e.parcel_id
         LIMIT :lim
         """
@@ -619,6 +664,8 @@ async def _top_parcels_for_filter(
             "storage_verdict_mode": storage_verdict_mode,
             "exclude_storage_viable": exclude_storage_viable,
             "min_pop_3mi": min_pop_3mi,
+            "pop_hard_floor": pop_hard_floor,
+            "pop_soft_ceiling": pop_soft_ceiling,
             "min_home_value": min_home_value,
             "min_hhi": min_hhi,
         },

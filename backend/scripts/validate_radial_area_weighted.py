@@ -130,10 +130,10 @@ async def main() -> int:
                 """)]
 
         print(f"Validating {len(jids)} jurisdiction(s), "
-              f"{args.sample} parcels/stratum, tolerance {args.tolerance_pct}% mean error\n")
+              f"{args.sample} parcels/stratum, tolerance {args.tolerance_pct}% mean error\n", flush=True)
         header = (f"{'jurisdiction':<34} {'n':>4} {'mean':>7} {'max':>7} "
                   f"{'flips':>6} {'unmig':>6}  verdict")
-        print(header); print("-" * len(header))
+        print(header, flush=True); print("-" * len(header), flush=True)
 
         bad: list[str] = []
         total_flips = 0
@@ -172,24 +172,24 @@ async def main() -> int:
             if not ok:
                 bad.append(f"{name} ({jid[:8]}): mean {mean_e:.1f}%")
             print(f"{name[:33]:<34} {len(errs):>4} {mean_e:>6.1f}% {max_e:>6.1f}% "
-                  f"{flips:>6} {unmigrated:>6}  {'OK' if ok else 'OUT OF TOLERANCE'}")
+                  f"{flips:>6} {unmigrated:>6}  {'OK' if ok else 'OUT OF TOLERANCE'}", flush=True)
 
         print()
         if bad:
             print(f"FAIL: {len(bad)} jurisdiction(s) OUT OF TOLERANCE - do NOT re-harden "
-                  f"the population gate:")
+                  f"the population gate:", flush=True)
             for b in bad:
-                print(f"   {b}")
+                print(f"   {b}", flush=True)
             return 1
-        print(f"PASS: all jurisdictions within {args.tolerance_pct}% mean error.")
+        print(f"PASS: all jurisdictions within {args.tolerance_pct}% mean error.", flush=True)
         if total_flips:
             print(f"WARN: {total_flips} sampled parcel(s) flip across the "
                   f"{POP_FLOOR:,} floor between stored and reference. Under a HARD "
                   f"gate each flip is a wrong board decision — review before "
-                  f"re-hardening.")
+                  f"re-hardening.", flush=True)
         else:
             print(f"PASS: no parcel flips across the {POP_FLOOR:,} floor: stored and "
-                  f"reference agree on every gate decision in the sample.")
+                  f"reference agree on every gate decision in the sample.", flush=True)
         return 0
     finally:
         await conn.close()
