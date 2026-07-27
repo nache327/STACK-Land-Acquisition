@@ -60,11 +60,22 @@ from app.services.buybox_scoring import score_jurisdiction  # noqa: E402
 SS_FILTER = uuid.UUID("1c5a257d-b971-4ff7-bdf8-1b9b62083879")   # "Hot deals"
 LGC_FILTER = uuid.UUID("3f551716-6bcf-48a1-b2a4-389ade963e9f")  # "LGC Hot deals"
 
-# Default cutoff = after the area-weighted 3-mi population backfill finished
-# (2026-07-26 20:18:51Z) and before the re-score that consumes it started
-# (21:20Z). No scores were computed in that gap, so this is effectively exact.
-# Scores older than this read the superseded tract-centroid population.
-DEFAULT_CUTOFF = "2026-07-26 21:00:00+00"
+# Default cutoff = after the area-weighted 3-mi population backfill FINISHED and
+# before the re-score that consumes it STARTED. Scores older than this read the
+# superseded tract-centroid population and must be redone.
+#
+#   backfill finished   2026-07-26 20:18:51 -0600  =  2026-07-27 02:18:51Z
+#   re-score started    2026-07-26 21:20:11 -0600  =  2026-07-27 03:20:11Z
+#
+# No scores were computed in that one-hour gap, so any value inside it is exact.
+#
+# TIMEZONE TRAP — the first version of this constant read "2026-07-26 21:00:00+00",
+# built from the LOCAL wall-clock times above while labelled +00. This machine is
+# UTC-6, so that cutoff was six hours EARLY: it sat before the backfill even
+# finished, meaning stale-population scores would have counted as fresh and the
+# audit would have reported CLEAN over exactly the rows it exists to catch. Always
+# convert to UTC before writing a cutoff; computed_at is timestamptz.
+DEFAULT_CUTOFF = "2026-07-27 03:00:00+00"
 
 # Complete means every parcel got a row. Slack absorbs parcels inserted mid-run.
 COVERAGE_OK = 0.99
