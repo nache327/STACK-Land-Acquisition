@@ -118,6 +118,10 @@ async def main() -> None:
                     help="Stop before this index (exclusive) in the ordered list. "
                          "With --start-index, bounds a worker to a disjoint slice "
                          "for safe 2-worker parallelism (no overlap/redo).")
+    ap.add_argument("--retries", type=int, default=4,
+                    help="Per-jurisdiction retries on TRANSIENT connection errors. "
+                         "An overnight run lost 2 of its first 9 counties to "
+                         "mid-query connection drops without this.")
     ap.add_argument("--filter", type=str, default=None,
                     help="Comma-separated buybox_filter UUIDs to score directly "
                          "(e.g. the dashboardEnabled board filters). When omitted, "
@@ -157,19 +161,36 @@ async def main() -> None:
         if skip_conn is not None and await _recently_scored(skip_conn, jid):
             print(f"  [{i}/{n_all}] {jid}  already scored — skip", flush=True)
             continue
-        try:
-            if target_filters is not None:
-                n = 0
-                for fid, fjson in target_filters:
-                    n += await score_jurisdiction(jid, fid, fjson)
-            else:
-                n = await auto_score_jurisdiction(jid)
-            total += n
-            print(f"  [{i}/{n_all}] {jid}  scored={n:,}  "
-                  f"({time.monotonic() - t0:.1f}s)", flush=True)
-        except Exception as e:  # keep going; report at the end
-            failures.append((jid, str(e)))
-            print(f"  [{i}/{n_all}] {jid}  FAILED: {e}", flush=True)
+        # Retry TRANSIENT connection failures. Without this an overnight run lost
+        # 2 of its first 9 counties to "connection was closed in the middle of
+        # operation" — the network drops mid-query and a multi-hour scoring pass
+        # has many chances to be hit. Mirrors the same guard in
+        # backfill_radial_population. A genuine error still records and moves on.
+        for attempt in range(1, max(args.retries, 1) + 1):
+            try:
+                if target_filters is not None:
+                    n = 0
+                    for fid, fjson in target_filters:
+                        n += await score_jurisdiction(jid, fid, fjson)
+                else:
+                    n = await auto_score_jurisdiction(jid)
+                total += n
+                print(f"  [{i}/{n_all}] {jid}  scored={n:,}  "
+                      f"({time.monotonic() - t0:.1f}s)", flush=True)
+                break
+            except Exception as e:  # keep going; report at the end
+                msg = str(e).lower()
+                transient = any(t in msg for t in (
+                    "connection", "closed", "getaddrinfo", "timeout",
+                    "terminating", "server closed"))
+                if attempt < args.retries and transient:
+                    print(f"  [{i}/{n_all}] {jid}  transient {type(e).__name__}, "
+                          f"retry {attempt}/{args.retries}", flush=True)
+                    await asyncio.sleep(8)
+                    continue
+                failures.append((jid, str(e)))
+                print(f"  [{i}/{n_all}] {jid}  FAILED: {e}", flush=True)
+                break
 
     if skip_conn is not None:
         await skip_conn.close()
