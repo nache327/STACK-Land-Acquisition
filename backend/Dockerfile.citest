@@ -1,0 +1,50 @@
+# Test-runner image that matches CI's INTERPRETER, not just its database.
+#
+# OPPORTUNISTIC, NOT THE SANCTIONED PATH. The sanctioned full-suite run is
+# GitHub Actions (see the Testing section in CLAUDE.md) — including the
+# `workflow_dispatch` trigger for an on-demand run on any branch. Use this image
+# only when you have the disk for it: ~4GB free on top of Docker Desktop's own
+# ~14GB. `run_ci_tests_local.sh` preflight-refuses below that, because building
+# on a near-full disk does not fail cleanly — it truncates containerd's content
+# store and leaves the daemon broken.
+#
+# Why it exists at all: run_ci_tests_local.sh originally started CI's postgis
+# image but ran pytest on whatever Python the dev machine had (3.13 locally vs
+# 3.12 in CI). That is a false equivalence — a version-specific difference passes
+# locally and still reds the PR, which is the blind spot the script exists to
+# remove. Matching only the DB is not enough.
+#
+# Mirrors the CI job's setup steps (.github/workflows/ci.yml):
+#   python 3.12 + GDAL/GEOS/PROJ/libpq system deps + pip install -e ".[dev]"
+#   + playwright chromium.
+#
+# Built once and reused; only a pyproject.toml change busts the dependency layer.
+# The working tree is MOUNTED at /app at run time, so tests always exercise your
+# current code — the editable install points at /app, so the mount just works.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Same system libs CI installs. gcc/g++ are needed to build a couple of wheels
+# that ship no manylinux build for 3.12.
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+        libgdal-dev gdal-bin libgeos-dev libproj-dev libpq-dev \
+        gcc g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install DEPENDENCIES ahead of the source so this layer is cached across runs.
+# `pip install -e` only records a path, so a stub package is enough to resolve
+# and install the dependency set; the real source arrives via the run-time mount.
+COPY pyproject.toml ./
+RUN mkdir -p app && touch app/__init__.py \
+    && pip install --no-cache-dir -e ".[dev]"
+
+# CI also does this; some tests drive a browser.
+RUN playwright install --with-deps chromium
+
+# Entrypoint is pytest; the wrapper script supplies env + args.
+ENTRYPOINT ["python", "-m", "pytest"]

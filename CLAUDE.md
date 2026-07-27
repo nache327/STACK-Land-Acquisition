@@ -51,6 +51,32 @@ correctly but yields ~0 needles — a **correct no-op**, not a gap. Loudoun VA (
   `municipality`=exact `parcels.city`). In-app re-verification is safe again; scripts remain fine too. Still
   match `parcels.city` casing exactly (see the rule above).
 
+## Testing — run the FULL suite, not the two-thirds that work without a DB
+Plain `pytest` in `backend/` reports something like **"833 passed, 63 errors"**. Those 63 are NOT noise: they are
+DB-dependent tests whose fixtures need Postgres/PostGIS, they DO run in CI, and a real failure inside them is
+invisible locally. Treating them as environmental is how a green local run turns into a red PR.
+
+- **The sanctioned full-suite run is GitHub Actions** — it already provides both axes (Python 3.12 +
+  `postgis/postgis:16-3.4`) on disposable hardware. Note `.github/workflows/ci.yml` runs on **PRs to main** and on
+  pushes to `main`/`phase/**` only: **pushing a feature branch does NOT run CI.** Use the
+  **`workflow_dispatch`** trigger (Actions tab → CI → Run workflow, or `gh workflow run CI --ref <branch>`) to get a
+  full run on any branch before opening the PR. Read failures with `gh run view --log-failed`.
+- **Local Docker is opportunistic, not the path.** `backend/scripts/run_ci_tests_local.sh` still reproduces both axes
+  locally, but it needs **~4 GB free disk** on top of Docker Desktop's own ~14 GB. It preflight-refuses below that,
+  because building on a near-full disk does not fail cleanly — it silently TRUNCATES containerd's content store
+  (`blob sha256:… input/output error`) and leaves the daemon broken. `HOST_PYTHON=1` skips the container and is NOT
+  CI-equivalent (local 3.13 vs CI 3.12 hides version-specific failures); it warns, and should never be a final
+  pre-push check.
+- **Do NOT run the suite on Railway.** It looks like a natural fit for the maintenance job runner, but the fixtures
+  `drop_all` + `create_all` EVERY table and the Railway service's env holds the live Supabase DSN. That is one
+  misconfiguration away from wiping prod, for a capability GitHub Actions already gives us for free.
+- **Never point the suite at prod**, wherever you run it: `tests/conftest.py` refuses a Supabase/pooled DSN and the
+  local script pins a container-only DSN — env vars beat `backend/.env`, which holds the live URL.
+- `docker-compose.yml` intentionally defines NO Postgres (Supabase is the source of truth for running the app). The
+  test database is a separate throwaway container — never point the app at it.
+- CI runs **Python 3.12**; a local 3.13 can pass where CI fails. The script now pins 3.12, so suspect the version
+  gap only if you bypassed it with `HOST_PYTHON=1`.
+
 ## Fetch unlocks (try before escalating "no source")
 - **eCode360** (403s WebFetch) → `curl -sL -A "<browser UA>"`: section HTML + `/attachment/*.pdf`. For coded PA
   chapters, the print endpoint `ecode360.com/print/{CLIENTCODE}?guid={ZONING_CHAPTER_GUID}&children=true` renders a
