@@ -90,7 +90,16 @@ async def _jurisdiction_ids(only: uuid.UUID | None) -> list[uuid.UUID]:
 async def _recently_scored(conn, jid: uuid.UUID, hours: int = 12) -> bool:
     """True if this jurisdiction already has buybox scores computed within the
     last `hours` (already done this session). Content-based resume fallback;
-    prefer --start-index (this join can be slow without a computed_at index)."""
+    prefer --start-index (this join can be slow without a computed_at index).
+
+    CAUTION — this is EXISTENCE-based, and scoring commits in 5,000-row chunks
+    with no enclosing transaction (see _UPSERT_SQL usage in buybox_scoring), so a
+    jurisdiction interrupted mid-write has SOME fresh rows and will be treated
+    here as fully done. --resume can therefore permanently skip a partially
+    scored jurisdiction. To confirm real coverage use the count-based
+    scripts/audit_score_coverage.py, which compares scored rows against total
+    parcels instead of asking whether any row exists.
+    """
     return bool(await conn.fetchval(
         f"""
         SELECT EXISTS (
