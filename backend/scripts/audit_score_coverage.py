@@ -150,7 +150,58 @@ def parse_cutoff(s: str) -> datetime:
     return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
 
 
-async def _n_fresh(conn, jid: uuid.UUID, fid: uuid.UUID, cutoff: datetime) -> int:
+_COVERAGE_SQL = """
+WITH elig AS (
+    SELECT jurisdiction_id, count(*)::bigint AS n_parcels
+      FROM parcels GROUP BY jurisdiction_id
+),
+fresh AS (
+    SELECT p.jurisdiction_id, pbs.buybox_filter_id, count(*)::bigint AS n_fresh
+      FROM parcel_buybox_scores pbs
+      JOIN parcels p ON p.id = pbs.parcel_id
+     WHERE pbs.buybox_filter_id = ANY($1::uuid[])
+       AND pbs.computed_at > $2::timestamptz
+     GROUP BY p.jurisdiction_id, pbs.buybox_filter_id
+)
+SELECT j.id AS jid, j.name, f.fid,
+       e.n_parcels, COALESCE(fr.n_fresh, 0) AS n_fresh
+  FROM elig e
+  JOIN jurisdictions j ON j.id = e.jurisdiction_id
+  LEFT JOIN needle_snapshot ns ON ns.jurisdiction_id = j.id
+  CROSS JOIN (SELECT unnest($1::uuid[]) AS fid) f
+  LEFT JOIN fresh fr ON fr.jurisdiction_id = e.jurisdiction_id
+                    AND fr.buybox_filter_id = f.fid
+ WHERE e.n_parcels > 0
+ ORDER BY COALESCE(ns.storage_needles,0) + COALESCE(ns.lgc_needles,0) DESC, j.id, f.fid
+"""
+
+
+async def coverage(conn, cutoff: datetime, retries: int = 5) -> list:
+    """All jurisdiction x filter coverage in ONE pass, with retries.
+
+    Replaces a per-jurisdiction loop that issued 302 separate queries. Because
+    parcel_buybox_scores has no index on (buybox_filter_id, computed_at) — audit
+    item A-9 — EVERY one of those queries scanned the table, so the loop took ~90
+    minutes. One grouped pass scans once.
+
+    Retried: the loop version had no retry protection (only the apply phase did),
+    and a mid-scan `connection was closed in the middle of operation` threw away
+    the entire 90 minutes without writing anything.
+    """
+    for attempt in range(1, max(retries, 1) + 1):
+        try:
+            return await conn.fetch(_COVERAGE_SQL, [SS_FILTER, LGC_FILTER], cutoff)
+        except Exception as e:
+            if attempt < retries and any(t in str(e).lower() for t in _TRANSIENT):
+                print(f"  transient {type(e).__name__} during scan, "
+                      f"retry {attempt}/{retries}", flush=True)
+                await asyncio.sleep(8)
+                continue
+            raise
+    raise RuntimeError("coverage scan failed after retries")
+
+
+async def _n_fresh_unused(conn, jid: uuid.UUID, fid: uuid.UUID, cutoff: datetime) -> int:
     return int(await conn.fetchval(
         """
         SELECT count(*)
@@ -191,41 +242,26 @@ async def main() -> None:
     conn = await _connect()
     short: list[tuple[uuid.UUID, str, uuid.UUID, int, int, float, bool]] = []
     try:
-        jurisdictions = await _jurisdictions(conn)
-        print(f"auditing {len(jurisdictions)} jurisdiction(s) x 2 board filters, "
-              f"cutoff {args.cutoff}", flush=True)
+        print(f"scanning coverage in one pass, cutoff {args.cutoff} …", flush=True)
+        rows = await coverage(conn, cutoff, retries=max(args.retries, 1))
 
-        n_ok = n_empty = 0
-        # Heartbeat. Without it this loop prints ONLY exceptions, so a long clean
-        # stretch is indistinguishable from a hang — 20+ minutes of silence during
-        # which the only honest status report was "no idea how far it is". Every
-        # PROGRESS_EVERY jurisdictions, say where we are.
-        PROGRESS_EVERY = 10
-        for i, (jid, name) in enumerate(jurisdictions, 1):
-            if i % PROGRESS_EVERY == 1:
-                print(f"  ... [{i}/{len(jurisdictions)}] scanning "
-                      f"(complete so far: {n_ok} pairs, short: {len(short)})",
-                      flush=True)
-            n_p = await _n_parcels(conn, jid)
-            if n_p == 0:
-                n_empty += 1
-                continue
-            for fid in (SS_FILTER, LGC_FILTER):
-                n_f = await _n_fresh(conn, jid, fid, cutoff)
-                share = n_f / n_p
-                is_forced = jid in forced
-                if share < COVERAGE_OK or is_forced:
-                    short.append((jid, name, fid, n_p, n_f, share, is_forced))
-                    tag = "MID-WRITE" if is_forced else "partial  "
-                    lane = "SS " if fid == SS_FILTER else "LGC"
-                    print(f"  [{i}/{len(jurisdictions)}] {tag} {lane} "
-                          f"{name[:32]:<32} {n_f:>9,}/{n_p:<9,} ({share:6.1%})",
-                          flush=True)
-                else:
-                    n_ok += 1
+        n_ok = 0
+        for r in rows:
+            n_p, n_f = int(r["n_parcels"]), int(r["n_fresh"])
+            share = n_f / n_p if n_p else 1.0
+            is_forced = r["jid"] in forced
+            if share < COVERAGE_OK or is_forced:
+                short.append((r["jid"], r["name"] or str(r["jid"]), r["fid"],
+                              n_p, n_f, share, is_forced))
+                tag = "MID-WRITE" if is_forced else "partial  "
+                lane = "SS " if r["fid"] == SS_FILTER else "LGC"
+                print(f"  {tag} {lane} {(r['name'] or '')[:32]:<32} "
+                      f"{n_f:>9,}/{n_p:<9,} ({share:6.1%})", flush=True)
+            else:
+                n_ok += 1
 
         print(f"\ncomplete pairs: {n_ok}   SHORT pairs: {len(short)}   "
-              f"empty jurisdictions skipped: {n_empty}", flush=True)
+              f"pairs scanned: {len(rows)}", flush=True)
         if not short:
             print("=== CLEAN: every jurisdiction fully covered on both board "
                   "filters ===", flush=True)
