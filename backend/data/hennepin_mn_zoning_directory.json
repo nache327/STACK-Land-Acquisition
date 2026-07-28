@@ -1,0 +1,122 @@
+[
+  {
+    "muni_name": "Edina",
+    "muni_type": "city",
+    "prod_city_value": "Edina",
+    "county_jurisdiction_name": "Hennepin County, MN",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "TBD — Phase 7A.2 dispatch will resolve Edina's city zoning publisher",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "TBD",
+        "zone_name": "TBD"
+      },
+      "raw_attributes_passthrough": []
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/mn/edina/codes/city_code",
+    "ordinance_chapter": "Chapter 36 — Zoning",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Hennepin wealth-band #1 per Diagnostic PR #255. 21,343 parcels per Hennepin direct probe. MN DOR State Code mostly residential. Per Master 'MetroGIS is parcel-only, no Class C' — needs per-muni zoning source discovery (similar to King WA Phase 6A.2 Bellevue/Mercer fallback pattern)."
+  },
+  {
+    "muni_name": "Wayzata",
+    "muni_type": "city",
+    "prod_city_value": "Wayzata",
+    "county_jurisdiction_name": "Hennepin County, MN",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "TBD — Phase 7A.2 dispatch",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "TBD",
+        "zone_name": "TBD"
+      },
+      "raw_attributes_passthrough": []
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/mn/wayzata/codes/city_code",
+    "ordinance_chapter": "Title XV — Land Usage",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Hennepin wealth-band #2. Smallest muni in cohort (1,992 parcels) — quick flip candidate."
+  },
+  {
+    "muni_name": "Minnetonka",
+    "muni_type": "city",
+    "prod_city_value": "Minnetonka",
+    "county_jurisdiction_name": "Hennepin County, MN",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "TBD — Phase 7A.2 dispatch",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "TBD",
+        "zone_name": "TBD"
+      },
+      "raw_attributes_passthrough": []
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/mn/minnetonka/codes/city_code",
+    "ordinance_chapter": "Chapter 300 — Zoning",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Hennepin wealth-band #3. 20,911 parcels."
+  },
+  {
+    "muni_name": "Plymouth",
+    "muni_type": "city",
+    "prod_city_value": "Plymouth",
+    "county_jurisdiction_name": "Hennepin County, MN",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "TBD — Phase 7A.2 dispatch",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "TBD",
+        "zone_name": "TBD"
+      },
+      "raw_attributes_passthrough": []
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://www.plymouthmn.gov/government/departments/community-development/zoning",
+    "ordinance_chapter": "City Code Chapter 21",
+    "ordinance_platform": "city_website",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Hennepin wealth-band #4. Largest muni in cohort (29,204 parcels)."
+  },
+  {
+    "muni_name": "Eden Prairie",
+    "muni_type": "city",
+    "prod_city_value": "Eden Prairie",
+    "county_jurisdiction_name": "Hennepin County, MN",
+    "zoning_district_source": {
+      "kind": "arcgis_feature_server",
+      "url": "TBD — Phase 7A.2 dispatch",
+      "filter_query": "1=1",
+      "out_sr": 4326,
+      "field_map": {
+        "zone_code": "TBD",
+        "zone_name": "TBD"
+      },
+      "raw_attributes_passthrough": []
+    },
+    "fallback_zoning_district_source": null,
+    "ordinance_url": "https://library.municode.com/mn/eden_prairie/codes/city_code",
+    "ordinance_chapter": "Chapter 11 — Zoning",
+    "ordinance_platform": "municode",
+    "use_structure": "district_narrative",
+    "vintage": "2024",
+    "notes": "Hennepin wealth-band #5. 22,956 parcels."
+  }
+]
