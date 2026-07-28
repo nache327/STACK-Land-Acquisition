@@ -45,6 +45,7 @@ import asyncio
 import json
 import sys
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -119,7 +120,29 @@ async def _n_parcels(conn, jid: uuid.UUID) -> int:
         "SELECT count(*) FROM parcels WHERE jurisdiction_id = $1", jid) or 0)
 
 
-async def _n_fresh(conn, jid: uuid.UUID, fid: uuid.UUID, cutoff: str) -> int:
+def parse_cutoff(s: str) -> datetime:
+    """Cutoff as a REAL tz-aware datetime, not a string.
+
+    asyncpg binds parameters by type, and a str bound to a ``$n::timestamptz``
+    placeholder raises
+        DataError: invalid input for query argument $3: '...'
+                   (expected a datetime.date or datetime.datetime instance)
+    It will not cast text to timestamptz the way a psql literal would. This bit
+    this project once already on backfill_radial_population's --redo-after.
+    Naive input is treated as UTC — a cutoff without an offset is the same
+    ambiguity that made this constant six hours wrong in the first place.
+    """
+    t = s.strip().replace("Z", "+00:00")
+    # fromisoformat wants ±HH:MM; "+00" and "+0000" are common shorthands.
+    if len(t) >= 3 and t[-3] in "+-":
+        t += ":00"
+    elif len(t) >= 5 and t[-5] in "+-" and t[-3] != ":":
+        t = t[:-2] + ":" + t[-2:]
+    dt = datetime.fromisoformat(t)
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+async def _n_fresh(conn, jid: uuid.UUID, fid: uuid.UUID, cutoff: datetime) -> int:
     return int(await conn.fetchval(
         """
         SELECT count(*)
@@ -156,6 +179,7 @@ async def main() -> None:
     if args.force:
         forced |= {uuid.UUID(x.strip()) for x in args.force.split(",") if x.strip()}
 
+    cutoff = parse_cutoff(args.cutoff)
     conn = await _connect()
     short: list[tuple[uuid.UUID, str, uuid.UUID, int, int, float, bool]] = []
     try:
@@ -170,7 +194,7 @@ async def main() -> None:
                 n_empty += 1
                 continue
             for fid in (SS_FILTER, LGC_FILTER):
-                n_f = await _n_fresh(conn, jid, fid, args.cutoff)
+                n_f = await _n_fresh(conn, jid, fid, cutoff)
                 share = n_f / n_p
                 is_forced = jid in forced
                 if share < COVERAGE_OK or is_forced:
