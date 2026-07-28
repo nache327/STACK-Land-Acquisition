@@ -82,13 +82,21 @@ DEFAULT_CUTOFF = "2026-07-27 03:00:00+00"
 COVERAGE_OK = 0.99
 
 # Jurisdictions known to have been interrupted MID-WRITE, so their counts cannot
-# be trusted even if they look complete. Both were holding a scoring advisory
-# lock when the duplicate re-score was stopped on 2026-07-27. Safe to empty once
-# a clean full pass has confirmed them.
-KNOWN_INTERRUPTED: list[uuid.UUID] = [
-    uuid.UUID("0cf50881-fdf3-4149-8c9f-6db758c4a08f"),  # Sandy, UT
-    uuid.UUID("036dffaf-6f33-40b3-a786-09fb613d7f9f"),  # New York, NY
-]
+# be trusted even if they look complete. Populate this when a run is killed while
+# holding a scoring advisory lock; use --force for ad-hoc additions.
+#
+# CLEARED 2026-07-28. It held Sandy UT and New York NY, the two holding locks when
+# the duplicate re-score was stopped on 2026-07-27. The full audit reported BOTH at
+# 100.0% coverage, and the wider result explains why: of 66 short pairs, 62 were at
+# 0.0% (never reached) and ZERO were part-written. The overnight death happened
+# between jurisdictions, not mid-write, so there was nothing to distrust. Leaving
+# them listed would have re-scored NYC's 856,670 parcels x 2 board filters -- about
+# 70 minutes -- to reconfirm a known-good result.
+#
+# The partial-write hazard this guards against is still real: chunked executemany
+# with no enclosing transaction CAN leave a jurisdiction half-written. It just did
+# not happen this time.
+KNOWN_INTERRUPTED: list[uuid.UUID] = []
 
 _TRANSIENT = ("connection", "closed", "getaddrinfo", "timeout",
               "terminating", "server closed")
