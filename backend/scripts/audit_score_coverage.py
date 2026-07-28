@@ -188,7 +188,16 @@ async def main() -> None:
               f"cutoff {args.cutoff}", flush=True)
 
         n_ok = n_empty = 0
+        # Heartbeat. Without it this loop prints ONLY exceptions, so a long clean
+        # stretch is indistinguishable from a hang — 20+ minutes of silence during
+        # which the only honest status report was "no idea how far it is". Every
+        # PROGRESS_EVERY jurisdictions, say where we are.
+        PROGRESS_EVERY = 10
         for i, (jid, name) in enumerate(jurisdictions, 1):
+            if i % PROGRESS_EVERY == 1:
+                print(f"  ... [{i}/{len(jurisdictions)}] scanning "
+                      f"(complete so far: {n_ok} pairs, short: {len(short)})",
+                      flush=True)
             n_p = await _n_parcels(conn, jid)
             if n_p == 0:
                 n_empty += 1
