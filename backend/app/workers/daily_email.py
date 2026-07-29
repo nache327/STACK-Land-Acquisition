@@ -82,13 +82,13 @@ class DigestParcel:
     owner_phone: str | None = None
     owner_address: str | None = None
     owner_contact: str | None = None
-    # Most-recent ready job_id for the jurisdiction. The dashboard
-    # route is /dashboard/[jobId] and passes the segment straight to
-    # GET /api/jobs/:id. Previous versions used jurisdiction_id here,
-    # which 404'd and the page stuck on "Loading…" forever. Now
-    # populated from a LATERAL join so deep links actually navigate.
-    # None when no ready job exists yet (rare; fallback link uses
-    # jurisdiction_id and the UX is the same broken state as before).
+    # Most-recent ready job_id for the jurisdiction. The dashboard route is
+    # /dashboard/[jobId] and passes the segment to GET /api/jobs/:id, so a
+    # real job id is preferred — it carries live pipeline status. None when no
+    # ready job exists, which is the COMMON case (61% of jurisdictions holding
+    # parcels have none: script-ingested counties never drive a job to
+    # 'ready'). _parcel_link then falls back to jurisdiction_id, which the
+    # dashboard resolves via /api/jurisdictions/:id/dashboard-context.
     dashboard_job_id: str | None = None
     # Parcel centroid (lng/lat, SRID 4326) — passed in the deep-link so the
     # dashboard map flies straight to the site at close zoom instead of fitting
@@ -770,11 +770,12 @@ def _soft_flags_from_row(m) -> list[tuple[str, str]]:
 
 def _parcel_link(p: DigestParcel) -> str:
     base = settings.digest_dashboard_base_url.rstrip("/")
-    # Use the resolved job_id when available; fall back to the
-    # jurisdiction_id (legacy broken behavior) only when no ready job
-    # exists. The fallback at least preserves a consistent URL shape
-    # for diagnostics — the dashboard will show "Loading…" but that
-    # signals "no ready job," which is itself useful information.
+    # Prefer the resolved job_id (it carries live pipeline status); fall back
+    # to the jurisdiction_id when no ready job exists. BOTH shapes now load:
+    # the dashboard resolves the segment via GET /api/jobs/:id and, on 404,
+    # GET /api/jurisdictions/:id/dashboard-context. The fallback used to 404
+    # and hang the page on "Loading…" forever, which hit the majority of
+    # jurisdictions — script-ingested counties never reach a 'ready' job.
     segment = p.dashboard_job_id or p.jurisdiction_id
     # Pass the parcel's DB id (not APN). The dashboard reads
     # ?parcel_id=… on mount, opens the drawer, and flies to the

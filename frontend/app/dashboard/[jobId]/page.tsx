@@ -96,18 +96,25 @@ export default function DashboardPage({ params }: Props) {
     if (parcelsReady) setInBackground(true);
   }, [parcelsReady]);
 
-  if (isLoading || !job) {
+  // ORDER MATTERS: `error` is checked BEFORE `!job`. When the query fails,
+  // react-query settles to status:'error' with `data` still undefined — so a
+  // leading `!job` guard renders the spinner forever and makes this error
+  // branch dead code. That is exactly how a 404 on the URL segment presented
+  // as an eternal "Loading…" instead of a message the operator could act on.
+  if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#070d1a]">
-        <span className="text-sm text-slate-500">Loading…</span>
+      <div className="flex min-h-screen items-center justify-center bg-[#070d1a] px-6">
+        <p className="max-w-lg text-center text-sm text-red-400">
+          Failed to load job: {error instanceof Error ? error.message : String(error)}
+        </p>
       </div>
     );
   }
 
-  if (error) {
+  if (isLoading || !job) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#070d1a]">
-        <p className="text-sm text-red-400">Failed to load job: {String(error)}</p>
+        <span className="text-sm text-slate-500">Loading…</span>
       </div>
     );
   }

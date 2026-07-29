@@ -189,6 +189,25 @@ export interface LocateResult {
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+/**
+ * Error carrying the HTTP status alongside the server's detail message.
+ *
+ * Callers that branch on a specific status (e.g. the dashboard falling back
+ * to the jurisdiction-context endpoint on a job 404) must not have to
+ * string-match the detail text, which is server-authored and changes freely.
+ * `message` stays the detail so existing `String(error)` renders are
+ * unchanged.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, detail: string) {
+    super(detail);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function fetchJSON<T>(
   path: string,
   init?: RequestInit
@@ -206,7 +225,7 @@ async function fetchJSON<T>(
     } catch {
       // ignore JSON parse failure
     }
-    throw new Error(detail);
+    throw new ApiError(res.status, detail);
   }
 
   return res.json() as Promise<T>;
@@ -226,6 +245,51 @@ export const api = {
   async getJob(jobId: string): Promise<Job> {
     const raw = await fetchJSON<unknown>(`/api/jobs/${jobId}`);
     return JobSchema.parse(raw);
+  },
+
+  /**
+   * Job-shaped context synthesized from a JURISDICTION id.
+   *
+   * Deep links from the digest and the deal board use the jurisdiction id as
+   * the /dashboard/[jobId] segment whenever the jurisdiction has no ready job
+   * — the majority case for script-ingested counties. See the endpoint's
+   * docstring in backend/app/api/jurisdictions.py.
+   */
+  async getJurisdictionDashboardContext(jurisdictionId: string): Promise<Job> {
+    const raw = await fetchJSON<unknown>(
+      `/api/jurisdictions/${jurisdictionId}/dashboard-context`
+    );
+    return JobSchema.parse(raw);
+  },
+
+  /**
+   * Resolve a /dashboard/[segment] URL segment to a job context, accepting
+   * EITHER a job id or a jurisdiction id.
+   *
+   * Tries the job route first so a real job keeps its live status and
+   * progress; falls back to the jurisdiction context only on a 404. Any other
+   * failure (500, network) propagates — masking those behind a second request
+   * would turn a transient outage into a confusing "not found".
+   */
+  async resolveDashboardJob(segment: string): Promise<Job> {
+    try {
+      return await api.getJob(segment);
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 404) throw err;
+      try {
+        return await api.getJurisdictionDashboardContext(segment);
+      } catch (fallbackErr) {
+        // Both routes 404'd — report that plainly rather than leaking
+        // "Jurisdiction not found" for what the user pasted as a job id.
+        if (fallbackErr instanceof ApiError && fallbackErr.status === 404) {
+          throw new ApiError(
+            404,
+            `No job or jurisdiction matches ${segment} — ${fallbackErr.message}`
+          );
+        }
+        throw fallbackErr;
+      }
+    }
   },
 
   async cancelJob(jobId: string): Promise<Job> {
