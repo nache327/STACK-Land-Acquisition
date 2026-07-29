@@ -42,6 +42,7 @@ from app.models.use_case import UseCase
 from app.workers.daily_email import (
     DigestParcel,
     _parcel_link,
+    _is_demoted,
     _top_parcels_for_filter,
 )
 
@@ -59,6 +60,13 @@ _FACT_COLUMNS = [
     "parcel_id", "apn", "jurisdiction_id", "jurisdiction_name",
     "address", "city", "state", "zip", "owner_name", "acres",
     "score", "tier", "verdict_basis", "use_verdict", "asset_type", "factors", "soft_flags",
+    # Actionable-vs-Verify, computed ONCE at the source by daily_email._is_demoted
+    # and pushed so the board READS it. Deliberately not re-derived dashboard-side
+    # from raw soft_flags: that produced two definitions of "Actionable" (the
+    # digest tiered on disqualifying flags only, the board tabs on "any flag at
+    # all"), so the board showed ~0 Actionable while 342 cards qualified. Two
+    # writers of one meaning is the A-4.7 problem; this keeps a single definition.
+    "is_actionable",
     "listing_source", "sale_price", "price_per_ac", "days_on_market",
     "broker_company", "broker_contact", "broker_phone", "broker_email",
     # Owner contact from the matched listing (CoStar owner data) — the
@@ -174,6 +182,8 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
         "use_verdict": p.use_verdict,
         "asset_type": asset_type,
         "factors": json.dumps(p.factors or []),
+        # One definition, evaluated here — see the _FACT_COLUMNS note.
+        "is_actionable": not _is_demoted(p),
         "soft_flags": json.dumps(
             [{"emoji": e, "label": lbl} for e, lbl in (p.soft_flags or [])]
         ),
