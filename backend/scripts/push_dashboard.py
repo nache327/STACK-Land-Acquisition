@@ -46,9 +46,13 @@ from app.services.dashboard_push import run_push  # noqa: E402
 async def main() -> None:
     ap = argparse.ArgumentParser(
         description="Push buy-box deals to the dashboard Deal Pipeline board.")
-    ap.add_argument("--filter-id", type=int, default=None,
-                    help="Sync a single buybox filter id (smoke test / backfill). "
-                         "Omit to sync every dashboardEnabled filter.")
+    # buybox_filters.id is a UUID. This wrapper originally declared type=int,
+    # mirroring the same mistake in dashboard_push's own CLI — an int can never
+    # match the uuid PK, so --filter-id selected nothing. Fixed in two of the
+    # three places first; this was the third.
+    ap.add_argument("--filter-id", type=str, default=None,
+                    help="Sync a single buybox_filters.id, a UUID (smoke test / "
+                         "backfill). Omit to sync every dashboardEnabled filter.")
     args = ap.parse_args()
 
     result = await run_push(force=True, filter_id=args.filter_id)

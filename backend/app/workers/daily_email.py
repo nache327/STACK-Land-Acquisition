@@ -463,8 +463,14 @@ async def _top_parcels_for_filter(
             -- card is FOR. This read zum.self_storage on both lanes, so an LGC
             -- card could show "conditional zoning" while its LGC verdict was
             -- permitted (or hide it while the LGC verdict was conditional).
-            -- On the self_storage lane {verdict_sql} IS zum.self_storage::text,
-            -- so the storage lane's SQL is unchanged.
+            -- On the self_storage lane the verdict expression IS
+            -- zum.self_storage::text, so the storage lane's SQL is unchanged.
+            -- NB: do NOT write the placeholder name in a `--` comment here. This
+            -- is an f-string, so it expands INSIDE the comment. The storage
+            -- expression is one line (harmless), but the LGC expression is a
+            -- multi-line CASE: `--` then comments out only its first line and the
+            -- following WHEN clauses become live SQL, giving
+            -- `syntax error at or near "WHEN"` on the LGC lane only.
             (({verdict_sql}) = 'conditional')               AS soft_conditional,
             (zum.confidence IS NOT NULL AND zum.confidence < 0.70)
                 AS soft_low_confidence,
@@ -868,17 +874,60 @@ def _listing_banner_text(p: DigestParcel) -> list[str]:
     return lines
 
 
+# Flags that DISQUALIFY a card from Actionable. These are the wealth/needle
+# criteria: miss one, or be unable to confirm it, and the parcel is not a
+# confirmed needle — which is the soft gate doing its job.
+#
+# Everything NOT listed here is INFORMATIONAL: rendered on the card, but it does
+# not demote. That distinction exists because "any flag => Verify" made the
+# Actionable tier unreachable: measured 2026-07-29, `soft_has_building` fired on
+# 281/295 storage cards (95%) and 805/823 LGC cards (98%), so both boards came
+# back 100% Verify with ZERO Actionable. A flag that fires on ~all rows carries no
+# signal — a listed commercial parcel having a structure is simply normal — and
+# neither `soft_no_price` (you would just ask the price) nor
+# `soft_low_confidence` (a caveat) nor `soft_conditional` (conditional use is the
+# normal storage/LGC entitlement path) is a reason to withhold a deal.
+_DEMOTING_FLAGS: frozenset[str] = frozenset({
+    "soft_below_home_value",
+    "soft_below_hhi",
+    "soft_below_pop_floor",
+    "soft_wealth_unmeasured",
+})
+
+# Labels are the only thing DigestParcel.soft_flags carries (see
+# _soft_flags_from_row, which yields (emoji, label) and drops the column name).
+# Derive the label set from _SOFT_FLAG_RULES rather than hardcoding strings, so
+# rewording a label cannot silently un-demote a criterion.
+_DEMOTING_LABELS: frozenset[str] = frozenset(
+    label for name, _emoji, label in _SOFT_FLAG_RULES if name in _DEMOTING_FLAGS
+)
+assert len(_DEMOTING_LABELS) == len(_DEMOTING_FLAGS), (
+    "a _DEMOTING_FLAGS entry has no matching _SOFT_FLAG_RULES row — a rename "
+    "would silently stop it from demoting"
+)
+
+
+def _is_demoted(p: DigestParcel) -> bool:
+    return any(label in _DEMOTING_LABELS for _emoji, label in (p.soft_flags or []))
+
+
 def _split_by_tier(
     parcels: list[DigestParcel],
 ) -> tuple[list[DigestParcel], list[DigestParcel]]:
-    """Tier 1 = Actionable (no soft flags). Tier 2 = Worth a Look (any soft flag).
+    """Tier 1 = Actionable, Tier 2 = Worth a Look.
+
+    Actionable means no DISQUALIFYING flag — i.e. every wealth/needle criterion is
+    measured and met. Informational flags (building, no price, low confidence,
+    conditional zoning) still render on the card but no longer hide it: treating
+    all flags as equally fatal emptied the Actionable tier entirely (see
+    _DEMOTING_FLAGS).
 
     Order within each tier preserves the input order (which the SQL
     already sorted by score DESC). No re-sorting here — that would
     surprise an operator who expects highest-score-first.
     """
-    actionable = [p for p in parcels if not p.soft_flags]
-    worth_a_look = [p for p in parcels if p.soft_flags]
+    actionable = [p for p in parcels if not _is_demoted(p)]
+    worth_a_look = [p for p in parcels if _is_demoted(p)]
     return actionable, worth_a_look
 
 
