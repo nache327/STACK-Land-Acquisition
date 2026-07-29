@@ -173,9 +173,11 @@ def _detect_stale_argv(a: dict) -> list[str]:
 
 def _push_dashboard_argv(a: dict) -> list[str]:
     argv: list[str] = []
-    # filter_id is the dashboard board filter's integer id, not a UUID.
-    if (fid := _opt_int(a.get("filter_id"), 1, 1_000_000)) is not None:
-        argv += ["--filter-id", str(fid)]
+    # filter_id is buybox_filters.id, a UUID. It was coerced as an int here at
+    # first, mirroring the CLI's own `type=int` — but the PK is uuid, so an int
+    # could never match and the single-filter smoke test was impossible.
+    if (fid := _opt_uuid(a.get("filter_id"))) is not None:
+        argv += ["--filter-id", fid]
     return argv
 
 
