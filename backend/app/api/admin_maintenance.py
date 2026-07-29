@@ -9,6 +9,8 @@ never supply a command, a script path, or a shell string.
 """
 from __future__ import annotations
 
+import os
+
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -42,6 +44,34 @@ async def list_jobs() -> dict:
     }
 
 
+# DECOMMISSIONED 2026-07-29. The enqueue path worked; nothing ever CONSUMED the
+# queue. Two rescore_all jobs sat at status='queued' with started_at NULL for two
+# days, ops_cron_heartbeat was empty, and the `worker: dramatiq app.worker` process
+# type in backend/Procfile was evidently never provisioned as its own Railway
+# service. So POST /run wrote a row, called .send(), returned 202 with a run_id --
+# and the work vanished. A queue that accepts jobs and silently drops them is worse
+# than no queue: the 202 reads as success, and the 409 "one heavy job at a time"
+# guard then blocked every LATER job behind a zombie that would never finish.
+#
+# Refuses work instead of swallowing it. The machinery is left intact -- allowlist,
+# argv coercion, auth perimeter, execute_run -- so provisioning a worker and setting
+# MAINTENANCE_RUNNER_ENABLED=1 is all it takes to turn back on. Until then heavy
+# jobs run locally on the proven path.
+#
+# GET endpoints stay open: listing jobs and inspecting/abandoning past runs is how
+# the zombies were found and cleared.
+def _runner_enabled() -> bool:
+    return os.getenv("MAINTENANCE_RUNNER_ENABLED", "").strip() in {"1", "true", "TRUE", "yes"}
+
+
+_DECOMMISSIONED_DETAIL = (
+    "maintenance runner decommissioned — no worker provisioned, so a queued job "
+    "would never run. Two jobs were silently dropped this way (2026-07-27). Run "
+    "heavy jobs locally, or provision the `worker` process from backend/Procfile "
+    "as its own Railway service and set MAINTENANCE_RUNNER_ENABLED=1 to re-enable."
+)
+
+
 @router.post("/admin/maintenance/run", status_code=202, response_model=RunJobAccepted)
 async def run_job(payload: RunJobRequest) -> RunJobAccepted:
     """Enqueue a job. Returns immediately with a run_id to poll.
@@ -49,6 +79,10 @@ async def run_job(payload: RunJobRequest) -> RunJobAccepted:
     Validation happens HERE (not in the worker) so a bad request is a 400 the
     caller sees, rather than a job row that fails minutes later.
     """
+    if not _runner_enabled():
+        # 503: the capability is unavailable, not the request malformed.
+        raise HTTPException(503, detail=_DECOMMISSIONED_DETAIL)
+
     try:
         argv = resolve(payload.job, payload.args)
     except ValueError as exc:
