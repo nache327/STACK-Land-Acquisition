@@ -171,7 +171,22 @@ def _detect_stale_argv(a: dict) -> list[str]:
     return argv
 
 
+def _push_dashboard_argv(a: dict) -> list[str]:
+    argv: list[str] = []
+    # filter_id is the dashboard board filter's integer id, not a UUID.
+    if (fid := _opt_int(a.get("filter_id"), 1, 1_000_000)) is not None:
+        argv += ["--filter-id", str(fid)]
+    return argv
+
+
 JOBS: dict[str, JobSpec] = {
+    "push_dashboard": JobSpec(
+        "push_dashboard.py", _push_dashboard_argv,
+        "Push buy-box deals to the dashboard Deal Pipeline board. Must run on "
+        "Railway — PORTFOLIO_DASHBOARD_DATABASE_URL is not set on dev machines, "
+        "where it silently no-ops. Never deletes a triaged card and never writes "
+        "the disposition columns; it does refresh score/tier facts.",
+    ),
     "rescore_all": JobSpec(
         "rescore_all_jurisdictions.py", _rescore_argv,
         "Re-score parcels (all jurisdictions, or one) under the seed + board filters.",
