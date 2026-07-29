@@ -183,7 +183,17 @@ async function fetchAcsForCounty(
   const out = new Map<string, AcsTractRow>();
   for (const row of data) {
     const geoid = row[si] + row[ci] + row[ti];
-    const parseN = (v: string) => (v === null || v === "-666666666" || v === "" ? null : Number(v));
+    // Census encodes no-data with a FAMILY of "jam values" (-666666666, -999999999,
+    // -888888888, -222222222, ...), not just one. Matching a single sentinel lets the
+    // others through as real numbers, producing a confidently wrong wealth figure.
+    // Every variable here is a count or a dollar median, so no valid value is
+    // negative — reject the sign rather than enumerate the sentinels.
+    // Mirrors _parse_n in backend/app/services/ring_metrics_precompute.py.
+    const parseN = (v: string) => {
+      if (v === null || v === "") return null;
+      const n = Number(v);
+      return !Number.isFinite(n) || n < 0 ? null : n;
+    };
     out.set(geoid, {
       population: parseN(row[pi]),
       hhi: parseN(row[hi]),

@@ -58,6 +58,16 @@ _TRACT_CONCURRENCY = 4
 # Census "no data" sentinel — same as the frontend's parseN handling.
 _NO_DATA = -666_666_666
 
+# ACS target, module-level so an auditor can align to it by IMPORT rather than by
+# copying the strings. A checker that hardcodes its own year can report "wealth
+# exists, recompute read none" purely from a vintage mismatch — a false verdict on
+# the exact question the epoch sentinel exists to answer. Independent in FETCH,
+# aligned in TARGET.
+#   B01003_001E population · B19013_001E median HHI · B25077_001E median home value
+#   B11001_001E households (the aggregation WEIGHT) · B19001_017E households >$200k
+_ACS_VINTAGE = "2022"
+_ACS_VARIABLES = "B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E"
+
 
 ProgressFn = Callable[[str, int, int], Awaitable[None]]
 
@@ -105,9 +115,13 @@ async def precompute_ring_metrics_for_jurisdiction(
         # loads only the relevant tracts (not the whole county).
         ext = (await db.execute(
             text(
+                # CAST(:p AS t), never :p::t -- SQLAlchemy's bind regex silently
+                # TRUNCATES a name followed by a colon (":cities::text[]" parses as
+                # "citie"), so .bindparams(cities=...) raises "doesn't define a bound
+                # parameter named 'cities'". See the same fix at the bucket query below.
                 "SELECT ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e) "
                 "FROM (SELECT ST_Extent(centroid::geometry) e FROM parcels "
-                "WHERE jurisdiction_id=:jid AND city = ANY(:cities::text[]) "
+                "WHERE jurisdiction_id=:jid AND city = ANY(CAST(:cities AS text[])) "
                 "AND centroid IS NOT NULL) s"
             ).bindparams(jid=jurisdiction_id, cities=cities)
         )).first()
@@ -165,7 +179,15 @@ async def precompute_ring_metrics_for_jurisdiction(
             JOIN census_tracts t ON ST_Within(p.centroid, t.geom)
             WHERE p.jurisdiction_id = :jid
               AND p.centroid IS NOT NULL
-              AND (:cities::text[] IS NULL OR p.city = ANY(:cities::text[]))
+              -- Cast with CAST(x AS text[]), never the double-colon form.
+              -- SQLAlchemy's bind regex truncates a parameter name followed by a
+              -- colon, so the double-colon spelling parsed as a phantom "citie" and
+              -- every call to this function raised ArgumentError before reaching the
+              -- DB. This query is unconditional, so the whole entrypoint was dead on
+              -- arrival. NOTE: no colon-prefixed token may appear even in a comment --
+              -- text() parses comments too, which is how this trap recurs.
+              AND (CAST(:cities AS text[]) IS NULL
+                   OR p.city = ANY(CAST(:cities AS text[])))
             """
         ).bindparams(jid=jurisdiction_id, cities=cities)
     )).all()
@@ -227,6 +249,20 @@ async def precompute_ring_metrics_for_jurisdiction(
     # Result map: (parcel_id, drive_time) -> RingMetrics
     metrics_to_write: list[tuple[int, int, RingMetrics]] = []
     lock = asyncio.Lock()
+    # SEPARATE lock guarding the shared AsyncSession. An AsyncSession is NOT safe for
+    # concurrent use -- overlapping execute() calls raise "This session is provisioning
+    # a new connection; concurrent operations are not permitted" -- and the tract tasks
+    # below run _TRACT_CONCURRENCY-wide against this one `db`. That never surfaced only
+    # because the entrypoint was dead (phantom bindparam) and the DB call sits after
+    # the isochrone fetch, so it was never reached.
+    #
+    # Serialising the DB call, rather than giving each task its own session, is also
+    # what keeps this run off the live app's back: the pooler caps SESSION mode at 15
+    # clients and the live board shares that pool, so a per-task session would put a
+    # 139-jurisdiction run in direct competition with the dashboard. One session,
+    # serialised, means the repair holds exactly ONE connection however wide the
+    # isochrone fan-out gets. The slow part (Mapbox) stays concurrent.
+    db_lock = asyncio.Lock()
 
     async def _process_one_tract(geoid: str) -> None:
         nonlocal metrics_to_write
@@ -254,7 +290,10 @@ async def precompute_ring_metrics_for_jurisdiction(
                 if geom is None:
                     continue
                 # Find tracts intersecting this polygon and pull their ACS.
-                intersecting = await _tracts_intersecting(db, geom.wkt)
+                # db_lock: the session is shared across concurrent tract tasks and
+                # cannot take overlapping queries (see the lock's definition).
+                async with db_lock:
+                    intersecting = await _tracts_intersecting(db, geom.wkt)
                 tract_data = [
                     acs_by_geoid[g] for g in intersecting if g in acs_by_geoid
                 ]
@@ -320,8 +359,8 @@ async def _load_acs_for_counties(
     from app.api.census_proxy import _fetch_acs  # local import to avoid circular
     from fastapi import HTTPException  # noqa: E402
 
-    variables = "B01003_001E,B19013_001E,B25077_001E,B11001_001E,B19001_017E"
-    vintage = "2022"
+    variables = _ACS_VARIABLES
+    vintage = _ACS_VINTAGE
 
     for state, county in sorted(state_county_pairs):
         try:
@@ -372,14 +411,32 @@ async def _load_acs_for_counties(
 
 
 def _parse_n(v: Any) -> int | None:
-    """Census "no data" sentinel + null + empty handled the same way as the
-    frontend's parseN (isochrone.ts:186)."""
-    if v is None or v == "" or v == _NO_DATA or v == str(_NO_DATA):
+    """Parse a Census value, mapping EVERY no-data annotation to None.
+
+    Census uses a whole family of "jam values", not just -666666666: -111111111,
+    -222222222, -333333333, -444444444, -555555555, -777777777, -888888888,
+    -999999999 all encode distinct no-data reasons (too few samples, not
+    applicable, median in the lowest/highest interval, controlled value, ...).
+
+    Only special-casing -666666666 is the dangerous failure: a tract annotated with
+    a different sentinel parses as a real value, flows into a ring that DOES
+    aggregate, and yields a confidently wrong wealth number carrying a FRESH
+    computed_at. That is worse than epoch -- it is neither an honest NULL nor
+    visible to the epoch audit, and a single tract's garbage need not move needles
+    far enough to trip the movement backstop.
+
+    So the rule is structural rather than an enumeration: every variable fetched
+    here (population, household count, median HHI, median home value, households
+    over 200k) is a count or a dollar median, and NONE can validly be negative.
+    Any negative is therefore a sentinel -- including jam values Census adds later.
+    """
+    if v is None or v == "":
         return None
     try:
-        return int(float(v))
+        n = int(float(v))
     except (TypeError, ValueError):
         return None
+    return None if n < 0 else n
 
 
 async def _tracts_intersecting(db: AsyncSession, polygon_wkt: str) -> list[str]:
@@ -410,14 +467,117 @@ async def _bulk_upsert_metrics(
         """
         INSERT INTO parcel_ring_metrics
           (parcel_id, drive_time_minutes, population, median_hhi,
-           median_home_value, hnw_households)
-        VALUES (:pid, :dt, :pop, :hhi, :hv, :hnw)
+           median_home_value, hnw_households, computed_at)
+        VALUES (:pid, :dt, :pop, :hhi, :hv, :hnw,
+          -- computed_at must be stated EXPLICITLY on insert. Omitting it took the
+          -- column's server_default of now(), which stamped a brand-new PARTIAL row
+          -- as freshly computed and bypassed the DO UPDATE guard below entirely.
+          --
+          -- EPOCH SENTINEL: to_timestamp(0) (1970-01-01T00:00:00Z) means "NEVER
+          -- VALIDLY COMPUTED". It is not a real measurement time. Chosen over NULL
+          -- deliberately: computed_at is NOT NULL (so NULL needs a migration), and
+          -- more importantly a NULL row goes INVISIBLE to
+          -- detect_stale_ring_metrics — its predicate is
+          --   (ratio test) OR prm.computed_at < NOW() - INTERVAL '180 days'
+          -- and for a partial row BOTH branches evaluate to NULL (population is
+          -- NULL too), so nothing would ever flag it. That is the very bug this
+          -- guard exists to prevent, reintroduced. The epoch instead makes
+          -- `computed_at < NOW() - 180d` TRUE, so the detector DOES surface the row,
+          -- while the cutoff predicate in api/parcels.py stays FALSE, so it is still
+          -- excluded from the "current" view. Conservative in both readers.
+          --
+          -- NB: NEVER write a colon-prefixed token in these comments. SQLAlchemy
+          -- text() scans for bind parameters LEXICALLY and does not skip "--"
+          -- comments, so naming the reader's cutoff parameter in prose invented a
+          -- phantom required parameter and broke this UPSERT for EVERY caller
+          -- ("A value is required for bind parameter 'cutoff'"). The first attempt
+          -- to warn about it reintroduced it twice, in the warning itself. Same
+          -- class as the brace-placeholder-inside-a-comment that broke the LGC
+          -- lane's SELECT. Describe parameters in words, never in token form.
+          --
+          -- TZ: to_timestamp(double precision) returns TIMESTAMPTZ, and this column
+          -- is DateTime(timezone=True) => timestamptz. Same basis, so the boundary
+          -- comparisons above are exact. (A naive-vs-aware mismatch is what made a
+          -- cutoff six hours wrong elsewhere in this codebase.)
+          -- CASTs are REQUIRED, not stylistic. Each of these parameters also
+          -- appears in the VALUES list above, where its type is inferred from the
+          -- target column; here it appears only inside `IS NOT NULL`, which conveys
+          -- no type. asyncpg then cannot resolve the parameter and the whole
+          -- statement fails with
+          --   AmbiguousParameterError: could not determine data type of parameter $3
+          -- Types match the columns exactly: population integer, median_home_value
+          -- and median_hhi numeric.
+          CASE
+              WHEN CAST(:pop AS INTEGER) IS NOT NULL
+               AND CAST(:hv  AS NUMERIC) IS NOT NULL
+               AND CAST(:hhi AS NUMERIC) IS NOT NULL
+              THEN NOW()
+              ELSE to_timestamp(0)
+          END)
         ON CONFLICT (parcel_id, drive_time_minutes) DO UPDATE SET
-          population        = EXCLUDED.population,
-          median_hhi        = EXCLUDED.median_hhi,
-          median_home_value = EXCLUDED.median_home_value,
-          hnw_households    = EXCLUDED.hnw_households,
-          computed_at       = NOW()
+          -- NEVER REGRESS. These were assigned straight from EXCLUDED, so a
+          -- recompute whose ACS lookup failed overwrote previously-MEASURED wealth
+          -- with NULL — and because the computed_at CASE below then falls to ELSE
+          -- (keeping the row's existing, recent stamp), the result was a NULL-wealth
+          -- row reading as freshly computed. That is the trust trap, and on this
+          -- path it also destroys good data: 6.6M rows already have a dt=10 row, so
+          -- a Census hiccup on the day of a full run could silently degrade them.
+          --
+          -- COALESCE makes a failed recompute a NO-OP instead of a degradation, and
+          -- the ELSE-keeps-old-stamp is then honest: the row still holds its old
+          -- VALUES, so the old timestamp still describes them.
+          --
+          -- Why NULL must not be allowed to clear wealth: compute_ring_metrics
+          -- returns 0 for every field both when a ring genuinely has no households
+          -- AND when the ACS fetch failed, and the payload collapses falsy -> None.
+          -- Those two cases are indistinguishable here, so treating NULL as "clear
+          -- it" would erase real data on a transient outage. (Fixing that
+          -- conflation at the source in compute_ring_metrics is the true class fix
+          -- and changes what every caller receives — backlogged, not done here.)
+          population        = COALESCE(EXCLUDED.population,        parcel_ring_metrics.population),
+          median_hhi        = COALESCE(EXCLUDED.median_hhi,        parcel_ring_metrics.median_hhi),
+          median_home_value = COALESCE(EXCLUDED.median_home_value, parcel_ring_metrics.median_home_value),
+          hnw_households    = COALESCE(EXCLUDED.hnw_households,    parcel_ring_metrics.hnw_households),
+          -- computed_at advances ONLY when the three gate-bearing metrics all
+          -- actually landed. It used to be an unconditional NOW(), which meant a
+          -- row could be stamped "fresh" while carrying NULL wealth from an ACS
+          -- outage — and a fresh stamp is exactly what silences the staleness
+          -- detectors (ring API 90d filter, the drawer's 180d banner,
+          -- detect_stale_ring_metrics). That is the audit's trust trap: the data
+          -- looks repaired while the wealth gate still fails on NULL.
+          --
+          -- hnw_households is deliberately NOT in the condition: it comes from
+          -- B19001_017E, which is legitimately absent for some tracts, and it
+          -- feeds a scoring BONUS rather than the needle gate. Requiring it would
+          -- withhold honest stamps from otherwise-complete rows.
+          -- THREE cases on the update path, in order. The invariant they enforce:
+          -- after this statement no row is ever NULL-wealth with a non-epoch stamp.
+          -- Every row is either (complete wealth, real stamp) or (NULL wealth, epoch).
+          computed_at       = CASE
+              -- 1. A fresh measurement landed for all three gate-bearing metrics
+              --    => advance the stamp; it now describes new data.
+              WHEN EXCLUDED.population        IS NOT NULL
+               AND EXCLUDED.median_home_value IS NOT NULL
+               AND EXCLUDED.median_hhi        IS NOT NULL
+              THEN NOW()
+              -- 2. The recompute came back partial, but COALESCE above preserved
+              --    complete PREVIOUSLY-MEASURED wealth => keep the row's existing
+              --    real stamp. Advancing would claim a measurement that did not
+              --    happen; epoching would slander data that is still valid. Tested
+              --    on the COALESCED values, not on EXCLUDED, precisely so this case
+              --    is distinguishable from case 3.
+              WHEN COALESCE(EXCLUDED.population,        parcel_ring_metrics.population)        IS NOT NULL
+               AND COALESCE(EXCLUDED.median_home_value, parcel_ring_metrics.median_home_value) IS NOT NULL
+               AND COALESCE(EXCLUDED.median_hhi,        parcel_ring_metrics.median_hhi)        IS NOT NULL
+              THEN parcel_ring_metrics.computed_at
+              -- 3. Resulting wealth is STILL NULL — a pre-existing NULL row whose
+              --    recompute failed again (Utah County: 487/487 rows NULL, a
+              --    systemic ACS gap). Keeping its old stamp would leave a
+              --    NULL-wealth row reading as freshly computed: the trust trap that
+              --    COALESCE alone does not close. Epoch it, so the staleness
+              --    detector surfaces it and the current view excludes it.
+              ELSE to_timestamp(0)
+          END
         """
     )
 
