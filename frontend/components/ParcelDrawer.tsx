@@ -689,6 +689,13 @@ function BuyBoxMatchPanel({
             if (!precomputeStatus) {
               return "Open the Buy Box panel to start drive-time analysis.";
             }
+            // Deferred = the client loop was never started (eligible set too
+            // large); the server precompute owns this jurisdiction. Saying
+            // "currently computing" here sent operators off to wait on a
+            // counter that cannot move.
+            if (precomputeStatus.deferred) {
+              return `Drive-time rings for this jurisdiction are computed server-side, not in this tab — ${precomputeStatus.progress.toLocaleString()} of ${precomputeStatus.total.toLocaleString()} parcels are cached so far. This parcel isn't cached yet.`;
+            }
             if (!precomputeStatus.complete) {
               return `Drive-time metrics queued — currently computing ${precomputeStatus.progress.toLocaleString()} of ${precomputeStatus.total.toLocaleString()} parcels.`;
             }

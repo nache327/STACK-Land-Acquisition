@@ -168,7 +168,13 @@ export function BuyBoxPanel({
   const maxPop = cityDataRanges?.maxPopulation ?? 200_000;
   const maxHnw = cityDataRanges?.maxHnwHouseholds ?? 5_000;
 
-  const isComputing = precomputeStatus && !precomputeStatus.complete;
+  // `deferred` means the dashboard declined to run the per-parcel client loop
+  // (eligible set > CLIENT_PRECOMPUTE_MAX_ELIGIBLE) and is waiting on the
+  // server-side precompute. NOTHING is running in this tab, so it must not
+  // render as in-progress: a progress bar that can never advance reads as "be
+  // patient" when the honest message is "this needs the server job run."
+  const isDeferred = !!precomputeStatus?.deferred && !precomputeStatus.complete;
+  const isComputing = precomputeStatus && !precomputeStatus.complete && !isDeferred;
   const progressPct = precomputeStatus
     ? (precomputeStatus.progress / Math.max(precomputeStatus.total, 1)) * 100
     : 0;
@@ -327,6 +333,26 @@ export function BuyBoxPanel({
               style={{ width: `${progressPct}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {/* Deferred: too many eligible parcels for the client loop. State the
+          coverage we DO have and that the work is server-side — never a
+          progress bar, which would imply this tab is making headway. */}
+      {isDeferred && (
+        <div className="mb-2 rounded border border-slate-800 bg-slate-900/60 px-2 py-1.5">
+          <div className="flex justify-between text-[9px] text-slate-400">
+            <span>Drive-time rings — server-side</span>
+            <span className="tabular-nums">
+              {precomputeStatus.progress.toLocaleString()} /{" "}
+              {precomputeStatus.total.toLocaleString()} cached
+            </span>
+          </div>
+          <p className="mt-0.5 text-[9px] leading-snug text-slate-500">
+            Too large to compute in the browser — not running in this tab.
+            Wealth and drive-time criteria stay inactive until the server
+            precompute fills the cache for this jurisdiction.
+          </p>
         </div>
       )}
 
