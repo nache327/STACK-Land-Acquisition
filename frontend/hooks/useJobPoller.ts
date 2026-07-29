@@ -1,11 +1,15 @@
 /**
  * TanStack Query hook that polls GET /api/jobs/:id every 2 seconds
  * until the job reaches a terminal state (ready | failed).
+ *
+ * The URL segment may be a job id OR a jurisdiction id — digest / deal-board
+ * deep links fall back to the jurisdiction id when no ready job exists, which
+ * is the majority case. `api.resolveDashboardJob` accepts either.
  */
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { Job, JobStatus } from "@/lib/schemas";
 
 const TERMINAL: JobStatus[] = ["ready", "failed", "cancelled", "pending_zoning"];
@@ -20,7 +24,12 @@ const BACKGROUND_STATUSES: JobStatus[] = [
 export function useJobPoller(jobId: string, backgroundMode = false) {
   return useQuery({
     queryKey: ["job", jobId],
-    queryFn: () => api.getJob(jobId),
+    queryFn: () => api.resolveDashboardJob(jobId),
+    // A 404 means neither a job nor a jurisdiction matches the segment —
+    // retrying can't change that, and the default retry only delays showing
+    // the error. Still retry everything else (cold starts, network blips).
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 404 ? false : failureCount < 1,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (!status || TERMINAL.includes(status)) return false;

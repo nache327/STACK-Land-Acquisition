@@ -43,12 +43,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api._auth import require_secret
 from app.config import settings
 from app.db import get_db
-from app.models.job import Job
+from app.models.job import Job, JobStatus
 from app.models.jurisdiction import Jurisdiction
 from app.models.parcel import Parcel
 from app.models.zone_use_matrix import ZoneUseMatrix, ClassificationSource
 from app.models.zoning_district import ZoningDistrict
+from app.schemas.job import JobRead
 from app.schemas.jurisdiction import JurisdictionList, JurisdictionRead
+from app.services.job_tracking import now_utc
 from app.schemas.zone_use_matrix import (
     ZoneMatrixResponse,
     ZoneUseMatrixCreate,
@@ -110,6 +112,74 @@ async def get_feature_flags(
         "jurisdiction_id": str(jurisdiction_id),
         "wealth_density_available": bool(has_assessed),
     }
+
+
+@router.get("/jurisdictions/{jurisdiction_id}/dashboard-context", response_model=JobRead)
+async def get_dashboard_context(
+    jurisdiction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> JobRead:
+    """Resolve a jurisdiction id into a dashboard-openable job context.
+
+    The dashboard route is ``/dashboard/[jobId]``, but deep links built by
+    the digest / deal board fall back to the *jurisdiction* id whenever the
+    jurisdiction has no ``status='ready'`` job (see ``_parcel_link`` in
+    ``app/workers/daily_email.py``). That is the common case, not the rare
+    one: a county ingested and ground via scripts + per-muni applies never
+    gets a job row to 'ready', so 61% of jurisdictions holding parcels have
+    none. Those links used to hit ``GET /api/jobs/:id`` → 404 and the page
+    hung on "Loading…" forever.
+
+    The dashboard only ever needs ``jurisdiction_id`` off the job record, so
+    rather than manufacture ready jobs for 85 jurisdictions we make the
+    jurisdiction id a first-class URL segment and synthesize the context the
+    page wants. The frontend falls back to this endpoint on a job 404, which
+    also repairs the links already frozen into ``deal_prospect``.
+
+    ``status`` is always 'ready' when parcels exist — deliberately NOT the
+    real latest job's status. The deep link's intent is "show me this
+    parcel"; returning a live 'queued'/'running' status would route the
+    click into the JobProgress screen and strand the operator there even
+    though the parcels are sitting in the DB.
+
+    404s when the jurisdiction doesn't exist, or exists with no ingested
+    parcels — an honest error beats an empty map.
+    """
+    j = await db.get(Jurisdiction, jurisdiction_id)
+    if j is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+
+    has_parcels = await db.scalar(
+        text(
+            "SELECT EXISTS (SELECT 1 FROM parcels WHERE jurisdiction_id = :jid)"
+        ).bindparams(jid=jurisdiction_id)
+    )
+    if not has_parcels:
+        raise HTTPException(
+            status_code=404,
+            detail="Jurisdiction has no ingested parcels",
+        )
+
+    now = now_utc()
+    return JobRead(
+        # The jurisdiction id doubles as the synthetic job id so the returned
+        # object stays consistent with the URL segment. Nothing in the
+        # dashboard reads job.id (verified), and no job-scoped mutation
+        # (cancel/retry/steps) is reachable from a 'ready' status.
+        id=jurisdiction_id,
+        jurisdiction_id=jurisdiction_id,
+        status=JobStatus.ready,
+        # Feeds the "Re-analyze" button (POST /api/jobs with this string) and
+        # the map's cityName prop — the jurisdiction name is exactly the shape
+        # a real job's jurisdiction_input holds ("Draper City, UT").
+        jurisdiction_input=j.name,
+        ordinance_url=j.ordinance_url,
+        target_uses=None,
+        error_message=None,
+        progress={"synthetic": True, "source": "jurisdiction_dashboard_context"},
+        created_at=j.created_at or now,
+        updated_at=j.last_indexed_at or j.created_at or now,
+    )
 
 
 @router.get("/jurisdictions/{jurisdiction_id}/zones", response_model=ZoneMatrixResponse)
