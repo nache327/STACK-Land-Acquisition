@@ -13,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -25,6 +26,18 @@ from app.models.zoning_district import ZoneClass
 class Parcel(Base):
     __tablename__ = "parcels"
     __table_args__ = (
+        # Backs `ON CONFLICT ON CONSTRAINT uq_parcels_jurisdiction_apn` in
+        # ingestion._copy_upsert_parcels — the parcel upsert's conflict target.
+        #
+        # It existed in prod (alembic 0010) but NOT here, and the test fixtures
+        # build their schema with Base.metadata.create_all (conftest), which
+        # reads the MODELS — so the constraint was absent in CI and every
+        # ingest raised UndefinedObjectError. That took out the whole Draper
+        # E2E suite (6 errors), and because the step doesn't gate the job, CI
+        # reported green while the end-to-end ingest path went unverified.
+        # Declared here so create_all matches prod; 0010 already made prod
+        # match, so no new migration is needed.
+        UniqueConstraint("jurisdiction_id", "apn", name="uq_parcels_jurisdiction_apn"),
         Index("ix_parcels_jurisdiction_zoning", "jurisdiction_id", "zoning_code"),
         Index("ix_parcels_jurisdiction_zone_class", "jurisdiction_id", "zone_class"),
         Index("ix_parcels_apn", "apn"),
