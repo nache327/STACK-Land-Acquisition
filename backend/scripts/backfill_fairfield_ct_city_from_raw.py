@@ -53,7 +53,12 @@ SQL = """
     WITH batch AS (
         SELECT p.id, p.raw->>'Town_Name' AS town_from_raw
         FROM parcels p
-        WHERE p.jurisdiction_id = :jid::uuid
+        -- Cast with CAST(x AS uuid), never the double-colon form. SQLAlchemy's bind
+        -- regex truncates a parameter name that is followed by a colon, so the
+        -- double-colon spelling parsed as a phantom param "ji" and the real jid was
+        -- never bound. NOTE: no colon-prefixed token may appear even in a comment --
+        -- text() parses comments too, which is how this trap recurs.
+        WHERE p.jurisdiction_id = CAST(:jid AS uuid)
           AND (p.city IS NULL OR btrim(p.city) = '')
           AND p.raw IS NOT NULL
           AND p.raw ? 'Town_Name'

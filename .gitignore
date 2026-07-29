@@ -69,3 +69,8 @@ search_lehi.json
 
 # Supabase CLI local artifacts (linked-project state, cli-latest cache)
 supabase/.temp/
+
+# Ring-repair before-state captures: run state (multi-MB), not source.
+# They are the revert net for a live write, so they must persist on disk locally,
+# but they must never be committed.
+backend/outputs/ring_captures/
