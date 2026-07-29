@@ -462,7 +462,8 @@ def main() -> None:
     import argparse
 
     ap = argparse.ArgumentParser(description="Push buy-box deals to the dashboard board.")
-    ap.add_argument("--filter-id", type=int, default=None, help="sync a single filter id")
+    ap.add_argument("--filter-id", type=str, default=None,
+                    help="sync a single buybox_filters.id (a UUID). Was typed int, which could never match the uuid PK, so the flag was silently inert.")
     ap.add_argument(
         "--respect-cooldown",
         action="store_true",
