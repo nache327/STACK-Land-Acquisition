@@ -508,6 +508,85 @@ async def _acs_tract_hv(counties: set[tuple[str, str]]) -> dict[str, int | None]
     return out
 
 
+async def _promotion_wealth_spotcheck(db, cap: dict, sample: int = 8) -> tuple[bool, str]:
+    """The Montgomery method, automated: is a PROMOTION's ring wealth ACS-supported?
+
+    Symmetric counterpart to _mechanism_spotcheck. That one examines demotions; using it
+    to certify a jurisdiction's promotions is exactly the hole that let Montgomery MD's
+    +7,229 through -- it sampled 3 demotions, passed, and the pass was applied to
+    thousands of unexamined promotions. A check must never certify a direction it did
+    not look at.
+
+    STRADDLERS ARE WEIGHTED. A ring at 900k is robust to measurement error; one at
+    478,000 against a 475,000 floor is precisely where an over-measured ring spuriously
+    promotes. So candidates are ordered by fractional headroom over the floor and the
+    tightest are verified, not a uniform sample.
+
+    A promotion is unsupported when its ring wealth lies OUTSIDE the range of ACS values
+    for the tracts actually inside its dt=10 isochrone -- i.e. the ring reports wealth no
+    real neighbour has.
+    """
+    from app.services.mapbox_isochrone import fetch_isochrone
+
+    pre = {int(r["parcel_id"]): r for r in cap["pre_existing"]}
+
+    def gate(a, hv, hhi) -> bool:
+        return (a is not None and hv is not None and hhi is not None
+                and float(a) >= 1.5 and float(hv) >= 475_000
+                and float(hhi) >= 100_000)
+
+    rows = (await db.execute(text(f"""
+        SELECT p.id, p.acres, ST_X(p.centroid) lng, ST_Y(p.centroid) lat,
+               prm.median_home_value hv, prm.median_hhi hhi,
+               LEAST((prm.median_home_value - 475000) / 475000.0,
+                     (prm.median_hhi - 100000) / 100000.0) AS margin
+          FROM parcels p
+          JOIN parcel_ring_metrics prm
+            ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          {_LATERAL}
+         WHERE p.jurisdiction_id = :j AND ({_STORAGE_VIABLE} OR {_LGC_VIABLE})
+           AND p.centroid IS NOT NULL
+           AND p.acres >= 1.5
+           AND prm.median_home_value >= 475000 AND prm.median_hhi >= 100000
+         ORDER BY margin ASC
+    """), {"j": cap["jid"]})).mappings().all()
+
+    promoted = [r for r in rows
+                if not (gate(r["acres"], pre[int(r["id"])]["median_home_value"],
+                             pre[int(r["id"])]["median_hhi"])
+                        if int(r["id"]) in pre else False)]
+    if not promoted:
+        return True, "no promotions to adjudicate"
+
+    checked = unsupported = 0
+    for r in promoted[:sample]:                      # already straddler-ordered
+        try:
+            polys = await fetch_isochrone(float(r["lng"]), float(r["lat"]),
+                                          contours=(10,))
+        except Exception as exc:  # noqa: BLE001
+            return False, f"isochrone fetch failed for parcel {r['id']}: {exc}"
+        ring = polys.get(10)
+        if ring is None:
+            return False, f"no dt=10 ring returned for parcel {r['id']}"
+        tr = (await db.execute(text("""
+            SELECT t.geoid, t.state_fips, t.county_fips FROM census_tracts t
+             WHERE ST_Intersects(t.geom, ST_GeomFromText(:wkt, 4326))
+        """), {"wkt": ring.wkt})).mappings().all()
+        try:
+            w = await _acs_tract_hv({(x["state_fips"], x["county_fips"]) for x in tr})
+        except RuntimeError as exc:
+            return False, f"CANNOT ADJUDICATE (not a wealth finding): {exc}"
+        vals = [w[x["geoid"]] for x in tr if w.get(x["geoid"])]
+        checked += 1
+        rhv = float(r["hv"])
+        if not vals or rhv > max(vals) or rhv < min(vals):
+            unsupported += 1
+    passed = checked > 0 and unsupported == 0
+    return passed, (f"{checked - unsupported}/{checked} tightest straddlers have ring "
+                    f"wealth inside their in-ring ACS range "
+                    f"(margin from {float(promoted[0]['margin']):.3f})")
+
+
 async def _mechanism_spotcheck(db, cap: dict, sample: int = 8) -> tuple[bool, str]:
     """The Chester method, run automatically: does the correction hold up geometrically?
 
@@ -915,23 +994,53 @@ async def main() -> None:
                     #     in-ring (the Chester method, run automatically)
                     # A runaway fails one of those and still trips at 100. Chester-scale
                     # legitimate corrections no longer halt the run for nothing.
-                    j_moved = abs(after[0] - before[0]) + abs(after[1] - before[1])
-                    explained = True
-                    if j_moved >= _SPOTCHECK_MOVEMENT and not args.no_capture:
-                        async with Session() as dbs:
-                            passed, detail = await _mechanism_spotcheck(dbs, cap)
-                        print(f"  [{i}/{total}] MECHANISM  {name[:30]:<32} "
-                              f"{'PASS' if passed else 'FAIL'} — {detail}", flush=True)
-                        if not passed:
-                            print(f"\n*** GATE: {name} moved {j_moved} needles and the "
-                                  f"mechanism spot-check FAILED — the demotions are not "
-                                  f"explained by ring geography. HALTING.\n"
-                                  f"    revert with: --revert-from "
-                                  f"{capture_dir}/capture_{jid}.json ***", flush=True)
-                            sys.exit(2)
-                        explained = passed
-                    if not explained:
-                        unexplained += j_moved
+                    # FAIL-SAFE AND SYMMETRIC. Movement is unexplained unless the check
+                    # that examines THAT DIRECTION positively verified it:
+                    #   demotions  -> _mechanism_spotcheck        (Chester method)
+                    #   promotions -> _promotion_wealth_spotcheck (Montgomery method)
+                    # Certifying promotions with a demotion check is exactly how
+                    # Montgomery MD's +7,229 passed: 3 demotions were sampled, passed,
+                    # and the pass was applied to thousands of unexamined promotions.
+                    # Anything unexamined defaults to UNEXPLAINED, which accrues to the
+                    # ceiling and halts. Default is halt, not pass.
+                    down = max(0, before[0] - after[0]) + max(0, before[1] - after[1])
+                    up = max(0, after[0] - before[0]) + max(0, after[1] - before[1])
+                    j_moved = down + up
+                    unexplained_here = 0
+
+                    if down >= _SPOTCHECK_MOVEMENT:
+                        if args.no_capture:
+                            unexplained_here += down       # cannot examine without a capture
+                        else:
+                            async with Session() as dbs:
+                                ok_d, det_d = await _mechanism_spotcheck(dbs, cap)
+                            print(f"  [{i}/{total}] MECHANISM  {name[:30]:<32} "
+                                  f"{'PASS' if ok_d else 'FAIL'} — {det_d}", flush=True)
+                            if not ok_d:
+                                print(f"\n*** GATE: {name} lost {down} needles and the "
+                                      f"mechanism check FAILED — the demotions are not "
+                                      f"explained by ring geography. HALTING.\n"
+                                      f"    revert with: --revert-from "
+                                      f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                                sys.exit(2)
+
+                    if up >= _SPOTCHECK_MOVEMENT:
+                        if args.no_capture:
+                            unexplained_here += up
+                        else:
+                            async with Session() as dbs:
+                                ok_u, det_u = await _promotion_wealth_spotcheck(dbs, cap)
+                            print(f"  [{i}/{total}] WEALTH     {name[:30]:<32} "
+                                  f"{'PASS' if ok_u else 'FAIL'} — {det_u}", flush=True)
+                            if not ok_u:
+                                print(f"\n*** GATE: {name} gained {up} needles and the "
+                                      f"ACS wealth check FAILED — the promotions report "
+                                      f"wealth no in-ring tract has. HALTING.\n"
+                                      f"    revert with: --revert-from "
+                                      f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                                sys.exit(2)
+
+                    unexplained += unexplained_here
                     cum_all = abs(g_ss - b_ss) + abs(g_lgc - b_lgc)
                     if unexplained > 100:
                         print(f"\n*** GATE: UNEXPLAINED needle movement {unexplained} "
