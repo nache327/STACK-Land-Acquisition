@@ -557,10 +557,24 @@ async def main() -> None:
                               f"{g_ss:,}/{g_lgc:,} vs true {t_ss:,}/{t_lgc:,} "
                               f"-> drift {drift}", flush=True)
                         if drift:
-                            print("  *** incremental totals drifted from the true "
-                                  "scan; trusting the TRUE scan and continuing ***",
-                                  flush=True)
-                            g_ss, g_lgc = t_ss, t_lgc
+                            # HARD STOP. Re-syncing to the true scan and carrying on
+                            # would paper over the real problem: a drift means the
+                            # incremental accounting is BUGGY, so every
+                            # per-jurisdiction gate decision taken since the last
+                            # reconciliation rested on a number now known to be wrong.
+                            # Silently adopting the true total discards exactly the
+                            # evidence needed to find out which ones.
+                            print(
+                                f"\n*** GATE: reconciliation MISMATCH at index {i}. "
+                                f"incremental {g_ss:,}/{g_lgc:,} vs true "
+                                f"{t_ss:,}/{t_lgc:,} (drift {drift}).\n"
+                                f"    The incremental accounting is wrong, so every "
+                                f"gate decision since the last checkpoint was made on "
+                                f"a bad number. HALTING — do NOT re-sync and continue, "
+                                f"do NOT re-baseline. Captures for completed "
+                                f"jurisdictions are in {capture_dir}. ***",
+                                flush=True)
+                            sys.exit(2)
 
                     wrote = int(summary.get("parcels_written") or 0)
                     acs_bad = bool(summary.get("acs_incomplete"))
