@@ -34,18 +34,38 @@ import asyncpg  # noqa: E402
 
 from _db import get_sync_dsn  # noqa: E402
 
-# LGC-effective verdict over the muni-aware LATERAL alias v (ss/mw/li). Matches
-# services/use_verdicts._LGC_VERDICT_SQL — keep in sync.
+from app.services.use_verdicts import (  # noqa: E402
+    LGC_VIABLE_VERDICTS,
+    lgc_verdict_sql,
+)
+
+# LGC-effective verdict over the muni-aware LATERAL alias v (ss/mw/li), GENERATED from
+# the one shared definition in services/use_verdicts. It previously carried its own copy
+# under a "keep in sync" comment, and had silently drifted: the copy omitted the Brink Rd
+# QC veto, so zones a human marked self_storage=prohibited were counted LGC-viable on a
+# stray light_industrial='conditional'. Montgomery County MD alone contributed 6,702 such
+# phantom needles (AR Agricultural Reserve + RC Rural Cluster) against a 17,096 baseline.
+# The board never accepted them; only this metric did. Sharing the definition is what
+# makes divergence impossible -- a comment asking for it was not enough.
+#
+# human_reviewed is passed as the REAL column expression (v.hr), not a hardcoded 'true'.
+# Hardcoding it made the metric agree with the board only under the unstated assumption
+# that the LATERAL below restricts to human-reviewed rows -- an implicit coupling, which
+# is the same hidden dependency that let the two definitions drift in the first place.
+# "Agrees by construction" resting on an unverified property is not single-source; it is
+# two things that happen to agree today. Passing the column makes it robust to any change
+# in the LATERAL, and test_lgc_single_source additionally pins that filter.
 _LGC_VIABLE = (
-    "(v.ss IN ('permitted','conditional') OR v.mw IN ('permitted','conditional') "
-    "OR v.li IN ('permitted','conditional'))"
+    f"(({lgc_verdict_sql('v.ss', 'v.mw', 'v.li', 'v.hr')}) "
+    f"IN {LGC_VIABLE_VERDICTS!r})".replace("'permitted', 'conditional'",
+                                           "'permitted','conditional'")
 )
 _STORAGE_VIABLE = "v.ss IN ('permitted','conditional')"
 
 _LATERAL = """
     JOIN LATERAL (
         SELECT self_storage::text AS ss, mini_warehouse::text AS mw,
-               light_industrial::text AS li
+               light_industrial::text AS li, m.human_reviewed AS hr
           FROM zone_use_matrix m
          WHERE m.jurisdiction_id = p.jurisdiction_id
            AND m.zone_code = p.zoning_code

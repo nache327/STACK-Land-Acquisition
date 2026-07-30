@@ -130,6 +130,9 @@ BASELINE_LGC = 17_096
 #      dashboard triage status, any lead_eligible demotion -> STOP for human GO.
 _CONCENTRATION_FLAG_RATIO = 0.8   # >=80% of a jurisdiction's promotions in one town
 _RECONCILE_EVERY = 25             # full-scan reconciliation cadence for the 139
+_OUTLIER_LOST_FRACTION = 0.80     # >=80% of a jurisdiction's lgc needles lost
+_SPOTCHECK_MOVEMENT = 20          # movement at/above which a correction must PROVE
+                                  # itself in-ring before counting as explained
 
 _TRANSIENT = ("connection", "closed", "getaddrinfo", "timeout",
               "terminating", "server closed")
@@ -244,18 +247,42 @@ async def revert_before(db, cap: dict) -> tuple[int, int]:
     to its captured values, and only rows that were ABSENT may be deleted. Getting
     that backwards would either destroy pre-existing data or leave new rows behind.
     """
+    BATCH = 20_000
     restored = 0
-    for r in cap["pre_existing"]:
+    rows = cap["pre_existing"]
+    # BATCHED via unnest, not one UPDATE per row. Row-by-row meant ~200k round-trips
+    # for a county the size of Bucks and ran for many minutes; a revert that slow is
+    # not a usable safety net, and a safety net you cannot deploy under pressure is
+    # not one. Each arrays-of-columns batch is a single statement.
+    for start in range(0, len(rows), BATCH):
+        chunk = rows[start:start + BATCH]
         await db.execute(text("""
-            UPDATE parcel_ring_metrics
-               SET population = :pop, median_hhi = :hhi,
-                   median_home_value = :hv, hnw_households = :hnw,
-                   computed_at = :ts
-             WHERE parcel_id = :pid AND drive_time_minutes = 10
-        """), {"pid": int(r["parcel_id"]), "pop": r["population"],
-               "hhi": r["median_hhi"], "hv": r["median_home_value"],
-               "hnw": r["hnw_households"], "ts": r["computed_at"]})
-        restored += 1
+            UPDATE parcel_ring_metrics AS m
+               SET population        = v.pop,
+                   median_hhi        = v.hhi,
+                   median_home_value = v.hv,
+                   hnw_households    = v.hnw,
+                   computed_at       = v.ts
+              FROM (
+                  SELECT * FROM unnest(
+                      CAST(:pids AS bigint[]),
+                      CAST(:pops AS integer[]),
+                      CAST(:hhis AS numeric[]),
+                      CAST(:hvs  AS numeric[]),
+                      CAST(:hnws AS integer[]),
+                      CAST(:tss  AS timestamptz[])
+                  ) AS t(pid, pop, hhi, hv, hnw, ts)
+              ) AS v
+             WHERE m.parcel_id = v.pid AND m.drive_time_minutes = 10
+        """), {
+            "pids": [int(r["parcel_id"]) for r in chunk],
+            "pops": [r["population"] for r in chunk],
+            "hhis": [r["median_hhi"] for r in chunk],
+            "hvs":  [r["median_home_value"] for r in chunk],
+            "hnws": [r["hnw_households"] for r in chunk],
+            "tss":  [r["computed_at"] for r in chunk],
+        })
+        restored += len(chunk)
     deleted = 0
     if cap["absent"]:
         res = await db.execute(text("""
@@ -348,6 +375,310 @@ async def _needles_for_jid(db, jid) -> tuple[int, int]:
            AND prm.median_hhi >= 100000
     """), {"j": str(jid)})).mappings().first()
     return int(r["storage"]), int(r["lgc"])
+
+
+async def _demotions_on_board(db, cap: dict) -> list[dict]:
+    """Demoted needle parcels that are LIVE CARDS. The gate's primary job.
+
+    "Magnitude" is no longer the anomaly signal: Chester's -99 was verified legitimate
+    (8/8 parcels — the sub-475k tracts dragging the median down genuinely intersect the
+    10-min isochrone; the aggregate clips to the ring, so ~85 sub-475k tracts sitting in
+    the padded bbox but outside the ring contributed nothing). A magnitude ceiling would
+    now false-trip on exactly the corrections we confirmed are correct.
+
+    What can still go wrong is a demotion taking a card off the outreach list. Chester's
+    "0 of 62 on the board" held there; it will not hold everywhere.
+    """
+    pre = {int(r["parcel_id"]): r for r in cap["pre_existing"]}
+    if not pre:
+        return []
+
+    def gate(a, hv, hhi) -> bool:
+        return (a is not None and hv is not None and hhi is not None
+                and float(a) >= 1.5 and float(hv) >= 475_000
+                and float(hhi) >= 100_000)
+
+    rows = (await db.execute(text(f"""
+        SELECT p.id, p.acres, p.city, prm.median_home_value hv, prm.median_hhi hhi
+          FROM parcels p
+          JOIN parcel_ring_metrics prm
+            ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          {_LATERAL}
+         WHERE p.jurisdiction_id = :j AND ({_STORAGE_VIABLE} OR {_LGC_VIABLE})
+    """), {"j": cap["jid"]})).mappings().all()
+
+    demoted = [int(r["id"]) for r in rows
+               if int(r["id"]) in pre
+               and gate(r["acres"], pre[int(r["id"])]["median_home_value"],
+                        pre[int(r["id"])]["median_hhi"])
+               and not gate(r["acres"], r["hv"], r["hhi"])]
+    if not demoted:
+        return []
+
+    import os as _os
+
+    from dotenv import load_dotenv as _ld
+    _ld(Path(__file__).parent.parent / ".env")
+    url = _os.getenv("PORTFOLIO_DASHBOARD_DATABASE_URL")
+    if not url:
+        # Cannot adjudicate -> treat as unresolved rather than clean.
+        return [{"parcel_id": p, "status": "UNKNOWN (dashboard DSN unset)",
+                 "tier": None, "is_actionable": None} for p in demoted]
+    d = url.split("?")[0]
+    d = d if d.startswith("postgresql+asyncpg://") else \
+        d.replace("postgresql://", "postgresql+asyncpg://", 1)
+    eng2 = create_async_engine(d, poolclass=NullPool)
+    try:
+        async with eng2.begin() as c:
+            found = (await c.execute(text("""
+                SELECT parcel_id, status, tier, is_actionable, note
+                  FROM deal_prospect WHERE parcel_id = ANY(:ids)"""),
+                {"ids": demoted})).mappings().all()
+        return [dict(r) for r in found]
+    finally:
+        await eng2.dispose()
+
+
+_ACS_HV_CACHE: dict[tuple[str, str], dict[str, int | None]] = {}
+
+
+async def _acs_tract_hv(counties: set[tuple[str, str]]) -> dict[str, int | None]:
+    """{geoid: median_home_value} from the Census API, per (state, county).
+
+    Independent of the recompute's own fetch path -- reusing that would inherit any
+    bug under test -- but ALIGNED to its target via the shared vintage/variable
+    constants, so a year mismatch cannot manufacture a verdict. Cached per county
+    because a jurisdiction's sampled parcels share very few counties.
+    """
+    import os as _os
+
+    import httpx as _httpx
+
+    from app.services.ring_metrics_precompute import (
+        _ACS_VARIABLES,
+        _ACS_VINTAGE,
+        _NO_DATA,
+    )
+    out: dict[str, int | None] = {}
+    todo = [c for c in counties if c not in _ACS_HV_CACHE]
+    if todo:
+        # load_dotenv HERE. Without it CENSUS_API_KEY is absent, the request fails, and
+        # a swallowed exception turned that into "no sub-475k tracts in the ring" --
+        # reported as a GEOMETRY verdict when it was a FETCH failure. It made the
+        # spot-check disagree with the verified Chester result (0/8 vs 8/8).
+        from dotenv import load_dotenv as _load
+        _load(Path(__file__).parent.parent / ".env")
+        key = _os.getenv("CENSUS_API_KEY")
+        async with _httpx.AsyncClient(timeout=60) as cl:
+            for st, co in todo:
+                got: dict[str, int | None] = {}
+                params = {"get": _ACS_VARIABLES, "for": "tract:*",
+                          "in": f"state:{st} county:{co}"}
+                if key:
+                    params["key"] = key
+                try:
+                    resp = await cl.get(
+                        f"https://api.census.gov/data/{_ACS_VINTAGE}/acs/acs5",
+                        params=params)
+                    if resp.status_code == 200:
+                        d = resp.json()
+                        ix = {n: d[0].index(n) for n in d[0]}
+                        for row in d[1:]:
+                            g = (f"{row[ix['state']]}{row[ix['county']]}"
+                                 f"{row[ix['tract']]}")
+                            raw = row[ix["B25077_001E"]]
+                            try:
+                                v = int(float(raw))
+                            except (TypeError, ValueError):
+                                v = None
+                            got[g] = None if (v is None or v < 0
+                                              or v == _NO_DATA) else v
+                    else:
+                        raise RuntimeError(
+                            f"ACS HTTP {resp.status_code} for {st}/{co}")
+                except Exception as exc:  # noqa: BLE001
+                    # Do NOT swallow. An unavailable ACS must read as "cannot
+                    # adjudicate", never as "nothing poor is in the ring" -- those
+                    # have opposite meanings and only one of them is about geometry.
+                    raise RuntimeError(
+                        f"ACS lookup failed for {st}/{co}: {exc}") from exc
+                _ACS_HV_CACHE[(st, co)] = got
+    for c in counties:
+        out.update(_ACS_HV_CACHE.get(c, {}))
+    return out
+
+
+async def _promotion_wealth_spotcheck(db, cap: dict, sample: int = 8) -> tuple[bool, str]:
+    """The Montgomery method, automated: is a PROMOTION's ring wealth ACS-supported?
+
+    Symmetric counterpart to _mechanism_spotcheck. That one examines demotions; using it
+    to certify a jurisdiction's promotions is exactly the hole that let Montgomery MD's
+    +7,229 through -- it sampled 3 demotions, passed, and the pass was applied to
+    thousands of unexamined promotions. A check must never certify a direction it did
+    not look at.
+
+    STRADDLERS ARE WEIGHTED. A ring at 900k is robust to measurement error; one at
+    478,000 against a 475,000 floor is precisely where an over-measured ring spuriously
+    promotes. So candidates are ordered by fractional headroom over the floor and the
+    tightest are verified, not a uniform sample.
+
+    A promotion is unsupported when its ring wealth lies OUTSIDE the range of ACS values
+    for the tracts actually inside its dt=10 isochrone -- i.e. the ring reports wealth no
+    real neighbour has.
+    """
+    from app.services.mapbox_isochrone import fetch_isochrone
+
+    pre = {int(r["parcel_id"]): r for r in cap["pre_existing"]}
+
+    def gate(a, hv, hhi) -> bool:
+        return (a is not None and hv is not None and hhi is not None
+                and float(a) >= 1.5 and float(hv) >= 475_000
+                and float(hhi) >= 100_000)
+
+    rows = (await db.execute(text(f"""
+        SELECT p.id, p.acres, ST_X(p.centroid) lng, ST_Y(p.centroid) lat,
+               prm.median_home_value hv, prm.median_hhi hhi,
+               LEAST((prm.median_home_value - 475000) / 475000.0,
+                     (prm.median_hhi - 100000) / 100000.0) AS margin
+          FROM parcels p
+          JOIN parcel_ring_metrics prm
+            ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          {_LATERAL}
+         WHERE p.jurisdiction_id = :j AND ({_STORAGE_VIABLE} OR {_LGC_VIABLE})
+           AND p.centroid IS NOT NULL
+           AND p.acres >= 1.5
+           AND prm.median_home_value >= 475000 AND prm.median_hhi >= 100000
+         ORDER BY margin ASC
+    """), {"j": cap["jid"]})).mappings().all()
+
+    promoted = [r for r in rows
+                if not (gate(r["acres"], pre[int(r["id"])]["median_home_value"],
+                             pre[int(r["id"])]["median_hhi"])
+                        if int(r["id"]) in pre else False)]
+    if not promoted:
+        return True, "no promotions to adjudicate"
+
+    checked = unsupported = 0
+    for r in promoted[:sample]:                      # already straddler-ordered
+        try:
+            polys = await fetch_isochrone(float(r["lng"]), float(r["lat"]),
+                                          contours=(10,))
+        except Exception as exc:  # noqa: BLE001
+            return False, f"isochrone fetch failed for parcel {r['id']}: {exc}"
+        ring = polys.get(10)
+        if ring is None:
+            return False, f"no dt=10 ring returned for parcel {r['id']}"
+        tr = (await db.execute(text("""
+            SELECT t.geoid, t.state_fips, t.county_fips FROM census_tracts t
+             WHERE ST_Intersects(t.geom, ST_GeomFromText(:wkt, 4326))
+        """), {"wkt": ring.wkt})).mappings().all()
+        try:
+            w = await _acs_tract_hv({(x["state_fips"], x["county_fips"]) for x in tr})
+        except RuntimeError as exc:
+            return False, f"CANNOT ADJUDICATE (not a wealth finding): {exc}"
+        vals = [w[x["geoid"]] for x in tr if w.get(x["geoid"])]
+        checked += 1
+        rhv = float(r["hv"])
+        if not vals or rhv > max(vals) or rhv < min(vals):
+            unsupported += 1
+    passed = checked > 0 and unsupported == 0
+    return passed, (f"{checked - unsupported}/{checked} tightest straddlers have ring "
+                    f"wealth inside their in-ring ACS range "
+                    f"(margin from {float(promoted[0]['margin']):.3f})")
+
+
+async def _mechanism_spotcheck(db, cap: dict, sample: int = 8) -> tuple[bool, str]:
+    """The Chester method, run automatically: does the correction hold up geometrically?
+
+    Gate 2's fraction threshold is coarse. A PARTIAL isochrone glitch -- say half a
+    jurisdiction's needles lost, no on-board cards -- would pass both coarse gates and
+    be marked "explained" while being a real defect. So a large correction has to PROVE
+    it is in-ring rather than be trusted because it did not trip a threshold.
+
+    For up to `sample` demoted parcels: re-fetch the same dt=10 isochrone, then check
+    that the sub-475k tracts dragging the median down actually INTERSECT that ring. On
+    Chester this returned 8/8 with the poorer tracts 0.0-3.1mi away at real overlap
+    fractions, while 83-85 sub-475k tracts sat in the padded bbox at frac_in_ring = 0.00
+    and correctly contributed nothing.
+
+    Returns (passed, detail). A parcel fails when NOTHING sub-475k intersects its ring,
+    i.e. ring geography cannot explain the drop.
+    """
+    from app.services.mapbox_isochrone import fetch_isochrone
+
+    pre = {int(r["parcel_id"]): r for r in cap["pre_existing"]}
+    if not pre:
+        return True, "no pre-existing rows — nothing to adjudicate"
+
+    def gate(a, hv, hhi) -> bool:
+        return (a is not None and hv is not None and hhi is not None
+                and float(a) >= 1.5 and float(hv) >= 475_000
+                and float(hhi) >= 100_000)
+
+    rows = (await db.execute(text(f"""
+        SELECT p.id, p.acres, ST_X(p.centroid) lng, ST_Y(p.centroid) lat,
+               prm.median_home_value hv, prm.median_hhi hhi
+          FROM parcels p
+          JOIN parcel_ring_metrics prm
+            ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          {_LATERAL}
+         WHERE p.jurisdiction_id = :j AND ({_STORAGE_VIABLE} OR {_LGC_VIABLE})
+           AND p.centroid IS NOT NULL
+    """), {"j": cap["jid"]})).mappings().all()
+
+    demoted = [r for r in rows
+               if int(r["id"]) in pre
+               and gate(r["acres"], pre[int(r["id"])]["median_home_value"],
+                        pre[int(r["id"])]["median_hhi"])
+               and not gate(r["acres"], r["hv"], r["hhi"])]
+    if not demoted:
+        return True, "no demoted needle parcels"
+
+    checked = ok = 0
+    for r in demoted[:sample]:
+        try:
+            polys = await fetch_isochrone(float(r["lng"]), float(r["lat"]),
+                                          contours=(10,))
+        except Exception as exc:  # noqa: BLE001
+            return False, f"isochrone fetch failed for parcel {r['id']}: {exc}"
+        ring = polys.get(10)
+        if ring is None:
+            return False, f"no dt=10 ring returned for parcel {r['id']}"
+        # Which tracts intersect the ring, and which sit in the padded bbox but
+        # OUTSIDE it. The second group must contribute nothing; the first must contain
+        # the sub-475k tracts that explain the drop.
+        tr = (await db.execute(text("""
+            SELECT t.geoid, t.state_fips, t.county_fips,
+                   ST_Intersects(t.geom, ST_GeomFromText(:wkt, 4326)) AS in_ring
+              FROM census_tracts t
+             WHERE t.geom && ST_MakeEnvelope(:x0, :y0, :x1, :y1, 4326)
+        """), {"wkt": ring.wkt,
+               "x0": float(r["lng"]) - 0.3, "y0": float(r["lat"]) - 0.3,
+               "x1": float(r["lng"]) + 0.3, "y1": float(r["lat"]) + 0.3},
+        )).mappings().all()
+        in_ring = [x for x in tr if x["in_ring"]]
+        if not in_ring:
+            return False, f"parcel {r['id']}: dt=10 ring intersects NO tract"
+
+        # ACS wealth for the covering counties, fetched independently of the
+        # recompute's own path, aligned to its target constants. A failure here is
+        # reported as UNADJUDICABLE, distinctly from a geometry failure.
+        try:
+            wealth = await _acs_tract_hv({(x["state_fips"], x["county_fips"])
+                                         for x in in_ring})
+        except RuntimeError as exc:
+            return False, f"CANNOT ADJUDICATE (not a geometry finding): {exc}"
+        low_in = [x for x in in_ring
+                  if (wealth.get(x["geoid"]) or 10**9) < 475_000]
+        checked += 1
+        # The load-bearing assertion: sub-475k tracts must genuinely be IN the ring.
+        # If nothing poor intersects it, ring geography cannot explain the demotion --
+        # which is the partial-glitch case the coarse fraction threshold would miss.
+        if low_in:
+            ok += 1
+    passed = checked > 0 and ok == checked
+    return passed, (f"{ok}/{checked} sampled demotions have tracts genuinely "
+                    f"intersecting their dt=10 ring")
 
 
 async def _jurisdictions(db, only: uuid.UUID | None) -> list[tuple[uuid.UUID, str]]:
@@ -454,9 +785,24 @@ async def main() -> None:
             # headroom BEFORE a long run rather than discovering it at jurisdiction 40.
             # The repair itself needs exactly one connection; this refuses when the app
             # is already close to the cap, so the repair is never the thing that tips it.
-            live = int((await db.execute(text(
-                "SELECT count(*) FROM pg_stat_activity WHERE datname IS NOT NULL"
-            ))).scalar() or 0)
+            # Count CLIENT sessions actually consuming a pooler slot -- not every
+            # backend in pg_stat_activity. That naive count read 17 of ~15 on a
+            # perfectly healthy pool and refused to start, because it included:
+            #   * Supabase's own postgrest (idle for DAYS) and postgres_exporter,
+            #   * Supavisor's auth_query connection,
+            #   * Supavisor pool slots sitting idle on DISCARD ALL -- these are
+            #     RETURNED to the pool and available, not in use.
+            # Real in-flight usage at that moment was 2. Only active / in-transaction
+            # client sessions occupy a slot we would be competing for.
+            live = int((await db.execute(text("""
+                SELECT count(*) FROM pg_stat_activity
+                 WHERE datname IS NOT NULL
+                   AND pid <> pg_backend_pid()
+                   AND state IN ('active', 'idle in transaction',
+                                 'idle in transaction (aborted)')
+                   AND coalesce(application_name, '') NOT IN
+                       ('postgrest', 'postgres_exporter')
+            """))).scalar() or 0)
             spare = _POOL_CAP - live
             print(f"pool: {live} session(s) in use of ~{_POOL_CAP}; spare {spare}; "
                   f"repair needs 1 (single worker, NullPool, DB serialised)", flush=True)
@@ -502,6 +848,10 @@ async def main() -> None:
         # full scan at start. Reconciled against another full scan every
         # _RECONCILE_EVERY jurisdictions and at the end.
         g_ss, g_lgc = b_ss, b_lgc
+        # Movement NOT accounted for by the gates. The 100 ceiling applies to this,
+        # not to total movement: verified corrections must not consume the runaway
+        # budget, or the guard trips on exactly what it confirmed is correct.
+        unexplained = 0
 
         for offset, (jid, name) in enumerate(slice_):
             i = args.start_index + offset
@@ -557,10 +907,24 @@ async def main() -> None:
                               f"{g_ss:,}/{g_lgc:,} vs true {t_ss:,}/{t_lgc:,} "
                               f"-> drift {drift}", flush=True)
                         if drift:
-                            print("  *** incremental totals drifted from the true "
-                                  "scan; trusting the TRUE scan and continuing ***",
-                                  flush=True)
-                            g_ss, g_lgc = t_ss, t_lgc
+                            # HARD STOP. Re-syncing to the true scan and carrying on
+                            # would paper over the real problem: a drift means the
+                            # incremental accounting is BUGGY, so every
+                            # per-jurisdiction gate decision taken since the last
+                            # reconciliation rested on a number now known to be wrong.
+                            # Silently adopting the true total discards exactly the
+                            # evidence needed to find out which ones.
+                            print(
+                                f"\n*** GATE: reconciliation MISMATCH at index {i}. "
+                                f"incremental {g_ss:,}/{g_lgc:,} vs true "
+                                f"{t_ss:,}/{t_lgc:,} (drift {drift}).\n"
+                                f"    The incremental accounting is wrong, so every "
+                                f"gate decision since the last checkpoint was made on "
+                                f"a bad number. HALTING — do NOT re-sync and continue, "
+                                f"do NOT re-baseline. Captures for completed "
+                                f"jurisdictions are in {capture_dir}. ***",
+                                flush=True)
+                            sys.exit(2)
 
                     wrote = int(summary.get("parcels_written") or 0)
                     acs_bad = bool(summary.get("acs_incomplete"))
@@ -577,6 +941,114 @@ async def main() -> None:
                           f"rows={wrote:,} tracts={summary.get('tracts_computed')} "
                           f"needles {_verdict(before, after)} "
                           f"({time.monotonic() - t0:.1f}s)", flush=True)
+
+                    # ── GATE 1 (primary): did a demotion take a LIVE CARD off the
+                    # outreach list? Magnitude is no longer the signal; this is.
+                    if not args.no_capture and (after[0] < before[0]
+                                                or after[1] < before[1]):
+                        async with Session() as dbg:
+                            on_board = await _demotions_on_board(dbg, cap)
+                        if on_board:
+                            print(f"\n*** GATE: {len(on_board)} demoted parcel(s) in "
+                                  f"{name} are ON THE BOARD. Each removes a card from "
+                                  f"the outreach list. HALTING for review — this is "
+                                  f"the reserved human decision.", flush=True)
+                            for c in on_board[:25]:
+                                print(f"      parcel {c['parcel_id']} status="
+                                      f"{c.get('status')} tier={c.get('tier')} "
+                                      f"is_actionable={c.get('is_actionable')}",
+                                      flush=True)
+                            print(f"    revert with: --revert-from "
+                                  f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                            sys.exit(2)
+
+                    # ── GATE 2: geometry outlier = implausible FRACTION of a
+                    # jurisdiction's needles lost, not a large count. Chester lost
+                    # 62 of 159 lgc (39%) and was legitimate; a jurisdiction losing
+                    # nearly all of them suggests an isochrone edge case (state-line
+                    # spans, malformed rings) that the Chester audit cannot speak to.
+                    lost_frac = 0.0
+                    if before[1] > 0:
+                        lost_frac = max(0.0, (before[1] - after[1]) / before[1])
+                    if lost_frac >= _OUTLIER_LOST_FRACTION and before[1] >= 20:
+                        print(f"\n*** GATE: {name} lost {lost_frac:.0%} of its lgc "
+                              f"needles ({before[1]:,} -> {after[1]:,}). That is a "
+                              f"geometry-outlier signature, not the Chester pattern. "
+                              f"HALTING — run the 8-parcel isochrone mechanism check "
+                              f"on this jurisdiction before accepting it.\n"
+                              f"    revert with: --revert-from "
+                              f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                        sys.exit(2)
+
+                    # ── GATE 3: runaway backstop on UNEXPLAINED movement only.
+                    # The ceiling stays 100 and is evaluated after every jurisdiction
+                    # (it used to run only at end-of-run, which is why the 103-gross
+                    # breach had to be caught by hand). What changed is WHAT counts
+                    # toward it: a correction that is EXPLAINED does not accumulate.
+                    #
+                    # Explained requires all three, not merely "did not trip a coarse
+                    # threshold":
+                    #   * Gate 1 clean  -> no on-board card was demoted
+                    #   * Gate 2 clean  -> not a wholesale-loss geometry outlier
+                    #   * mechanism spot-check PASSES -> the demotions are provably
+                    #     in-ring (the Chester method, run automatically)
+                    # A runaway fails one of those and still trips at 100. Chester-scale
+                    # legitimate corrections no longer halt the run for nothing.
+                    # FAIL-SAFE AND SYMMETRIC. Movement is unexplained unless the check
+                    # that examines THAT DIRECTION positively verified it:
+                    #   demotions  -> _mechanism_spotcheck        (Chester method)
+                    #   promotions -> _promotion_wealth_spotcheck (Montgomery method)
+                    # Certifying promotions with a demotion check is exactly how
+                    # Montgomery MD's +7,229 passed: 3 demotions were sampled, passed,
+                    # and the pass was applied to thousands of unexamined promotions.
+                    # Anything unexamined defaults to UNEXPLAINED, which accrues to the
+                    # ceiling and halts. Default is halt, not pass.
+                    down = max(0, before[0] - after[0]) + max(0, before[1] - after[1])
+                    up = max(0, after[0] - before[0]) + max(0, after[1] - before[1])
+                    j_moved = down + up
+                    unexplained_here = 0
+
+                    if down >= _SPOTCHECK_MOVEMENT:
+                        if args.no_capture:
+                            unexplained_here += down       # cannot examine without a capture
+                        else:
+                            async with Session() as dbs:
+                                ok_d, det_d = await _mechanism_spotcheck(dbs, cap)
+                            print(f"  [{i}/{total}] MECHANISM  {name[:30]:<32} "
+                                  f"{'PASS' if ok_d else 'FAIL'} — {det_d}", flush=True)
+                            if not ok_d:
+                                print(f"\n*** GATE: {name} lost {down} needles and the "
+                                      f"mechanism check FAILED — the demotions are not "
+                                      f"explained by ring geography. HALTING.\n"
+                                      f"    revert with: --revert-from "
+                                      f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                                sys.exit(2)
+
+                    if up >= _SPOTCHECK_MOVEMENT:
+                        if args.no_capture:
+                            unexplained_here += up
+                        else:
+                            async with Session() as dbs:
+                                ok_u, det_u = await _promotion_wealth_spotcheck(dbs, cap)
+                            print(f"  [{i}/{total}] WEALTH     {name[:30]:<32} "
+                                  f"{'PASS' if ok_u else 'FAIL'} — {det_u}", flush=True)
+                            if not ok_u:
+                                print(f"\n*** GATE: {name} gained {up} needles and the "
+                                      f"ACS wealth check FAILED — the promotions report "
+                                      f"wealth no in-ring tract has. HALTING.\n"
+                                      f"    revert with: --revert-from "
+                                      f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                                sys.exit(2)
+
+                    unexplained += unexplained_here
+                    cum_all = abs(g_ss - b_ss) + abs(g_lgc - b_lgc)
+                    if unexplained > 100:
+                        print(f"\n*** GATE: UNEXPLAINED needle movement {unexplained} "
+                              f"exceeds 100 at {name} (index {i}). Total movement "
+                              f"{cum_all} (explained corrections excluded). HALTING at "
+                              f"the breaching jurisdiction — do NOT re-baseline. "
+                              f"Captures are in {capture_dir}. ***", flush=True)
+                        sys.exit(2)
                     break
                 except Exception as e:
                     msg = str(e).lower()
