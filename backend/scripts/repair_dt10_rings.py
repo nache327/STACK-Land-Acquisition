@@ -454,9 +454,24 @@ async def main() -> None:
             # headroom BEFORE a long run rather than discovering it at jurisdiction 40.
             # The repair itself needs exactly one connection; this refuses when the app
             # is already close to the cap, so the repair is never the thing that tips it.
-            live = int((await db.execute(text(
-                "SELECT count(*) FROM pg_stat_activity WHERE datname IS NOT NULL"
-            ))).scalar() or 0)
+            # Count CLIENT sessions actually consuming a pooler slot -- not every
+            # backend in pg_stat_activity. That naive count read 17 of ~15 on a
+            # perfectly healthy pool and refused to start, because it included:
+            #   * Supabase's own postgrest (idle for DAYS) and postgres_exporter,
+            #   * Supavisor's auth_query connection,
+            #   * Supavisor pool slots sitting idle on DISCARD ALL -- these are
+            #     RETURNED to the pool and available, not in use.
+            # Real in-flight usage at that moment was 2. Only active / in-transaction
+            # client sessions occupy a slot we would be competing for.
+            live = int((await db.execute(text("""
+                SELECT count(*) FROM pg_stat_activity
+                 WHERE datname IS NOT NULL
+                   AND pid <> pg_backend_pid()
+                   AND state IN ('active', 'idle in transaction',
+                                 'idle in transaction (aborted)')
+                   AND coalesce(application_name, '') NOT IN
+                       ('postgrest', 'postgres_exporter')
+            """))).scalar() or 0)
             spare = _POOL_CAP - live
             print(f"pool: {live} session(s) in use of ~{_POOL_CAP}; spare {spare}; "
                   f"repair needs 1 (single worker, NullPool, DB serialised)", flush=True)
