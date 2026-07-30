@@ -130,6 +130,7 @@ BASELINE_LGC = 17_096
 #      dashboard triage status, any lead_eligible demotion -> STOP for human GO.
 _CONCENTRATION_FLAG_RATIO = 0.8   # >=80% of a jurisdiction's promotions in one town
 _RECONCILE_EVERY = 25             # full-scan reconciliation cadence for the 139
+_OUTLIER_LOST_FRACTION = 0.80     # >=80% of a jurisdiction's lgc needles lost
 
 _TRANSIENT = ("connection", "closed", "getaddrinfo", "timeout",
               "terminating", "server closed")
@@ -244,18 +245,42 @@ async def revert_before(db, cap: dict) -> tuple[int, int]:
     to its captured values, and only rows that were ABSENT may be deleted. Getting
     that backwards would either destroy pre-existing data or leave new rows behind.
     """
+    BATCH = 20_000
     restored = 0
-    for r in cap["pre_existing"]:
+    rows = cap["pre_existing"]
+    # BATCHED via unnest, not one UPDATE per row. Row-by-row meant ~200k round-trips
+    # for a county the size of Bucks and ran for many minutes; a revert that slow is
+    # not a usable safety net, and a safety net you cannot deploy under pressure is
+    # not one. Each arrays-of-columns batch is a single statement.
+    for start in range(0, len(rows), BATCH):
+        chunk = rows[start:start + BATCH]
         await db.execute(text("""
-            UPDATE parcel_ring_metrics
-               SET population = :pop, median_hhi = :hhi,
-                   median_home_value = :hv, hnw_households = :hnw,
-                   computed_at = :ts
-             WHERE parcel_id = :pid AND drive_time_minutes = 10
-        """), {"pid": int(r["parcel_id"]), "pop": r["population"],
-               "hhi": r["median_hhi"], "hv": r["median_home_value"],
-               "hnw": r["hnw_households"], "ts": r["computed_at"]})
-        restored += 1
+            UPDATE parcel_ring_metrics AS m
+               SET population        = v.pop,
+                   median_hhi        = v.hhi,
+                   median_home_value = v.hv,
+                   hnw_households    = v.hnw,
+                   computed_at       = v.ts
+              FROM (
+                  SELECT * FROM unnest(
+                      CAST(:pids AS bigint[]),
+                      CAST(:pops AS integer[]),
+                      CAST(:hhis AS numeric[]),
+                      CAST(:hvs  AS numeric[]),
+                      CAST(:hnws AS integer[]),
+                      CAST(:tss  AS timestamptz[])
+                  ) AS t(pid, pop, hhi, hv, hnw, ts)
+              ) AS v
+             WHERE m.parcel_id = v.pid AND m.drive_time_minutes = 10
+        """), {
+            "pids": [int(r["parcel_id"]) for r in chunk],
+            "pops": [r["population"] for r in chunk],
+            "hhis": [r["median_hhi"] for r in chunk],
+            "hvs":  [r["median_home_value"] for r in chunk],
+            "hnws": [r["hnw_households"] for r in chunk],
+            "tss":  [r["computed_at"] for r in chunk],
+        })
+        restored += len(chunk)
     deleted = 0
     if cap["absent"]:
         res = await db.execute(text("""
@@ -348,6 +373,68 @@ async def _needles_for_jid(db, jid) -> tuple[int, int]:
            AND prm.median_hhi >= 100000
     """), {"j": str(jid)})).mappings().first()
     return int(r["storage"]), int(r["lgc"])
+
+
+async def _demotions_on_board(db, cap: dict) -> list[dict]:
+    """Demoted needle parcels that are LIVE CARDS. The gate's primary job.
+
+    "Magnitude" is no longer the anomaly signal: Chester's -99 was verified legitimate
+    (8/8 parcels — the sub-475k tracts dragging the median down genuinely intersect the
+    10-min isochrone; the aggregate clips to the ring, so ~85 sub-475k tracts sitting in
+    the padded bbox but outside the ring contributed nothing). A magnitude ceiling would
+    now false-trip on exactly the corrections we confirmed are correct.
+
+    What can still go wrong is a demotion taking a card off the outreach list. Chester's
+    "0 of 62 on the board" held there; it will not hold everywhere.
+    """
+    pre = {int(r["parcel_id"]): r for r in cap["pre_existing"]}
+    if not pre:
+        return []
+
+    def gate(a, hv, hhi) -> bool:
+        return (a is not None and hv is not None and hhi is not None
+                and float(a) >= 1.5 and float(hv) >= 475_000
+                and float(hhi) >= 100_000)
+
+    rows = (await db.execute(text(f"""
+        SELECT p.id, p.acres, p.city, prm.median_home_value hv, prm.median_hhi hhi
+          FROM parcels p
+          JOIN parcel_ring_metrics prm
+            ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          {_LATERAL}
+         WHERE p.jurisdiction_id = :j AND ({_STORAGE_VIABLE} OR {_LGC_VIABLE})
+    """), {"j": cap["jid"]})).mappings().all()
+
+    demoted = [int(r["id"]) for r in rows
+               if int(r["id"]) in pre
+               and gate(r["acres"], pre[int(r["id"])]["median_home_value"],
+                        pre[int(r["id"])]["median_hhi"])
+               and not gate(r["acres"], r["hv"], r["hhi"])]
+    if not demoted:
+        return []
+
+    import os as _os
+
+    from dotenv import load_dotenv as _ld
+    _ld(Path(__file__).parent.parent / ".env")
+    url = _os.getenv("PORTFOLIO_DASHBOARD_DATABASE_URL")
+    if not url:
+        # Cannot adjudicate -> treat as unresolved rather than clean.
+        return [{"parcel_id": p, "status": "UNKNOWN (dashboard DSN unset)",
+                 "tier": None, "is_actionable": None} for p in demoted]
+    d = url.split("?")[0]
+    d = d if d.startswith("postgresql+asyncpg://") else \
+        d.replace("postgresql://", "postgresql+asyncpg://", 1)
+    eng2 = create_async_engine(d, poolclass=NullPool)
+    try:
+        async with eng2.begin() as c:
+            found = (await c.execute(text("""
+                SELECT parcel_id, status, tier, is_actionable, note
+                  FROM deal_prospect WHERE parcel_id = ANY(:ids)"""),
+                {"ids": demoted})).mappings().all()
+        return [dict(r) for r in found]
+    finally:
+        await eng2.dispose()
 
 
 async def _jurisdictions(db, only: uuid.UUID | None) -> list[tuple[uuid.UUID, str]]:
@@ -606,6 +693,59 @@ async def main() -> None:
                           f"rows={wrote:,} tracts={summary.get('tracts_computed')} "
                           f"needles {_verdict(before, after)} "
                           f"({time.monotonic() - t0:.1f}s)", flush=True)
+
+                    # ── GATE 1 (primary): did a demotion take a LIVE CARD off the
+                    # outreach list? Magnitude is no longer the signal; this is.
+                    if not args.no_capture and (after[0] < before[0]
+                                                or after[1] < before[1]):
+                        async with Session() as dbg:
+                            on_board = await _demotions_on_board(dbg, cap)
+                        if on_board:
+                            print(f"\n*** GATE: {len(on_board)} demoted parcel(s) in "
+                                  f"{name} are ON THE BOARD. Each removes a card from "
+                                  f"the outreach list. HALTING for review — this is "
+                                  f"the reserved human decision.", flush=True)
+                            for c in on_board[:25]:
+                                print(f"      parcel {c['parcel_id']} status="
+                                      f"{c.get('status')} tier={c.get('tier')} "
+                                      f"is_actionable={c.get('is_actionable')}",
+                                      flush=True)
+                            print(f"    revert with: --revert-from "
+                                  f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                            sys.exit(2)
+
+                    # ── GATE 2: geometry outlier = implausible FRACTION of a
+                    # jurisdiction's needles lost, not a large count. Chester lost
+                    # 62 of 159 lgc (39%) and was legitimate; a jurisdiction losing
+                    # nearly all of them suggests an isochrone edge case (state-line
+                    # spans, malformed rings) that the Chester audit cannot speak to.
+                    lost_frac = 0.0
+                    if before[1] > 0:
+                        lost_frac = max(0.0, (before[1] - after[1]) / before[1])
+                    if lost_frac >= _OUTLIER_LOST_FRACTION and before[1] >= 20:
+                        print(f"\n*** GATE: {name} lost {lost_frac:.0%} of its lgc "
+                              f"needles ({before[1]:,} -> {after[1]:,}). That is a "
+                              f"geometry-outlier signature, not the Chester pattern. "
+                              f"HALTING — run the 8-parcel isochrone mechanism check "
+                              f"on this jurisdiction before accepting it.\n"
+                              f"    revert with: --revert-from "
+                              f"{capture_dir}/capture_{jid}.json ***", flush=True)
+                        sys.exit(2)
+
+                    # ── GATE 3: runaway backstop, now evaluated INCREMENTALLY after
+                    # every jurisdiction instead of only at end-of-run. The 2026-07-30
+                    # breach (103 gross) was caught by hand because this only ran at
+                    # the end; a resumed run must not be able to blow past on manual
+                    # attention. Ceiling deliberately NOT raised.
+                    cum = abs(g_ss - b_ss) + abs(g_lgc - b_lgc)
+                    if cum > 100:
+                        print(f"\n*** GATE: cumulative needle movement {cum} exceeds "
+                              f"100 at {name} (index {i}). storage {g_ss - b_ss:+d} / "
+                              f"lgc {g_lgc - b_lgc:+d}. HALTING at the breaching "
+                              f"jurisdiction — do NOT re-baseline. Captures for every "
+                              f"completed jurisdiction are in {capture_dir}. ***",
+                              flush=True)
+                        sys.exit(2)
                     break
                 except Exception as e:
                     msg = str(e).lower()
