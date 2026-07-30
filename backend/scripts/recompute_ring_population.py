@@ -29,6 +29,7 @@ USAGE (from backend/):
 from __future__ import annotations
 
 import argparse
+import os
 import asyncio
 import sys
 from pathlib import Path
@@ -110,7 +111,46 @@ async def _by_ids(db, ids: list[int]) -> list[tuple[int, float, float, str]]:
     return [(r[0], float(r[1]), float(r[2]), r[3]) for r in rows]
 
 
+_QUARANTINE = """
+QUARANTINED — do not run this script.
+
+It writes POPULATION ONLY and stamps computed_at = NOW():
+
+    ON CONFLICT (parcel_id, drive_time_minutes) DO UPDATE
+       SET population = EXCLUDED.population, computed_at = NOW()
+
+median_home_value and median_hhi are left exactly as they were — including NULL,
+including stale, including wrong. The fresh stamp then tells every staleness
+detector (the ring API's 90d filter, the drawer's 180d banner,
+detect_stale_ring_metrics) that the row is current. That is the audit's TRUST TRAP:
+the row looks repaired while the wealth gate still fails on NULL, so the parcel
+silently drops out of the needle count and reads as a FINDING rather than a defect.
+
+This is not hypothetical. A 2026-07-29 census found 69,347 rows carrying a non-epoch
+stamp with NULL wealth — 5,558 at dt=10, of which 3,311 are population-present, which
+is precisely this script's signature.
+
+Note it also crashes on the async-driver trap (create_async_engine on a sync DSN).
+Do NOT "fix" that and run it — the crash is the only thing that has been stopping it.
+
+USE INSTEAD:
+    python scripts/repair_dt10_rings.py --jurisdiction <uuid>
+
+which recomputes population AND wealth together from the same isochrone, advances
+computed_at only when all three gate-bearing metrics landed, and writes the epoch
+sentinel to_timestamp(0) when they did not — so a NULL-wealth row can never carry a
+stamp that claims otherwise. It is capture-first and revertible.
+
+If you genuinely need population-only for a one-off, understand that you are
+re-creating the trust trap, and set RECOMPUTE_RING_POP_I_ACCEPT_TRUST_TRAP=1.
+"""
+
+
 async def main() -> None:
+    if os.getenv("RECOMPUTE_RING_POP_I_ACCEPT_TRUST_TRAP") != "1":
+        print(_QUARANTINE, flush=True)
+        sys.exit(3)
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--jurisdiction", type=str, default=None)
     ap.add_argument("--limit", type=int, default=1000)

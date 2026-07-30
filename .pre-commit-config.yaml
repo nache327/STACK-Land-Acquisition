@@ -1,0 +1,22 @@
+# Pre-commit hooks. Install once with:  pre-commit install
+#
+# Deliberately minimal: this exists for checks that a reviewer CANNOT do by reading
+# the diff. Formatting/lint opinions stay out of it.
+repos:
+  - repo: local
+    hooks:
+      # A ":name::cast" in a text() construct does not parse as `name` — SQLAlchemy's
+      # bind regex refuses to end a parameter name at a colon, so it silently
+      # TRUNCATES (":cities::text[]" -> "citie"). The statement still compiles; it
+      # fails at call time, or binds a value nobody reads. That defect made the ring
+      # precompute entrypoint dead for every caller from 001a471 until 2026-07-29,
+      # and recurred once INSIDE a comment warning about it (text() parses comments).
+      #
+      # Only the parser knows what a name resolved to, so this cannot be a grep.
+      - id: no-phantom-bindparams
+        name: no phantom SQL bind parameters (use CAST, not ::)
+        entry: python -m pytest backend/tests/test_no_phantom_bindparams.py -q
+        language: system
+        pass_filenames: false
+        files: \.py$
+        types: [python]
