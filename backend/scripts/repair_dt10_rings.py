@@ -81,7 +81,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent))
 
-from sqlalchemy import text  # noqa: E402
+from sqlalchemy import event, text  # noqa: E402
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # noqa: E402
 from sqlalchemy.pool import NullPool  # noqa: E402
 
@@ -93,12 +93,43 @@ from app.services.ring_metrics_precompute import (  # noqa: E402
 # Reuse the REAL needle definition rather than restating it here. Two copies of
 # this predicate is precisely the drift that made "Actionable" mean two different
 # things on the board (audit A-4.7).
-from precompute_needles import _NEEDLES_SQL  # noqa: E402
+from precompute_needles import (  # noqa: E402
+    _LATERAL,
+    _LGC_VIABLE,
+    _NEEDLES_SQL,
+    _STORAGE_VIABLE,
+)
 
 # The 2026-07-28 accepted baseline (see memory: the older 10,709/16,816 figure was
 # a stale needle_snapshot, not an invariant).
 BASELINE_STORAGE = 10_720
 BASELINE_LGC = 17_096
+
+# ── The 139 subset gate, re-registered 2026-07-30 ────────────────────────────
+# The original gate ("promotions must lie in the pre-registered 33") measured BOARD
+# CARDS -- parcels already surfaced and held back by soft_wealth_unmeasured. The
+# repair's actual effect is NEEDLE-level, and Union's 29 promotions were all parcels
+# that had no dt=10 row at all, so they could not have been in the 33 by construction.
+# Zero overlap was the expected result, not an anomaly.
+#
+# What replaces it is NOT "INSERT-path promotions are automatically fine". That rule
+# would have waved Springfield through unexamined, and a brand-new measurement is
+# exactly the thing that has not been checked by anything. So:
+#
+#   1. UPDATE-path promotion outside the 33  -> STOP. Existing wealth was rewritten
+#      UPWARD past the gate, which is the signature of a recompute changing values
+#      rather than discovering them.
+#   2. INSERT-path promotions -> allowed, but wealth-PLAUSIBILITY spot-checked against
+#      ACS per jurisdiction. A ring may exceed its own tract (it spans many), but a
+#      ring exceeding everything ACS reports for the whole county is inflated.
+#   3. CONCENTRATION FLAG -> promotions clustering in a single town or tract is the
+#      artifact signature (Springfield was 29/29 in one town). Flag for review; a
+#      genuine coverage gap looks like this too, so it is a flag, not a hard stop.
+#   4. Needle movement > 100 gross -> exit(2), unchanged.
+#   5. Full churn gate: gross promotions AND demotions, every demotion listed with
+#      dashboard triage status, any lead_eligible demotion -> STOP for human GO.
+_CONCENTRATION_FLAG_RATIO = 0.8   # >=80% of a jurisdiction's promotions in one town
+_RECONCILE_EVERY = 25             # full-scan reconciliation cadence for the 139
 
 _TRANSIENT = ("connection", "closed", "getaddrinfo", "timeout",
               "terminating", "server closed")
@@ -142,7 +173,32 @@ def _async_session_dsn() -> str:
 
 
 def _engine():
-    return create_async_engine(_async_session_dsn(), poolclass=NullPool)
+    """Engine whose EVERY connection has statement_timeout disabled.
+
+    A one-off ``SET statement_timeout = 0`` on the session is not enough:
+    ``db.commit()`` releases the connection, and with NullPool the next statement
+    opens a brand-new one carrying the server default of 2min. That is exactly what
+    killed the post-write needle scan (a ~15min query) on the 2026-07-30 Utah run --
+    the write committed, the verification was cancelled, the retry loop re-ran the
+    whole jurisdiction 3 more times, and the run reported FAILED for a jurisdiction
+    whose data was already in. A run lying about its own outcome is worse than a
+    slow one.
+
+    connect_args={"server_settings": ...} does NOT work here and was measured, not
+    assumed: Supabase's pooler drops asyncpg startup parameters, so the setting is
+    silently ignored (SHOW statement_timeout still reports 2min). The "connect"
+    event fires after the connection is established, so the SET actually lands --
+    verified 0 both fresh and after a commit.
+    """
+    engine = create_async_engine(_async_session_dsn(), poolclass=NullPool)
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _disable_statement_timeout(dbapi_connection, _record):  # noqa: ANN001
+        dbapi_connection.run_async(
+            lambda conn: conn.execute("SET statement_timeout = 0")
+        )
+
+    return engine
 
 
 async def capture_before(db, jid: uuid.UUID) -> dict:
@@ -266,6 +322,32 @@ async def _needles_by_jid(db) -> dict[uuid.UUID, tuple[int, int]]:
     """{jid: (storage_needles, lgc_needles)} using precompute_needles' own SQL."""
     rows = (await db.execute(text(_NEEDLES_SQL))).mappings().all()
     return {r["jid"]: (int(r["storage_needles"]), int(r["lgc_needles"])) for r in rows}
+
+
+async def _needles_for_jid(db, jid) -> tuple[int, int]:
+    """(storage, lgc) needles for ONE jurisdiction. ~2s, versus ~15min for the
+    cross-jurisdiction _NEEDLES_SQL.
+
+    _NEEDLES_SQL has no jurisdiction bindparam and groups over the whole table, so
+    using it per jurisdiction made the 139 roughly 35 HOURS of pure scanning. This
+    reuses the SAME predicate CONSTANTS (_STORAGE_VIABLE / _LGC_VIABLE / _LATERAL /
+    the wealth floors) rather than restating the predicate, so the two cannot drift;
+    only the scope differs. The full scan is still run periodically to reconcile the
+    incrementally-maintained global total -- see _RECONCILE_EVERY.
+    """
+    r = (await db.execute(text(f"""
+        SELECT count(*) FILTER (WHERE {_STORAGE_VIABLE}) AS storage,
+               count(*) FILTER (WHERE {_LGC_VIABLE})     AS lgc
+          FROM parcels p
+          JOIN parcel_ring_metrics prm
+            ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          {_LATERAL}
+         WHERE p.jurisdiction_id = :j
+           AND p.acres >= 1.5
+           AND prm.median_home_value >= 475000
+           AND prm.median_hhi >= 100000
+    """), {"j": str(jid)})).mappings().first()
+    return int(r["storage"]), int(r["lgc"])
 
 
 async def _jurisdictions(db, only: uuid.UUID | None) -> list[tuple[uuid.UUID, str]]:
@@ -416,11 +498,10 @@ async def main() -> None:
         repaired: list[str] = []
         incomplete: list[tuple[str, str]] = []
         failed: list[tuple[str, str]] = []
-        # Per-jurisdiction needle baseline, chained forward from each post-write scan
-        # instead of re-scanned before every jurisdiction. Correct only while nothing
-        # else writes needle-relevant data concurrently -- true for a single worker;
-        # re-confirm before the 139 if any live-app path can move needles.
-        running_all = before_all
+        # Incrementally-maintained global needle totals, seeded from the one true
+        # full scan at start. Reconciled against another full scan every
+        # _RECONCILE_EVERY jurisdictions and at the end.
+        g_ss, g_lgc = b_ss, b_lgc
 
         for offset, (jid, name) in enumerate(slice_):
             i = args.start_index + offset
@@ -452,15 +533,34 @@ async def main() -> None:
                         # min per call -- and the pre-write numbers are already in
                         # `running_all`. Re-scanning for them bought nothing and
                         # doubled the cost of every jurisdiction.
-                        before = running_all.get(jid, (0, 0))
+                        # SCOPED needle counts (~2s each) instead of two ~15min
+                        # cross-jurisdiction scans. Pre-write is affordable again, so
+                        # `before` is measured rather than chained -- no assumption
+                        # that nothing else moved needles between jurisdictions.
+                        before = await _needles_for_jid(db, jid)
                         summary = await precompute_ring_metrics_for_jurisdiction(jid, db)
                         await db.commit()
-                        # The post-write scan stays: it is the real measurement and
-                        # the early-warning signal. Its result chains forward as the
-                        # next jurisdiction's baseline (safe under a single worker).
-                        now_all = await _needles_by_jid(db)
-                        after = now_all.get(jid, (0, 0))
-                    running_all = now_all
+                        after = await _needles_for_jid(db, jid)
+                    # Global total maintained incrementally from per-jurisdiction
+                    # deltas, then RECONCILED against a true full scan periodically --
+                    # an incremental figure nobody checks is how drift hides.
+                    g_ss += after[0] - before[0]
+                    g_lgc += after[1] - before[1]
+
+                    if (offset + 1) % _RECONCILE_EVERY == 0:
+                        async with Session() as db2:
+                            true_all = await _needles_by_jid(db2)
+                        t_ss = sum(v[0] for v in true_all.values())
+                        t_lgc = sum(v[1] for v in true_all.values())
+                        drift = abs(t_ss - g_ss) + abs(t_lgc - g_lgc)
+                        print(f"  [{i}/{total}] RECONCILE  incremental "
+                              f"{g_ss:,}/{g_lgc:,} vs true {t_ss:,}/{t_lgc:,} "
+                              f"-> drift {drift}", flush=True)
+                        if drift:
+                            print("  *** incremental totals drifted from the true "
+                                  "scan; trusting the TRUE scan and continuing ***",
+                                  flush=True)
+                            g_ss, g_lgc = t_ss, t_lgc
 
                     wrote = int(summary.get("parcels_written") or 0)
                     acs_bad = bool(summary.get("acs_incomplete"))
@@ -510,6 +610,13 @@ async def main() -> None:
             print(f"   INCOMPLETE {nm[:38]:<40} {why}", flush=True)
         for nm, why in failed:
             print(f"   FAILED     {nm[:38]:<40} {why}", flush=True)
+        # Final reconciliation: the AUTHORITATIVE numbers below come from the true
+        # full scan (after_all). The incrementally-maintained totals are compared to
+        # it here so a divergence is reported rather than silently carried.
+        final_drift = abs(a_ss - g_ss) + abs(a_lgc - g_lgc)
+        print(f"\nreconcile     : incremental {g_ss:,}/{g_lgc:,} vs true scan "
+              f"{a_ss:,}/{a_lgc:,} -> drift {final_drift}"
+              f"{'  (gate uses the TRUE scan)' if final_drift else ''}", flush=True)
         print(f"\nneedles AFTER : storage {a_ss:,} / lgc {a_lgc:,}", flush=True)
         print(f"needle delta  : storage {a_ss - b_ss:+d} / lgc {a_lgc - b_lgc:+d}", flush=True)
         moved = abs(a_ss - b_ss) + abs(a_lgc - b_lgc)
