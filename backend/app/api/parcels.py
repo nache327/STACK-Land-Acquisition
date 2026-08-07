@@ -27,7 +27,7 @@ from app.schemas.parcel import (
     ParcelRead,
 )
 from app.services.candidate_search import search_candidate_parcels
-from app.services.parcel_locate import locate_parcels
+from app.services.parcel_locate import locate_parcels, nearby_parcels
 from app.services.zoning_system import get_zoning_from_db
 from pydantic import BaseModel, Field
 
@@ -45,6 +45,13 @@ class ParcelLocateRequest(BaseModel):
 
 class ParcelLocateResponse(BaseModel):
     results: list[dict]
+    # in_coverage | out_of_coverage | unresolved. Distinguishes "we hold no parcels
+    # there" (actionable: queue that county) from "we could not resolve the string"
+    # (a typo). Defaulted so any older client keeps working.
+    coverage: str = "in_coverage"
+    # Present when the geocoder resolved the string, INCLUDING when no parcel matched
+    # — that is what lets the UI name the county it would be queuing.
+    geocoded: dict | None = None
 
 
 # ── /parcels/search response cache ───────────────────────────────────────────
@@ -168,6 +175,41 @@ async def candidate_parcel_search(
     )
 
 
+class ParcelNearbyRequest(BaseModel):
+    """Parcels around a point — the 'what else is nearby' half of address search."""
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    radius_miles: float = Field(3.0, gt=0, le=8)   # see _MAX_RADIUS_MILES: latency cliff past ~7mi
+    limit: int = Field(50, ge=1, le=200)
+    qualifying_only: bool = False
+
+
+class ParcelNearbyResponse(BaseModel):
+    results: list[dict]
+    radius_miles: float
+    truncated: bool
+    qualifying_count: int
+
+
+@router.post("/parcels/nearby", response_model=ParcelNearbyResponse)
+async def parcels_nearby(
+    payload: ParcelNearbyRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ParcelNearbyResponse:
+    """Qualifying parcels around a located address, nearest first.
+
+    Cross-jurisdiction (a county-line address should surface both sides) and bounded on
+    both radius and row count — it is reachable from a text box, so an unbounded version
+    is a payload incident waiting to happen.
+    """
+    data = await nearby_parcels(
+        db, payload.lat, payload.lng,
+        radius_miles=payload.radius_miles, limit=payload.limit,
+        qualifying_only=payload.qualifying_only,
+    )
+    return ParcelNearbyResponse(**data)
+
+
 @router.post("/parcels/locate", response_model=ParcelLocateResponse)
 async def locate_parcel(
     payload: ParcelLocateRequest,
@@ -179,10 +221,14 @@ async def locate_parcel(
     a broker-supplied address. Tiers APN → normalized address → geocode→contains,
     and can resolve outside the loaded jurisdiction via the geocode fallback.
     """
-    results = await locate_parcels(
+    located = await locate_parcels(
         db, payload.query, jurisdiction_id=payload.jurisdiction_id, limit=payload.limit
     )
-    return ParcelLocateResponse(results=results)
+    return ParcelLocateResponse(
+        results=located["results"],
+        coverage=located["coverage"],
+        geocoded=located["geocoded"],
+    )
 
 
 _storage_perm_expr = case(
