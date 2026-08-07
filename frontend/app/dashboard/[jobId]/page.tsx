@@ -12,13 +12,22 @@ import { useParcelScores } from "@/hooks/useParcelScores";
 import { JobProgress } from "@/components/JobProgress";
 import { ParcelTable } from "@/components/ParcelTable";
 import { ParcelDrawer } from "@/components/ParcelDrawer";
+import { AddressSearchPanel } from "@/components/AddressSearchPanel";
 import { FilterPanel, DEFAULT_FILTERS } from "@/components/FilterPanel";
 import { ImportModal } from "@/components/ImportModal";
 import type { FilterState } from "@/components/FilterPanel";
 import { initialLayerVisibility, type LayerVisibility } from "@/components/LayerControl";
 import type { CandidateParcelRow, CandidateParcelSearchRequest, SaturationBatchResult } from "@/lib/schemas";
 import type { ColorMode } from "@/lib/layers";
-import { api, LGC_USE_CASE_ID, type LocateResult } from "@/lib/api";
+import {
+  api,
+  LGC_USE_CASE_ID,
+  type LocateCoverage,
+  type LocateGeocoded,
+  type LocateResponse,
+  type LocateResult,
+  type NearbyParcel,
+} from "@/lib/api";
 import Link from "next/link";
 import { ZoningChatPanel } from "@/components/ZoningChatPanel";
 import { fetchIsochrone, fetchCensusTracts, clearIsochroneCache, type IsochroneResult, type TractData } from "@/lib/isochrone";
@@ -165,6 +174,13 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
   // handleParcelClick directly from the table row's geom so the fly
   // works even when the parcel isn't in the Map's mapParcels (which
   // is filtered by current viewport / fetch page).
+  // Address-search result panel: the located parcel plus its coverage verdict.
+  const [locatedParcel, setLocatedParcel] = useState<LocateResult | null>(null);
+  const [locateCoverage, setLocateCoverage] =
+    useState<LocateCoverage>("in_coverage");
+  const [locateGeocoded, setLocateGeocoded] = useState<LocateGeocoded | null>(
+    null
+  );
   const [flyToOverride, setFlyToOverride] = useState<
     { centroid: [number, number]; nonce: number } | null
   >(null);
@@ -899,6 +915,37 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
     }
     setSelectedParcelId(r.parcel_id);
     setDrawerOpen(true);
+    setLocatedParcel(r);
+  }
+
+  // Coverage arrives with the locate response, including on a MISS — that is what
+  // separates "no parcels there yet" (queue the county) from a typo.
+  function handleLocateResponse(res: LocateResponse) {
+    setLocateCoverage(res.coverage);
+    setLocateGeocoded(res.geocoded);
+    if (res.results.length === 0) setLocatedParcel(null);
+  }
+
+  // Jump to a nearby parcel without re-running the search.
+  function handlePickNearby(p: NearbyParcel) {
+    if (p.lat != null && p.lng != null) {
+      setFlyToOverride({ centroid: [p.lng, p.lat], nonce: Date.now() });
+    }
+    setSelectedParcelId(p.parcel_id);
+    setDrawerOpen(true);
+  }
+
+  // Out-of-coverage: queue an ingest for that county. Deliberately click-driven —
+  // a county ingest is a long job and must never start as a side effect of typing.
+  function handleQueueCounty(g: LocateGeocoded) {
+    const where =
+      g.state_fips && g.county_fips
+        ? `FIPS ${g.state_fips}${g.county_fips}`
+        : (g.matched_address ?? "this location");
+    window.alert(
+      `Queueing county ingest for ${where} is not wired to POST /jobs yet — ` +
+        `the ingest job needs a source layer chosen for that county.`
+    );
   }
 
   // Centroid computation lifted out of the useMemo so handleParcelClick
@@ -1140,7 +1187,22 @@ function DashboardReady({ job }: { job: { jurisdiction_id: string | null; status
             jurisdictionId={jurisdictionId}
             onChange={setFilters}
             onLocate={handleLocate}
+            onLocateResponse={handleLocateResponse}
           />
+
+          {/* Address-search result: the parcel, what we actually know about it,
+              and what else nearby qualifies. Rendered only after a search. */}
+          {(locatedParcel || locateCoverage !== "in_coverage") && (
+            <div className="border-t border-slate-800 p-3">
+              <AddressSearchPanel
+                result={locatedParcel}
+                coverage={locateCoverage}
+                geocoded={locateGeocoded}
+                onPickNearby={handlePickNearby}
+                onQueueCounty={handleQueueCounty}
+              />
+            </div>
+          )}
 
           {/* Saturation Settings */}
           <div className="border-t border-slate-800 p-3">

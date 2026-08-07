@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, type LocateResult } from "@/lib/api";
+import { api, type LocateResponse, type LocateResult } from "@/lib/api";
 import { ZONE_CLASS_COLORS, ZONE_CLASS_LABELS } from "@/lib/layers";
 import type { ZoneClass } from "@/lib/schemas";
 
@@ -60,11 +60,19 @@ interface FilterPanelProps {
   // Fired when the user picks a result from the APN/address locate dropdown.
   // The parent flies the map to it and opens the parcel drawer.
   onLocate?: (result: LocateResult) => void;
+  /** Full locate response including coverage — lets the page distinguish
+   *  'we hold no parcels there' (offer to queue) from 'bad string'. */
+  onLocateResponse?: (res: LocateResponse) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FilterPanel({ jurisdictionId, onChange, onLocate }: FilterPanelProps) {
+export function FilterPanel({
+  jurisdictionId,
+  onChange,
+  onLocate,
+  onLocateResponse,
+}: FilterPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
   // ── APN / address locate (Enter in the search box) ──────────────────────────
@@ -81,8 +89,14 @@ export function FilterPanel({ jurisdictionId, onChange, onLocate }: FilterPanelP
     setLocating(true);
     setLocateErr(null);
     try {
-      const res = await api.locateParcels(q, jurisdictionId, 8);
-      setLocateResults(res);
+      const res = await api.locate(q, jurisdictionId, 8);
+      setLocateResults(res.results);
+      onLocateResponse?.(res);
+      // A single unambiguous hit needs no dropdown — go straight there.
+      if (res.results.length === 1) {
+        setLocateResults(null);
+        onLocate?.(res.results[0]);
+      }
     } catch (e) {
       setLocateErr(e instanceof Error ? e.message : "Search failed");
       setLocateResults([]);

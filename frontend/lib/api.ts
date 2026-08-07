@@ -184,6 +184,76 @@ export interface LocateResult {
   lng: number | null;
   match_method: "apn" | "address" | "geocode";
   score: number;
+
+  // ── readiness ────────────────────────────────────────────────────────────
+  // Four separate booleans, not one "complete" flag: the useful answer is WHICH
+  // half is missing. They are what let the UI distinguish "no" from "we never
+  // looked" — an ungrounded zone and a prohibited zone used to render identically.
+  acres: number | null;
+  zoning_code: string | null;
+  has_zoning_code: boolean;
+  /** A HUMAN-reviewed matrix row backs this parcel's zone. False => show NOT
+   *  VERIFIED, never a machine guess presented as fact. */
+  zoning_grounded: boolean;
+  verdict_self_storage: string | null;
+  verdict_lgc: string | null;
+  /** dt=10 ring has real HV+HHI AND a non-epoch stamp. The epoch sentinel means
+   *  "never validly computed", so false => UNMEASURED, not $0. */
+  ring_measured: boolean;
+  ring_median_home_value: number | null;
+  ring_median_hhi: number | null;
+  scored: boolean;
+}
+
+/** in_coverage: we hold parcels there. out_of_coverage: the address is real but we
+ *  own no parcels — actionable, offer to queue the county. unresolved: bad string. */
+export type LocateCoverage = "in_coverage" | "out_of_coverage" | "unresolved";
+
+export interface LocateGeocoded {
+  lat: number | null;
+  lng: number | null;
+  matched_address: string | null;
+  state_fips: string | null;
+  county_fips: string | null;
+}
+
+export interface LocateResponse {
+  results: LocateResult[];
+  coverage: LocateCoverage;
+  geocoded: LocateGeocoded | null;
+}
+
+export interface NearbyParcel {
+  parcel_id: number;
+  jurisdiction_id: string;
+  jurisdiction_name: string | null;
+  apn: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  owner_name: string | null;
+  acres: number | null;
+  zoning_code: string | null;
+  lat: number | null;
+  lng: number | null;
+  zoning_grounded: boolean;
+  verdict_self_storage: string | null;
+  verdict_lgc: string | null;
+  ring_measured: boolean;
+  ring_median_home_value: number | null;
+  ring_median_hhi: number | null;
+  distance_miles: number | null;
+  /** Clears acreage + the dt=10 wealth gate. Qualifying rows sort first. */
+  qualifies: boolean;
+}
+
+export interface NearbyResponse {
+  results: NearbyParcel[];
+  radius_miles: number;
+  /** True => the list was cut at `limit`. Say "showing first N" rather than
+   *  implying it is exhaustive; a silent cap reads as "that's all there is". */
+  truncated: boolean;
+  qualifying_count: number;
 }
 
 const BASE_URL =
@@ -312,18 +382,51 @@ export const api = {
     jurisdictionId?: string | null,
     limit = 8
   ): Promise<LocateResult[]> {
-    const res = await fetchJSON<{ results: LocateResult[] }>(
-      "/api/parcels/locate",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          query,
-          jurisdiction_id: jurisdictionId ?? null,
-          limit,
-        }),
-      }
-    );
-    return res.results ?? [];
+    const res = await this.locate(query, jurisdictionId, limit);
+    return res.results;
+  },
+
+  // Full locate response, including coverage. Prefer this over locateParcels when
+  // you need to tell "we hold no parcels there" (offer to queue that county) apart
+  // from "we could not resolve that string" — locateParcels collapses both to [].
+  async locate(
+    query: string,
+    jurisdictionId?: string | null,
+    limit = 8
+  ): Promise<LocateResponse> {
+    const res = await fetchJSON<LocateResponse>("/api/parcels/locate", {
+      method: "POST",
+      body: JSON.stringify({
+        query,
+        jurisdiction_id: jurisdictionId ?? null,
+        limit,
+      }),
+    });
+    return {
+      results: res.results ?? [],
+      coverage: res.coverage ?? "in_coverage",
+      geocoded: res.geocoded ?? null,
+    };
+  },
+
+  // Parcels around a located point — the "what else is nearby" half of search.
+  // Cross-jurisdiction; qualifying first, then nearest. Bounded server-side on
+  // both radius (8mi) and rows, so this is safe to call from the search box.
+  async nearbyParcels(
+    lat: number,
+    lng: number,
+    opts?: { radiusMiles?: number; limit?: number; qualifyingOnly?: boolean }
+  ): Promise<NearbyResponse> {
+    return fetchJSON<NearbyResponse>("/api/parcels/nearby", {
+      method: "POST",
+      body: JSON.stringify({
+        lat,
+        lng,
+        radius_miles: opts?.radiusMiles ?? 3,
+        limit: opts?.limit ?? 50,
+        qualifying_only: opts?.qualifyingOnly ?? false,
+      }),
+    });
   },
 
   // ---- zones --------------------------------------------------------------
