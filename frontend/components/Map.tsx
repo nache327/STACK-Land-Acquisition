@@ -538,6 +538,17 @@ export default function Map({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !flyToOverride) return;
+    // CLAIM the jurisdiction fit, exactly as the initialFocus deep-link does above.
+    // Without this the county-centroid fit RACES this flyTo and usually wins, because
+    // `bounds` arrives asynchronously: an address search would fly to the parcel and
+    // then get yanked back to the middle of the county, leaving the parcel stranded in
+    // a corner of the viewport. Reported against 188 Boundary Rd, Marlboro NJ — the map
+    // landed on Freehold (county centre) with the parcel up in the NE corner.
+    //
+    // Setting the ref works in both orderings: if bounds land later the fit sees the
+    // jurisdiction already handled and skips; if it already ran, this flyTo simply
+    // supersedes it.
+    hasFitRef.current = jurisdictionId;
     map.flyTo({
       center: flyToOverride.centroid,
       zoom: Math.max(map.getZoom(), 15),
