@@ -234,6 +234,14 @@ class JurisdictionConfig:
     zone_code_field: str | None = None
     zone_name_field: str | None = None
     parcel_zone_field: str | None = None
+    # Provenance: True when this config came out of LIVE discovery (ArcGIS Hub
+    # search / user-pasted URL / geocode-picked fallback) rather than the
+    # hand-audited registry or an existing DB row. Live discovery is the only
+    # path that has ever mis-resolved a county (Mercer→Ocean twice,
+    # Burlington→Ocean, Paterson→Bergen), so the APN-collision gate runs STRICT
+    # for it and warn-only for vetted sources — protecting deliberate overlaps
+    # like Draper-city-within-Salt-Lake-County from false aborts.
+    discovered_live: bool = False
 
 
 # UGRC county-specific parcel layers (services1.arcgis.com, org 99lidPhWCzftIe9K)
@@ -625,6 +633,22 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
     # "Burlington County, NJ" input routes to NJOGIS COUNTY='BURLINGTON'
     # instead of repeating the live-discovery → Ocean mistake.
     burlington = _nj("Burlington", "Burlington County, NJ")
+    # Mercer was the THIRD strike of that same live-discovery bug (2026-08-10):
+    # "Mercer County, NJ" geocode-discovered Ocean County's 422k-parcel Hub layer
+    # and stamped state='NE' ("New Jersey"[:2]). The 2026-05 incident had already
+    # produced a full duplicate copy of Ocean County under a "mercer county, nj"
+    # name that we cleaned out of prod the same day. With every NJ county
+    # registered below, NO NJ county input can reach live discovery at all —
+    # the deterministic NJOGIS COUNTY='X' slice always wins first.
+    mercer     = _nj("Mercer",     "Mercer County, NJ")
+    camden     = _nj("Camden",     "Camden County, NJ")
+    gloucester = _nj("Gloucester", "Gloucester County, NJ")
+    atlantic   = _nj("Atlantic",   "Atlantic County, NJ")
+    cumberland = _nj("Cumberland", "Cumberland County, NJ")
+    salem      = _nj("Salem",      "Salem County, NJ")
+    capemay    = _nj("Cape May",   "Cape May County, NJ")
+    sussex     = _nj("Sussex",     "Sussex County, NJ")
+    warren     = _nj("Warren",     "Warren County, NJ")
     return {
         "hudson county":          hudson,
         "hudson county, nj":      hudson,
@@ -666,6 +690,30 @@ def _build_nj_jurisdictions() -> dict[str, JurisdictionConfig]:
         "ocean county, nj":       ocean,
         "burlington county":      burlington,
         "burlington county, nj":  burlington,
+        "mercer county":          mercer,
+        "mercer county, nj":      mercer,
+        "trenton":                mercer,
+        "trenton, nj":            mercer,
+        "princeton":              mercer,
+        "princeton, nj":          mercer,
+        "camden county":          camden,
+        "camden county, nj":      camden,
+        "gloucester county":      gloucester,
+        "gloucester county, nj":  gloucester,
+        "atlantic county":        atlantic,
+        "atlantic county, nj":    atlantic,
+        "atlantic city":          atlantic,
+        "atlantic city, nj":      atlantic,
+        "cumberland county":      cumberland,
+        "cumberland county, nj":  cumberland,
+        "salem county":           salem,
+        "salem county, nj":       salem,
+        "cape may county":        capemay,
+        "cape may county, nj":    capemay,
+        "sussex county":          sussex,
+        "sussex county, nj":      sussex,
+        "warren county":          warren,
+        "warren county, nj":      warren,
     }
 
 
@@ -1393,6 +1441,27 @@ async def _run(db: AsyncSession, job: Job) -> None:
         # Update endpoints in case they changed
         jurisdiction.parcel_endpoint = cfg.parcel_endpoint
         jurisdiction.zoning_endpoint = cfg.zoning_polygon_endpoint or cfg.zoning_endpoint
+        # Reconcile a mis-stamped state. Rows created by the old live-discovery
+        # path carry truncated states ('NE' from "New Jersey"[:2]) that this
+        # branch previously never corrected — the bad value was sticky forever.
+        # Gated on trustworthy provenance: correct only when the user's input
+        # carried an explicit matching suffix, or the config came from the
+        # vetted registry/DB (not live discovery) — so a WRONG geocode on
+        # suffix-less input can never clobber a CORRECT stored state.
+        _explicit = _parse_state(job.jurisdiction_input or "")
+        if (
+            cfg.state
+            and (jurisdiction.state or "").upper() != cfg.state.upper()
+            and (_explicit == cfg.state.upper() or not cfg.discovered_live)
+        ):
+            logger.warning(
+                "Correcting mis-stamped state on jurisdiction %s (%s): %r -> %r "
+                "(the old live-discovery path truncated full state names)",
+                cfg.name, jurisdiction.id, jurisdiction.state, cfg.state,
+            )
+            jurisdiction.state = cfg.state
+            if cfg.county and not (jurisdiction.county or "").strip():
+                jurisdiction.county = cfg.county
         await db.flush()
         logger.info("Found existing Jurisdiction: %s (%s)", cfg.name, jurisdiction.id)
 
@@ -1508,6 +1577,47 @@ async def _run(db: AsyncSession, job: Job) -> None:
             # Fake a progress update so the UI shows *something*
             await _progress(len(gdf), len(gdf))
         else:
+            # ── Wrong-layer gate for RE-ingests ────────────────────────────────
+            # When this jurisdiction already has a bbox (i.e. it has been
+            # populated before), require the endpoint's advertised extent to
+            # overlap it BEFORE any feature is downloaded. This is the last line
+            # of defence against a re-ingest pointed at a different county's
+            # layer — the exact shape of the Mercer→Ocean and Burlington→Ocean
+            # incidents, where 422k wrong-county parcels landed under an
+            # existing jurisdiction row. Fresh jurisdictions (bbox NULL) are
+            # covered by the discovery-time point-in-extent gate and the
+            # APN-collision gate at ingest.
+            #
+            # Verdict semantics (spatial_check_for_url): only a decisive
+            # `disjoint` fails; `unknown` (no metadata) passes — a publisher's
+            # missing extent must not break a healthy re-ingest. Statewide
+            # layers (NJOGIS) pass because the overlap ratio takes
+            # max(inter/jurisdiction, inter/layer).
+            if jurisdiction.bbox:
+                from app.services.zoning_discovery import spatial_check_for_url
+
+                _check = await spatial_check_for_url(
+                    cfg.parcel_endpoint, list(jurisdiction.bbox)
+                )
+                _verdict = (_check or {}).get("verdict", "unknown")
+                if _verdict == "disjoint":
+                    raise ValueError(
+                        f"Parcel endpoint extent is DISJOINT from this "
+                        f"jurisdiction's known bbox — refusing to download a "
+                        f"different county's parcels onto "
+                        f"{jurisdiction.name!r}. endpoint={cfg.parcel_endpoint} "
+                        f"layer_extent={(_check or {}).get('layer_extent_wgs84')} "
+                        f"jurisdiction_bbox={list(jurisdiction.bbox)}"
+                    )
+                if _verdict == "tiny":
+                    logger.warning(
+                        "Parcel endpoint extent barely overlaps %s's bbox "
+                        "(verdict=tiny, ratio=%s) — proceeding, but this is "
+                        "unusual for a same-county layer: %s",
+                        jurisdiction.name,
+                        (_check or {}).get("bbox_overlap_ratio"),
+                        cfg.parcel_endpoint,
+                    )
             logger.info("Downloading parcels from ArcGIS: %s (where=%s)", cfg.parcel_endpoint, cfg.where_clause or "1=1")
             async with asyncio.timeout(PARCEL_FETCH_TIMEOUT_SECONDS):
                 gdf = await download_all_features(
@@ -1604,6 +1714,11 @@ async def _run(db: AsyncSession, job: Job) -> None:
             muni_name_map=cfg.muni_name_map,
             parcel_zone_field=cfg.parcel_zone_field,
             force=force_refresh,
+            # Live-discovered sources are the only ones that have ever
+            # mis-resolved a county — the APN-collision gate hard-aborts for
+            # them and warn-only for registry/DB-vetted configs (protecting
+            # deliberate overlaps like Draper-within-Salt-Lake-County).
+            collision_policy="strict" if cfg.discovered_live else "warn",
         )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
@@ -2507,7 +2622,13 @@ async def _discover_jurisdiction_config(input_str: str) -> JurisdictionConfig:
                 pass
 
         name = (geo.city if geo else None) or input_str
-        state = (geo.state if geo else None) or _parse_state(input_str)
+        # The USER'S explicit ", XX" suffix beats the geocoder. The old order was
+        # reversed, so "Mercer County, NJ" took the geocoder's mangled state
+        # ("New Jersey" truncated to 'NE') over the NJ the user literally typed —
+        # and that value was then written to jurisdictions.state at row creation
+        # and never corrected. The geocoder remains the fallback for suffix-less
+        # input, where it is the only signal available.
+        state = _parse_state(input_str) or (geo.state if geo else "")
         county = (geo.county if geo else "") or ""
 
         logger.info(
@@ -2521,6 +2642,7 @@ async def _discover_jurisdiction_config(input_str: str) -> JurisdictionConfig:
             parcel_source=ParcelSource.city_gis,
             parcel_endpoint=endpoints.parcel_url,
             zoning_endpoint=endpoints.zoning_url,
+            discovered_live=True,
         )
 
     except RuntimeError as discovery_err:
@@ -2540,6 +2662,10 @@ async def _discover_jurisdiction_config(input_str: str) -> JurisdictionConfig:
             "State open-data fallback hit for %s, %s: %s (where=%s)",
             geo.city, geo.state, fallback.parcel_endpoint, fallback.where_clause,
         )
+        # The endpoint itself is deterministic (UGRC), but WHICH county service
+        # was chosen came from the geocode — a wrong geocode picks the wrong
+        # county. Same trust level as live discovery for the collision gate.
+        fallback.discovered_live = True
         return fallback
 
     raise ValueError(

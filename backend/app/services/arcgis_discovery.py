@@ -162,14 +162,19 @@ async def _from_hub(name: str) -> LayerEndpoints | None:
         return None
 
     bbox_str = "{:.6f},{:.6f},{:.6f},{:.6f}".format(*geo.bbox)
+    tokens = _name_tokens(name, geo)
 
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-        parcel_url = await _hub_search(client, "parcels", bbox_str, _PARCEL_KEYWORDS)
+        parcel_url = await _hub_search(
+            client, "parcels", bbox_str, _PARCEL_KEYWORDS, geo=geo, name_tokens=tokens
+        )
         if not parcel_url:
             logger.info("Hub found no parcel layer for %r", name)
             return None
 
-        zoning_url = await _hub_search(client, "zoning", bbox_str, _ZONING_KEYWORDS)
+        zoning_url = await _hub_search(
+            client, "zoning", bbox_str, _ZONING_KEYWORDS, geo=geo, name_tokens=tokens
+        )
 
     logger.info("Hub → parcel=%s  zoning=%s", parcel_url, zoning_url)
     return LayerEndpoints(
@@ -180,11 +185,31 @@ async def _from_hub(name: str) -> LayerEndpoints | None:
     )
 
 
+# Generic locality words carry no identity — "mercer" distinguishes a layer,
+# "county" does not.
+_NAME_STOPWORDS = frozenset({
+    "county", "city", "town", "township", "borough", "village",
+    "parish", "state", "the", "of", "and",
+})
+
+
+def _name_tokens(name: str, geo: GeocodedPlace | None) -> frozenset[str]:
+    """Identity-bearing words from the requested jurisdiction, for ranking."""
+    words: set[str] = set()
+    for source in (name, geo.county if geo else "", geo.city if geo else ""):
+        for w in re.findall(r"[a-z]+", (source or "").lower()):
+            if len(w) >= 4 and w not in _NAME_STOPWORDS:
+                words.add(w)
+    return frozenset(words)
+
+
 async def _hub_search(
     client: httpx.AsyncClient,
     query: str,
     bbox_str: str,
     keywords: list[str],
+    geo: GeocodedPlace | None = None,
+    name_tokens: frozenset[str] = frozenset(),
 ) -> str | None:
     try:
         resp = await client.get(
@@ -203,7 +228,7 @@ async def _hub_search(
         logger.warning("Hub search q=%r failed: %s", query, exc)
         return None
 
-    candidates: list[tuple[int, str]] = []
+    candidates: list[tuple[tuple[int, int], str]] = []
     for ds in data.get("data", []):
         attrs = ds.get("attributes", {})
         title = (attrs.get("name") or attrs.get("title") or "").lower()
@@ -221,35 +246,106 @@ async def _hub_search(
         full_url = url.rstrip("/")
         if layer_id is not None:
             full_url = f"{full_url}/{layer_id}"
-        # Score: shorter title = more likely to be the city-wide layer
-        candidates.append((len(title), full_url))
+        # Rank: a title naming the requested jurisdiction beats everything, THEN
+        # shorter titles win within each group. Pure len(title) was the defect that
+        # sent "Mercer County, NJ" to a neighboring county's layer titled just
+        # "Parcels" — the shortest possible match is also the least identifying,
+        # and the Hub bbox filter is only an *intersects* test on a geocoded
+        # envelope, so neighbors are routinely in the candidate pool.
+        named = 0 if any(t in title for t in name_tokens) else 1
+        candidates.append(((named, len(title)), full_url))
 
     if not candidates:
         return None
     candidates.sort(key=lambda x: x[0])
     for _, url in candidates:
-        if await _is_publicly_queryable(client, url):
-            return url
-        logger.info("Hub: skipping token-protected layer %s", url)
+        meta = await _probe_layer(client, url)
+        if meta is None:
+            logger.info("Hub: skipping token-protected layer %s", url)
+            continue
+        if geo is not None and not _extent_contains_point(meta, geo.lon, geo.lat):
+            logger.warning(
+                "Hub: REJECTING %s — its extent does not contain the geocoded "
+                "point (%.4f, %.4f) for the requested jurisdiction. This is the "
+                "wrong-county signature (Mercer→Ocean, Burlington→Ocean).",
+                url, geo.lon, geo.lat,
+            )
+            continue
+        return url
     return None
 
 
-async def _is_publicly_queryable(client: httpx.AsyncClient, url: str) -> bool:
-    """Probe a FeatureServer/Layer URL — return False if it requires a token."""
+async def _probe_layer(client: httpx.AsyncClient, url: str) -> dict | None:
+    """Fetch a FeatureServer/Layer's f=json metadata; ``None`` if token-protected.
+
+    One request serves two purposes: the token probe (the old
+    ``_is_publicly_queryable``) and the extent for the wrong-county gate — the
+    metadata was already being fetched and thrown away.
+    """
     try:
         resp = await client.get(url, params={"f": "json"})
         if resp.status_code != 200:
-            return False
+            return None
         data = resp.json()
     except Exception as exc:
         logger.warning("Probe failed for %s: %s", url, exc)
-        return False
-    err = data.get("error") if isinstance(data, dict) else None
-    if err:
+        return None
+    if not isinstance(data, dict):
+        return None
+    if data.get("error"):
         # 499 = Token Required, 498 = Invalid Token, 403 = Forbidden
-        logger.info("Layer %s reported error: %s", url, err)
-        return False
-    return True
+        logger.info("Layer %s reported error: %s", url, data["error"])
+        return None
+    return data
+
+
+# Tolerance around the layer extent, in degrees (~5.5 km). Generous on purpose:
+# this gate exists to reject a DIFFERENT county's layer (tens of km off), not to
+# litigate a jurisdiction whose geocoded point sits on its own boundary.
+_EXTENT_TOLERANCE_DEG = 0.05
+
+
+def _extent_contains_point(meta: dict, lon: float, lat: float) -> bool:
+    """Does the layer's advertised extent contain the geocoded point?
+
+    Decisive for the observed failure: Ocean County's extent (lng −74.55..−74.03)
+    does not contain Trenton (−74.76), so the mis-resolved layer is rejected
+    outright — no reference geometry needed beyond the layer's own metadata.
+
+    FAIL-OPEN on anything indeterminate (missing extent, unknown projection,
+    corrupt values): a healthy discovery must not break because a publisher left
+    metadata out. Only a decisively disjoint extent rejects.
+    """
+    extent = meta.get("extent") or meta.get("fullExtent")
+    if not isinstance(extent, dict):
+        return True
+    try:
+        xmin, ymin = float(extent["xmin"]), float(extent["ymin"])
+        xmax, ymax = float(extent["xmax"]), float(extent["ymax"])
+    except (KeyError, TypeError, ValueError):
+        return True
+    if not (xmin < xmax and ymin < ymax):
+        return True
+
+    sr = extent.get("spatialReference") or {}
+    wkid = sr.get("latestWkid") or sr.get("wkid")
+    if wkid not in (4326, 4269, None):
+        # Any projected CRS (Web-Mercator, state plane, ...) → WGS-84 via the
+        # shared helper: pyproj for the general case, hand-rolled Web-Mercator
+        # fallback, and the >30° corrupt-extent guard from the South Amboy
+        # incident. None (unreprojectable) is indeterminate → fail open.
+        from app.services.zoning_discovery import reproject_bbox_to_wgs84
+
+        bbox = reproject_bbox_to_wgs84([xmin, ymin, xmax, ymax], wkid)
+        if bbox is None:
+            return True
+        xmin, ymin, xmax, ymax = bbox
+    # WGS-84 plausibility: values outside lat/lng ranges mean the WKID lied.
+    if not (-180 <= xmin <= 180 and -90 <= ymin <= 90):
+        return True
+
+    t = _EXTENT_TOLERANCE_DEG
+    return (xmin - t) <= lon <= (xmax + t) and (ymin - t) <= lat <= (ymax + t)
 
 
 # ─── Geocoding ────────────────────────────────────────────────────────────────
@@ -287,21 +383,46 @@ async def geocode_jurisdiction(name: str) -> GeocodedPlace:
         d = 0.4  # ~44 km buffer at mid-latitudes
         bbox = [loc["x"] - d, loc["y"] - d, loc["x"] + d, loc["y"] + d]
 
-    # Region is sometimes a full state name — try to pull 2-letter code from address
-    state = attrs.get("Region", "")
-    if len(state) > 2:
-        address = best.get("address", "")
-        m = re.search(r",\s*([A-Z]{2})\b", address.upper())
-        if m:
-            state = m.group(1)
-        else:
-            state = state[:2].upper()
+    state = _state_from_geocoder(attrs.get("Region", ""), best.get("address", ""))
 
     return GeocodedPlace(
         city=attrs.get("City", "") or name,
-        state=state.upper() if state else "",
+        state=state,
         county=attrs.get("Subregion", ""),
         lat=loc["y"],
         lon=loc["x"],
         bbox=bbox,
     )
+
+
+def _state_from_geocoder(region: str, address: str) -> str:
+    """Resolve the geocoder's Region/address to a 2-letter state code — or ``""``.
+
+    Region often arrives as a FULL state name ("New Jersey"). The old fallback
+    truncated it — ``"New Jersey"[:2].upper()`` — which stamped **NE** on every
+    New-Jersey/New-York/New-Mexico/New-Hampshire jurisdiction whose address didn't
+    happen to carry a 2-letter code. That single line mislabelled Mercer, Morris,
+    Paterson, Elizabeth and New Brunswick rows as state='NE' in prod, twice
+    seeding wrong-county ingests. Resolution order:
+
+      1. Region IS a 2-letter code → use it.
+      2. Region is a full state name → the _US_STATES map (shared with
+         zoning_discovery, which never had this bug).
+      3. A ", XX" code inside the address string.
+      4. Give up with "" — an EMPTY state is visible and correctable downstream;
+         a truncated one looks valid and poisons the jurisdictions row forever.
+    """
+    # Local import: zoning_discovery imports nothing from this module, so no cycle.
+    from app.services.zoning_discovery import _US_STATES
+
+    region = (region or "").strip()
+    if len(region) == 2 and region.isalpha():
+        return region.upper()
+    if region:
+        mapped = _US_STATES.get(region.lower())
+        if mapped:
+            return mapped
+    m = re.search(r",\s*([A-Z]{2})\b", (address or "").upper())
+    if m and m.group(1) not in ("US",):
+        return m.group(1)
+    return ""

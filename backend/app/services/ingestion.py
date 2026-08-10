@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import uuid
 from typing import Any
 
@@ -21,6 +22,7 @@ from pyproj import Geod
 from shapely import make_valid
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.wkb import dumps as wkb_dumps
+from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -478,6 +480,127 @@ def _map_row(
 
 # ─── Public API ─────────────────────────────────────────────────────────────
 
+class ParcelSourceCollisionError(RuntimeError):
+    """The incoming parcel batch is another jurisdiction's data.
+
+    Raised BEFORE any row is upserted, when a large fraction of the incoming
+    APNs already exist under a different same-state jurisdiction. This is the
+    signature of a mis-resolved parcel layer (Mercer→Ocean twice,
+    Burlington→Ocean): the upsert's uq_parcels_jurisdiction_apn conflict key
+    includes jurisdiction_id, so a wrong-county ingest never conflicts — it
+    silently duplicates an entire county. The message names the collider so the
+    job error is directly actionable.
+    """
+
+
+# Gate tuning. Sample is capped (one indexed ANY() query, not a 400k scan);
+# below the floor the sample can't support a confident verdict, so the gate
+# stays silent rather than guessing on tiny municipalities.
+_APN_GATE_SAMPLE = 1_000
+_APN_GATE_MIN_SAMPLE = 200
+_APN_GATE_THRESHOLD = 0.5
+
+
+def evaluate_apn_collision(
+    colliders: list[dict],
+    sampled: int,
+    target_state: str | None,
+    policy: str,
+) -> tuple[str, dict | None]:
+    """Decide ok/warn/abort from per-collider APN overlap counts. Pure.
+
+    ``colliders``: [{"jurisdiction_id", "name", "state", "hits"}, ...] — hits
+    grouped PER colliding jurisdiction. Grouping is load-bearing: a county
+    umbrella overlapping several carved-out municipalities keeps each at its own
+    small fraction (Mount Laurel ≈ 10% of a Burlington sample) instead of
+    summing into a false positive.
+
+    Rules:
+      * top collider fraction >= 0.5 AND same state AND policy == "strict"
+        -> ABORT. Every observed wrong-layer incident is same-state at ~100%,
+        so 0.5 leaves wide margin while staying far above legitimate overlap.
+      * same signature but cross-state -> WARN only. Generic APN formats
+        ("123456") legitimately collide across states; the "same county twice"
+        invariant is intrinsically same-state.
+      * policy == "warn" (registry/DB-vetted sources) -> WARN. Deliberate
+        double coverage (Draper city within Salt Lake County) must not abort.
+      * fewer than _APN_GATE_MIN_SAMPLE sampled -> OK (not enough evidence).
+    """
+    if sampled < _APN_GATE_MIN_SAMPLE or not colliders:
+        return "ok", None
+    top = max(colliders, key=lambda c: c["hits"])
+    fraction = top["hits"] / sampled
+    if fraction < _APN_GATE_THRESHOLD:
+        return "ok", None
+    same_state = bool(
+        target_state
+        and (top.get("state") or "").upper() == target_state.upper()
+    )
+    info = {**top, "fraction": fraction, "same_state": same_state}
+    if policy == "strict" and same_state:
+        return "abort", info
+    return "warn", info
+
+
+async def _apn_collision_gate(
+    db: AsyncSession,
+    jurisdiction_id: uuid.UUID,
+    state: str | None,
+    apns: list[str],
+    policy: str,
+) -> None:
+    """DB wrapper around evaluate_apn_collision; raises on abort.
+
+    Kill-switch: PARCEL_APN_GATE=off disables it entirely (emergency lever —
+    e.g. a deliberate county re-home where the collision is the point).
+    """
+    if os.environ.get("PARCEL_APN_GATE", "").lower() == "off":
+        logger.warning("APN collision gate DISABLED via PARCEL_APN_GATE=off")
+        return
+    # Deterministic stride sample across the (insertion-ordered) APN list —
+    # spreads the sample over the whole batch rather than the first N rows,
+    # which matters when a source concatenates several areas.
+    stride = max(1, len(apns) // _APN_GATE_SAMPLE)
+    sample = apns[::stride][:_APN_GATE_SAMPLE]
+    if len(sample) < _APN_GATE_MIN_SAMPLE:
+        return
+    rows = (await db.execute(
+        sa_text("""
+            SELECT p.jurisdiction_id, j.name, j.state, count(*) AS hits
+              FROM parcels p
+              JOIN jurisdictions j ON j.id = p.jurisdiction_id
+             WHERE p.apn = ANY(:sample)
+               AND p.jurisdiction_id <> :jid
+             GROUP BY p.jurisdiction_id, j.name, j.state
+             ORDER BY hits DESC
+        """),
+        {"sample": sample, "jid": str(jurisdiction_id)},
+    )).mappings().all()
+    colliders = [dict(r) for r in rows]
+    verdict, info = evaluate_apn_collision(colliders, len(sample), state, policy)
+    if verdict == "ok":
+        return
+    assert info is not None
+    detail = (
+        f"{info['hits']}/{len(sample)} sampled APNs ({info['fraction']:.0%}) "
+        f"already belong to {info['name']!r} ({info['state']}, "
+        f"jurisdiction {info['jurisdiction_id']})"
+    )
+    if verdict == "abort":
+        raise ParcelSourceCollisionError(
+            f"REFUSING INGEST: {detail}. The incoming batch is almost certainly "
+            f"that jurisdiction's data arriving under the wrong name — the "
+            f"Mercer→Ocean signature. Nothing was written. If this overlap is "
+            f"intentional, re-run with PARCEL_APN_GATE=off."
+        )
+    logger.warning(
+        "APN collision gate: %s — proceeding (%s). A same-county duplicate "
+        "under two names would poison counts silently; check this.",
+        detail,
+        "cross-state collider" if not info["same_state"] else "policy=warn",
+    )
+
+
 async def ingest_parcels(
     gdf: gpd.GeoDataFrame,
     jurisdiction_id: uuid.UUID,
@@ -488,6 +611,7 @@ async def ingest_parcels(
     muni_name_map: dict[int, str] | None = None,
     parcel_zone_field: str | None = None,
     force: bool = False,
+    collision_policy: str = "warn",
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -553,6 +677,15 @@ async def ingest_parcels(
     if not rows:
         logger.error("No usable rows after mapping — aborting ingestion")
         return 0
+
+    # ── The never-ingest-a-county-twice backstop ─────────────────────────────
+    # Runs against the FINAL mapped batch, immediately before the upsert, so it
+    # is source-agnostic: any path that produced another jurisdiction's parcels
+    # (mis-resolved discovery, wrong pasted URL, bad where-clause) is caught
+    # here regardless of how it happened.
+    await _apn_collision_gate(
+        db, jurisdiction_id, state, list(rows_by_apn.keys()), collision_policy
+    )
 
     total_inserted = await _copy_upsert_parcels(rows, progress_callback, force=force)
 

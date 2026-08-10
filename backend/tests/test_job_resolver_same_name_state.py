@@ -89,3 +89,28 @@ async def test_same_name_family_future_proofed(db_session, family) -> None:
     oh = await resolve_existing_jurisdiction(f"{family}, OH", db_session)
     assert pa is not None and pa.name == f"{family}, PA"
     assert oh is not None and oh.name == f"{family}, OH"
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_suffix_disambiguates_multiple_bare_stored_rows(db_session) -> None:
+    """Two legacy bare-name rows in different states: the suffix picks the right
+    one instead of the old unconditional None (which forced a fresh ingest and
+    could create a THIRD row for the same county)."""
+    await _seed(db_session, "Mercer County")           # state XX (placeholder)
+    db_session.add(Jurisdiction(name="Mercer County", state="NJ"))  # same bare name
+    await db_session.flush()
+
+    got = await resolve_existing_jurisdiction("Mercer County, NJ", db_session)
+    assert got is not None and (got.state or "").upper() == "NJ"
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_single_bare_match_returns_even_with_odd_state(db_session) -> None:
+    """A SINGLE unambiguous bare-name match must return regardless of its stored
+    state: a mis-stamped state ('NE' from the truncation bug) is repaired by the
+    pipeline's reconcile branch on the next run. Excluding it here would make the
+    pipeline create a duplicate jurisdiction row — the disease itself."""
+    await _seed(db_session, "Passaic County")          # stored state 'XX'
+
+    got = await resolve_existing_jurisdiction("Passaic County, NJ", db_session)
+    assert got is not None and got.name == "Passaic County"
