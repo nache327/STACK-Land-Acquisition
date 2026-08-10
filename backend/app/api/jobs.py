@@ -65,21 +65,24 @@ async def resolve_existing_jurisdiction(
         if jurisdiction is not None:
             return jurisdiction
         # Legacy rows may be stored without the suffix; accept a stripped match
-        # only when it is unambiguous AND the row's stored state agrees with the
-        # suffix the user typed. Without the state filter, "Mercer County, NJ"
-        # could stripped-match a bare "Mercer County" row whose state was
-        # mis-stamped by the old discovery path — re-using a poisoned row
-        # forever. (The exact-full-name match above stays state-free on purpose:
-        # the name embeds the state, and the pipeline's reconcile branch repairs
-        # a disagreeing stored state on the next run.)
-        want_state = suffix[1].strip().upper()
+        # when it is unambiguous. The user's state suffix is used to
+        # DISAMBIGUATE, never to exclude: a single match returns even if its
+        # stored state disagrees (mis-stamped rows are repaired by the
+        # pipeline's reconcile branch on the next run — excluding them here
+        # would make the pipeline CREATE a duplicate row instead, the very
+        # disease this resolver exists to prevent). Only when several
+        # same-named rows collide does the suffix pick among them — the
+        # Montgomery-PA-vs-MD family, previously an unconditional None.
         rows = (
             await db.execute(
                 select(Jurisdiction).where(text(_STRIP_STATE_SQL)).params(n=suffix[0].strip())
             )
         ).scalars().all()
-        rows = [r for r in rows if (r.state or "").upper() == want_state]
-        return rows[0] if len(rows) == 1 else None
+        if len(rows) == 1:
+            return rows[0]
+        want_state = suffix[1].strip().upper()
+        same_state = [r for r in rows if (r.state or "").upper() == want_state]
+        return same_state[0] if len(same_state) == 1 else None
 
     name_query = strip_state_suffix_lower(jurisdiction_input)
     rows = (
