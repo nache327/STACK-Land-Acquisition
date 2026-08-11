@@ -601,6 +601,84 @@ async def _apn_collision_gate(
     )
 
 
+async def check_cached_parcels_collision(
+    db: AsyncSession,
+    jurisdiction_id: uuid.UUID,
+    state: str | None,
+) -> None:
+    """Sanity-check parcels the cache preflight is about to TRUST, not ingest.
+
+    The 2026-08-10 zombie incident: a cancelled job's worker finished its
+    wrong-layer download and upserted 422k Ocean-County parcels onto the Mercer
+    row AFTER cancellation — and the next Mercer job's cache preflight
+    (>1000 parcels => skip download) accepted them wholesale, bypassing every
+    discovery gate and the APN-collision gate, which only runs inside
+    ingest_parcels. This closes that path by sampling the CACHED parcels'
+    APNs against other jurisdictions.
+
+    ABORTS only on the unambiguous poisoned-cache signature: >=99% of the
+    sample belongs to ONE same-state jurisdiction AND this jurisdiction has no
+    human-reviewed zoning work invested (a poisoned cache is untouched; a
+    deliberate city-within-county overlap like Sandy-in-Salt-Lake-County has
+    matrix rows and is exempt). Anything softer just warns — and
+    PARCEL_APN_GATE=off bypasses entirely.
+    """
+    if os.environ.get("PARCEL_APN_GATE", "").lower() == "off":
+        return
+    apns = (await db.execute(
+        sa_text("""
+            SELECT apn FROM parcels
+             WHERE jurisdiction_id = :jid AND apn IS NOT NULL
+             ORDER BY id LIMIT :n
+        """),
+        {"jid": str(jurisdiction_id), "n": _APN_GATE_SAMPLE},
+    )).scalars().all()
+    if len(apns) < _APN_GATE_MIN_SAMPLE:
+        return
+    rows = (await db.execute(
+        sa_text("""
+            SELECT p.jurisdiction_id, j.name, j.state, count(*) AS hits
+              FROM parcels p
+              JOIN jurisdictions j ON j.id = p.jurisdiction_id
+             WHERE p.apn = ANY(:sample)
+               AND p.jurisdiction_id <> :jid
+             GROUP BY p.jurisdiction_id, j.name, j.state
+             ORDER BY hits DESC
+        """),
+        {"sample": list(apns), "jid": str(jurisdiction_id)},
+    )).mappings().all()
+    if not rows:
+        return
+    top = rows[0]
+    fraction = top["hits"] / len(apns)
+    if fraction < _APN_GATE_THRESHOLD:
+        return
+    same_state = bool(
+        state and (top["state"] or "").upper() == state.upper()
+    )
+    detail = (
+        f"{top['hits']}/{len(apns)} cached APNs ({fraction:.0%}) also belong to "
+        f"{top['name']!r} ({top['state']}, jurisdiction {top['jurisdiction_id']})"
+    )
+    if fraction >= 0.99 and same_state:
+        invested = (await db.execute(
+            sa_text("""
+                SELECT count(*) FROM zone_use_matrix
+                 WHERE jurisdiction_id = :jid
+                   AND human_reviewed AND deleted_at IS NULL
+            """),
+            {"jid": str(jurisdiction_id)},
+        )).scalar()
+        if not invested:
+            raise ParcelSourceCollisionError(
+                f"REFUSING to trust cached parcels: {detail}. This is the "
+                f"poisoned-cache signature (a wrong-county write that a later "
+                f"job would silently adopt). Delete these parcels and re-run, "
+                f"or set PARCEL_APN_GATE=off if the overlap is intentional."
+            )
+    logger.warning("Cached-parcel collision: %s — proceeding (warn).", detail)
+
+
 async def ingest_parcels(
     gdf: gpd.GeoDataFrame,
     jurisdiction_id: uuid.UUID,

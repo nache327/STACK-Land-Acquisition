@@ -1520,6 +1520,13 @@ async def _run(db: AsyncSession, job: Job) -> None:
     parcels_cached = (existing_count or 0) > 1000 and not force_refresh
 
     if parcels_cached:
+        # The cache preflight is a TRUST decision, so it gets the same collision
+        # scrutiny as a fresh ingest. A cancelled job's zombie worker once wrote
+        # 422k wrong-county parcels here AFTER cancellation, and the next run
+        # adopted them via this branch — bypassing every gate (2026-08-10).
+        from app.services.ingestion import check_cached_parcels_collision
+
+        await check_cached_parcels_collision(db, jurisdiction.id, jurisdiction.state)
         logger.info(
             "Parcels already cached (%d) for jurisdiction %s — skipping download",
             existing_count,
