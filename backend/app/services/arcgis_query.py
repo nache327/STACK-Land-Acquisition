@@ -215,26 +215,60 @@ async def _get_all_object_ids(
     endpoint_url: str,
     where: str = "1=1",
     client: httpx.AsyncClient | None = None,
+    expected_count: int | None = None,
 ) -> list[int] | None:
     """
     Fetch all ObjectIDs for a layer. Returns None if the service doesn't
     support returnIdsOnly (falls back to offset pagination).
+
+    SERVER-TRUNCATED ID LISTS ARE REAL: AGOL nodes sometimes return a capped
+    objectIds array (observed: exactly 100,000 of 127,186 for Mercer County NJ,
+    2026-08-11 — deterministically from the Railway worker while the full list
+    came back elsewhere, no ``exceededTransferLimit`` flag either way). The old
+    code trusted whatever came back, and the caller then treated len(oids) as
+    the authoritative total — so an entire county could silently ingest 21%
+    short and LOOK complete. When ``expected_count`` says the list is short,
+    keep paging with ``OBJECTID > max(seen)`` until it stops growing.
     """
-    params: dict[str, str] = {
-        "where": where,
-        "returnIdsOnly": "true",
-        "f": "json",
-    }
     url = endpoint_url.rstrip("/") + "/query"
-    try:
-        resp = await _send_with_retry(client, "GET", url, params=params, timeout=60.0)
-        data = resp.json()
-        oids = data.get("objectIds")
-        if isinstance(oids, list):
-            return sorted(oids)
-    except Exception as exc:
-        logger.debug("returnIdsOnly not supported or failed: %s", exc)
-    return None
+
+    async def _fetch_ids(where_clause: str) -> list[int] | None:
+        params: dict[str, str] = {
+            "where": where_clause,
+            "returnIdsOnly": "true",
+            "f": "json",
+        }
+        try:
+            resp = await _send_with_retry(client, "GET", url, params=params, timeout=60.0)
+            data = resp.json()
+            oids = data.get("objectIds")
+            return oids if isinstance(oids, list) else None
+        except Exception as exc:
+            logger.debug("returnIdsOnly not supported or failed: %s", exc)
+            return None
+
+    first = await _fetch_ids(where)
+    if first is None:
+        return None
+    seen: set[int] = set(first)
+
+    if expected_count:
+        # Page past a server-side truncation. Each round asks only for ids ABOVE
+        # the highest one we have, so rounds are disjoint and the loop must
+        # terminate: either the set stops growing or it reaches the count.
+        while len(seen) < expected_count:
+            page = await _fetch_ids(f"({where}) AND OBJECTID > {max(seen)}")
+            if not page:
+                break
+            before = len(seen)
+            seen.update(page)
+            if len(seen) == before:
+                break
+            logger.info(
+                "returnIdsOnly was truncated — paged to %d of %d ids",
+                len(seen), expected_count,
+            )
+    return sorted(seen)
 
 
 async def _fetch_by_object_ids(
@@ -324,8 +358,11 @@ async def download_all_features(
         if total == 0:
             return gpd.GeoDataFrame()
 
-        # Try ObjectID pagination — required for services that 400 on large offsets
-        oids = await _get_all_object_ids(endpoint_url, where, client=client)
+        # Try ObjectID pagination — required for services that 400 on large offsets.
+        # expected_count lets it detect and page past a server-truncated id list.
+        oids = await _get_all_object_ids(
+            endpoint_url, where, client=client, expected_count=total
+        )
 
         features: list[dict] = []
         downloaded = 0
@@ -399,4 +436,32 @@ async def download_all_features(
 
     combined = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
     logger.info("Downloaded %d total features from %s", len(combined), endpoint_url)
+
+    # ── Completeness backstop ────────────────────────────────────────────────
+    # A short download must FAIL, not pass as a whole county. Mercer County NJ
+    # ingested exactly 100,000 of 127,186 (2026-08-11) because an AGOL node
+    # returned a truncated objectIds list — the county then LOOKED complete,
+    # and a needle among the missing 27k would simply not exist. The count
+    # query is re-issued here (fresh, not the possibly-stale opening value) and
+    # a >5% shortfall aborts; the tolerance absorbs live edits to the layer
+    # between count and download. Fail-open when the recount itself errors —
+    # a flaky count endpoint must not kill a healthy download.
+    # client=None ON PURPOSE: this line sits outside the `async with` block above,
+    # so the pooled client is already closed — passing it would make the recount
+    # fail every time and the backstop silently vacuous (fail-open by accident).
+    # _send_with_retry creates a one-shot client when given None.
+    try:
+        expected = await get_layer_count(endpoint_url, where, client=None)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("post-download recount failed (non-fatal): %s", exc)
+        expected = 0
+    if expected and len(combined) < expected * 0.95:
+        raise ValueError(
+            f"INCOMPLETE DOWNLOAD: {len(combined):,} of {expected:,} features "
+            f"({len(combined) / expected:.0%}) from {endpoint_url} "
+            f"(where={where!r}). Refusing to pass a truncated layer off as a "
+            f"complete jurisdiction — the shortfall would be invisible after "
+            f"ingest. Re-run the job; if the service is capped, page sizes may "
+            f"need lowering."
+        )
     return combined
