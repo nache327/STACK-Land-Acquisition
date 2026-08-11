@@ -118,3 +118,30 @@ def test_completeness_backstop_is_wired_fail_closed() -> None:
         "the recount must not reuse the closed pooled client"
     )
     assert "raise ValueError" in src
+
+
+@pytest.mark.asyncio
+async def test_holey_id_list_falls_back_to_offset_pagination(monkeypatch) -> None:
+    """The Mercer shape, round 2: the server's id list is missing ids MID-RANGE
+    (holes), so '> max' paging recovers almost nothing. An unrepairable short
+    list must be DISCARDED in favor of offset pagination — a hole-y subset that
+    gets trusted downloads 79% of a county and calls it done."""
+    # ids 1..100 with 40..60 missing; expected 120. Follow-up (>100) finds nothing.
+    holey = [i for i in range(1, 101) if not (40 <= i <= 60)]
+
+    async def fake_send(client, method, url, *, params=None, data=None, timeout=0):
+        where = (params or {}).get("where", "")
+        if "OBJECTID >" in where:
+            return _FakeResponse({"objectIds": []})
+        return _FakeResponse({"objectIds": holey})
+
+    monkeypatch.setattr(aq, "_send_with_retry", fake_send)
+    got = await aq._get_all_object_ids("http://x/FeatureServer/0", "1=1",
+                                       client=None, expected_count=120)
+    # the helper returns what it could get...
+    assert got is not None and len(got) == len(holey)
+    # ...and download_all_features must then refuse to use it (structural pin):
+    import inspect
+    src = inspect.getsource(aq.download_all_features)
+    assert "len(oids) < total * 0.99" in src
+    assert "oids = None" in src, "short unrepairable id lists must fall back to offsets"
