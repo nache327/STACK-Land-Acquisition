@@ -230,3 +230,49 @@ def test_gate_handles_no_colliders():
         [], sampled=1000, target_state="NJ", policy="strict"
     )
     assert verdict == "ok" and info is None
+
+
+@pytest.mark.asyncio
+async def test_cancel_check_aborts_before_upsert(monkeypatch) -> None:
+    """A cancellation detected at the last line must abort BEFORE the bulk
+    upsert writes anything — the 2026-08-10 zombie committed 422k rows of a
+    cancelled job because every earlier checkpoint shared the worker's session."""
+    import asyncio as _asyncio
+    import uuid as _uuid
+
+    import geopandas as gpd
+    from shapely.geometry import Polygon
+
+    from app.services import ingestion as ing
+
+    upserted: list[int] = []
+
+    async def fake_upsert(rows, cb, force=False):
+        upserted.append(len(rows))
+        return len(rows)
+
+    async def fake_gate(*a, **k):
+        return None
+
+    async def fake_scalar(*a, **k):
+        return "NJ"
+
+    class _DB:
+        scalar = staticmethod(fake_scalar)
+
+    monkeypatch.setattr(ing, "_copy_upsert_parcels", fake_upsert)
+    monkeypatch.setattr(ing, "_apn_collision_gate", fake_gate)
+
+    poly = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+    gdf = gpd.GeoDataFrame(
+        {"APN": ["A1", "A2"], "geometry": [poly, poly]}, crs="EPSG:4326"
+    )
+
+    async def cancelled():
+        return True
+
+    with pytest.raises(_asyncio.CancelledError):
+        await ing.ingest_parcels(
+            gdf, _uuid.uuid4(), _DB(), cancel_check=cancelled
+        )
+    assert upserted == [], "rows were upserted despite cancellation"
