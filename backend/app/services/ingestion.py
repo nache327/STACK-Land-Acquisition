@@ -690,6 +690,7 @@ async def ingest_parcels(
     parcel_zone_field: str | None = None,
     force: bool = False,
     collision_policy: str = "warn",
+    cancel_check: Any = None,
 ) -> int:
     """
     Convert a GeoDataFrame of ArcGIS parcels to Parcel rows and bulk-insert
@@ -764,6 +765,20 @@ async def ingest_parcels(
     await _apn_collision_gate(
         db, jurisdiction_id, state, list(rows_by_apn.keys()), collision_policy
     )
+
+    # ── Last-line cancellation probe ─────────────────────────────────────────
+    # Immediately before the bulk write, on the caller's session-independent
+    # probe. The mapping loop above can run for minutes on a county-sized batch,
+    # and a job cancelled during it must not commit 400k rows at the end — the
+    # 2026-08-10 zombie wrote a full wrong county AFTER cancellation because
+    # every earlier checkpoint was entangled with a session that had been
+    # closed, merged and reused.
+    if cancel_check is not None and await cancel_check():
+        logger.warning(
+            "Cancellation detected immediately before parcel upsert for "
+            "jurisdiction %s — aborting with NOTHING written.", jurisdiction_id,
+        )
+        raise asyncio.CancelledError("job cancelled before parcel upsert")
 
     total_inserted = await _copy_upsert_parcels(rows, progress_callback, force=force)
 

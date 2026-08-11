@@ -89,6 +89,36 @@ def _raw_asyncpg_url() -> str:
     return settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
 
+async def _cancel_probe(job_id: uuid.UUID) -> bool:
+    """True if cancellation was requested — read on a FRESH raw connection.
+
+    The last line of defence before a bulk write. The 2026-08-10 zombie: a job
+    cancelled at 20:50:30 still upserted 422k wrong-county parcels at 20:59:24,
+    sailing past a check_cancelled that sits right before ingest in the very
+    code that ran. The ORM checkpoint is entangled with the session it runs in
+    — post-download the session has been closed, re-opened and had stale
+    objects merge()d back, and refresh() flushes pending state before it
+    re-reads, so it can read back its own stale write. This probe shares
+    NOTHING with the session: new TCP socket, no ORM, no autoflush — the same
+    isolation pattern as _progress_commit, for the same reason.
+
+    Fail-open on connection errors: a flaky probe must not kill a healthy
+    ingest; it exists to stop a CANCELLED one.
+    """
+    try:
+        conn = await asyncpg.connect(_raw_asyncpg_url(), statement_cache_size=0)
+        try:
+            row = await conn.fetchval(
+                "SELECT cancel_requested_at FROM jobs WHERE id = $1", job_id
+            )
+            return row is not None
+        finally:
+            await conn.close()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("cancel probe failed (fail-open): %r", exc)
+        return False
+
+
 async def _progress_commit(job_id: uuid.UUID, progress: dict) -> None:
     """Write job.progress via a raw asyncpg connection that shares no state
     with the in-flight SQLAlchemy session.
@@ -1726,6 +1756,9 @@ async def _run(db: AsyncSession, job: Job) -> None:
             # them and warn-only for registry/DB-vetted configs (protecting
             # deliberate overlaps like Draper-within-Salt-Lake-County).
             collision_policy="strict" if cfg.discovered_live else "warn",
+            # Session-independent cancellation probe (fresh raw socket) so a
+            # job cancelled mid-mapping cannot commit the batch at the end.
+            cancel_check=lambda: _cancel_probe(_job_id),
         )
         _stage_completed(job, "ingest", ingest_started, parcels_ingested=count)
         await complete_job_step(
