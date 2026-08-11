@@ -364,6 +364,23 @@ async def download_all_features(
             endpoint_url, where, client=client, expected_count=total
         )
 
+        # A short id list that PAGING COULDN'T COMPLETE is untrustworthy — discard
+        # it and use offset pagination against the count instead. Observed on the
+        # NJOGIS composite (Mercer County): the worker's returnIdsOnly returned
+        # 100,000 of 127,186 with the missing 27k as HOLES mid-range, so the
+        # "OBJECTID > max(seen)" follow-up recovered only 6. A hole-y subset
+        # cannot be repaired by range paging; offset pagination re-enumerates
+        # everything, and the completeness backstop below still verifies the
+        # result. Services that cap offsets (why the OID path exists at all)
+        # return full id lists, so they never take this branch.
+        if oids is not None and total and len(oids) < total * 0.99:
+            logger.warning(
+                "returnIdsOnly is UNTRUSTWORTHY here: %d ids vs %d counted — "
+                "discarding the id list and using offset pagination.",
+                len(oids), total,
+            )
+            oids = None
+
         features: list[dict] = []
         downloaded = 0
 
