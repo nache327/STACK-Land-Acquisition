@@ -43,10 +43,29 @@ named anywhere in Part 4 (swept); lgc-unnamed -> prohibited. The LGC lane derive
 from the sibling columns at query time, so RO-1/ROM-3/PCD/ROM-* will still light
 up for LGC via their li/ss standings — as intended.
 
-NOT COVERED HERE — RP-1..RP-11 (~83 parcels): districts of the PRINCETON JUNCTION
-REDEVELOPMENT PLAN, a separately adopted plan document that chapter 200 only
-references. Escalated to outputs/_exceptions_mercer.md rather than guessed (#37).
-Parcels in RP zones simply stay unscored until that plan text is grounded.
+RP-1..RP-12 (Princeton Junction Redevelopment Plan): the plan's regulatory
+provisions ARE codified — Ch. 200 PART 5 'Princeton Junction Redevelopment Plan
+Regulatory Provisions' (§§ 200-258..200-269.3), pulled whole via
+https://ecode360.com/print/WE1666?guid=13508419&children=true (2026-08-12).
+Every RP district opens with its own closed clause ('no building or premises
+shall be used ... except for [one or more of] the following uses'); the full
+Part 5 sweep finds NO self-storage/warehouse principal use in any of them.
+  * RP-5 li CONDITIONAL: § 200-264A(2)(b) names 'Manufacture of specialty
+    epoxies, film adhesives and other electronic materials for the semiconductor
+    and electronics industry and of voting machines, software development, RFID,
+    safety and security monitoring systems ... subject to the following
+    conditions: [1] Such manufacturing shall be undertaken only within the
+    existing building, the footprint of which ... may be expanded by not more
+    than 25%.'
+  * RP-6 all prohibited by AFFIRMATIVE CARVE-OUT (#57): § 200-265A(2)(a) 'All
+    uses permitted in the ROM-2 District, except that limited manufacture,
+    conversion of existing residential structures, and home occupations shall
+    not be permitted.' ROM-2's storage entries are accessory-only, so nothing
+    storage-like carries in.
+  * all other RP districts: TOD residential/mixed-use village lists ->
+    prohibited. RP-7A/RP-7B (Ord. 2026-09) and RP-12 are banked latent for
+    future layer refreshes; RP-11-Overlay is an overlay (not a base zone the
+    layer emits) and is left out.
 
 CASING: parcels.city = 'West Windsor township' (NJ convention). Preflight verifies.
 
@@ -283,9 +302,70 @@ for z, sec in sorted(_PROHIBITED_ZONES.items()):
     ROWS.append((z, "prohibited", "prohibited", "prohibited", sec,
                  _GENERIC_PROHIBITED))
 
-# RP-1..RP-11 deliberately ABSENT: Princeton Junction Redevelopment Plan
-# districts, governed by a separately adopted plan document (escalated to
-# outputs/_exceptions_mercer.md). Unscored beats guessed.
+# -- Princeton Junction Redevelopment Plan districts (Ch. 200 Part 5) ---------
+_RP_SWEEP = (
+    "FULL PART 5 SWEEP (#58): the complete printed text of Ch. 200 Part 5 "
+    "'Princeton Junction Redevelopment Plan Regulatory Provisions' (eCode360 "
+    "print endpoint, WE1666 guid 13508419, fetched 2026-08-12) names no "
+    "self-storage, mini-warehouse or warehouse principal use in any RP "
+    "district; storage appears only as tenant-accessory ('stand-alone storage "
+    "facilities for apartment tenants'). No garage-for-compensation use is "
+    "named => lgc-unnamed -> prohibited. "
+)
+
+_RP_CLOSED = (
+    "Each RP district opens with its own closed clause, pattern verbatim "
+    "(RP-6 form, § 200-265A(2)): 'In an RP-6 District, no building or premises "
+    "shall be used and no building shall be erected or altered on a lot which "
+    "is arranged, intended or designed to be used, except for one or more of "
+    "the following uses'. An unnamed use is therefore prohibited. "
+)
+
+_RP5_BASIS = (
+    "LEGACY MANUFACTURING, CONDITIONED => li CONDITIONAL. § 200-264A(2)(b), "
+    "verbatim: 'Manufacture of specialty epoxies, film adhesives and other "
+    "electronic materials for the semiconductor and electronics industry and "
+    "of voting machines, software development, RFID, safety and security "
+    "monitoring systems, integrated electronic system and solution for "
+    "different applications, subject to the following conditions: [1] Such "
+    "manufacturing shall be undertaken only within the existing building, the "
+    "footprint of which (as of the effective date of this section) may be "
+    "expanded by not more than 25%.' The principal list is otherwise "
+    "offices/labs/civic, with the labs entry excluding 'manufacturing, sale, "
+    "processing, warehousing, distribution or fabrication ... except as "
+    "incidental'. No storage use is named => ss/mw PROHIBITED. "
+    + _RP_CLOSED + _RP_SWEEP
+)
+
+_RP6_BASIS = (
+    "AFFIRMATIVE CARVE-OUT (#57) => all prohibited. § 200-265A(2)(a), "
+    "verbatim: 'All uses permitted in the ROM-2 District, except that limited "
+    "manufacture, conversion of existing residential structures, and home "
+    "occupations shall not be permitted.' ROM-2's storage entries are "
+    "accessory-only, so nothing storage-like carries in; the rest of the list "
+    "is commuter parking, transportation/BRT, hotel conference center, retail "
+    "and personal services => ss/mw/li PROHIBITED. " + _RP_CLOSED + _RP_SWEEP
+)
+
+_RP_GENERIC = (
+    "TOD residential/mixed-use village district of the Princeton Junction "
+    "Redevelopment Plan; its permitted list (residential, ground-floor "
+    "retail/services, offices, civic) names no storage, warehouse, "
+    "manufacturing or garage-for-compensation use. " + _RP_CLOSED + _RP_SWEEP
+)
+
+_RP_SECTIONS = {
+    "RP-1": "200-260", "RP-2": "200-261", "RP-3": "200-262", "RP-4": "200-263",
+    "RP-7": "200-266", "RP-7A": "200-266.1", "RP-7B": "200-266.2",
+    "RP-8": "200-267", "RP-9": "200-268", "RP-10": "200-269",
+    "RP-11": "200-269.1", "RP-12": "200-269.3",
+}
+ROWS.append(("RP-5", "prohibited", "prohibited", "conditional",
+             "200-264A(2)(b)", _RP5_BASIS))
+ROWS.append(("RP-6", "prohibited", "prohibited", "prohibited",
+             "200-265A(2)(a)", _RP6_BASIS))
+for z, sec in sorted(_RP_SECTIONS.items()):
+    ROWS.append((z, "prohibited", "prohibited", "prohibited", sec, _RP_GENERIC))
 
 _SELECT = """
 SELECT id FROM zone_use_matrix
@@ -339,16 +419,11 @@ async def main() -> None:
             "WHERE jurisdiction_id=$1::uuid AND city=$2 "
             "AND zoning_code IS NOT NULL", JID, MUNI)}
         script_zones = {z for z, *_ in ROWS}
-        missing = {z for z in db_zones - script_zones
-                   if not z.startswith("RP-")}          # RP-* escalated, not missed
+        missing = db_zones - script_zones
         if missing:
             print(f"REFUSING: bound zones with no verdict row: {sorted(missing)}",
                   flush=True)
             sys.exit(3)
-        rp = sorted(z for z in db_zones if z.startswith("RP-"))
-        if rp:
-            print(f"note: RP zones left unscored pending the Princeton Junction "
-                  f"Redevelopment Plan: {rp}", flush=True)
 
         for zone, ss, mw, li, cite, basis in ROWS:
             if len(basis) > 2048:
