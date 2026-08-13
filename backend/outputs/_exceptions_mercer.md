@@ -11,6 +11,24 @@
   RP-6 li prohibited by affirmative carve-out (§ 200-265A(2)(a)). RP-11-Overlay
   left out deliberately (overlay, not a base zone the layer emits).
 
+## Owner NAMES for the 17 West Windsor needles — redacted in every public feed
+- West Windsor's owner names are **blank municipality-wide** in all public MOD-IV
+  distributions (NJOGIS composite: 0 non-empty in district 1113; njparcels.com
+  same; tax-board CGI mirrors frozen at 2022 data) — the Daniel's Law-era
+  redaction wave. Owner MAILING addresses are NOT redacted and are backfilled on
+  all 17 parcels (2026-08-13).
+- The Edmunds WIPP tax portal (wipp.edmundsgovtech.cloud/home?wippId=1113) still
+  shows names but is reCAPTCHA-gated — automation would be brittle; the 17
+  lookups are a ~15-minute manual task in a real browser (block/lot list =
+  Desktop `MERCER_17_NEEDLES_2026-08-13.csv`). County clerk deed search
+  (grantee on last deed) is the fallback.
+- What the mailing data already reveals: 10 of the 11 PCD parcels (~578 ac,
+  incl. the four QFARM giants) mail to ONE address — 90 Woodbridge Center Dr,
+  Woodbridge NJ (single institutional owner; the former American Cyanamid
+  tract). `1113_8.01_2.01` mails to 1035 Parkway CN 600 Trenton = **NJDOT**
+  (state-owned; deprioritize). The six R0-1 parcels are mostly owner-occupied
+  farms on Hightstown Rd (mailing = situs) — the cleanest outreach targets.
+
 ## Hopewell Township / Lawrence Township / East Windsor Township — no spatial bind
 - Discovery agent verified NO public zoning GIS layer exists for any of the
   three (AGO, Hub, township orgs, Mercer County org, third-party aggregator).

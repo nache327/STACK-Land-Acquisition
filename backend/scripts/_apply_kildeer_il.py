@@ -57,6 +57,31 @@ definition is not a permitted use. So `lgc-unnamed -> prohibited` applies. This 
 keeps the post-ingest gate's sibling-leak check happy — lgc must never outrank a
 prohibited self_storage.
 
+THE LGC LANE DOES NOT READ THAT COLUMN. app/services/use_verdicts.py derives the
+luxury-garage-condo verdict from the SIBLING columns, because the stored
+luxury_garage_condo is gate-suppressed (catch #58) in exactly the light-industrial
+zones that are LGC's best targets. So what the board will show for Kildeer's LGC lane
+is a consequence of the ss/mw/li values above, NOT of lgc='prohibited':
+  B, LC                    -> LGC 'conditional' (self_storage='conditional' promotes)
+  O&R, R-1, R-2, PD-1..PD-4 -> LGC 'prohibited' (QC veto: human_reviewed AND
+                               self_storage='prohibited' AND light_industrial is not
+                               'permitted')
+  INC                      -> LGC 'unclear'
+That is the intended outcome, and it means the 280-parcel latent ceiling below
+applies to BOTH lanes, not just storage.
+
+THE "INDUSTRIAL/WAREHOUSE ZONING MAKES LGC WORK" PATH DOES NOT EXIST IN KILDEER.
+LGC's independent route needs light_industrial='permitted' — a genuinely industrial
+zone to claim and argue the garage-condo entitlement in. Kildeer has no such zone:
+§5-3-1 establishes nine districts and none is industrial, no district permits
+warehousing, wholesaling or manufacturing by right OR by special use, and the
+office/research family is barred from it verbatim by §5-14-2's OFFICE/RESEARCH
+definition: "Light industrial, assembly, and laboratory facilities, as such uses
+relate to the production of products and parts, shall be prohibited. ... ancillary
+outside storage of materials shall be prohibited." So Kildeer's LGC lane rides
+entirely on B's and LC's NAMED self-storage entry — it adds no districts beyond the
+storage lane's two.
+
 The INC row stays UNCLEAR on purpose. Stamping it prohibited would assert a muni-wide
 verdict the ordinance contradicts (B and LC are conditional), and INC spans ~133k
 parcels across 51 Lake County villages. Scoped to municipality='KILDEER' regardless.
@@ -139,7 +164,12 @@ _PD_TAIL = (
     "that which is clearly incidental and essential to the use conducted on the same "
     "premises.' §5-14-3(D)(1)(d) permits outdoor storage only as an accessory to an "
     "approved business PD, under the §5-10-3G / §5-10A-3G screening standards. "
-    + _CLOSED_LIST
+    "And §5-14-2's OFFICE/RESEARCH definition bars the industrial family verbatim: "
+    "'Light industrial, assembly, and laboratory facilities, as such uses relate to "
+    "the production of products and parts, shall be prohibited. All research shall be "
+    "conducted within enclosed buildings, and ancillary outside storage of materials "
+    "shall be prohibited.' => no PD route reaches light_industrial='permitted', so the "
+    "LGC lane gets no independent path here either. " + _CLOSED_LIST
 )
 
 _PD1_BASIS = (
@@ -254,7 +284,13 @@ _OR_BASIS = (
     "Note the district name is Office AND RESEARCH — 'research' here means "
     "'Scientific research and development services (5417)' and 'Medical and diagnostic "
     "laboratories (6215)', i.e. offices and labs, NOT an industrial/flex family "
-    "(catch #38). luxury_garage_condo PROHIBITED: no garage-for-compensation use "
+    "(catch #38) — and §5-14-2's OFFICE/RESEARCH definition says so verbatim: 'Light "
+    "industrial, assembly, and laboratory facilities, as such uses relate to the "
+    "production of products and parts, shall be prohibited.' §5-1's 'LABORATORY, "
+    "COMMERCIAL' agrees: 'Manufacturing, assembly or packaging of products is not "
+    "included within this definition.' So O&R cannot reach "
+    "light_industrial='permitted', which is exactly what the LGC lane's independent "
+    "path requires. luxury_garage_condo PROHIBITED: no garage-for-compensation use "
     "named. " + _CLOSED_LIST
 )
 
@@ -317,10 +353,8 @@ ROWS = [
 # longest bases (B 2462, LC 2147), so they get a trimmed `notes` while `citations`
 # keeps the full verbatim text above. Everything else uses one string for both.
 _CLOSED_LIST_SHORT = (
-    "CLOSED LIST — §5-2-13: a use 'not specifically listed in the sections devoted to "
-    "permitted uses ... shall be assumed [to be] hereby expressly prohibited' absent a "
-    "written plan commission/board of appeals finding that it is 'similar to and not "
-    "more objectionable than uses listed'."
+    "CLOSED LIST — §5-2-13: an unlisted use is 'expressly prohibited' absent a written "
+    "plan commission/board of appeals similar-use finding."
 )
 
 _B_NOTES = (
@@ -425,7 +459,10 @@ async def main() -> None:
         for (code, ss, mw, li, lgc, human, src, cite, basis) in ROWS:
             existing = await c.fetchrow(_SELECT, JID, code, MUNI)
             citations = json.dumps([{"section": cite, "text": basis}])
-            notes = NOTES_OVERRIDE.get(code, basis)
+            # `citations` keeps the full basis; `notes` is the same text with the
+            # closed-list boilerplate condensed, which is what buys the headroom.
+            notes = NOTES_OVERRIDE.get(
+                code, basis.replace(_CLOSED_LIST, _CLOSED_LIST_SHORT))
             if len(notes) > 2048:                     # notes is varchar(2048)
                 print(f"REFUSING: notes for {code} is {len(notes)} chars > 2048",
                       flush=True)
