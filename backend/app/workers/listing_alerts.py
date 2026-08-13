@@ -185,6 +185,13 @@ async def _alert_rows_for_filter(
           AND l.matched_parcel_id IS NOT NULL
           AND l.match_confidence >= 0.85
           AND pbs.score >= :min_score
+          -- Same trust bar as the board and the daily digest: never alert a
+          -- parcel the scorer itself gated off (lead_eligible=false covers
+          -- ungrounded zoning / low-confidence verdicts — gate_reason says
+          -- why). Without this, a CoStar upload in a part-grounded county
+          -- emails 'Hot deals' on parcels whose zoning nobody has verified
+          -- (2026-08-13 Mercer: 14 of 16 alert cards were gated rows).
+          AND pbs.lead_eligible = true
           AND nl.id IS NULL
           -- Never alert on a deal the owner already closed out on the board
           -- (passed / dead / under_contract), mirrored into deal_dispositions
