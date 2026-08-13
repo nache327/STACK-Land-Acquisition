@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from typing import Any
@@ -62,7 +63,9 @@ class ListingRow:
     recorded_owner_phone: str | None = None
     # Prior-sale history (distinct from the for-sale asking price in sale_price).
     last_sale_price: Decimal | None = None
-    last_sale_date: str | None = None
+    # A real date — forsale_listings.last_sale_date is DATE and asyncpg
+    # rejects strings for it (see to_date()).
+    last_sale_date: "date | None" = None
     building_class: str | None = None
     zoning_listed: str | None = None
     market: str | None = None
@@ -159,6 +162,40 @@ def to_int(v: Any) -> int | None:
         return None
 
 
+def to_date(v: Any) -> "_dt.date | None":
+    """Coerce a cell to a real ``datetime.date`` for DATE columns.
+
+    Excel cells arrive as native datetimes (openpyxl) OR as text —
+    '2024-11-09 00:00:00', '2024-11-09', '11/9/2024' — depending on how
+    the export was written. asyncpg binds DATE parameters via
+    ``.toordinal()``, so passing a string through (the pre-fix behavior
+    for Last Sale Date) fails the whole ingest batch.
+    """
+    import datetime as _dt
+    if v is None:
+        return None
+    if isinstance(v, _dt.datetime):
+        return v.date()
+    if isinstance(v, _dt.date):
+        return v
+    try:
+        import math
+        if isinstance(v, float) and math.isnan(v):
+            return None
+    except Exception:
+        pass
+    s = str(v).strip()
+    if not s or s.lower() in {"-", "n/a", "na", "--", "nan", "none"}:
+        return None
+    s = s.split(" ")[0]  # drop a ' 00:00:00' time component
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%Y/%m/%d"):
+        try:
+            return _dt.datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def pick_column(columns: list[str], *candidates: str) -> str | None:
     """Return the first column in ``columns`` matching any candidate
     (case-insensitive, exact match after strip). Useful for parsers
@@ -180,5 +217,6 @@ __all__ = [
     "to_str",
     "to_decimal",
     "to_int",
+    "to_date",
     "pick_column",
 ]
