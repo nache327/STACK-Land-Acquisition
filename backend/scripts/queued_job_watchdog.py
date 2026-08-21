@@ -242,7 +242,65 @@ async def _refresh_locked() -> int:
         await conn.close()  # releases the advisory lock
 
 
-def _write_heartbeat(watchdog_code: int, refresh_code: int, digest_code: int) -> None:
+def _run_sentinel_tick() -> int:
+    """Ordinance freshness sentinel (Phase A): refresh primary-source
+    fingerprints for the stalest monitored munis, in capped batches.
+
+    Self-limiting rather than hour-gated: the batch only runs when rows are
+    >30 days stale, so when the monthly boundary hits, successive 10-min ticks
+    each process one capped batch (~25 munis, httpx-only — NO Playwright: the
+    cron container OOMs on headless Chromium) until nothing is stale, then go
+    quiet for a month. Single-flighted by the script's own advisory lock.
+    Failure never sinks the tick; a missing table (migration not yet applied)
+    is a silent no-op."""
+    try:
+        return asyncio.run(_sentinel_locked())
+    except Exception as exc:  # noqa: BLE001 — never let the sentinel sink the tick
+        print(f"sentinel tick failed: {exc}", file=sys.stderr)
+        return 1
+
+
+async def _sentinel_locked() -> int:
+    import subprocess
+
+    import asyncpg
+
+    from app.config import settings
+
+    dsn = (
+        settings.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        .replace(":6543/", ":5432/")
+    )
+    conn = await asyncpg.connect(dsn)
+    try:
+        try:
+            has_work = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM ordinance_fingerprints "
+                "WHERE fetched_at IS NULL OR fetched_at < now() - interval '30 days')"
+            )
+        except asyncpg.UndefinedTableError:
+            return 0  # migration 0057 not applied yet — nothing to monitor
+        if not has_work:
+            return 0
+    finally:
+        await conn.close()
+
+    scripts_dir = Path(__file__).resolve().parent
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(scripts_dir / "ordinance_sentinel.py"), "--limit", "25"],
+            cwd=str(scripts_dir.parent),
+            timeout=540,
+        )
+        return proc.returncode
+    except Exception as exc:  # noqa: BLE001
+        print(f"sentinel: failed to launch: {exc}", file=sys.stderr)
+        return 1
+
+
+def _write_heartbeat(
+    watchdog_code: int, refresh_code: int, digest_code: int, sentinel_code: int
+) -> None:
     """Record one row per tick so cron liveness is observable from the DB.
 
     The ops cron rides restartPolicyType=NEVER one-shots with no external
@@ -253,13 +311,15 @@ def _write_heartbeat(watchdog_code: int, refresh_code: int, digest_code: int) ->
     a heartbeat failure never sinks the tick (and if the table doesn't exist yet
     because the web service hasn't migrated, the INSERT just no-ops via except)."""
     try:
-        asyncio.run(_write_heartbeat_async(watchdog_code, refresh_code, digest_code))
+        asyncio.run(
+            _write_heartbeat_async(watchdog_code, refresh_code, digest_code, sentinel_code)
+        )
     except Exception as exc:  # noqa: BLE001 — never let the heartbeat sink the tick
         print(f"heartbeat write failed: {exc}", file=sys.stderr)
 
 
 async def _write_heartbeat_async(
-    watchdog_code: int, refresh_code: int, digest_code: int
+    watchdog_code: int, refresh_code: int, digest_code: int, sentinel_code: int
 ) -> None:
     import os
     import socket
@@ -273,15 +333,30 @@ async def _write_heartbeat_async(
         .replace(":6543/", ":5432/")
     )
     conn = await asyncpg.connect(dsn)
+    host = os.getenv("RAILWAY_SERVICE_NAME") or socket.gethostname()
     try:
-        await conn.execute(
-            "INSERT INTO ops_cron_heartbeat "
-            "(watchdog_code, refresh_code, digest_code, host) VALUES ($1, $2, $3, $4)",
-            watchdog_code,
-            refresh_code,
-            digest_code,
-            os.getenv("RAILWAY_SERVICE_NAME") or socket.gethostname(),
-        )
+        try:
+            await conn.execute(
+                "INSERT INTO ops_cron_heartbeat "
+                "(watchdog_code, refresh_code, digest_code, sentinel_code, host) "
+                "VALUES ($1, $2, $3, $4, $5)",
+                watchdog_code,
+                refresh_code,
+                digest_code,
+                sentinel_code,
+                host,
+            )
+        except asyncpg.UndefinedColumnError:
+            # Deploy-order window: cron image has this code before the web
+            # service ran migration 0057. Keep the heartbeat rather than lose it.
+            await conn.execute(
+                "INSERT INTO ops_cron_heartbeat "
+                "(watchdog_code, refresh_code, digest_code, host) VALUES ($1, $2, $3, $4)",
+                watchdog_code,
+                refresh_code,
+                digest_code,
+                host,
+            )
     finally:
         await conn.close()
 
@@ -291,16 +366,21 @@ def main() -> None:
     watchdog_code = asyncio.run(run(args.stale_after_minutes))
     refresh_code = _run_refresh_tick()  # before the digest, so its scores are fresh
     digest_code = _run_digest_tick()
-    _write_heartbeat(watchdog_code, refresh_code, digest_code)  # cron-liveness trace
+    sentinel_code = _run_sentinel_tick()  # monthly ordinance-drift check (self-gating)
+    _write_heartbeat(watchdog_code, refresh_code, digest_code, sentinel_code)
     # Exit-code precedence: a stuck-jobs query failure (2) is the loudest
     # signal and wins. Otherwise surface a digest failure, then a refresh
-    # failure, then fall back to the watchdog's own code (0 = clean, 1 = stuck).
+    # failure, then a sentinel failure, then fall back to the watchdog's own
+    # code (0 = clean, 1 = stuck). Sentinel DRIFT is data (recorded in the DB),
+    # never an error exit — only operational fetch failures surface here.
     if watchdog_code == 2:
         raise SystemExit(2)
     if digest_code != 0:
         raise SystemExit(digest_code)
     if refresh_code != 0:
         raise SystemExit(refresh_code)
+    if sentinel_code != 0:
+        raise SystemExit(sentinel_code)
     raise SystemExit(watchdog_code)
 
 

@@ -155,5 +155,9 @@ Westchester batch 2.
 ## MontPA carryover (parked for a Nache ruling — from prior batches)
 - Upper Dublin Township — amlegal-hosted (not eCode360/Municode; API 404; ALS.pdf is a stub). Needle: CR-I.
   Need amlegal content path / town PDF / OK-to-use-Zoneomics.
+  - **RULED 2026-08-21** (standing policy, `docs/AUDIT_NOTES/zoneomics_vendor_scoping.md`): Zoneomics OK as
+    **locator/corroboration/negative-proof** for CR-I — but citations must be verbatim from the primary
+    source (amlegal render-doc API / town PDF), never the mirror (catch #37; the postingest gate now
+    hard-fails vendor-domain citations on human rows). Unblocked for the next MontPA pickup.
 - Lower Merion Township — no industrial district (IE/IC = Institutional, catch #37); elite no-op, deferred.
 - Bryn Athyn Borough — tiny (LI:7), town-site-only source; marginal.

@@ -43,6 +43,23 @@ _MIN_MATRIX_COVERAGE_PCT = 0.20
 _DOMINATION_PCT = 0.90
 _DOMINATION_MIN_DISTINCT = 5
 
+# Commercial zoning-data vendors whose mirrors/extracts must never be a human
+# verdict's CITATION basis (catch #37 — verbatim from the PRIMARY source only).
+# Notes may mention a mirror as the fetch path (the Buffalo Grove pattern:
+# mirror text corroborated, primary confirmation required before upgrades);
+# citations may not.
+_VENDOR_DOMAINS = ("zoneomics.com", "regrid.com", "landgrid.com", "gridics.com")
+
+
+def vendor_cited(citations_text: str | None) -> str | None:
+    """Return the vendor domain a citations blob references, else None."""
+    text = (citations_text or "").lower()
+    for domain in _VENDOR_DOMAINS:
+        if domain in text:
+            return domain
+    return None
+
+
 # Named-garage-use markers (lowercased). Presence in a lgc row's basis text means
 # the permitted/conditional luxury_garage_condo rests on a NAMED ordinance use
 # (e.g. Marlborough "hobby vehicle storage") — legitimate, exempt from the
@@ -183,6 +200,27 @@ async def run_postingest_gate(conn, jurisdiction_id: uuid.UUID | str) -> GateRep
     if leaks:
         rep.fail(f"catch-#58 sibling leak — lgc permitted/conditional while a human found "
                  f"self_storage prohibited: {leaks[:5]}{' …' if len(leaks) > 5 else ''} ({len(leaks)} rows)")
+
+    # 3c. Vendor-domain citation on a human verdict — HARD. A human_reviewed
+    # row citing a commercial mirror (zoneomics etc.) as its basis violates
+    # catch #37: citations must be verbatim from the PRIMARY source. Enforced
+    # mechanically here instead of by convention. Notes are exempt (mirror-as-
+    # fetch-path corroboration is legitimate).
+    vendor_rows = await conn.fetch(
+        """SELECT municipality, zone_code, coalesce(citations::text,'') AS cites
+             FROM zone_use_matrix
+            WHERE jurisdiction_id=$1::uuid AND deleted_at IS NULL
+              AND (human_reviewed OR classification_source::text='human')
+              AND citations IS NOT NULL""", jid)
+    vendor_cited_rows = [
+        f"{r['municipality']}/{r['zone_code']} ({vendor_cited(r['cites'])})"
+        for r in vendor_rows
+        if vendor_cited(r["cites"])
+    ]
+    if vendor_cited_rows:
+        rep.fail(f"catch-#37 vendor citation — human verdict(s) citing a commercial mirror: "
+                 f"{vendor_cited_rows[:5]}{' …' if len(vendor_cited_rows) > 5 else ''} "
+                 f"({len(vendor_cited_rows)} rows)")
 
     # 4. Matrix coverage — SOFT
     covered = await conn.fetchval(
