@@ -105,4 +105,121 @@ Any miss → no-buy; the DIY sentinel and free unlocks continue unaffected.
 
 ## Outcome log
 - 2026-08-21: policy codified; sentinel shipped (Phase A); email drafted, NOT yet sent.
-- (append sales response / benchmark results / final buy-no-buy here)
+- **2026-09-22: sales/demo call #1 (partial — more calls to come).** Findings below are
+  from the vendor's own live demo, not marketing copy.
+
+### Call #1 findings (2026-09-22)
+
+**NEW — free `jurisdictions` endpoint (the most valuable thing on the call).**
+Does not consume credits. Per jurisdiction it returns **the date Zoneomics last
+reviewed it for a zone-code change AND the date it last actually changed** (demoed on
+Alpine UT: reviewed 4 days prior, last changed Feb 5). This is a drift signal covering
+*every* jurisdiction — including the PDF-only / non-eCode360 / non-Municode towns where
+our own `ordinance_sentinel.py` is weakest. Complement, not replacement: their "last
+changed" is *their detection* date, so it lags the town, and it is jurisdiction-level,
+not chapter-level. **Action: get endpoint docs + confirm no license restriction on
+scheduled polling.** Candidate as a second-signal input to the sentinel for the ~8% of
+monitored munis on hosts we can't fingerprint well.
+
+**PLU confirmed as verbatim ordinance text, NOT a per-use verdict.** Rep: "these are all
+verbatim from the muni code… we just don't want anything lost in context." Buckets seen:
+`as_of_right`, `conditional`, and per the rep also `special`, `accessory`, `prohibited` —
+"whatever you're getting back is everything **that we found** in the zone code." That
+last clause is decisive: **absence in their payload ≠ prohibited in the ordinance**, so
+prohibited-by-omission (catch #58 closed-list sweep) cannot be derived from their data.
+Confirms the standing no-buy-as-verdict-source ruling; the interpretation layer stays ours.
+
+**Response shape** (one call per address or lat/lng returns all of it): `city_id`,
+`city_name` = *the jurisdiction actually governing the address* (flags e.g. County
+Unincorporated and links to that code — useful for our county-vs-muni ambiguity),
+zone code / name / type / subtype, optional muni intent guide, PLU buckets, development
+controls split **standard** (numeric) vs **non-standard** (carries the conditionality
+text, e.g. "accessory building shall be set back not less than five feet from the main
+building"), covering setbacks, max height, max DU/acre, impervious coverage, open space,
+landscaping, min lot width, front/side/rear yards. Plus parcel data: lat/lng, address,
+current land use, area, and the **parcel** boundary polygon.
+
+**Geometry — CONFIRMED as zoning-district boundaries, not parcel outlines.** Asked
+directly on the call ("is that showing the boundary of the zone?" — "Yes… it's the
+boundary of this BC zone, that's why there are so many coordinates"). They also serve a
+**tiling layer** for visualization. This is the one vendor asset with real potential
+value to us: **zoning district polygons for bind-blocked munis** (Nassau NY villages,
+Hudson MA, Cook/DuPage IL, Redding CT, Bloomfield/Franklin) where no public GIS layer
+exists and binding is the blocker. Still to confirm: can district polygons be pulled for
+a whole municipality in bulk, what is the per-muni provenance and vintage, and does the
+license permit storing them and using them to bind our own parcels (vs. display only).
+Any adopted geometry still passes the existing #38 dry-run % bind gates.
+
+**Owner data** also returned (LLC name + address) — not a driver for us; owner mailing is
+already ~93% backfilled in-house.
+
+**Municipality-level query exists** — the rep demoed searching by municipality, not only
+by address ("or you can do the municipality itself… doesn't make a difference"). **This is
+the pricing crux: if one municipality query returns every zone in the town, our cost model
+collapses from ~30–40 lookups/muni to ~1.** Must confirm what a muni-level call returns
+and how it is metered.
+
+**Commercial model.** Priced on **monthly address lookups**; 1 lookup = 1 API call = the
+full payload above. Trial key offered with access to all endpoints; they want a monthly
+volume estimate before quoting. Bulk data exists but the rep steered us away from it —
+note he assumed we *receive* vetted deals and only verify them, which is wrong (we do
+bulk discovery). **Correct the framing when quoting: we query ~1 point per zoning
+district per town (~30–40 calls/muni), a few thousand to open a market, low steady-state
+after** — otherwise the quote will be built on the wrong usage shape.
+
+**Still unanswered after call #1:** (1) the written redistribution authorization — the
+hard gate; (2) coverage check against our ~200-muni list; (3) actual price; (4) measured
+accuracy / error direction; (5) the Hudson MA (Nov-2023 recodification) and Chelmsford MA
+(CBLT added Oct-2025) staleness probes; (6) whether self-storage / mini-warehouse is a
+named class in `plu-tags`; (7) zoning-district polygon availability.
+
+### Trial terms as offered (2026-09-22)
+- **Production key: 20 address-or-lat/lng lookups, nationwide.** Scarce — every credit
+  must be spent on a question nothing else can answer.
+- **Sandbox key: ALL endpoints, no limits, geolocked to Redondo Beach CA.** Build and
+  debug the client here; it consumes no production credits.
+- **`zoneDetail` (point) is the main endpoint**, and **all output fields come back for
+  one credit** — so always request everything (zoning + plu + plu-tags + controls +
+  gde-controls + parcels/boundary). They will send a sample call URL.
+- `jurisdictions` endpoint is **free / uncredited** (see above).
+
+### The 20-credit benchmark plan (replaces the 60–100-pair design, which the trial
+cannot fund)
+
+**Spend zero credits on anything these can answer:**
+- *Coverage roll-call* of our ~200-muni target list → free `jurisdictions` endpoint.
+- *Freshness / staleness probes* (Hudson MA Nov-2023 recodification; Chelmsford MA CBLT
+  added Oct-2025) → free `jurisdictions` endpoint's last-reviewed / last-changed dates.
+- *Client code, field mapping, parser, response logging* → sandbox (Redondo Beach).
+
+**Then spend the 20 production lookups, by lat/lng taken from the centroid of a parcel we
+already hold in the target zone (never a typed address — avoids their geocoder as a
+confound). Log every raw response to disk; a credit must never be spent twice.**
+
+| # | Purpose | What it decides |
+|---|---|---|
+| 5 | **Geometry unlock** — one point in each bind-blocked muni (a Nassau NY village, Hudson MA, a Cook/DuPage IL muni, Redding CT, Bloomfield Twp MI) | Do they hold district polygons where **no public GIS layer exists**? This is the only vendor asset that would unlock *new* markets rather than duplicate work. Highest value per credit. |
+| 2 | **Prohibited-by-omission** zones (our human ruled prohibited via closed-list sweep) | Do they return silence or an explicit prohibition? Silence-where-human-ruled is scored as its own outcome class, not as agreement. |
+| 2 | **Conditional** self-storage zones | Agreement on the middle case. |
+| 2 | **Permitted** self-storage zones | Sanity check on the easy case. |
+| 2 | **#38 trap zones** (`I`/`I-2` = Institutional, `M-1` = Multifamily — Tarrytown) | Does their zone typing reproduce the mislabel that would poison a code-level screen? |
+| 1 | **Named-garage / LGC** zone | Whether the LGC lane is visible to them at all. |
+| 2 | **Known-amendment parcels** (Chelmsford CBLT; one Hudson post-recodification zone) | Whether a recent adopted change is actually reflected in zone-level data. |
+| 4 | **Reserve** | Follow-ups triggered by surprises in the first 16. |
+
+Sample selection must **exclude any muni the old `batch_populate_ordinances.py` scraper
+touched** (self-agreement contamination) — all UT jurisdictions in particular.
+
+### Flag: the license gate is STILL unanswered after call #1
+Nothing in the demo addressed written authorization for verdict-derived distribution.
+It remains decision rule #1 and it can kill the purchase regardless of how the benchmark
+scores. **Get it in writing before investing build time in the client.**
+
+### Flag: discount the vendor's own value pitch
+The rep's closing framing was that this "saves your daily compute through Claude looking
+up the codes." That is not our cost center — the fetch step is largely solved by the
+banked unlocks, and our real cost is human adjudication, which this does not touch. The
+two claims worth testing are the ones above: **bind-blocked district geometry** and a
+**second freshness signal** for munis our primary-source sentinel can't fingerprint.
+
+- (append trial results / final buy-no-buy here)
