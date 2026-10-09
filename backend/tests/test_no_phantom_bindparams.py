@@ -19,6 +19,15 @@ A grep cannot see this: only the parser knows what a name resolved to. So this t
 compiles every text() literal it can find and asserts the parsed bind names.
 
 Fix a failure by casting with ``CAST(:name AS type)`` instead of ``:name::type``.
+
+VERSION-DEPENDENT (2026-10-09): SQLAlchemy later fixed that regex, and this repo pins
+only ``sqlalchemy[asyncio]>=2.0.36``, so whether the trap exists AT ALL depends on which
+version resolved -- 2.0.50 truncates, the release CI resolves does not. The scan below is
+therefore a real guard on an old SQLAlchemy and a no-op on a fixed one, and the self-test
+must not hardcode either: it detects the installed behaviour via
+``_TRUNCATES_BEFORE_CAST``. Hardcoding it turned CI red on every branch, main included,
+the moment a newer SQLAlchemy resolved. Raising the pin floor to the fixed release would
+retire the trap outright -- a dependency decision, not a test one.
 """
 from __future__ import annotations
 
@@ -35,6 +44,10 @@ _SOURCE_NAME_RE = re.compile(r"(?<![:\w$]):([A-Za-z_][A-Za-z0-9_]*)")
 
 BACKEND = Path(__file__).resolve().parent.parent
 SEARCH_DIRS = (BACKEND / "app", BACKEND / "scripts")
+
+# Does the INSTALLED SQLAlchemy truncate a name ending right before a cast colon? On the
+# buggy versions ``:jid::uuid`` parses as ``ji``; on fixed ones, as ``jid``.
+_TRUNCATES_BEFORE_CAST = "jid" not in text("SELECT 1 WHERE a = :jid::uuid")._bindparams
 
 
 def _text_literals(path: Path) -> list[tuple[int, str]]:
@@ -113,7 +126,7 @@ def test_no_phantom_bindparams_anywhere() -> None:
 
 
 @pytest.mark.parametrize(
-    ("sql", "expected"),
+    ("sql", "when_truncating"),
     [
         ("SELECT 1 WHERE a = ANY(:cities::text[])", ["citie", "cities"]),  # real bug
         ("SELECT 1 WHERE a = :jid::uuid", ["ji", "jid"]),
@@ -124,10 +137,23 @@ def test_no_phantom_bindparams_anywhere() -> None:
         ("SELECT ST_Extent(centroid::geometry) FROM t WHERE id = :jid", []),  # col cast
     ],
 )
-def test_detector_catches_the_shapes_it_must(sql: str, expected: list[str]) -> None:
+def test_detector_catches_the_shapes_it_must(sql: str, when_truncating: list[str]) -> None:
     """The detector itself must not be a test that asserts nothing.
 
     Includes a plain column cast (``centroid::geometry``), which is legitimate and must
     NOT be flagged, and a colon token inside a comment, which must be.
+
+    The first three rows are phantoms ONLY while the installed SQLAlchemy truncates (see
+    ``_TRUNCATES_BEFORE_CAST``). The last three are legitimate SQL and must stay clean on
+    EVERY version -- that half of the contract is what keeps this parametrisation honest
+    rather than merely self-fulfilling.
     """
+    expected = when_truncating if _TRUNCATES_BEFORE_CAST else []
     assert _phantoms(sql) == expected
+
+
+def test_clean_sql_is_clean_on_every_sqlalchemy() -> None:
+    """Version-independent floor: CAST is the documented fix, so it must never be flagged
+    no matter which SQLAlchemy resolved."""
+    assert _phantoms("SELECT 1 WHERE a = ANY(CAST(:cities AS text[]))") == []
+    assert _phantoms("SELECT 1 WHERE id = CAST(:jid AS uuid)") == []
