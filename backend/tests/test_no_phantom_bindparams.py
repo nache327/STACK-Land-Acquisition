@@ -20,14 +20,20 @@ compiles every text() literal it can find and asserts the parsed bind names.
 
 Fix a failure by casting with ``CAST(:name AS type)`` instead of ``:name::type``.
 
-VERSION-DEPENDENT (2026-10-09): SQLAlchemy later fixed that regex, and this repo pins
-only ``sqlalchemy[asyncio]>=2.0.36``, so whether the trap exists AT ALL depends on which
-version resolved -- 2.0.50 truncates, the release CI resolves does not. The scan below is
-therefore a real guard on an old SQLAlchemy and a no-op on a fixed one, and the self-test
-must not hardcode either: it detects the installed behaviour via
-``_TRUNCATES_BEFORE_CAST``. Hardcoding it turned CI red on every branch, main included,
-the moment a newer SQLAlchemy resolved. Raising the pin floor to the fixed release would
-retire the trap outright -- a dependency decision, not a test one.
+VERSION-DEPENDENT (2026-10-09): the MIS-PARSE is real on every version tested, but its
+shape changed, and this repo pins only ``sqlalchemy[asyncio]>=2.0.36``:
+
+  * 2.0.50 TRUNCATES -- ``:jid::uuid`` parses as the invented name ``ji``, so the call
+    fails loudly with "doesn't define a bound parameter named 'jid'".
+  * 2.1.4 DROPS it -- the statement parses with NO bind parameter at all, so the value
+    is silently never bound and no error is raised.
+
+So the trap is not retired by upgrading; raising the pin floor would not remove the need
+for this guard. What a test must NOT do is hardcode either shape -- doing that turned CI
+red on every branch, main included, the moment 2.1.4 resolved. The checks below probe
+what the installed SQLAlchemy actually does (``_CAST_PARSE``) and assert the invariant
+that holds on both: a ``:name::type`` in executable SQL is flagged, and legitimate SQL
+never is.
 """
 from __future__ import annotations
 
@@ -45,9 +51,13 @@ _SOURCE_NAME_RE = re.compile(r"(?<![:\w$]):([A-Za-z_][A-Za-z0-9_]*)")
 BACKEND = Path(__file__).resolve().parent.parent
 SEARCH_DIRS = (BACKEND / "app", BACKEND / "scripts")
 
-# Does the INSTALLED SQLAlchemy truncate a name ending right before a cast colon? On the
-# buggy versions ``:jid::uuid`` parses as ``ji``; on fixed ones, as ``jid``.
-_TRUNCATES_BEFORE_CAST = "jid" not in text("SELECT 1 WHERE a = :jid::uuid")._bindparams
+# What does the INSTALLED SQLAlchemy do with ``:jid::uuid``? Probe it rather than assume.
+#   ["jid"] -> parsed correctly, no trap on this version
+#   ["ji"]  -> truncated: an invented phantom name (2.0.50 and earlier)
+#   []      -> dropped: the parameter vanishes silently (2.1.4)
+_CAST_PARSE = sorted(text("SELECT 1 WHERE a = :jid::uuid")._bindparams)
+_CAST_IS_MISPARSED = _CAST_PARSE != ["jid"]
+_CAST_INVENTS_A_NAME = _CAST_IS_MISPARSED and bool(_CAST_PARSE)
 
 
 def _text_literals(path: Path) -> list[tuple[int, str]]:
@@ -126,34 +136,47 @@ def test_no_phantom_bindparams_anywhere() -> None:
 
 
 @pytest.mark.parametrize(
-    ("sql", "when_truncating"),
+    ("sql", "source_name"),
     [
-        ("SELECT 1 WHERE a = ANY(:cities::text[])", ["citie", "cities"]),  # real bug
-        ("SELECT 1 WHERE a = :jid::uuid", ["ji", "jid"]),
-        ("-- prefer CAST over :jid::uuid\nSELECT 1 WHERE a = :jid", ["ji"]),  # comment
-        ("SELECT 1 WHERE a = ANY(CAST(:cities AS text[]))", []),  # the fix
-        # prefix-collision: two REAL names, one a prefix of the other. Must be clean.
-        ("SELECT 1 FROM t WHERE ST_DWithin(a, b, :radius_m) AND r = :radius_miles", []),
-        ("SELECT ST_Extent(centroid::geometry) FROM t WHERE id = :jid", []),  # col cast
+        ("SELECT 1 WHERE a = ANY(:cities::text[])", "cities"),
+        ("SELECT 1 WHERE a = :jid::uuid", "jid"),
     ],
 )
-def test_detector_catches_the_shapes_it_must(sql: str, when_truncating: list[str]) -> None:
+def test_cast_colon_in_executable_sql_is_flagged(sql: str, source_name: str) -> None:
     """The detector itself must not be a test that asserts nothing.
 
-    Includes a plain column cast (``centroid::geometry``), which is legitimate and must
-    NOT be flagged, and a colon token inside a comment, which must be.
-
-    The first three rows are phantoms ONLY while the installed SQLAlchemy truncates (see
-    ``_TRUNCATES_BEFORE_CAST``). The last three are legitimate SQL and must stay clean on
-    EVERY version -- that half of the contract is what keeps this parametrisation honest
-    rather than merely self-fulfilling.
+    Version-independent: whether the installed SQLAlchemy truncates the name or drops the
+    parameter, the source-spelled name is missing from the parse, so the detector must
+    report it. Asserting the exact phantom list instead pinned one version's behaviour.
     """
-    expected = when_truncating if _TRUNCATES_BEFORE_CAST else []
-    assert _phantoms(sql) == expected
+    if not _CAST_IS_MISPARSED:
+        pytest.skip(f"this SQLAlchemy parses ':name::type' correctly ({_CAST_PARSE})")
+    assert source_name in _phantoms(sql)
 
 
-def test_clean_sql_is_clean_on_every_sqlalchemy() -> None:
-    """Version-independent floor: CAST is the documented fix, so it must never be flagged
-    no matter which SQLAlchemy resolved."""
-    assert _phantoms("SELECT 1 WHERE a = ANY(CAST(:cities AS text[]))") == []
-    assert _phantoms("SELECT 1 WHERE id = CAST(:jid AS uuid)") == []
+def test_colon_token_inside_a_comment() -> None:
+    """text() parses comments too, so "-- use CAST, not :jid::uuid" can reintroduce the
+    phantom. That happened while fixing the original instance.
+
+    Only a version that INVENTS a name does so here: on 2.0.50 the comment yields the
+    bogus ``ji`` beside the real ``jid``; on 2.1.4 the comment's parameter is dropped and
+    the real ``:jid`` is all that remains, which is clean."""
+    sql = """-- prefer CAST over :jid::uuid
+SELECT 1 WHERE a = :jid"""
+    assert _phantoms(sql) == (_CAST_PARSE if _CAST_INVENTS_A_NAME else [])
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT 1 WHERE a = ANY(CAST(:cities AS text[]))",  # the documented fix
+        "SELECT 1 WHERE id = CAST(:jid AS uuid)",
+        # prefix-collision: two REAL names, one a prefix of the other. Must be clean.
+        "SELECT 1 FROM t WHERE ST_DWithin(a, b, :radius_m) AND r = :radius_miles",
+        "SELECT ST_Extent(centroid::geometry) FROM t WHERE id = :jid",  # column cast
+    ],
+)
+def test_legitimate_sql_is_never_flagged(sql: str) -> None:
+    """The version-independent floor, on EVERY SQLAlchemy. Without this half the
+    parametrisation above could collapse into asserting nothing."""
+    assert _phantoms(sql) == []
