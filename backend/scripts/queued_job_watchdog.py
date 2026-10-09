@@ -325,22 +325,23 @@ async def _write_heartbeat_async(
 ) -> None:
     """INSERT one heartbeat row over the SAME connection the watchdog query uses.
 
-    WHY not a raw asyncpg connect to the `:6543 -> :5432` rewritten DSN, which
-    is what `_refresh_locked` / `_sentinel_locked` do: that rewrite points at
-    Supabase's DIRECT endpoint, which is NOT the endpoint `app.db.make_engine`
-    uses (it takes `DATABASE_URL` verbatim — the pooler). On 2026-10-09 the
-    heartbeat table was still empty, with zero rows since the table shipped on
-    2026-07-20, while the watchdog's own SQLAlchemy query ran fine every tick —
-    i.e. the pooler endpoint works from the cron container and the rewritten one
-    does not. A heartbeat is a single INSERT with no advisory lock, so it has no
-    reason to need session mode; routing it through `async_session_maker` makes
-    the cron's only observability channel as reachable as the cron itself.
+    Why consolidate: the heartbeat is a single INSERT with no advisory lock, so it
+    has no reason to open its own raw asyncpg connection to a separately-derived
+    DSN. One connection path means one thing to misconfigure.
 
-    (`_refresh_locked` and `_sentinel_locked` still use the direct DSN because
-    `pg_try_advisory_lock` genuinely needs session mode. Their exit codes land
-    in this row, so the next tick's `refresh_code` / `sentinel_code` will say
-    whether that endpoint is reachable from Railway — which is the diagnostic
-    this table existed to provide.)"""
+    What this did NOT fix (2026-10-09, recorded so nobody re-derives it): the
+    heartbeat table was empty from the day it shipped (2026-07-20). The cause was
+    not the endpoint — it was the cron service's own `DATABASE_URL`. Its Railway
+    deploy log reads `password authentication failed for user "postgres"` on the
+    watchdog query, the sentinel AND the heartbeat alike. The working DSN
+    authenticates as Supavisor's tenant-qualified `postgres.<project-ref>`; a bare
+    `postgres` fails against the pooler whatever the password is. Every DB path
+    from that container failed identically, so no connection-level change in this
+    file could have helped. Fix the service variable.
+
+    (`_refresh_locked` and `_sentinel_locked` keep their own connections because
+    `pg_try_advisory_lock` genuinely needs session mode. Their exit codes land in
+    this row.)"""
     import os
     import socket
 
