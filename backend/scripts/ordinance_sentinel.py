@@ -15,8 +15,13 @@ only, no Playwright: headless Chromium OOMs that container), or by hand:
   python scripts/ordinance_sentinel.py --report --write-queue-file
   python scripts/ordinance_sentinel.py --rebaseline "https://ecode360.com/..."
 
-Exit codes: 0 = ran clean (drift is DATA — recorded in the DB and printed
-loud, never an error exit); 1 = operational fetch/DB errors.
+Exit codes: 0 = the batch ran. Drift AND per-muni fetch failures are both
+DATA — recorded in the DB (``drift_detected_at`` / ``fetch_error``), printed
+loud, never an error exit. A town site that 403s is a permanent condition, and
+this runs from a Railway cron whose nonzero exit emails the account owner on
+every tick (see ``queued_job_watchdog.main``), so an unreachable host must not
+read as a crash. Only a failure to reach the DB at all exits nonzero, by
+raising.
 """
 from __future__ import annotations
 
@@ -159,7 +164,9 @@ async def run_batch(limit: int, min_age_days: int, dry_run: bool) -> int:
             f"sentinel: batch done — {len(rows)} checked, {drifts} drifted, {errors} errors"
             + (" (dry-run, no writes)" if dry_run else "")
         )
-        return 1 if errors else 0
+        # Per-muni fetch errors are recorded in `fetch_error`, not raised: see
+        # the module docstring on why this must not exit nonzero.
+        return 0
     finally:
         await conn.close()  # releases the advisory lock
 

@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from app.db import async_session_maker, engine
 from app.models.job import Job, JobStatus
@@ -300,7 +300,7 @@ async def _sentinel_locked() -> int:
 
 def _write_heartbeat(
     watchdog_code: int, refresh_code: int, digest_code: int, sentinel_code: int
-) -> None:
+) -> bool:
     """Record one row per tick so cron liveness is observable from the DB.
 
     The ops cron rides restartPolicyType=NEVER one-shots with no external
@@ -314,74 +314,113 @@ def _write_heartbeat(
         asyncio.run(
             _write_heartbeat_async(watchdog_code, refresh_code, digest_code, sentinel_code)
         )
+        return True
     except Exception as exc:  # noqa: BLE001 — never let the heartbeat sink the tick
         print(f"heartbeat write failed: {exc}", file=sys.stderr)
+        return False
 
 
 async def _write_heartbeat_async(
     watchdog_code: int, refresh_code: int, digest_code: int, sentinel_code: int
 ) -> None:
+    """INSERT one heartbeat row over the SAME connection the watchdog query uses.
+
+    Why consolidate: the heartbeat is a single INSERT with no advisory lock, so it
+    has no reason to open its own raw asyncpg connection to a separately-derived
+    DSN. One connection path means one thing to misconfigure.
+
+    What this did NOT fix (2026-10-09, recorded so nobody re-derives it): the
+    heartbeat table was empty from the day it shipped (2026-07-20). The cause was
+    not the endpoint — it was the cron service's own `DATABASE_URL`. Its Railway
+    deploy log reads `password authentication failed for user "postgres"` on the
+    watchdog query, the sentinel AND the heartbeat alike. The working DSN
+    authenticates as Supavisor's tenant-qualified `postgres.<project-ref>`; a bare
+    `postgres` fails against the pooler whatever the password is. Every DB path
+    from that container failed identically, so no connection-level change in this
+    file could have helped. Fix the service variable.
+
+    (`_refresh_locked` and `_sentinel_locked` keep their own connections because
+    `pg_try_advisory_lock` genuinely needs session mode. Their exit codes land in
+    this row.)"""
     import os
     import socket
 
-    import asyncpg
+    from sqlalchemy.exc import ProgrammingError
 
-    from app.config import settings
-
-    dsn = (
-        settings.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
-        .replace(":6543/", ":5432/")
-    )
-    conn = await asyncpg.connect(dsn)
     host = os.getenv("RAILWAY_SERVICE_NAME") or socket.gethostname()
-    try:
+    params = {
+        "w": watchdog_code,
+        "r": refresh_code,
+        "d": digest_code,
+        "s": sentinel_code,
+        "h": host,
+    }
+    async with async_session_maker() as db:
         try:
-            await conn.execute(
-                "INSERT INTO ops_cron_heartbeat "
-                "(watchdog_code, refresh_code, digest_code, sentinel_code, host) "
-                "VALUES ($1, $2, $3, $4, $5)",
-                watchdog_code,
-                refresh_code,
-                digest_code,
-                sentinel_code,
-                host,
+            await db.execute(
+                text(
+                    "INSERT INTO ops_cron_heartbeat "
+                    "(watchdog_code, refresh_code, digest_code, sentinel_code, host) "
+                    "VALUES (:w, :r, :d, :s, :h)"
+                ),
+                params,
             )
-        except asyncpg.UndefinedColumnError:
+        except ProgrammingError:
             # Deploy-order window: cron image has this code before the web
             # service ran migration 0057. Keep the heartbeat rather than lose it.
-            await conn.execute(
-                "INSERT INTO ops_cron_heartbeat "
-                "(watchdog_code, refresh_code, digest_code, host) VALUES ($1, $2, $3, $4)",
-                watchdog_code,
-                refresh_code,
-                digest_code,
-                host,
+            await db.rollback()
+            await db.execute(
+                text(
+                    "INSERT INTO ops_cron_heartbeat "
+                    "(watchdog_code, refresh_code, digest_code, host) "
+                    "VALUES (:w, :r, :d, :h)"
+                ),
+                params,
             )
-    finally:
-        await conn.close()
+        await db.commit()
 
 
 def main() -> None:
+    """Run one ops-cron tick. Exits 0 unless the tick could not be recorded.
+
+    WHY this exits 0 on sub-task failures (2026-10-09 incident): this runs as a
+    Railway cron service with ``restartPolicyType = NEVER``, where each tick is
+    a one-shot deployment. Railway reads a nonzero exit as "Deploy Crashed!" and
+    emails the account owner — so the exit code is a PAGER, not a log level.
+
+    The old precedence block surfaced *informational* sub-task codes as the
+    process exit. Two of them are permanent-by-construction:
+
+      * ``watchdog_code == 1`` means "a queued job is older than the stale
+        threshold". ``recover_stale_jobs`` only rescues jobs with a non-NULL
+        ``locked_at``, so a job that was queued but never picked up by a worker
+        is stuck FOREVER. One such row (queued 2026-08-10) made every single
+        tick exit 1 — 144 crash emails a day, indefinitely.
+      * ``sentinel_code == 1`` means "some muni's ordinance host did not serve
+        us a page". A town site that 403s is a permanent, expected condition
+        already persisted to ``ordinance_fingerprints.fetch_error``.
+
+    Neither is a crash, and neither clears on its own, so the alert could only
+    ever flood. Sub-task status belongs in ``ops_cron_heartbeat`` — the channel
+    built for exactly this (every code is a column) and queryable without
+    Railway. The one condition that still earns a nonzero exit is a heartbeat
+    write failure: that means the tick ran blind and no DB row records it, which
+    is the single case where an email tells us something the DB cannot.
+    """
     args = parse_args()
     watchdog_code = asyncio.run(run(args.stale_after_minutes))
     refresh_code = _run_refresh_tick()  # before the digest, so its scores are fresh
     digest_code = _run_digest_tick()
     sentinel_code = _run_sentinel_tick()  # monthly ordinance-drift check (self-gating)
-    _write_heartbeat(watchdog_code, refresh_code, digest_code, sentinel_code)
-    # Exit-code precedence: a stuck-jobs query failure (2) is the loudest
-    # signal and wins. Otherwise surface a digest failure, then a refresh
-    # failure, then a sentinel failure, then fall back to the watchdog's own
-    # code (0 = clean, 1 = stuck). Sentinel DRIFT is data (recorded in the DB),
-    # never an error exit — only operational fetch failures surface here.
-    if watchdog_code == 2:
-        raise SystemExit(2)
-    if digest_code != 0:
-        raise SystemExit(digest_code)
-    if refresh_code != 0:
-        raise SystemExit(refresh_code)
-    if sentinel_code != 0:
-        raise SystemExit(sentinel_code)
-    raise SystemExit(watchdog_code)
+    heartbeat_ok = _write_heartbeat(watchdog_code, refresh_code, digest_code, sentinel_code)
+    print(
+        f"ops cron tick: watchdog={watchdog_code} refresh={refresh_code} "
+        f"digest={digest_code} sentinel={sentinel_code} "
+        f"heartbeat={'ok' if heartbeat_ok else 'FAILED'}",
+        file=sys.stderr,
+    )
+    # Blind tick (no heartbeat row) is the only crash worth an email.
+    raise SystemExit(0 if heartbeat_ok else 1)
 
 
 if __name__ == "__main__":
