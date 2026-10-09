@@ -83,6 +83,37 @@ a missed run.
 otherwise loop forever and re-email every recipient until the
 cooldown caught up.
 
+**The exit code is a pager, not a log level.** Each tick of a
+`restartPolicyType = NEVER` service is a one-shot *deployment*, and
+Railway emails the account owner "Deploy Crashed!" on ANY nonzero
+exit. At one tick per 10 minutes that is 144 emails a day, forever,
+for any condition that does not clear on its own.
+
+So `queued_job_watchdog.main()` exits **0** for every sub-task
+outcome and records the four codes in `ops_cron_heartbeat` instead.
+It exits nonzero for exactly one thing: it could not write that
+heartbeat row — a tick that ran blind, which is the only state the
+DB cannot tell you about afterwards. Nothing in `railway-cron.toml`
+may re-raise a sub-task code through the shell.
+
+This was learned the hard way (2026-10-09). One job queued
+2026-08-10 that no worker ever claimed — `recover_stale_jobs` only
+rescues rows with a non-NULL `locked_at`, so nothing could ever
+close it — made the watchdog report "stuck job" and exit 1 on every
+tick for two months. Clear orphans with
+`python scripts/expire_orphaned_queued_jobs.py` (dry-run by
+default).
+
+**Is the cron actually alive?** Ask the DB, not Railway:
+
+```sql
+SELECT ran_at, watchdog_code, refresh_code, digest_code, sentinel_code, host
+  FROM ops_cron_heartbeat ORDER BY ran_at DESC LIMIT 10;
+```
+
+A gap means the cron did not run. A row with a nonzero column means
+that sub-task failed while the tick itself was healthy.
+
 **Why 12:00 UTC?** It's 7am EST / 8am EDT — the operator's
 inbox-check time. DST cutoffs shift the local hour by one, which is
 acceptable for a digest email.
@@ -112,6 +143,9 @@ re-send within the day.
 | Email never arrives, no log line | `daily_email_enabled = false` on every filter | Toggle email-enabled on a filter via the dashboard |
 | Email fires twice in a day | `last_email_sent_at` got reset by something | Check for accidental UPDATE; manually set it to now() to stop loop |
 | Cron silently skipped | Railway sometimes drops a cron fire under heavy load (rare) | Check `last_email_sent_at` next day — if 48h gap, file a Railway support ticket |
+| Flood of "Deploy Crashed!" emails | Something made the tick exit nonzero — most likely a permanent condition that cannot self-clear | Read the newest `ops_cron_heartbeat` row to see which sub-task. An empty table means the tick never got far enough to write one |
+| `ops_cron_heartbeat` empty / stale | The cron is not running this code at all (stale image), or cannot reach the DB | Redeploy the cron service; confirm its `DATABASE_URL` matches the web service's |
+| Watchdog reports a stuck job that never clears | Job was queued but never claimed, so `locked_at IS NULL` and `recover_stale_jobs` cannot see it | `python scripts/expire_orphaned_queued_jobs.py --apply` |
 
 ## Future: when we add per-filter recipients
 

@@ -42,14 +42,25 @@ builder = "NIXPACKS"
 buildCommand = "pip install --no-cache-dir -e ."
 
 [deploy]
-# Always run BOTH the watchdog and the digest module every tick. The
-# digest module self-gates to the 12:00 UTC hour in Python
-# (_DIGEST_SEND_HOUR_UTC) and exits 0 immediately on off-hours, so the
-# off-hour cost is just a process start. We deliberately do NOT gate the
-# digest with a shell `[ "$(date -u +%H)" = "12" ]` test here: that form
-# silently evaluated false on Railway and the digest never fired for 4
-# days (May 23–27). Avoid $(...) command substitution in this string.
-startCommand = "python scripts/queued_job_watchdog.py; watchdog_exit=$?; python -m app.workers.daily_email; digest_exit=$?; if [ \"$watchdog_exit\" -eq 2 ]; then exit 2; fi; if [ \"$digest_exit\" -ne 0 ]; then exit \"$digest_exit\"; fi; exit \"$watchdog_exit\""
+# ONE command, no shell logic. The watchdog tick itself runs the digest,
+# the nightly refresh and the ordinance sentinel as subprocesses (see
+# `_run_digest_tick` / `_run_refresh_tick` / `_run_sentinel_tick`), each
+# self-gating to its own hour, and it owns the exit code.
+#
+# The previous value chained a second `python -m app.workers.daily_email`
+# after the watchdog and re-raised any nonzero sub-exit through the shell.
+# Both were wrong (2026-10-09): the digest ran twice per tick, and the
+# shell re-raise reintroduced the very thing we removed in Python — on a
+# `restartPolicyType = NEVER` cron service Railway reads ANY nonzero exit
+# as "Deploy Crashed!" and emails the account owner, so informational
+# codes must never reach the shell. Sub-task status is recorded in
+# `ops_cron_heartbeat` instead; the watchdog exits nonzero only when it
+# could not write that row.
+#
+# Also do NOT gate the digest with a shell `[ "$(date -u +%H)" = "12" ]`
+# test: that form silently evaluated false on Railway and the digest never
+# fired for 4 days (May 23–27). Avoid $(...) substitution in this string.
+startCommand = "python scripts/queued_job_watchdog.py"
 # Cron syntax: minute hour day-of-month month day-of-week
 # `*/10 * * * *` = every 10 minutes UTC
 cronSchedule = "*/10 * * * *"
