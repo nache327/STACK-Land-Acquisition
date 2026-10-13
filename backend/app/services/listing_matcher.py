@@ -56,6 +56,12 @@ _TIER_GEOCODE_CACHED = "geocode_cached_1"
 # "Main Street") without sweeping in unrelated parcels in suburban
 # parcel grids.
 _SPATIAL_RADIUS_M = 100
+# Index-friendly bounding box around the geocoded point. `centroid::geography`
+# can't use the GiST index on centroid, so without this the radius search scans
+# every parcel in the jurisdiction (timed out on Contra Costa / Salt Lake). 3x
+# the radius in degrees still covers the radius in longitude up to ~70° latitude;
+# ST_DWithin below stays the exact test.
+_SPATIAL_BBOX_DEG = _SPATIAL_RADIUS_M / 111_320 * 3
 
 
 @dataclass
@@ -211,6 +217,9 @@ async def _match_against_geocoded_point(
                   FROM parcels p
                  WHERE p.jurisdiction_id = :jid
                    AND p.centroid IS NOT NULL
+                   AND p.centroid && ST_Expand(
+                         ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :bbox_deg
+                       )
                    AND ST_DWithin(
                          p.centroid::geography,
                          ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
@@ -224,6 +233,7 @@ async def _match_against_geocoded_point(
                 lon=geo.lon,
                 lat=geo.lat,
                 radius=_SPATIAL_RADIUS_M,
+                bbox_deg=_SPATIAL_BBOX_DEG,
             )
         )
     ).all()
