@@ -96,6 +96,13 @@ _JSONB_COLUMNS = {"factors", "soft_flags"}
 # float (it demands Decimal for a bare numeric param); PG coerces float8→numeric.
 _FLOAT_COLUMNS = {"acres", "sale_price", "price_per_ac", "sqft_per_capita_3mi"}
 
+# Board statuses that mean "never show me this parcel again". Their cards are
+# deleted from the board once mirrored into deal_dispositions, and the mirror row
+# is kept as a tombstone so the parcel is never re-pushed — even when a fresh
+# CoStar report lists it again. Everything else (reviewing / watching / loi_sent
+# / under_contract) stays on the board untouched.
+_CLOSED_STATUSES = ("passed", "dead")
+
 
 async def _supplement(db, parcel_ids: list[int]) -> dict[int, dict]:
     """Fetch city/state/zip/price_per_ac (not carried on DigestParcel). Prefers
@@ -278,14 +285,46 @@ async def _sync_dispositions_back(dashboard_conn) -> int:
                     [(r["parcel_id"], r["status"], r["decided_at"]) for r in decided],
                 )
             # Drop local rows the board no longer marks decided, so an un-passed
-            # deal can surface again. Empty list → deletes all (nothing decided).
+            # deal can surface again — EXCEPT passed/dead tombstones: their cards
+            # are deleted from the board on purpose (_purge_closed), so absence
+            # from the board is expected and must not resurrect them.
             await conn.execute(
-                "DELETE FROM deal_dispositions WHERE NOT (parcel_id = ANY($1::bigint[]))",
+                "DELETE FROM deal_dispositions WHERE NOT (parcel_id = ANY($1::bigint[])) "
+                "AND NOT (status = ANY($2::text[]))",
                 [r["parcel_id"] for r in decided],
+                list(_CLOSED_STATUSES),
             )
     finally:
         await conn.close()
     return len(decided)
+
+
+async def _closed_parcel_ids() -> set[int]:
+    """Parcels the owner passed on or killed — never pushed to the board again."""
+    conn = await asyncpg.connect(_pl_dsn())
+    try:
+        rows = await conn.fetch(
+            "SELECT parcel_id FROM deal_dispositions WHERE status = ANY($1::text[])",
+            list(_CLOSED_STATUSES),
+        )
+    finally:
+        await conn.close()
+    return {r["parcel_id"] for r in rows}
+
+
+async def _purge_closed(dashboard_conn, closed: set[int]) -> int:
+    """Delete passed/dead cards from the board. Only ids already tombstoned in
+    deal_dispositions are eligible, and the status is re-asserted in the DELETE,
+    so a card un-passed since the read-back is never removed."""
+    if not closed:
+        return 0
+    res = await dashboard_conn.execute(
+        "DELETE FROM deal_prospect WHERE parcel_id = ANY($1::bigint[]) "
+        "AND status = ANY($2::text[])",
+        list(closed),
+        list(_CLOSED_STATUSES),
+    )
+    return int(res.split()[-1])
 
 
 async def _cleanup_delisted(dashboard_conn) -> int:
@@ -422,18 +461,33 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     conn = await asyncpg.connect(dsn, ssl="require")
     dispositions = 0
     delisted = 0
+    purged = 0
     try:
+        # Pull the board's dispositions back FIRST, regardless of whether there are
+        # new facts to push, so today's passed/dead marks are tombstoned before the
+        # upsert below could touch those parcels. Best-effort: a read-back failure
+        # must not fail the push/digest — but then nothing is purged this run.
+        synced_back = False
+        try:
+            dispositions = await _sync_dispositions_back(conn)
+            synced_back = True
+        except Exception:
+            logger.exception("dashboard_push: disposition read-back failed; push unaffected")
+        try:
+            closed = await _closed_parcel_ids()
+        except Exception:
+            logger.exception("dashboard_push: closed-deal lookup failed; push unaffected")
+            closed = set()
+        rows = [r for r in rows if r["parcel_id"] not in closed]
         if rows:
             async with conn.transaction():
                 for r in rows:
                     await conn.execute(sql, *[r[c] for c in _FACT_COLUMNS])
-        # Pull the board's dispositions back regardless of whether there were new
-        # facts to push — a passed/dead deal can exist with 0 fresh deals today.
-        # Best-effort: a read-back failure must not fail the push/digest.
-        try:
-            dispositions = await _sync_dispositions_back(conn)
-        except Exception:
-            logger.exception("dashboard_push: disposition read-back failed; push unaffected")
+        if synced_back:
+            try:
+                purged = await _purge_closed(conn, closed)
+            except Exception:
+                logger.exception("dashboard_push: closed-card purge failed; push unaffected")
         # Sweep off untouched cards whose listing has delisted. Best-effort.
         try:
             delisted = await _cleanup_delisted(conn)
@@ -456,8 +510,8 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
 
     logger.info(
         "dashboard_push: synced %d deal(s) across %d filter(s); %d disposition(s) pulled back; "
-        "%d delisted card(s) removed",
-        len(rows), len(filters), dispositions, delisted,
+        "%d delisted card(s) removed; %d passed/dead card(s) purged",
+        len(rows), len(filters), dispositions, delisted, purged,
     )
     return {
         "status": "ok",
@@ -465,6 +519,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
         "filters": len(filters),
         "dispositions": dispositions,
         "delisted_removed": delisted,
+        "closed_purged": purged,
     }
 
 
