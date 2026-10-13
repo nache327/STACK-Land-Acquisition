@@ -56,6 +56,12 @@ _TIER_GEOCODE_CACHED = "geocode_cached_1"
 # "Main Street") without sweeping in unrelated parcels in suburban
 # parcel grids.
 _SPATIAL_RADIUS_M = 100
+# Index-friendly bounding box around the geocoded point. `centroid::geography`
+# can't use the GiST index on centroid, so without this the radius search scans
+# every parcel in the jurisdiction (timed out on Contra Costa / Salt Lake). 3x
+# the radius in degrees still covers the radius in longitude up to ~70° latitude;
+# ST_DWithin below stays the exact test.
+_SPATIAL_BBOX_DEG = _SPATIAL_RADIUS_M / 111_320 * 3
 
 
 @dataclass
@@ -77,6 +83,38 @@ class MatchResult:
 
 # ── Tier 1/2 — direct address comparison ─────────────────────────────────────
 
+# The exact lookup and the legacy fallback run as SEPARATE statements. As one
+# `normalized_address = :addr OR (normalized_address IS NULL AND regexp(...))`
+# predicate the planner walked the jurisdiction index over every parcel in the
+# county per listing (387K rows in Contra Costa -> statement timeouts). Split, the
+# exact half is an ix_parcels_jur_normaddr hit and the fallback only visits
+# never-normalized rows. Same result set: up to 2 ids from either path, and the
+# callers still require exactly one (2 = ambiguous = no match).
+_EXACT_SQL = text(
+    """
+    SELECT id FROM parcels
+     WHERE jurisdiction_id = :jid AND normalized_address = :addr
+     LIMIT 2
+    """
+)
+_FALLBACK_SQL = text(
+    """
+    SELECT id FROM parcels
+     WHERE jurisdiction_id = :jid
+       AND normalized_address IS NULL
+       AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr
+     LIMIT 2
+    """
+)
+
+
+async def _parcels_by_address(db: AsyncSession, jid, addr: str) -> list:
+    rows = (await db.execute(_EXACT_SQL.bindparams(jid=jid, addr=addr))).fetchall()
+    if len(rows) >= 2:
+        return rows
+    fallback = (await db.execute(_FALLBACK_SQL.bindparams(jid=jid, addr=addr))).fetchall()
+    return (list(rows) + list(fallback))[:2]
+
 
 async def _tier1_exact(
     listing: ForsaleListing, db: AsyncSession
@@ -91,21 +129,7 @@ async def _tier1_exact(
     # not yet backfilled (normalized_address IS NULL) so they don't
     # regress -- though that path only hits when listing + parcel happen
     # to already share the abbreviated form.
-    row = await db.execute(
-        text(
-            """
-            SELECT id FROM parcels
-             WHERE jurisdiction_id = :jid
-               AND (
-                 normalized_address = :addr
-                 OR (normalized_address IS NULL
-                     AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr)
-               )
-             LIMIT 2
-            """
-        ).bindparams(jid=listing.jurisdiction_id, addr=norm)
-    )
-    rows = row.fetchall()
+    rows = await _parcels_by_address(db, listing.jurisdiction_id, norm)
     if len(rows) == 1:
         return MatchResult(
             matched_parcel_id=int(rows[0][0]),
@@ -123,21 +147,7 @@ async def _tier2_stripped(
     norm = strip_unit(listing.address)
     if not norm:
         return None
-    row = await db.execute(
-        text(
-            """
-            SELECT id FROM parcels
-             WHERE jurisdiction_id = :jid
-               AND (
-                 normalized_address = :addr
-                 OR (normalized_address IS NULL
-                     AND lower(regexp_replace(coalesce(address, ''), '[.,;:!?\"''`()\\[\\]{}/\\\\]', ' ', 'g')) = :addr)
-               )
-             LIMIT 2
-            """
-        ).bindparams(jid=listing.jurisdiction_id, addr=norm)
-    )
-    rows = row.fetchall()
+    rows = await _parcels_by_address(db, listing.jurisdiction_id, norm)
     if len(rows) == 1:
         return MatchResult(
             matched_parcel_id=int(rows[0][0]),
@@ -207,6 +217,9 @@ async def _match_against_geocoded_point(
                   FROM parcels p
                  WHERE p.jurisdiction_id = :jid
                    AND p.centroid IS NOT NULL
+                   AND p.centroid && ST_Expand(
+                         ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :bbox_deg
+                       )
                    AND ST_DWithin(
                          p.centroid::geography,
                          ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
@@ -220,6 +233,7 @@ async def _match_against_geocoded_point(
                 lon=geo.lon,
                 lat=geo.lat,
                 radius=_SPATIAL_RADIUS_M,
+                bbox_deg=_SPATIAL_BBOX_DEG,
             )
         )
     ).all()
