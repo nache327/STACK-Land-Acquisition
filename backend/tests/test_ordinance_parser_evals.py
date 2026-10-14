@@ -123,7 +123,8 @@ class TestParserUnit:
             "luxury_garage_condo": "unclear",
         }
         result = _apply_luxury_garage_inference(zone)
-        assert result["luxury_garage_condo"] == "conditional"
+        # LI by right => garage condo by right (Nache 2026-10-14)
+        assert result["luxury_garage_condo"] == "permitted"
 
     def test_luxury_garage_inference_prohibited_when_nothing_permitted(self):
         zone = {

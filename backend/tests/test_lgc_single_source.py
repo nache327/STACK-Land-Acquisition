@@ -56,9 +56,10 @@ def _lgc_rule(ss: str | None, mw: str | None, li: str | None,
         return None                                    # ungrounded, not prohibited
     if ss == "prohibited" and human_reviewed and li != "permitted":
         return "prohibited"                            # QC veto (Brink Rd)
-    if ss == "permitted" or mw == "permitted":
+    # Storage OR light industrial by right => garage condo by right (Nache 2026-10-14).
+    if ss == "permitted" or mw == "permitted" or li == "permitted":
         return "permitted"
-    if ss == "conditional" or mw == "conditional" or li in ("permitted", "conditional"):
+    if ss == "conditional" or mw == "conditional" or li == "conditional":
         return "conditional"
     if "unclear" in (ss, mw, li):
         return "unclear"

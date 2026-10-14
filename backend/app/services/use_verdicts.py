@@ -27,11 +27,10 @@ from __future__ import annotations
 SELF_STORAGE_SLUG = "self_storage"
 LGC_SLUG = "luxury_garage_condo"
 
-# LGC-effective: warehouse/storage by right or conditional, OR light industrial
-# => LGC-viable (claim that use, take it under contract, argue the garage-condo
-# entitlement with the municipality). Order matters: NULL guard first so a
-# missing matrix row yields NULL (not 'prohibited'); then permitted, then
-# conditional (which includes light-industrial), then unclear, else prohibited.
+# LGC-effective: storage or light industrial BY RIGHT => garage condo by right (we
+# claim that use and argue the garage condo fits it); storage/LI conditional =>
+# conditional. Order matters: NULL guard first so a missing matrix row yields NULL
+# (not 'prohibited'); then permitted, then conditional, then unclear, else prohibited.
 def lgc_verdict_sql(ss: str, mw: str, li: str, human_reviewed: str) -> str:
     """THE single LGC-viability definition, rendered over caller-supplied columns.
 
@@ -60,11 +59,14 @@ def lgc_verdict_sql(ss: str, mw: str, li: str, human_reviewed: str) -> str:
     -- thesis. Un-human-reviewed rows still promote below and surface as Unverified.
     WHEN {ss} = 'prohibited' AND {human_reviewed}
          AND {li} IS DISTINCT FROM 'permitted' THEN 'prohibited'
+    -- Light industrial by right => garage condo by right (Nache 2026-10-14: the garage
+    -- condo is argued as fitting the by-right LI / flex-warehouse use, same as storage).
     WHEN {ss} = 'permitted'
-         OR {mw} = 'permitted' THEN 'permitted'
+         OR {mw} = 'permitted'
+         OR {li} = 'permitted' THEN 'permitted'
     WHEN {ss} = 'conditional'
          OR {mw} = 'conditional'
-         OR {li} IN ('permitted', 'conditional') THEN 'conditional'
+         OR {li} = 'conditional' THEN 'conditional'
     WHEN 'unclear' IN ({ss}, {mw},
                        {li}) THEN 'unclear'
     ELSE 'prohibited'

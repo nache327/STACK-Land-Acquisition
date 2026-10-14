@@ -108,6 +108,7 @@ _LGC_EFFECTIVE_LABEL = case(
         or_(
             ZoneUseMatrix.self_storage == UsePermission.permitted,
             ZoneUseMatrix.mini_warehouse == UsePermission.permitted,
+            ZoneUseMatrix.light_industrial == UsePermission.permitted,
         ),
         "permitted",
     ),
@@ -115,7 +116,6 @@ _LGC_EFFECTIVE_LABEL = case(
         or_(
             ZoneUseMatrix.self_storage == UsePermission.conditional,
             ZoneUseMatrix.mini_warehouse == UsePermission.conditional,
-            ZoneUseMatrix.light_industrial == UsePermission.permitted,
             ZoneUseMatrix.light_industrial == UsePermission.conditional,
         ),
         "conditional",
