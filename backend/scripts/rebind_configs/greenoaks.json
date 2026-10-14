@@ -1,0 +1,33 @@
+{
+  "muni": "GREEN OAKS",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://services5.arcgis.com/rEzEbIcfdrOlQLiC/arcgis/rest/services/Green_Oaks_Zoning_View_Layer/FeatureServer/0",
+  "code_field": "ZoningCode",
+  "where": "1=1",
+  "strip_prefix": "[\\s-]SU$",
+  "code_map": {},
+  "ordinance_districts": [
+    "SR-5",
+    "SR-2",
+    "SR-1.5",
+    "SR-1",
+    "SR-1A",
+    "AG",
+    "CB",
+    "GB",
+    "HC",
+    "LI",
+    "GI",
+    "II",
+    "CR",
+    "O",
+    "I",
+    "MX"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    10,
+    14
+  ],
+  "notes": "Village of Green Oaks zoning view layer (AGOL FeatureServer/0, ZoningCode; 'Zoning CAD file obtained from HMG. Clark Dietz ... updated zoning ... February 2023'). Ordinance = Village Code Title 8 Zoning \u00a78-4-1 (+ AG Ch. 6) (amlegal greenoaksil, current through Ord. 2026-O-09 passed 7-22-2026; fetched 2026-10-14). SU suffix = 'Special Use' map annotation (layer renderer labels e.g. 'O-SU - Office - Special Use', 'SR-1 SU - Suburban Residence - 1 Acre Special Use'); the ordinance has no SU district, so ' SU'/'-SU' is stripped to the base district. I = Institutional (\u00a78-4-1, Art. 7F), NOT industrial; II = Intensive Industrial (Art. 7B); LI = Limited Industrial (Art. 7A); GI = General Industrial (Art. 7E). Caveat: OBJECTID 58 ZoningCode 'I' carries a stale ZoningDesc 'SR-1 SU' and stale Area_ac (geometry does not overlap the SR-1 SU polygon); ZoningCode/renderer trusted."
+}

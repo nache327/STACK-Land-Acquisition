@@ -1,0 +1,25 @@
+{
+  "muni": "LAKE FOREST",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://utility.arcgis.com/usrsvcs/servers/c9b16d17c60d4f67862833f6f301121f/rest/services/CLF/AGOL_CLF_Project/MapServer/0",
+  "code_field": "ZONED",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {
+    "B1": "B-1", "B2": "B-2", "B3": "B-3", "B4": "B-4",
+    "GR1": "GR-1", "GR2": "GR-2", "GR3": "GR-3", "GR4": "GR-4",
+    "O1": "O-1", "OR2": "OR-2",
+    "R1": "R-1", "R2": "R-2", "R3": "R-3", "R4": "R-4", "R5": "R-5"
+  },
+  "ordinance_districts": [
+    "R-1", "R-2", "R-3", "R-4", "R-5",
+    "GR-1", "GR-2", "GR-3", "GR-4",
+    "ROS", "RE", "OA",
+    "O-1", "OR", "OR-2",
+    "B-1", "B-2", "B-3", "B-4",
+    "TD"
+  ],
+  "nonbinding": [],
+  "expected_count": [17, 21],
+  "notes": "City of Lake Forest zoning layer via GIS-Consortium anonymous proxy (utility.arcgis.com CLF/AGOL_CLF_Project MapServer/0, field ZONED; 20 distinct codes, unhyphenated -> code_map adds hyphens). Ordinance: Lake Forest City Code Ch. 159 Zoning, sec. 159.065 Districts (amlegal, 2023 S-7 current; fetched 2026-10-14). Lake County IL jid."
+}

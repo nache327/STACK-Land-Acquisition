@@ -1,0 +1,79 @@
+{
+  "jurisdiction_id": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "jurisdiction_name_contains": "Lake County",
+  "municipality": "BANNOCKBURN",
+  "ordinance": "Village of Bannockburn IL Village Code Chapter 260 Zoning (eCode360 BA3216, current through 2026-05-11; fetched 2026-10-14): § 260-201 districts; Arts. III-VII use regulations",
+  "cited_subsection": "Village Code Ch. 260",
+  "zones": {
+    "A": {
+      "zone_name": "A Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 260-302: \"The following uses and no other are permitted as of right in the residential districts: A. Single-family detached dwellings. B. Group homes.\" § 260-306 special uses: PUDs, public utility stations (\"(3) Service and storage prohibited. No service or storage yard or building shall be permitted.\"), antennas, pool enclosures, congregate homes. No storage/warehouse/industrial use.",
+      "section": "Village Code § 260-302, § 260-306"
+    },
+    "B": {
+      "zone_name": "B Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 260-302: \"The following uses and no other are permitted as of right in the residential districts: A. Single-family detached dwellings. B. Group homes.\" § 260-306 special uses: PUDs, public utility stations (\"(3) Service and storage prohibited. No service or storage yard or building shall be permitted.\"), antennas, pool enclosures, congregate homes. No storage/warehouse/industrial use.",
+      "section": "Village Code § 260-302, § 260-306"
+    },
+    "R": {
+      "zone_name": "R Retail District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 260-410E: \"Storage limited. No storage or warehousing of any product shall be permitted in the Retail District except such as is incidental to a principal retail use.\" § 260-410C: \"No wholesale establishments or activities shall be allowed in the Retail District.\" § 260-410D: \"No manufacturing, processing, or treatment of products shall be conducted on any premises in the Retail District, except those that are incidental to a principal retail business use.\" § 260-403: \"The uses indicated in the following table and no others are permitted as of right in the Retail District.\"",
+      "section": "Village Code § 260-403, § 260-410"
+    },
+    "R-1": {
+      "zone_name": "R-1 Specialty Retail District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 260-431E: \"Storage limited. No storage or warehousing of any product shall be permitted in the Specialty Retail District except such as is incidental to a principal retail use.\" § 260-431C: \"No wholesale establishments or activities shall be allowed in the Specialty Retail District.\" § 260-431D: \"No manufacturing, processing, or treatment of products shall be conducted on any premises in the Specialty Retail District ...\" § 260-423: \"The following uses and no others are permitted as of right in the Specialty Retail District: A. Parks. B. Open space.\" #38: R-1 here is Specialty Retail, not residential.",
+      "section": "Village Code § 260-423, § 260-431"
+    },
+    "O": {
+      "zone_name": "O Office District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.9,
+      "quote": "§ 260-506 Office District special uses: \"(22) Self-storage and mini-warehouse facilities on a lot that either: (a) Has frontage along Illinois Route 43 ... or (b) Has frontage along the Tri-State Tollwav, but is not within 1,200 feet of the Illinois Route 22 right-of-way ... No self-storage or mini-warehouse facility shall be located within 2,750 feet of another lot on which a self-storage or mini-warehouse facility is located ...\" Special-use self-storage => permitted under owner policy (location-limited: Rt 43 or Tollway frontage + 2,750-ft spacing). § 260-503: \"The following uses and no others are permitted as of right in the Office District: A. Business, professional and administrative offices. ...\" -- no warehouse/manufacturing use => light_industrial prohibited.",
+      "section": "Village Code § 260-506C(22), § 260-503"
+    },
+    "C": {
+      "zone_name": "C College District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.96,
+      "quote": "§ 260-604: \"The following uses and no others are permitted as of right in the College District. ... A. Colleges (8221). B. Theological seminaries (8221). C. Personal wireless services antennas ...\" § 260-607 special uses: day-care centers. No storage/warehouse/industrial use.",
+      "section": "Village Code § 260-604, § 260-607"
+    },
+    "PLB": {
+      "zone_name": "PLB Public Land and Buildings District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.96,
+      "quote": "§ 260-702: \"The following uses and no others are permitted as of right in the Public Land and Buildings District. ... A. Public open space. B. Any governmental activity or service or related civic use or purpose conducted within a building owned or leased by the Village. ...\" § 260-705 special uses: governmental activity, churches, temples, antennas, public school recreational facilities. No storage/warehouse/industrial use.",
+      "section": "Village Code § 260-702, § 260-705"
+    }
+  }
+}

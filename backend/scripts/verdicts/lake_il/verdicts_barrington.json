@@ -1,0 +1,209 @@
+{
+  "jurisdiction_id": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "jurisdiction_name_contains": "Lake County",
+  "municipality": "BARRINGTON",
+  "ordinance": "Village of Barrington IL Zoning Ordinance (Ord. 01-2919 as amended; barrington-il.gov chapter PDFs: Ch.5 rev 2019-04-22, Ch.6 rev 2021-08-09, Ch.7 rev 2024-09-23, Ch.8/Ch.9 rev 2024-03-18, Ch.2 rev 2024-09-23; fetched 2026-10-14)",
+  "cited_subsection": "Zoning Ordinance",
+  "zones": {
+    "R-1": {
+      "zone_name": "R-1 Single-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-2": {
+      "zone_name": "R-2 Single-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-3": {
+      "zone_name": "R-3 Single-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-4": {
+      "zone_name": "R-4 Single-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-5": {
+      "zone_name": "R-5 Single-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-6": {
+      "zone_name": "R-6 Single-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-7": {
+      "zone_name": "R-7 Two-Family Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "R-8": {
+      "zone_name": "R-8 General Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "Ch. 6 \"SUMMARY OF PERMITTED & SPECIAL USES - RESIDENTIAL DISTRICTS\" (R-1..R-8): \"Dwellings, Single Family P P P P P P P P / Dwellings, Two-Family ... P P / Dwellings, Three- and Four-Family ... S P / Dwellings, Multiple Family ... P\"; e.g. § 6.2.A R-1 Permitted Uses: \"1. Dwellings, Single Family. 2. Convents and Monasteries, not to be occupied by more than ten (10) persons. 3. Home Occupations. 4. Buildings, Structures, Parking and uses accessory to a permitted use.\" No mini-warehouse, warehouse or industrial use in any residential district.",
+      "section": "Zoning Ordinance Ch. 6"
+    },
+    "B-1": {
+      "zone_name": "B-1 General Business Service District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.9,
+      "quote": "§ 7.2.D B-1 Special Uses: \"28. Mini-Warehouse.\" Ch. 7 Summary of Permitted and Special Uses (USES B-1 B-3 B-4 B-5): \"Mini-Warehouse S\" (B-1 only). Ch. 2: \"MINI-WAREHOUSE. An enclosed storage facility containing independent, fully enclosed bays that are leased to individuals exclusively for long-term storage of household goods or personal property.\" Special-use self-storage => permitted under owner policy. No warehouse/industrial use listed for B-1.",
+      "section": "Zoning Ordinance § 7.2.D"
+    },
+    "B-3": {
+      "zone_name": "B-3 Office District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "Ch. 7 Summary of Permitted and Special Uses (USES B-1 B-3 B-4 B-5): \"Mini-Warehouse S\" -- B-1 only, blank for B-3; § 7.4 Permitted/Special Use lists name no mini-warehouse, warehouse/distribution or industrial use. § 7.1.B: \"Outdoor sales and storage of materials is not permitted within any of the Business Districts, except where specifically authorized with a permitted use or as an approved special use.\"",
+      "section": "Zoning Ordinance § 7.4"
+    },
+    "B-4": {
+      "zone_name": "B-4 Village Center District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "Ch. 7 Summary of Permitted and Special Uses (USES B-1 B-3 B-4 B-5): \"Mini-Warehouse S\" -- B-1 only, blank for B-4; § 7.5 Permitted/Special Use lists name no mini-warehouse, warehouse/distribution or industrial use. § 7.1.B: \"Outdoor sales and storage of materials is not permitted within any of the Business Districts, except where specifically authorized with a permitted use or as an approved special use.\"",
+      "section": "Zoning Ordinance § 7.5"
+    },
+    "B-5": {
+      "zone_name": "B-5 Village Center East District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "Ch. 7 Summary of Permitted and Special Uses (USES B-1 B-3 B-4 B-5): \"Mini-Warehouse S\" -- B-1 only, blank for B-5; § 7.6 Permitted/Special Use lists name no mini-warehouse, warehouse/distribution or industrial use. § 7.1.B: \"Outdoor sales and storage of materials is not permitted within any of the Business Districts, except where specifically authorized with a permitted use or as an approved special use.\"",
+      "section": "Zoning Ordinance § 7.6"
+    },
+    "A-1": {
+      "zone_name": "A-1 Artisan District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.88,
+      "quote": "§ 8.2.B A-1 Permitted Uses: \"... 20. Warehouse/Distribution. 21. Wholesale Goods Establishment.\" § 8.2.C Special Uses: \"4. Industrial Assembly Use. 5. Industrial Use, Light.\" Ch. 8 Summary: \"Warehouse/Distribution P P P P\" (A-1 M-A M-1 O-R). Ch. 2: \"WAREHOUSE/DISTRIBUTION. A structure, or part thereof, or area used principally for the storage of goods and merchandise.\" Warehouse by right => ss/mw permitted (owner policy); Mini-Warehouse neither named nor excluded in Ch. 8. #38: A-1 = Artisan District (manufacturing family), not agricultural.",
+      "section": "Zoning Ordinance § 8.2"
+    },
+    "M-A": {
+      "zone_name": "M-A Manufacturing-Artisan District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.9,
+      "quote": "§ 8.3.B M-A Permitted Uses: \"... 12. Industrial Assembly Use. 13. Industrial Use, Light. ... 23. Warehouse/Distribution. 24. Wholesale Goods Establishment.\" Ch. 8 Summary: \"Industrial Use, Light S P P\" / \"Warehouse/Distribution P P P P\". Warehouse/LI by right => ss/mw permitted (owner policy); Mini-Warehouse neither named nor excluded in Ch. 8.",
+      "section": "Zoning Ordinance § 8.3"
+    },
+    "M-1": {
+      "zone_name": "M-1 Limited Manufacturing District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.92,
+      "quote": "§ 8.4.A: \"The purpose of the M-1 Limited Manufacturing District is to provide an environment for light industrial uses ...\"; § 8.4.B M-1 Permitted Uses: \"... 9. Industrial Assembly Use. 10. Industrial Use, Light. ... 16. Warehouse/Distribution. 17. Wholesale Goods Establishment.\" Warehouse/LI by right => ss/mw permitted (owner policy); Mini-Warehouse neither named nor excluded in Ch. 8.",
+      "section": "Zoning Ordinance § 8.4"
+    },
+    "O-R": {
+      "zone_name": "O-R Office/Research District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.88,
+      "quote": "§ 8.5.A: \"The district also provides for a limited amount of light assembly, processing and distribution uses along with their related support activities.\" § 8.5.B O-R Permitted Uses: \"... 5. Industrial Assembly Use. ... 11. Warehouse/Distribution. 11. Wholesale Goods Establishment.\" Ch. 8 Summary: \"Industrial Assembly Use S P P P\" / \"Warehouse/Distribution P P P P\". Warehouse by right => ss/mw permitted (owner policy).",
+      "section": "Zoning Ordinance § 8.5"
+    },
+    "B-R": {
+      "zone_name": "B-R Mixed Business-Residential District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.93,
+      "quote": "§ 9.2.B B-R Permitted Uses: \"1. Art Studio. 2. Bed and Breakfast Establishment. 3. Day Care Home. 4. Dwellings, Single-Family. 5. Home Occupations. 6. Office, Government. 7. Office, Medical/Dental. 8. Office, Professional. 9. Personal Services Establishment. ... 12. Retail Assembly and Repair Establishment. 13. Retail Goods Establishment. 14. Travel Agency.\" § 9.2: \"There shall be no storage of business materials or equipment on the exterior of any buildings.\" No mini-warehouse/warehouse/industrial use.",
+      "section": "Zoning Ordinance § 9.2"
+    },
+    "P-L": {
+      "zone_name": "P-L Public Lands District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 9.3.B P-L Permitted Uses: \"1. Buildings and Structures Related to Publicly Owned Storm, Sanitary and/or Water Utilities. 2. Office, Government 3. Primary School, Public. 4. Recreation, Active Outdoor. 5. Recreation, Passive Outdoor. 6. Secondary School, Public.\" No storage/warehouse/industrial use.",
+      "section": "Zoning Ordinance § 9.3"
+    },
+    "O-S": {
+      "zone_name": "O-S Open Space District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 9.6.B O-S Permitted Uses: \"1. Nature Preserves/Conservation Areas. 2. Recreation, Passive Outdoor.\"",
+      "section": "Zoning Ordinance § 9.6"
+    },
+    "R-C": {
+      "zone_name": "R-C Recreation/Conservation District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 9.7.B R-C Permitted Uses: \"1. Golf Course. 2. Nature Preserves/Conservation Areas. 3. Recreation, Passive Outdoor.\"",
+      "section": "Zoning Ordinance § 9.7"
+    }
+  }
+}

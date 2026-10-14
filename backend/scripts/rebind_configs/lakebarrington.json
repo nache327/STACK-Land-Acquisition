@@ -1,0 +1,28 @@
+{
+  "muni": "LAKE BARRINGTON",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://gis.gha-engineers.com/arcgiswebadaptor102/rest/services/LakeBarrington/LakeBarrZoning/MapServer/1",
+  "code_field": "ZONECLASS",
+  "where": "1=1",
+  "strip_prefix": "\\s*PUD$",
+  "code_map": {
+    "R1": "R-1",
+    "R2": "R-2",
+    "R5": "R-5"
+  },
+  "ordinance_districts": [
+    "R-5",
+    "R-2",
+    "R-1",
+    "B",
+    "O",
+    "M",
+    "C"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    5,
+    7
+  ],
+  "notes": "Village of Lake Barrington zoning layer (GHA Engineers MapServer/1, ZONECLASS). Ordinance = Village Code Title 8 Zoning \u00a78-3-1 district list (amlegal lakebarringtonil, current through Ord. 2026-O-11 passed 5-5-2026; fetched 2026-10-14). Codes R1/R2/R5 -> R-1/R-2/R-5; trailing-space 'M ' trimmed by fetch .strip(). ' PUD' suffix stripped to bind base district, BUT PUD polygons exist (layer 2026-10-14: R1 PUD 12, R2 PUD 1 [no plain R2 polygons], B PUD 4, C PUD 2, M PUD 12 = 31 of 78 polygons) and their uses are governed by the individual PUD ordinance (Ch. 7; e.g. Lake Barrington Shores PUD Ord. 72-O-3, Savannah PD Ord. 2000-O-16) -- base-district verdict is a proxy there. 2 polygons have NULL ZONECLASS (skipped). O district exists in ordinance but not on layer."
+}

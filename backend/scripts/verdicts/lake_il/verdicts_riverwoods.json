@@ -1,0 +1,153 @@
+{
+  "jurisdiction_id": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "jurisdiction_name_contains": "Lake County",
+  "municipality": "RIVERWOODS",
+  "ordinance": "Village of Riverwoods IL Village Code Title 9 Zoning (amlegal riverwoodsil, current through Ord. 26-01-01 passed 1-20-2026; fetched 2026-10-14)",
+  "cited_subsection": "Title 9",
+  "zones": {
+    "1-R": {
+      "zone_name": "1-R 42,000 sf (inclusive of road easements) Single-Family Residential",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-4A-2 permitted uses: 'Accessory uses as regulated by this title. Community Residence Home occupations as permitted by this title. Signs ... Single-family detached dwellings. ...' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-4A-2; §9-2-6-3"
+    },
+    "R-1": {
+      "zone_name": "R-1 42,000 sf Single-Family Residential",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-4B-1 R-1 permitted uses: 'Accessory uses as regulated by this title. Community residence. Home occupations as permitted by this title. Signs ... Single-family detached dwellings. Temporary signs and structures ...' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-4B-1, §9-4B-2; §9-2-6-3"
+    },
+    "R-1A": {
+      "zone_name": "R-1A 60,000 sf Single-Family Residential",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-4C-1 PERMITTED USES: 'As in R-1 districts.' §9-4C-2 SPECIAL USES: 'As in R-1 districts.' §9-4B-1 R-1 permitted uses: 'Accessory uses as regulated by this title. Community residence. Home occupations as permitted by this title. Signs ... Single-family detached dwellings. Temporary signs and structures ...' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-4C-1, §9-4C-2; §9-2-6-3"
+    },
+    "R-2": {
+      "zone_name": "R-2 80,000 sf Single-Family Residential",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-4D-1 PERMITTED USES: 'As in R-1 districts.' §9-4D-2 SPECIAL USES: 'As in R-1 districts.' §9-4B-1 R-1 permitted uses: 'Accessory uses as regulated by this title. Community residence. Home occupations as permitted by this title. Signs ... Single-family detached dwellings. Temporary signs and structures ...' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-4D-1, §9-4D-2; §9-2-6-3"
+    },
+    "R-3": {
+      "zone_name": "R-3 200,000 sf Single-Family Residential",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-4E-1 PERMITTED USES: 'As in R-1 districts.' §9-4E-2 SPECIAL USES: 'As in R-1 districts.' §9-4B-1 R-1 permitted uses: 'Accessory uses as regulated by this title. Community residence. Home occupations as permitted by this title. Signs ... Single-family detached dwellings. Temporary signs and structures ...' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-4E-1, §9-4E-2; §9-2-6-3"
+    },
+    "R-4": {
+      "zone_name": "R-4 Golf Course and Country Club Residential",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-4F-1-1 PERMITTED USES: 'Country club. Country club residences.' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-4F-1-1; §9-2-6-3"
+    },
+    "B-1": {
+      "zone_name": "B-1 Neighborhood Business District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.62,
+      "quote": "§9-5A-2(A) 'The following uses, when authorized by the village board, constitute the only special uses allowed in the B-1 neighborhood business district: ... One self-storage facility, granted in accordance with the provisions of subsections B, C and D of this section.' §9-5A-2(B) 'A special use may be granted for one self-storage facility in the B-1 neighborhood business district, provided that ... 1. The site has frontage on, and is accessed solely from, Milwaukee Avenue. 2. The site area for the self-storage facility is at least four (4) acres.'",
+      "section": "§9-5A-2(A),(B)",
+      "notes": "Owner policy: named special use => permitted. CAVEATS: (1) capped at ONE self-storage facility in B-1, Milwaukee Ave frontage/access only, >=4 ac site; a CubeSmart exists at 3725 Deerfield Rd, Riverwoods (web listing; NOT verified whether it is the B-1 special-use facility) -- if so the cap may already be consumed; (2) also available inside a B-1 mixed-use PUD: §9-5B-2(B) 'Self-storage facility with no outside storage and with all indoor storage to be climate controlled.' No light-industrial/warehouse use in B-1 (§9-5A-1 permits only bakeries, candy/ice cream shops, coffee shops, restaurants)."
+    },
+    "O&R1": {
+      "zone_name": "O and R1 Office and Research District One",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "§9-5C-2 permitted: 'A. Offices: Corporate, general, medical, business, professional or governmental offices. ... No portion of any lot shall be used for open or unenclosed storage. B. Research Laboratories ...' §9-5C-2-1 SPECIAL USES: 'Religious institutions.' §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-5C-2, §9-5C-2-1; §9-2-6-3",
+      "notes": "#38: office/research labs, not industrial/flex."
+    },
+    "O&R/C": {
+      "zone_name": "O and R/C Office and Research Compatible District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "§9-5D-2 PERMITTED USES: 'Those uses permitted in the O and R1 district. Civic, cultural, religious and educational uses when conducted in a building occupying a lot of less than one (1) acre in size.' §9-5D-4 special uses limited to a 'hotel special use' and a 'small parcel office compatible special use'. §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-5D-2, §9-5D-4; §9-2-6-3"
+    },
+    "B-2": {
+      "zone_name": "B-2 Business Compatible District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.92,
+      "quote": "§9-5F-2 'The following uses are the only permitted uses in the B-2 compatible district: Permitted uses authorized in the R-1 42,000 square feet single-family residential district. Cultural center.' §9-5F-3 special uses: 'Conference facility. Early childhood facility. General office use. Private dining facility. Private instructional facility.'",
+      "section": "§9-5F-2, §9-5F-3"
+    },
+    "P-1": {
+      "zone_name": "P-1 Public Lands District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-8A-1 'Lands within such use districts shall be devoted to public parks, recreation facilities, Village facilities, public facilities such as libraries, or such other public or Village uses as the Village Board may from time to time direct.'",
+      "section": "§9-8A-1"
+    },
+    "P-2": {
+      "zone_name": "P-2 Wildlife Preserves District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§9-8B-1 'Lands in this use district shall be devoted to the preservation of wildlife, flora and fauna, in their natural habitats and shall not be used for recreational facilities.'",
+      "section": "§9-8B-1"
+    },
+    "SS": {
+      "zone_name": "SS Automobile Service Stations District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.92,
+      "quote": "§9-3-1 'SS Automobile service stations district'. §9-9B-1 PERMITTED USES: 'Automobile service stations as defined in section 9-2-3 of this title. Signs, when such are in conformance with title 12 of this code.' §9-9B-2 SPECIAL USES: 'As in CR-1 districts.'",
+      "section": "§9-3-1, §9-9B-1, §9-9B-2",
+      "notes": "SS = Automobile Service Stations, NOT self-storage. The 'CR-1' cross-reference names no existing district."
+    },
+    "SL": {
+      "zone_name": "SL Sanitary Landfill District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.7,
+      "quote": "§9-3-1 lists 'SL Sanitary landfill district'; Chapter 9 Article A is now 'PLANNED DEVELOPMENT (PD) OVERLAY DISTRICT' (Ord. 25-02-02) and no SL use regulations remain. §9-2-6-3 'No building or tract of land shall be devoted to any use other than one which is specified as a permitted or special use under chapters 4, 5, 6 and 7 and section 9-11-9 of this title in the zoning district in which such land or building is located.'",
+      "section": "§9-3-1; §9-2-6-3",
+      "notes": "Listed-only district with no current use regulations; not on the village layer."
+    }
+  }
+}

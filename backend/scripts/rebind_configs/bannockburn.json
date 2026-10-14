@@ -1,0 +1,21 @@
+{
+  "muni": "BANNOCKBURN",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://services7.arcgis.com/fXX8KC6yPevWFs4q/arcgis/rest/services/Village_Zoning_ReadOnly_view/FeatureServer/0",
+  "code_field": "ZoningDistrict",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {
+    "Residential District A": "A",
+    "Residential District B": "B",
+    "Retail District": "R",
+    "Specialty Retail District": "R-1",
+    "Office District": "O",
+    "College District": "C",
+    "Public Land and Building": "PLB"
+  },
+  "ordinance_districts": ["A", "B", "R", "R-1", "O", "C", "PLB"],
+  "nonbinding": [],
+  "expected_count": [6, 8],
+  "notes": "Village of Bannockburn zoning layer (services7 Village_Zoning_ReadOnly_view FeatureServer/0, field ZoningDistrict holds long names -> code_map to ordinance codes). Ordinance: Bannockburn Village Code Ch. 260 Zoning, sec. 260-201 Establishment of zoning districts (eCode360 BA3216, code current to 2026-05-11; fetched 2026-10-14). #38: R-1 = Specialty Retail (NOT residential); C = College; FH Flood Hazard overlay not in layer. Lake County IL jid."
+}
