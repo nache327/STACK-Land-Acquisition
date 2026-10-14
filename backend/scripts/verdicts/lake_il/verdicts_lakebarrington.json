@@ -1,0 +1,82 @@
+{
+  "jurisdiction_id": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "jurisdiction_name_contains": "Lake County",
+  "municipality": "LAKE BARRINGTON",
+  "ordinance": "Village of Lake Barrington IL Village Code Title 8 Zoning (amlegal lakebarringtonil, current through Ord. 2026-O-11 passed 5-5-2026; fetched 2026-10-14)",
+  "cited_subsection": "Title 8 Ch. 4",
+  "zones": {
+    "R-5": {
+      "zone_name": "R-5 Single-Family Residential (200,000 sf)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-4-1(B) 'The only uses permitted in an R-5 district are: Accessory uses. Single-family detached dwellings, one per lot. ...' §8-4-1(D) 'All uses which are not expressly permitted in the R-5 Zoning District are prohibited.'",
+      "section": "§8-4-1(B),(D)"
+    },
+    "R-2": {
+      "zone_name": "R-2 Single Family Residential (80,000 sf)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-4-2(B) 'The only uses permitted in an R-2 district are: 1. Single family detached dwellings, one per lot. ...' §8-4-2(D) 'All uses which are not expressly permitted in the R-2 Zoning District are prohibited.'",
+      "section": "§8-4-2(B),(D)"
+    },
+    "R-1": {
+      "zone_name": "R-1 Single Family Residential (40,000 sf)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-4-3(B) 'The only uses permitted in an R-1 district are: 1. Single family detached dwellings, one per lot. ...' §8-4-3(D) 'All uses which are not expressly permitted in the R-1 Zoning District are prohibited.'",
+      "section": "§8-4-3(B),(D)"
+    },
+    "B": {
+      "zone_name": "B Business District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "§8-4-4(B) 'The only uses permitted in a B district are: Art and school supply stores. ... Wearing apparel shops.' (retail/office list; no storage, warehouse or industrial use named). §8-4-4(D) 'All uses which are not expressly permitted in the B Zoning District are prohibited.'",
+      "section": "§8-4-4(B),(D)",
+      "notes": "Special uses (§8-4-4(C)) include 'Vehicle dealers, vehicle service stations, vehicle repair services, and garages and vehicle washes' -- repair garages, not storage; no garage-condo/storage use named."
+    },
+    "O": {
+      "zone_name": "O Office and Research District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.85,
+      "quote": "§8-4-5(B) 'The only uses permitted in an O district are: Office uses as follows: ... Scientific or research laboratories, including incidental pilot plants. ...' §8-4-5(D) 'All uses which are not expressly permitted in the O Zoning District are prohibited.'",
+      "section": "§8-4-5(B),(D)",
+      "notes": "#38: office/research labs, not a warehouse/flex family. Not present on the village layer."
+    },
+    "M": {
+      "zone_name": "M Manufacturing and Industrial District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.72,
+      "quote": "§8-4-6(B) 'The only uses permitted in an M district are: Agricultural services uses. Bulk materials storage. Manufacturing, industrial and processing uses. ...'",
+      "section": "§8-4-6(B)",
+      "notes": "Self-storage/mini-warehouse is not named anywhere in Title 8. Owner analog rule: 'Manufacturing, industrial and processing uses' and 'Bulk materials storage' permitted BY RIGHT, and no affirmative exclusion of self-storage (§8-4-6(D) prohibited list names acid manufacture, arsenals, batch plants, crematories, etc., not storage) => ss/mw permitted (argued analog -- 'make the case'). Closed-list clause in §8-4-6(B): 'All uses which are not expressly permitted are prohibited'. 12 of the M polygons are 'M PUD' (uses governed by the PUD ordinance)."
+    },
+    "C": {
+      "zone_name": "C Conservation District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-4-7(B) 'The only uses permitted in a C district are uses which enhance the conservation of the land and its natural flora and fauna. No structures or improvements other than drainage improvements are permitted in a C district except as a special use.' §8-4-7(D) 'All uses which are not expressly permitted are prohibited except where permitted by a special use permit.'",
+      "section": "§8-4-7(B),(D)"
+    }
+  }
+}

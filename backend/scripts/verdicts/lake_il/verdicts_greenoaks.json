@@ -1,0 +1,179 @@
+{
+  "jurisdiction_id": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "jurisdiction_name_contains": "Lake County",
+  "municipality": "GREEN OAKS",
+  "ordinance": "Village of Green Oaks IL Village Code Title 8 Zoning (amlegal greenoaksil, current through Ord. 2026-O-09 passed 7-22-2026; fetched 2026-10-14)",
+  "cited_subsection": "Title 8",
+  "zones": {
+    "SR-5": {
+      "zone_name": "SR-5 Suburban Residence (5 ac)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-5A-2 'The only uses permitted are: Accessory uses. ...' (single-family/agricultural list; no storage, warehouse or industrial use).",
+      "section": "§8-5A-2"
+    },
+    "SR-2": {
+      "zone_name": "SR-2 Suburban Residence (2 ac)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-5B-2 'The only uses permitted are: Accessory uses. Agriculture on a minimum of five (5) acres ... Cemetery. Private stable ... Single-family detached dwellings, one per lot. ...'",
+      "section": "§8-5B-2"
+    },
+    "SR-1.5": {
+      "zone_name": "SR-1.5 Suburban Residence (1.5 ac avg)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-5C-2 'The only uses permitted are: A. Single-family detached dwellings, one per lot. B. Agriculture on a minimum of five (5) acres and subject to the restrictions for any SR-2 District ...'",
+      "section": "§8-5C-2"
+    },
+    "SR-1": {
+      "zone_name": "SR-1 Suburban Residence (1 ac)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-5D-1 'No building, structure or premises shall be used ... within any SR-1 District ... except in conformity with the regulations established for any SR-2 District as set forth in Article B of this Chapter ...' §8-5B-2 'The only uses permitted are: Accessory uses. Agriculture on a minimum of five (5) acres ... Cemetery. Private stable ... Single-family detached dwellings, one per lot. ...'",
+      "section": "§8-5D-1; §8-5B-2"
+    },
+    "SR-1A": {
+      "zone_name": "SR-1A Suburban Residence (1 ac)",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-5E-1 'No building, structure or premises shall be used ... within any SR-1A District ... except in conformity with the regulations established for any SR-2 District ... and SR-1 District ...' §8-5B-2 'The only uses permitted are: Accessory uses. Agriculture on a minimum of five (5) acres ... Cemetery. Private stable ... Single-family detached dwellings, one per lot. ...'",
+      "section": "§8-5E-1; §8-5B-2"
+    },
+    "AG": {
+      "zone_name": "AG Agriculture District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§8-6-4 PERMITTED USES: 'Accessory uses. Agriculture, only the following uses are permitted under the term \"Agriculture\": A. Apiary; B. Cultivation of field and garden crops C. Flower farm D. Livestock raising ...'",
+      "section": "§8-6-4"
+    },
+    "CB": {
+      "zone_name": "CB Community Business District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.75,
+      "quote": "§8-7C-8(A)(2) private special uses: '... Contractor's equipment storage yard ... Truck, trailer rental Warehouse, self-storage or mini-warehouse.'",
+      "section": "§8-7C-8(A)(2)",
+      "notes": "Named special use => permitted under owner policy. Industrial/warehouse not in the CB permitted list (§8-7C-4 'Permitted principal uses shall only be the following'). Not present on the village layer."
+    },
+    "GB": {
+      "zone_name": "GB General Business District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.85,
+      "quote": "§8-7D-4 'Permitted principal uses shall only be the following. Unless noted, all permitted principal uses shall be indoor uses.' (retail/service list; the only storage-related entry is 'Rental of equipment with indoor storage.'); the §8-7D-8 special-use list names no self-storage, mini-warehouse or warehouse.",
+      "section": "§8-7D-4, §8-7D-8",
+      "notes": "Closed list; self-storage is named in CB/LI/II (special) and GI (permitted) but not in GB."
+    },
+    "HC": {
+      "zone_name": "HC Highway Commercial",
+      "self_storage": "unclear",
+      "mini_warehouse": "unclear",
+      "light_industrial": "unclear",
+      "luxury_garage_condo": "unclear",
+      "confidence": 0.3,
+      "quote": "§8-4-1 lists 'HC | Highway Commercial' but Title 8 contains no HC article or use regulations.",
+      "section": "§8-4-1",
+      "notes": "Listed-only district; not on the village layer; unresolved."
+    },
+    "CR": {
+      "zone_name": "CR Commercial Recreation",
+      "self_storage": "unclear",
+      "mini_warehouse": "unclear",
+      "light_industrial": "unclear",
+      "luxury_garage_condo": "unclear",
+      "confidence": 0.3,
+      "quote": "§8-4-1 lists 'CR | Commercial Recreation' but Title 8 contains no CR article or use regulations.",
+      "section": "§8-4-1",
+      "notes": "Listed-only district; not on the village layer; unresolved."
+    },
+    "LI": {
+      "zone_name": "LI Limited Industrial District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.88,
+      "quote": "§8-7A-4(A) 'Permitted principal uses upon any property in the Limited Industrial (LI) Zoning District within the Village shall only be the following: ... Industrial use, including, but not limited to: assembly, ... storage and testing ... Warehouse (excluding self-storage or miniwarehouse).' §8-7A-8(A)(2)(a) private special uses: '... Warehouse, self-storage or miniwarehouse.'",
+      "section": "§8-7A-4(A); §8-7A-8(A)(2)(a)",
+      "notes": "Definitional carve-out on the by-right warehouse + self-storage NAMED as a special use in the same district => permitted (owner policy). §8-7A-8(B)(24)(b): 'A site for such a use shall not exceed three (3) acres when the only use is the self-storage warehouse or miniwarehouse use ... except ... part of a mixed use project that includes retail uses'."
+    },
+    "GI": {
+      "zone_name": "GI General Industrial District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.93,
+      "quote": "§8-7E-4 'Permitted principal uses shall only be the following. ... Industrial use, including, but not limited to: assembly, ... storage and testing ... Warehouse. Warehouse, self-storage or miniwarehouse 7 . ... Wholesaling and storage of goods or materials.'",
+      "section": "§8-7E-4; §8-7E-4-1(8)",
+      "notes": "Self-storage permitted BY RIGHT. §8-7E-4-1(8)(b): 'A site for such a use shall not exceed three (3) acres.'"
+    },
+    "II": {
+      "zone_name": "II Intensive Industrial District",
+      "self_storage": "permitted",
+      "mini_warehouse": "permitted",
+      "light_industrial": "permitted",
+      "luxury_garage_condo": "permitted",
+      "confidence": 0.88,
+      "quote": "§8-7B-4 'Permitted principal uses shall only be the following: ... Industrial use, including but not limited to: assembly, ... storage and testing ... Warehouse (excluding self-storage or mini-warehouse).' §8-7B-8(A) private special uses: '... Truck, trailer rental. Warehouse, self-storage or mini-warehouse.'",
+      "section": "§8-7B-4; §8-7B-8(A)",
+      "notes": "II = Intensive Industrial (NOT Institutional). Named special use => permitted (owner policy). §8-7B-8(B)(19)(b): 'A site for such a use shall not exceed three (3) acres.'"
+    },
+    "O": {
+      "zone_name": "O Office District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "§8-7-5-4 '... No portion of any lot shall be used for open or unenclosed storage. Permitted principal uses shall only be the following: A. Offices, business, professional and institutional tenants. B. Offices, governmental. C. Medical offices and laboratories. D. Real estate offices. E. Financial institution ... F. Business or professional schools. G. Conference centers.'",
+      "section": "§8-7-5-4",
+      "notes": "Layer code 'O-SU' (Office - Special Use) binds here."
+    },
+    "I": {
+      "zone_name": "I Institutional District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.92,
+      "quote": "§8-4-1 'I | Institutional'. §8-7F-4 'Permitted principal uses shall only be the following: Agriculture. Botanical garden. Public open land, refuge or preserve.'",
+      "section": "§8-4-1; §8-7F-4",
+      "notes": "#38: I = Institutional, not Industrial."
+    },
+    "MX": {
+      "zone_name": "MX Mixed-Use District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "conditional",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.6,
+      "quote": "§8-7G-4(A) 'Permitted principal uses shall only be the following: Agriculture. Commercial or industrial uses but only as a part of an approved special use for a mixed-use development.' §8-7G-6(B) 'Permitted special uses shall only be the following: Mixed-use development.'",
+      "section": "§8-7G-4(A); §8-7G-6(B)",
+      "notes": "Industrial only via a mixed-use-development special use => light_industrial conditional. Self-storage not named and warehouse not by right => ss/mw prohibited (closed list); it could arrive only through an approved MXD use list (§8-7G-6(B)(3)(c))."
+    }
+  }
+}

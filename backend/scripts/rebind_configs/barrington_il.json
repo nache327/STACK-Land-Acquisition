@@ -1,0 +1,18 @@
+{
+  "muni": "BARRINGTON",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://services2.arcgis.com/4ahvNYdvSnHy0D8F/arcgis/rest/services/Village_of_Barrington_IL_Interactive_Map/FeatureServer/9",
+  "code_field": "ZONECLASS",
+  "where": "1=1",
+  "strip_prefix": null,
+  "code_map": {},
+  "ordinance_districts": [
+    "R-1", "R-2", "R-3", "R-4", "R-5", "R-6", "R-7", "R-8",
+    "B-1", "B-3", "B-4", "B-5",
+    "A-1", "M-A", "M-1", "O-R",
+    "B-R", "P-L", "O-S", "R-C"
+  ],
+  "nonbinding": [],
+  "expected_count": [17, 21],
+  "notes": "Village of Barrington IL (NOT Barrington Hills / Lake Barrington) interactive-map FeatureServer/9, field ZONECLASS (20 distinct codes, match ordinance verbatim). Ordinance: Village of Barrington Zoning Ordinance (Ord. 01-2919 as amended) Ch. 5 sec. 5.1 Establishment of Zoning Districts (rev 2019-04-22); use chapters Ch.6 (2021-08-09), Ch.7 (2024-09-23), Ch.8/Ch.9 (2024-03-18) from barrington-il.gov, fetched 2026-10-14. #38: A-1 = Artisan District (manufacturing family), not agricultural. SPA/C-T/H are overlays (not in layer). Lake County IL jid."
+}

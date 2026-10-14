@@ -1,0 +1,35 @@
+{
+  "muni": "RIVERWOODS",
+  "jid": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "url": "https://gis.gha-engineers.com/arcgiswebadaptor102/rest/services/Riverwoods/Zoning/MapServer/1",
+  "code_field": "ZONECLASS",
+  "where": "1=1",
+  "strip_prefix": "\\s*PUD$",
+  "code_map": {
+    "R-4 CC": "R-4",
+    "O & R1": "O&R1",
+    "O & RC": "O&R/C"
+  },
+  "ordinance_districts": [
+    "1-R",
+    "R-1",
+    "R-1A",
+    "R-2",
+    "R-3",
+    "R-4",
+    "B-1",
+    "O&R1",
+    "O&R/C",
+    "B-2",
+    "P-1",
+    "P-2",
+    "SL",
+    "SS"
+  ],
+  "nonbinding": [],
+  "expected_count": [
+    11,
+    15
+  ],
+  "notes": "Village of Riverwoods zoning layer (GHA Engineers MapServer/1, ZONECLASS). Ordinance = Village Code Title 9 Zoning \u00a79-3-1 (amlegal riverwoodsil, current through Ord. 26-01-01 passed 1-20-2026; fetched 2026-10-14). SS = 'SS Automobile service stations district' (\u00a79-3-1, Art. 9B) -- NOT self-storage. 1-R is a real district ('1-R 42,000 square feet (inclusive of road easements) single-family residential district', Art. 4A). 'R-4 CC' -> R-4 (Golf course and country club residential district; CC = country club). 'O & R1' -> O&R1 (O and R1 office and research district one); 'O & RC' -> O&R/C (O and R/C office and research compatible district). 'R-1 PUD' (1 polygon) -> R-1 (residential PUD is an R-1 special use, \u00a79-11-12). Layer SPECIAL=YES attribute marks special-use parcels, not a district. SL listed in \u00a79-3-1 but its article was replaced by the PD overlay (Ord. 25-02-02); not on layer."
+}

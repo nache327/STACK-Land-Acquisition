@@ -1,0 +1,209 @@
+{
+  "jurisdiction_id": "10d01284-829b-4b03-b416-54bc452b8e70",
+  "jurisdiction_name_contains": "Lake County",
+  "municipality": "LAKE FOREST",
+  "ordinance": "City of Lake Forest IL City Code Chapter 159 Zoning (amlegal codelibrary, 2023 S-7 current; fetched 2026-10-14): § 159.065 districts; §§ 159.080-159.116 incl. § 159.116 Use Matrix Business Districts",
+  "cited_subsection": "City Code Ch. 159",
+  "zones": {
+    "R-5": {
+      "zone_name": "R-5 Single-Family Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.081(A): \"The following uses are permitted in the R-5 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.081"
+    },
+    "R-4": {
+      "zone_name": "R-4 Single-Family Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.082(A): \"The following uses are permitted in the R-4 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.082"
+    },
+    "R-3": {
+      "zone_name": "R-3 Single-Family Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.083(A): \"The following uses are permitted in the R-3 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.083"
+    },
+    "R-2": {
+      "zone_name": "R-2 Single-Family Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.084(A): \"The following uses are permitted in the R-2 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.084"
+    },
+    "R-1": {
+      "zone_name": "R-1 Single-Family Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.085(A): \"The following uses are permitted in the R-1 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.085"
+    },
+    "GR-4": {
+      "zone_name": "GR-4 General Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.086(B): \"The following uses are permitted in the GR-4 General Residence District: (1) Single-family detached dwellings; (2) Single-family attached dwellings. ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.086"
+    },
+    "GR-3": {
+      "zone_name": "GR-3 General Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.087(B): \"The following uses are permitted in the GR-3 District: (1) Single-family detached dwelling; (2) Parks, playgrounds and community buildings operated by municipal agencies; (3) Two-family dwellings; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.087"
+    },
+    "GR-2": {
+      "zone_name": "GR-2 General Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.088(B): \"The following uses are permitted in the GR-2 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; (3) Two-family detached dwellings; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.088"
+    },
+    "GR-1": {
+      "zone_name": "GR-1 General Residence District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.089(B): \"The following uses are permitted in the GR-1 District: (1) Single-family detached dwellings; (2) Parks, playgrounds and community buildings operated by municipal agencies; (3) Two-family detached dwellings; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.089"
+    },
+    "OA": {
+      "zone_name": "OA Open Area District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.090(C): \"The following uses are permitted in the OA Open Area District: (1) Private parks and open space; (2) Parks, playgrounds and community buildings operated by municipal agencies; (3) Golf courses and related buildings and facilities; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.090"
+    },
+    "ROS": {
+      "zone_name": "ROS Residential Open Space District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.091(B): \"The following uses are permitted in the ROS Single-Family Residence and Open Space District: (1) Single-family detached dwellings; (2) Attached dwellings, provided that such dwellings are of superior design with the purpose of maximizing open space; (3) Private parks and open space uses; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.091"
+    },
+    "RE": {
+      "zone_name": "RE Single-Family Residence and Educational District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.95,
+      "quote": "§ 159.092(B): \"The following uses are permitted in the RE Single-Family Residence and Educational District: (1) Single-family detached dwellings; (2) Private parks and open space uses; (3) Parks, playgrounds and community buildings operated by municipal agencies; ...\" No storage/warehouse/manufacturing use listed. § 159.080(A)(1): \"No building or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses per § 159.045(L), which names no storage/warehouse/industrial use).",
+      "section": "City Code § 159.092"
+    },
+    "O-1": {
+      "zone_name": "O-1 Office District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.93,
+      "quote": "§ 159.106(B): \"The following uses are permitted in the O-1 Office District: (1) Offices, business, professional and governmental, permitted only on ground floor, but not including offices used for other display, sale, lease, delivery, processing, storage, manufacturing, servicing or advertising of merchandise, commodities or other chattels; (2) Clubs and lodges, private; (3) Multiple-family dwelling units ...; (4) Funeral homes and mortuaries; (5) Institutions ...\" § 159.045(M) Office District special uses: multiple-family dwellings; governmental structures and facilities, except offices; public utilities. § 159.105(A)(1): \"No buildings or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses).",
+      "section": "City Code § 159.106; § 159.045(M)"
+    },
+    "OR": {
+      "zone_name": "OR Office Research District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "§ 159.107(B)(2): \"No manufacturing or assembly shall be permitted, except as is incidental to or accessory to the principal use of the premises\"; § 159.107(C): \"The following uses are permitted in the OR Office Research District: (1) Corporate headquarters; (2) Offices: business, professional and governmental; (3) Medical laboratories and scientific research laboratories ...\"; (N): \"No outdoor storage shall be permitted.\" No warehouse/storage use named. § 159.105(A)(1): \"No buildings or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses).",
+      "section": "City Code § 159.107"
+    },
+    "OR-2": {
+      "zone_name": "OR-2 Office Research District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.9,
+      "quote": "§ 159.108(B)(2): \"No manufacturing or assembly shall be permitted, except as is incidental to or accessory to the principal use of the premises\"; § 159.108(C) permitted: \"(1) Corporate headquarters; (2) Offices: business, professional and governmental; (3) Medical laboratories and scientific research laboratories ...; (4) Day-care facilities; (5) Hotel, motel ...\". § 159.045(N) OR-2 special uses: laboratories, sports complex, governmental structures. No warehouse/storage use named. § 159.105(A)(1): \"No buildings or land shall be devoted to any use other than a use permitted in the zoning district in which such building or land is located\" (exceptions: prior lawful uses; special uses).",
+      "section": "City Code § 159.108; § 159.045(N)"
+    },
+    "B-1": {
+      "zone_name": "B-1 Neighborhood Business District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 159.116 Use Matrix Business Districts (legend \"X = Not permitted\"): row \"Self storage facilities | X | X | X | X\" (B-1 Nbrhd., B-2 CC, B-3 Trad., B-4 Pres.) -- AFFIRMATIVE EXCLUSION. The matrix has no warehouse/manufacturing row; nearest rows \"Contractor's offices and shops\" and \"Plumbing, printing, heating, air conditioning, electrical, furniture, upholstering, paint and other similar businesses ...\" are S/P in B-1/B-2 and X in B-3/B-4 (trade shops, not light industrial).",
+      "section": "City Code § 159.116"
+    },
+    "B-2": {
+      "zone_name": "B-2 Community Commercial Business District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 159.116 Use Matrix Business Districts (legend \"X = Not permitted\"): row \"Self storage facilities | X | X | X | X\" (B-1 Nbrhd., B-2 CC, B-3 Trad., B-4 Pres.) -- AFFIRMATIVE EXCLUSION. The matrix has no warehouse/manufacturing row; nearest rows \"Contractor's offices and shops\" and \"Plumbing, printing, heating, air conditioning, electrical, furniture, upholstering, paint and other similar businesses ...\" are S/P in B-1/B-2 and X in B-3/B-4 (trade shops, not light industrial).",
+      "section": "City Code § 159.116"
+    },
+    "B-3": {
+      "zone_name": "B-3 Traditional Business District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 159.116 Use Matrix Business Districts (legend \"X = Not permitted\"): row \"Self storage facilities | X | X | X | X\" (B-1 Nbrhd., B-2 CC, B-3 Trad., B-4 Pres.) -- AFFIRMATIVE EXCLUSION. The matrix has no warehouse/manufacturing row; nearest rows \"Contractor's offices and shops\" and \"Plumbing, printing, heating, air conditioning, electrical, furniture, upholstering, paint and other similar businesses ...\" are S/P in B-1/B-2 and X in B-3/B-4 (trade shops, not light industrial).",
+      "section": "City Code § 159.116"
+    },
+    "B-4": {
+      "zone_name": "B-4 Preservation Business District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.97,
+      "quote": "§ 159.116 Use Matrix Business Districts (legend \"X = Not permitted\"): row \"Self storage facilities | X | X | X | X\" (B-1 Nbrhd., B-2 CC, B-3 Trad., B-4 Pres.) -- AFFIRMATIVE EXCLUSION. The matrix has no warehouse/manufacturing row; nearest rows \"Contractor's offices and shops\" and \"Plumbing, printing, heating, air conditioning, electrical, furniture, upholstering, paint and other similar businesses ...\" are S/P in B-1/B-2 and X in B-3/B-4 (trade shops, not light industrial).",
+      "section": "City Code § 159.116"
+    },
+    "TD": {
+      "zone_name": "TD Transitional District",
+      "self_storage": "prohibited",
+      "mini_warehouse": "prohibited",
+      "light_industrial": "prohibited",
+      "luxury_garage_condo": "prohibited",
+      "confidence": 0.93,
+      "quote": "§ 159.115(B): \"The following uses are permitted in the TD Transitional District: all uses permitted in the R-5 Single-Family Residence District pursuant to § 159.081(A).\" § 159.045(P)(1) TD special uses: \"(a) Single-family residential dwellings ...; (b) Multiple-family dwellings; (c) Office buildings ...; (d) Adaptive re-use buildings ...; (e) Civic, religious, institutional, recreational and cultural uses; and (f) Financial institutions.\" No storage/warehouse/industrial use.",
+      "section": "City Code § 159.115; § 159.045(P)"
+    }
+  }
+}
