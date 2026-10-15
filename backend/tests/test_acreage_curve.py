@@ -199,3 +199,38 @@ def test_tier_boundaries():
                         (59, "decent"), (40, "decent"), (39, "weak"),
                         (20, "weak"), (19, "avoid"), (0, "avoid")]:
         assert tier_for(score) == tier
+
+
+# --- Unconfirmed-zoning cap (Nache 2026-10-15) -------------------------------
+from app.services.buybox_scoring import UNCONFIRMED_ZONING_SCORE_CAP  # noqa: E402
+
+
+def _maxed(permission, *, human, source="human", matched=True):
+    return ParcelInputs(
+        parcel_id=1, storage_permission=permission, acres=4.0, aadt=50_000,
+        in_flood_zone=False, in_wetland=False, has_structure=False,
+        classification_source=source, confidence=0.95, human_reviewed=human,
+        verdict_matched=matched, listing_source="costar", listing_sale_price=100_000,
+        hnw_households=9_000, pop_3mi=250_000,
+    )
+
+
+@pytest.mark.parametrize("permission,human,source,matched", [
+    (None, False, None, False),            # ungrounded muni ("No data")
+    ("unclear", True, "human", True),      # human looked, couldn't tell
+    ("permitted", False, "keyword", True), # heuristic guess ("Low conf.")
+    ("conditional", False, "keyword", True),
+])
+def test_unconfirmed_zoning_cannot_read_deal_grade(permission, human, source, matched):
+    """Every other signal maxed, zoning not confirmed -> never >= 70."""
+    s = score_for_parcel(_maxed(permission, human=human, source=source, matched=matched),
+                         {"listingScoreBoost": 15})
+    assert s.score <= UNCONFIRMED_ZONING_SCORE_CAP < 70
+    assert any(f["label"] == "Zoning cap" for f in s.factors)
+
+
+@pytest.mark.parametrize("permission", ["permitted", "conditional"])
+def test_confirmed_zoning_still_reaches_100(permission):
+    s = score_for_parcel(_maxed(permission, human=True), {"listingScoreBoost": 15})
+    assert s.score == 100
+    assert not any(f["label"] == "Zoning cap" for f in s.factors)

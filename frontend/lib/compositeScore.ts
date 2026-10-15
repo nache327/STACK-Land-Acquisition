@@ -123,6 +123,14 @@ export function computeScore(
   if (parcel.acres != null && parcel.acres > ACRE_MAX) {
     score = Math.min(score, OVERSIZE_SCORE_CAP);
   }
+  // Unconfirmed-zoning cap (mirror UNCONFIRMED_ZONING_SCORE_CAP): only a permitted or
+  // conditional use may read deal-grade. The backend also requires a grounded basis;
+  // this placeholder has no basis input, so it applies the permission half only.
+  const perm = (parcel.storage_permission ?? "").toLowerCase();
+  if (perm !== "permitted" && perm !== "conditional" && score > UNCONFIRMED_ZONING_SCORE_CAP) {
+    score = UNCONFIRMED_ZONING_SCORE_CAP;
+    factors.push({ label: "Zoning cap", delta: 0, reason: `Capped at ${UNCONFIRMED_ZONING_SCORE_CAP} until zoning is verified` });
+  }
   return { score, tier: tierFor(score), factors };
 }
 
@@ -166,6 +174,8 @@ const ACRE_OVERSIZE_SLOPE = 0.6;
 const ACRE_OVERSIZE_FLOOR = -60.0;
 // Oversize parcels can never read >= 70 on the card (mirror OVERSIZE_SCORE_CAP).
 export const OVERSIZE_SCORE_CAP = 69;
+// Unverified / non-viable zoning can never read >= 70 (mirror UNCONFIRMED_ZONING_SCORE_CAP).
+export const UNCONFIRMED_ZONING_SCORE_CAP = 69;
 
 /** Signed acreage contribution — mirror of _acreage_delta in buybox_scoring.py. */
 export function acreageDelta(acres: number): number {
