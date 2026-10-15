@@ -37,11 +37,14 @@ import asyncpg  # noqa: E402
 
 from _db import get_sync_dsn  # noqa: E402
 from app.services.postingest_gate import run_postingest_gate  # noqa: E402
+from app.services.wealth_gate import hv_exempt_sql  # noqa: E402
+
+HV_EXEMPT = hv_exempt_sql()
 
 # Wealth-gated needle: the muni-aware LATERAL mirrors buybox_scoring's join
 # (a town row wins over a NULL county-default). Keep in sync with
 # _backfill_verifier_municipality.NEEDLE_SQL.
-_NEEDLE_LATERAL = """
+_NEEDLE_LATERAL = f"""
     FROM parcels p
     JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
     JOIN LATERAL (
@@ -58,7 +61,7 @@ _NEEDLE_LATERAL = """
    WHERE p.jurisdiction_id = $1::uuid
      AND v.ss IN ('permitted', 'conditional')
      AND p.acres >= 1.5
-     AND prm.median_home_value >= 475000
+     AND (prm.median_home_value >= 475000 OR {HV_EXEMPT})
      AND prm.median_hhi >= 100000
 """
 
@@ -134,7 +137,7 @@ async def main() -> int:
                       ORDER BY (m.municipality IS NULL) ASC LIMIT 1) v ON true
                  WHERE f.jurisdiction_id = $1::uuid AND f.is_current = true
                    AND v.ss IN ('permitted','conditional') AND p.acres >= 1.5
-                   AND prm.median_home_value >= 475000 AND prm.median_hhi >= 100000
+                   AND (prm.median_home_value >= 475000 OR {HV_EXEMPT}) AND prm.median_hhi >= 100000
                  GROUP BY p.city ORDER BY n DESC""",
             jid,
         )
@@ -158,7 +161,7 @@ async def main() -> int:
                   JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
                   {_LGC_LAT}
                  WHERE p.jurisdiction_id = $1::uuid AND p.acres >= 1.5
-                   AND prm.median_home_value >= 475000 AND prm.median_hhi >= 100000""",
+                   AND (prm.median_home_value >= 475000 OR {HV_EXEMPT}) AND prm.median_hhi >= 100000""",
             jid,
         )
         print("\n--- 3b. GARAGE-CONDO (LGC) NEEDLES ---")

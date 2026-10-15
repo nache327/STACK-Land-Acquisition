@@ -45,6 +45,7 @@ from app.db import long_running_session_maker
 from app.models.buybox_filter import BuyboxFilter
 from app.models.parcel_buybox_score import ParcelBuyboxScore
 from app.services.email_resend import send_email
+from app.services.wealth_gate import hv_exempt_sql
 from app.services.job_queue import redis_broker  # noqa: F401  (registers broker)
 
 # The cron runs this file as `python -m app.workers.daily_email`, so it executes as
@@ -516,7 +517,8 @@ async def _top_parcels_for_filter(
             -- could silently drop a genuine needle. Harden after the ring repair.
             (CAST(:min_home_value AS INT) IS NOT NULL
              AND prm10.median_home_value IS NOT NULL
-             AND prm10.median_home_value < CAST(:min_home_value AS INT))
+             AND prm10.median_home_value < CAST(:min_home_value AS INT)
+             AND NOT {hv_exempt_sql("e.jurisdiction_id", "e.city")})
                 AS soft_below_home_value,
             (CAST(:min_hhi AS INT) IS NOT NULL
              AND prm10.median_hhi IS NOT NULL
