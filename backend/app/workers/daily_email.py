@@ -380,8 +380,13 @@ async def _top_parcels_for_filter(
                  WHERE dd.parcel_id = p.id
                    AND dd.status IN ('passed', 'dead', 'under_contract')
               )"""
+    # A "Zoning cap" factor is appended ONLY when the cap pulled a >= 70 score down to
+    # 69 (buybox_scoring.UNCONFIRMED_ZONING_SCORE_CAP), so it marks exactly the parcels
+    # that cleared the floor before the cap. They stay ON the board (Verify tier, ranked
+    # below confirmed deals at 69) — the cap fixes ranking, it must not hide listings.
     _eligible_predicates = f"""
-              AND pbs.score >= :min_score
+              AND (pbs.score >= :min_score
+                   OR pbs.factors @> CAST('[{{"label": "Zoning cap"}}]' AS jsonb))
               AND (CAST(:min_acres AS DOUBLE PRECISION) IS NULL
                    OR p.acres IS NULL
                    OR p.acres >= CAST(:min_acres AS DOUBLE PRECISION))

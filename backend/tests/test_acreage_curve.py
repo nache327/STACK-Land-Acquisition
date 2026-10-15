@@ -234,3 +234,17 @@ def test_confirmed_zoning_still_reaches_100(permission):
     s = score_for_parcel(_maxed(permission, human=True), {"listingScoreBoost": 15})
     assert s.score == 100
     assert not any(f["label"] == "Zoning cap" for f in s.factors)
+
+
+def test_board_selection_keeps_capped_cards():
+    """The listed board's 70 floor must not drop a card the zoning cap pulled to 69."""
+    import inspect
+
+    from app.workers import daily_email
+
+    src = inspect.getsource(daily_email)
+    assert "pbs.score >= :min_score" in src
+    assert '"label": "Zoning cap"' in src
+    s = score_for_parcel(_maxed(None, human=False, source=None, matched=False),
+                         {"listingScoreBoost": 15})
+    assert {"label": "Zoning cap"}.items() <= s.factors[-1].items()
