@@ -149,6 +149,21 @@ def _asset_label(uses: set[str]) -> str:
     return "self_storage"
 
 
+_VIABLE = ("permitted", "conditional")
+
+
+def _promote_lgc_verdict(row: dict, lgc_verdict: str | None) -> None:
+    """On a 'both' card the self_storage row wins precedence, so its use_verdict is
+    pushed. When storage is unconfirmed (unclear/NULL) but the garage condo is BY RIGHT
+    (Nache 2026-10-15: pitched as the light-industrial / storage use), show the garage
+    condo's verdict instead — otherwise the card reads "not confirmed" and the
+    dashboard's LOI gate blocks a deal we can pursue."""
+    if (row.get("asset_type") == "both"
+            and row.get("use_verdict") not in _VIABLE
+            and lgc_verdict in _VIABLE):
+        row["use_verdict"] = lgc_verdict
+
+
 def _owner_mailing(sup: dict) -> str | None:
     """Compose the assessor owner MAILING address (street + city/state/zip) from
     the _supplement row, as a single line to match the board's owner_address
@@ -408,6 +423,9 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     # self_storage-wins precedence below (see the comment there).
     best_asset: dict[int, str] = {}
     uses: dict[int, set[str]] = {}
+    # The LGC lane's own verdict per parcel, so a 'both' card backed by an
+    # unconfirmed storage row can still show the garage condo as by right.
+    lgc_verdicts: dict[int, str | None] = {}
     async with long_running_session_maker() as db:
         if filter_id is not None:
             f = (
@@ -432,6 +450,8 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             sup = await _supplement(db, [d.parcel_id for d in deals])
             for d in deals:
                 uses.setdefault(d.parcel_id, set()).add(asset)
+                if asset == "luxury_garage_condo":
+                    lgc_verdicts[d.parcel_id] = d.use_verdict
                 prev_asset = best_asset.get(d.parcel_id)
                 # Which lane's row backs a dual-qualified card? NOT max(score):
                 # a self_storage score and an LGC score come from different
@@ -456,6 +476,8 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
         _row_for(d, s, _asset_label(uses.get(pid, set())))
         for pid, (d, s) in best.items()
     ]
+    for r in rows:
+        _promote_lgc_verdict(r, lgc_verdicts.get(r["parcel_id"]))
 
     sql = _upsert_sql()
     conn = await asyncpg.connect(dsn, ssl="require")
