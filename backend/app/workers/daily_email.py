@@ -47,6 +47,15 @@ from app.models.parcel_buybox_score import ParcelBuyboxScore
 from app.services.email_resend import send_email
 from app.services.job_queue import redis_broker  # noqa: F401  (registers broker)
 
+# The cron runs this file as `python -m app.workers.daily_email`, so it executes as
+# `__main__`. run_once() then lazily imports dashboard_push, which imports
+# `app.workers.daily_email` — a SECOND copy of this module whose @dramatiq.actor
+# re-registers 'send_daily_digest_actor' and raises ValueError. That killed every
+# scheduled board push (the error is swallowed as "dashboard push failed"). Alias
+# the running module under its package name so the import reuses this copy.
+if __name__ == "__main__":
+    sys.modules.setdefault("app.workers.daily_email", sys.modules[__name__])
+
 logger = logging.getLogger(__name__)
 
 
