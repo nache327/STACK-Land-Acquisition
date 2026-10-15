@@ -70,12 +70,19 @@ class TestSiblingConsistencyCatch58:
     # Catch #58 v2: keyed on a HUMAN-verified self_storage prohibition (mini_warehouse no
     # longer required); an un-reviewed storage-dead zone is the legitimate LGC thesis, kept.
 
-    def test_human_prohibited_storage_trips(self):
+    def test_li_special_use_carries_lgc(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
-        # A human found ss prohibited on a NON-industrial zone (li conditional/spurious), lgc
-        # stayed conditional, no named garage use → the Brink Rd leak.
-        basis = "lgc conditional by inference from light_industrial; closed-list; no named garage use"
-        assert f("prohibited", "conditional", basis, human_reviewed=True, li="conditional") is True
+        # Nache 2026-10-15: LI allowed by special use carries the garage condo (pitched as
+        # that use) even where a human prohibited self-storage — no longer a leak.
+        basis = "lgc by inference from light_industrial; closed-list; no named garage use"
+        assert f("prohibited", "permitted", basis, human_reviewed=True, li="conditional") is False
+
+    def test_no_allowed_sibling_trips(self):
+        from app.services.postingest_gate import sibling_consistency_violation as f
+        # lgc allowed while storage, mini-warehouse AND light industrial are all prohibited and
+        # nothing names a garage use → a real inference leak.
+        assert f("prohibited", "permitted", "no named garage use", human_reviewed=True,
+                 li="prohibited", mw="prohibited") is True
 
     def test_genuinely_industrial_zone_exempt(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
@@ -92,8 +99,9 @@ class TestSiblingConsistencyCatch58:
 
     def test_unreviewed_storage_dead_zone_not_flagged(self):
         from app.services.postingest_gate import sibling_consistency_violation as f
-        # NOT human-reviewed: the legitimate storage-dead-industrial LGC thesis — keep it.
-        assert f("prohibited", "conditional", "inferred from light_industrial", human_reviewed=False) is False
+        # Storage-dead but light industrial allowed: the garage-condo thesis — keep it.
+        assert f("prohibited", "permitted", "inferred from light_industrial", human_reviewed=False,
+                 li="permitted") is False
 
     def test_storage_not_prohibited_not_flagged(self):
         from app.services.postingest_gate import sibling_consistency_violation as f

@@ -27,46 +27,29 @@ from __future__ import annotations
 SELF_STORAGE_SLUG = "self_storage"
 LGC_SLUG = "luxury_garage_condo"
 
-# LGC-effective: storage or light industrial BY RIGHT => garage condo by right (we
-# claim that use and argue the garage condo fits it); storage/LI conditional =>
-# conditional. Order matters: NULL guard first so a missing matrix row yields NULL
-# (not 'prohibited'); then permitted, then conditional, then unclear, else prohibited.
+# LGC-effective (Nache 2026-10-15): a garage condo is pitched as an industrial project in a
+# light-industrial / warehouse / flex zone, or as a storage use where self-storage is
+# allowed — so ANY of self-storage / mini-warehouse / light industrial allowed (by right OR
+# by special/conditional use) makes the garage condo BY RIGHT. Order matters: NULL guard
+# first so a missing matrix row yields NULL (not 'prohibited'); then permitted, then
+# unclear, else prohibited. There is no 'conditional' LGC tier any more.
 def lgc_verdict_sql(ss: str, mw: str, li: str, human_reviewed: str) -> str:
     """THE single LGC-viability definition, rendered over caller-supplied columns.
 
     Parameterised on the column expressions so every consumer generates from this one
-    implementation instead of restating it. That is not stylistic: the needle metric
-    (``scripts/precompute_needles._LGC_VIABLE``) carried its OWN copy, whose comment
-    read "Matches services/use_verdicts._LGC_VERDICT_SQL — keep in sync" while in fact
-    OMITTING the QC veto below. The result was two definitions of LGC-viable, and the
-    permissive one drove the metric: Montgomery County MD reported +7,229 LGC needles
-    of which 6,702 came from AR (Agricultural Reserve) and RC (Rural Cluster) — zones a
-    human had marked self_storage=prohibited AND mini_warehouse=prohibited, resurrected
-    solely by a stray light_industrial='conditional'. The board rejected all of them;
-    only the metric was wrong. A "keep in sync" comment is not a mechanism.
-
-    ``human_reviewed`` is an expression, not a flag, so a caller whose join already
-    restricts to human-reviewed rows passes ``"true"``.
+    implementation instead of restating it (the needle metric once carried its own drifted
+    copy). ``human_reviewed`` is kept in the signature for caller compatibility; it no longer
+    affects the result — the Brink Rd QC veto (human storage-prohibited + LI not by right =>
+    LGC prohibited) was retired 2026-10-15 by Nache's call to count every LI/storage zone.
     """
+    del human_reviewed  # retired veto input; see docstring
+    allowed = "('permitted', 'conditional')"
     return f"""CASE
     WHEN {ss} IS NULL AND {mw} IS NULL
          AND {li} IS NULL THEN NULL
-    -- QC veto (Brink Rd): a HUMAN found storage-type uses prohibited AND the zone isn't
-    -- genuinely industrial (light_industrial not 'permitted') → LGC prohibited. This stops a
-    -- spurious light_industrial='conditional' on an agricultural/retail zone (Montgomery AR)
-    -- from resurrecting LGC, WHILE keeping real industrial zones (light_industrial='permitted':
-    -- Fairfax I-2, Somerset/Monmouth Manufacturing, Montgomery IH25) garage-viable — the LGC
-    -- thesis. Un-human-reviewed rows still promote below and surface as Unverified.
-    WHEN {ss} = 'prohibited' AND {human_reviewed}
-         AND {li} IS DISTINCT FROM 'permitted' THEN 'prohibited'
-    -- Light industrial by right => garage condo by right (Nache 2026-10-14: the garage
-    -- condo is argued as fitting the by-right LI / flex-warehouse use, same as storage).
-    WHEN {ss} = 'permitted'
-         OR {mw} = 'permitted'
-         OR {li} = 'permitted' THEN 'permitted'
-    WHEN {ss} = 'conditional'
-         OR {mw} = 'conditional'
-         OR {li} = 'conditional' THEN 'conditional'
+    WHEN {ss} IN {allowed}
+         OR {mw} IN {allowed}
+         OR {li} IN {allowed} THEN 'permitted'
     WHEN 'unclear' IN ({ss}, {mw},
                        {li}) THEN 'unclear'
     ELSE 'prohibited'

@@ -73,11 +73,9 @@ Use **exactly** one of these four values per use per zone:
 
 Most ordinances do not name this product class. Apply these rules **in order**:
 
-1. If `mini_warehouse` = `"permitted"` OR `self_storage` = `"permitted"` → set `luxury_garage_condo` = `"permitted"`
-2. If `mini_warehouse` = `"conditional"` OR `self_storage` = `"conditional"` → set `luxury_garage_condo` = `"conditional"`
-3. If `light_industrial` = `"permitted"` or `"conditional"` → set `luxury_garage_condo` = `"conditional"`
-4. If none of the above → set `luxury_garage_condo` = `"prohibited"` (not `"unclear"` — silence is prohibition)
-5. Set `"unclear"` **only** if there is direct but ambiguous ordinance text about the use
+1. If `mini_warehouse`, `self_storage` OR `light_industrial` is `"permitted"` or `"conditional"` → set `luxury_garage_condo` = `"permitted"` (the garage condo is pitched as that storage / light-industrial use)
+2. If none of the above → set `luxury_garage_condo` = `"prohibited"` (not `"unclear"` — silence is prohibition)
+3. Set `"unclear"` **only** if there is direct but ambiguous ordinance text about the use
 
 ---
 

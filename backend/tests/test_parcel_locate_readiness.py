@@ -23,8 +23,8 @@ def test_verdicts_are_generated_from_the_shared_definition() -> None:
     for cols in (pl._COLS, pl._NEARBY_COLS):
         assert verdict_expr(SELF_STORAGE_SLUG) in cols
         assert verdict_expr(LGC_SLUG) in cols
-        # The QC veto must be present via that generation, not re-typed.
-        assert "IS DISTINCT FROM 'permitted'" in cols
+        # Generated rule, not re-typed: the 2026-10-15 rule has no veto and no conditional tier.
+        assert "IS DISTINCT FROM 'permitted'" not in cols
 
 
 def test_readiness_join_requires_human_reviewed() -> None:

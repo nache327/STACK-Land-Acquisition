@@ -145,6 +145,25 @@ async def main() -> int:
             print(f"  {r['city']}: {r['n']}")
         print(f"  TOTAL on-needle: {on_total}")
 
+        # 3b. GARAGE-CONDO (LGC) needles + on-needle deals — additive; the storage tallies
+        # above are untouched. Uses the needle metric's own predicate/LATERAL so this can't
+        # drift from needle_snapshot (LGC counts machine-parsed zones since 2026-10-15).
+        from precompute_needles import _LATERAL as _LGC_LAT, _LGC_VIABLE as _LGC_OK
+        lgc = await conn.fetchrow(
+            f"""SELECT count(*) FILTER (WHERE {_LGC_OK}) AS needles,
+                       count(*) FILTER (WHERE {_LGC_OK} AND EXISTS (
+                           SELECT 1 FROM forsale_listings f WHERE f.matched_parcel_id = p.id
+                              AND f.is_current = true AND f.match_confidence >= 0.85)) AS deals
+                  FROM parcels p
+                  JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+                  {_LGC_LAT}
+                 WHERE p.jurisdiction_id = $1::uuid AND p.acres >= 1.5
+                   AND prm.median_home_value >= 475000 AND prm.median_hhi >= 100000""",
+            jid,
+        )
+        print("\n--- 3b. GARAGE-CONDO (LGC) NEEDLES ---")
+        print(f"  LGC needles: {lgc['needles']}  |  LGC on-needle deals: {lgc['deals']}")
+
         # 4. POST-INGEST GATE
         print("\n--- 4. POST-INGEST GATE ---")
         rep = await run_postingest_gate(conn, jid)

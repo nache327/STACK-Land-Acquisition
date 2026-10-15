@@ -60,7 +60,9 @@ _LGC_VIABLE = (
     f"IN {LGC_VIABLE_VERDICTS!r})".replace("'permitted', 'conditional'",
                                            "'permitted','conditional'")
 )
-_STORAGE_VIABLE = "v.ss IN ('permitted','conditional')"
+# Storage needles stay human-reviewed only (v.hr); LGC needles count machine-parsed zones too
+# (Nache 2026-10-15). The LATERAL prefers a human row, so storage picks the same row as before.
+_STORAGE_VIABLE = "v.hr AND v.ss IN ('permitted','conditional')"
 
 _LATERAL = """
     JOIN LATERAL (
@@ -71,8 +73,7 @@ _LATERAL = """
            AND m.zone_code = p.zoning_code
            AND (m.municipality IS NULL OR m.municipality = p.city)
            AND m.deleted_at IS NULL
-           AND m.human_reviewed
-         ORDER BY (m.municipality IS NULL) ASC
+         ORDER BY m.human_reviewed DESC, (m.municipality IS NULL) ASC
          LIMIT 1
     ) v ON true
 """

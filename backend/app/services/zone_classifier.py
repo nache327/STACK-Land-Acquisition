@@ -36,28 +36,20 @@ def apply_luxury_garage_inference(cls: PerUseClassification) -> PerUseClassifica
     """
     Infer luxury_garage_condo when the ordinance is silent.
 
-    Rule (applied in order):
-      1. mini_warehouse or self_storage == permitted  → permitted
-      2. mini_warehouse or self_storage == conditional → conditional
-      3. light_industrial == permitted or conditional  → conditional
-      4. none of the above                             → prohibited
+    Rule (Nache 2026-10-15): any of self_storage / mini_warehouse / light_industrial
+    permitted OR conditional -> permitted (we pitch the garage condo as that use);
+    otherwise prohibited. Mirrors use_verdicts.lgc_verdict_sql.
 
     Only overrides when luxury_garage_condo is 'unclear'.
     """
     if cls.luxury_garage_condo != "unclear":
         return cls
 
-    ss, mw, li = cls.self_storage, cls.mini_warehouse, cls.light_industrial
-
-    if mw == "permitted" or ss == "permitted":
+    allowed = ("permitted", "conditional")
+    if cls.self_storage in allowed or cls.mini_warehouse in allowed or cls.light_industrial in allowed:
         lgc = "permitted"
-    elif mw == "conditional" or ss == "conditional":
-        lgc = "conditional"
-    elif li in ("permitted", "conditional"):
-        lgc = "conditional"
     else:
         lgc = "prohibited"
-
     return PerUseClassification(
         self_storage=cls.self_storage,
         mini_warehouse=cls.mini_warehouse,

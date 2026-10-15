@@ -91,34 +91,16 @@ _LGC_EFFECTIVE_LABEL = case(
         ),
         "unclassified",
     ),
-    # QC veto (Brink Rd): a human-verified storage prohibition blocks sibling-derived LGC
-    # UNLESS the zone is genuinely industrial (light_industrial='permitted'). A spurious
-    # light_industrial='conditional' on an agricultural/retail zone must not resurrect LGC,
-    # but real industrial zones (permitted) stay garage-viable. Mirrors
-    # use_verdicts._LGC_VERDICT_SQL. Un-human-reviewed storage-dead zones still promote below.
-    (
-        and_(
-            ZoneUseMatrix.self_storage == UsePermission.prohibited,
-            ZoneUseMatrix.human_reviewed.is_(True),
-            ZoneUseMatrix.light_industrial.is_distinct_from(UsePermission.permitted),
-        ),
-        "prohibited",
-    ),
+    # Any of storage / mini-warehouse / light industrial allowed (by right or special use)
+    # => garage condo by right. Mirrors use_verdicts.lgc_verdict_sql (no veto, no
+    # conditional tier since 2026-10-15).
     (
         or_(
-            ZoneUseMatrix.self_storage == UsePermission.permitted,
-            ZoneUseMatrix.mini_warehouse == UsePermission.permitted,
-            ZoneUseMatrix.light_industrial == UsePermission.permitted,
+            ZoneUseMatrix.self_storage.in_([UsePermission.permitted, UsePermission.conditional]),
+            ZoneUseMatrix.mini_warehouse.in_([UsePermission.permitted, UsePermission.conditional]),
+            ZoneUseMatrix.light_industrial.in_([UsePermission.permitted, UsePermission.conditional]),
         ),
         "permitted",
-    ),
-    (
-        or_(
-            ZoneUseMatrix.self_storage == UsePermission.conditional,
-            ZoneUseMatrix.mini_warehouse == UsePermission.conditional,
-            ZoneUseMatrix.light_industrial == UsePermission.conditional,
-        ),
-        "conditional",
     ),
     (
         or_(

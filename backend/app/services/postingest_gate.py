@@ -71,21 +71,18 @@ _NAMED_GARAGE_MARKERS = (
 )
 
 
-def sibling_consistency_violation(ss, lgc, basis_text, human_reviewed=False, li=None) -> bool:
-    """Catch #58 v2, automated: a stored luxury_garage_condo verdict of permitted/conditional
-    while a HUMAN found self_storage prohibited is a consistency leak — UNLESS the zone is
-    genuinely industrial (light_industrial='permitted') or lgc rests on a named garage use.
-    Garage-condo is leased dead storage, the same use-family as self-storage; when a human
-    prohibited storage AND the zone isn't real industrial, an inferred lgc that stays
-    permitted/conditional contradicts that finding (the Brink Rd leak). Real industrial zones
-    (light_industrial='permitted': Fairfax I-2, Somerset Manufacturing) are the legitimate LGC
-    thesis and exempt. Keyed on self_storage alone (mini_warehouse no longer required — a
-    mis-set mw must not mask the leak). Named-use lgc (Marlborough) also exempt."""
+def sibling_consistency_violation(ss, lgc, basis_text, human_reviewed=False, li=None, mw=None) -> bool:
+    """Catch #58 v3 (Nache 2026-10-15 policy): a stored luxury_garage_condo of permitted/
+    conditional is a leak only when NONE of the uses it can be argued from is allowed —
+    self_storage, mini_warehouse and light_industrial all prohibited/unclear/missing — and
+    the basis names no garage use (Marlborough "hobby vehicle storage" stays exempt). A
+    garage condo is pitched as the storage or light-industrial use, so ANY allowed sibling
+    (by right or special use) legitimately carries it; the old storage-prohibited veto was
+    retired. ``human_reviewed`` is kept for caller compatibility."""
     if (lgc or "").lower() not in ("permitted", "conditional"):
         return False
-    if (ss or "").lower() != "prohibited" or not human_reviewed:
-        return False
-    if (li or "").lower() == "permitted":  # genuinely industrial zone — garage stays viable
+    allowed = ("permitted", "conditional")
+    if any((v or "").lower() in allowed for v in (ss, mw, li)):
         return False
     text = (basis_text or "").lower()
     return not any(m in text for m in _NAMED_GARAGE_MARKERS)
@@ -186,7 +183,7 @@ async def run_postingest_gate(conn, jurisdiction_id: uuid.UUID | str) -> GateRep
     # quotes.
     lgc_rows = await conn.fetch(
         """SELECT municipality, zone_code, self_storage::text ss, light_industrial::text li,
-                  luxury_garage_condo::text lgc, human_reviewed,
+                  mini_warehouse::text mw, luxury_garage_condo::text lgc, human_reviewed,
                   coalesce(notes,'') AS notes, coalesce(citations::text,'') AS cites
              FROM zone_use_matrix
             WHERE jurisdiction_id=$1::uuid AND deleted_at IS NULL
@@ -195,11 +192,11 @@ async def run_postingest_gate(conn, jurisdiction_id: uuid.UUID | str) -> GateRep
         f"{r['municipality']}/{r['zone_code']}"
         for r in lgc_rows
         if sibling_consistency_violation(
-            r["ss"], r["lgc"], r["notes"] + " " + r["cites"], r["human_reviewed"], r["li"])
+            r["ss"], r["lgc"], r["notes"] + " " + r["cites"], r["human_reviewed"], r["li"], r["mw"])
     ]
     if leaks:
-        rep.fail(f"catch-#58 sibling leak — lgc permitted/conditional while a human found "
-                 f"self_storage prohibited: {leaks[:5]}{' …' if len(leaks) > 5 else ''} ({len(leaks)} rows)")
+        rep.fail(f"catch-#58 sibling leak — lgc permitted/conditional with no storage / "
+                 f"light-industrial use allowed: {leaks[:5]}{' …' if len(leaks) > 5 else ''} ({len(leaks)} rows)")
 
     # 3c. Vendor-domain citation on a human verdict — HARD. A human_reviewed
     # row citing a commercial mirror (zoneomics etc.) as its basis violates

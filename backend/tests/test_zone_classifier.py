@@ -28,7 +28,7 @@ def test_storage_cls_explicit_light_industrial():
 
 def test_storage_cls_infers_luxury_garage_from_storage():
     cls = storage_cls("conditional", 0.70, "test")
-    assert cls.luxury_garage_condo == "conditional"
+    assert cls.luxury_garage_condo == "permitted"  # special-use storage => LGC by right (2026-10-15)
 
 
 def test_storage_cls_prohibited_luxury_garage_when_prohibited():
@@ -48,24 +48,24 @@ def test_inference_permitted_storage_yields_permitted_lgc():
     assert result.luxury_garage_condo == "permitted"
 
 
-def test_inference_conditional_mw_yields_conditional_lgc():
+def test_inference_conditional_mw_yields_permitted_lgc():
     cls = PerUseClassification(
         self_storage="prohibited", mini_warehouse="conditional",
         light_industrial="prohibited", luxury_garage_condo="unclear",
         confidence=0.7, notes="test",
     )
     result = apply_luxury_garage_inference(cls)
-    assert result.luxury_garage_condo == "conditional"
+    assert result.luxury_garage_condo == "permitted"
 
 
-def test_inference_li_conditional_yields_conditional_lgc():
+def test_inference_li_conditional_yields_permitted_lgc():
     cls = PerUseClassification(
         self_storage="prohibited", mini_warehouse="prohibited",
         light_industrial="conditional", luxury_garage_condo="unclear",
         confidence=0.7, notes="test",
     )
     result = apply_luxury_garage_inference(cls)
-    assert result.luxury_garage_condo == "conditional"
+    assert result.luxury_garage_condo == "permitted"
 
 
 def test_inference_all_prohibited_yields_prohibited_lgc():
