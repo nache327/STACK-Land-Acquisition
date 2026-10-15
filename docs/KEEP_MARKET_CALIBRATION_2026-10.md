@@ -69,6 +69,7 @@ is our best **velocity** comparison: one operator, one product, different locati
 | Frisco II | 29 min | 4.9% | 4.8 / — (43 of 52 in ~14 mo) |
 | Katy | 30 min | 1.6% | 3.0 (bulk buyer) / 27 |
 | Lakeway | 39 min | 18.0% | 2.4 / 23 |
+| Roanoke | 41 min | 8.4% | ≈21 / ≈30 (year-level counts) |
 | **The Woodlands / Magnolia** | **64 min** | 6.0% | **57 of 99 still unsold after ~3 years** |
 
 **The slowest campus is the one farthest from wealth, even though its median area looks fine.** It passes most
