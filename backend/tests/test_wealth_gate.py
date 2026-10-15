@@ -89,3 +89,28 @@ def test_sql_form_references_all_inputs():
                  "p.id", "drive_time_minutes = 10", "drive_time_minutes = 2",
                  "drive_time_minutes = 5", "COALESCE(r.median_hhi, 0)"):
         assert frag in sql, frag
+
+
+# --- Home-value exceptions (Nache 2026-10-15) --------------------------------
+def test_hv_exempt_towns_are_exact_city_casing():
+    """Lake County IL parcels.city is UPPERCASE; a wrong-case entry silently exempts nothing."""
+    from app.services.wealth_gate import HV_EXEMPT_TOWNS
+
+    assert {c for _, c in HV_EXEMPT_TOWNS} == {"BARRINGTON", "LAKE BARRINGTON"}
+    assert all(c == c.upper() for _, c in HV_EXEMPT_TOWNS)
+
+
+def test_hv_exempt_sql_waives_only_home_value_everywhere():
+    import sys
+    from pathlib import Path
+
+    from app.services.wealth_gate import hv_exempt_sql
+
+    sql = hv_exempt_sql("x.j", "x.c")
+    assert "x.c = 'LAKE BARRINGTON'" in sql and ":" not in sql  # no bind-param shapes
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    from precompute_needles import _WEALTH
+
+    assert "OR " + hv_exempt_sql() in _WEALTH
+    assert "prm.median_hhi >= 100000" in _WEALTH  # HHI leg untouched

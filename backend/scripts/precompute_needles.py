@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import asyncpg  # noqa: E402
 
 from _db import get_sync_dsn  # noqa: E402
+from app.services.wealth_gate import hv_exempt_sql  # noqa: E402
 
 from app.services.use_verdicts import (  # noqa: E402
     LGC_VIABLE_VERDICTS,
@@ -77,8 +78,8 @@ _LATERAL = """
          LIMIT 1
     ) v ON true
 """
-_WEALTH = ("p.acres >= 1.5 AND prm.median_home_value >= 475000 "
-           "AND prm.median_hhi >= 100000")
+_WEALTH = ("p.acres >= 1.5 AND (prm.median_home_value >= 475000 "
+           f"OR {hv_exempt_sql()}) AND prm.median_hhi >= 100000")
 
 _NEEDLES_SQL = f"""
 SELECT j.id AS jid, j.name AS name, j.state AS state,

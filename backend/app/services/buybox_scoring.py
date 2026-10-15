@@ -69,6 +69,12 @@ ACRE_EDGE = 5.0          # bonus at ACRE_MAX (decayed from the plateau)
 ACRE_OVERSIZE_SLOPE = 0.6   # penalty per acre above ACRE_MAX
 ACRE_OVERSIZE_FLOOR = -60.0  # deepest acreage penalty
 OVERSIZE_SCORE_CAP = 69     # oversize parcels can never read >= 70 on the card
+# Unconfirmed-zoning card-cap (Nache 2026-10-15: "how is a low-confidence zoning a 100,
+# 3rd from the top?"). Zoning is worth at most +30 of the score while acres/HNW/listing/
+# traffic can add 65+, so a parcel we know NOTHING about could max out and outrank a
+# verified deal. A card may read deal-grade (>= 70) only when the use is permitted or
+# conditional AND that verdict is grounded (human-verified or ordinance-parsed).
+UNCONFIRMED_ZONING_SCORE_CAP = 69
 
 # 3-mile population floor (Nache's "too rural" kill). Below this, both lanes
 # get a hard penalty — self-storage needs rooftops, LGC needs a population base
@@ -164,6 +170,16 @@ class ScoredParcel:
     lead_eligible: bool = False
     gate_reason: str | None = None
     verdict_basis: str = "ungrounded muni"
+
+
+def zoning_confirmed(permission: str | None, basis: str) -> bool:
+    """True when the card's use is viable on a grounded verdict — the only case a
+    score may read deal-grade. Mirrors frontend/lib/compositeScore.ts (which sees
+    the permission only; its inputs carry no basis and are always human-grounded)."""
+    from app.services.verdict_gate import BASIS_HUMAN, BASIS_ORDINANCE
+
+    return (permission or "").lower() in ("permitted", "conditional") and basis in (
+        BASIS_HUMAN, BASIS_ORDINANCE)
 
 
 def score_for_parcel(
@@ -417,6 +433,10 @@ def score_for_parcel(
     basis = verdict_basis(
         p.classification_source, p.human_reviewed, matched=p.verdict_matched
     )
+    if not zoning_confirmed(sp, basis) and score > UNCONFIRMED_ZONING_SCORE_CAP:
+        score = UNCONFIRMED_ZONING_SCORE_CAP
+        factors.append({"label": "Zoning cap", "delta": 0,
+                        "reason": f"Capped at {UNCONFIRMED_ZONING_SCORE_CAP} until zoning is verified"})
     return ScoredParcel(
         p.parcel_id, score, tier_for(score), factors,
         lead_eligible=eligible, gate_reason=reason, verdict_basis=basis,

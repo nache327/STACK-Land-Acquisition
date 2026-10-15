@@ -75,9 +75,9 @@
       "tier": "decent"
     },
     {
-      "name": "unclear verdict, structure present, no acres bonus band",
+      "name": "unclear verdict, structure present - capped: unconfirmed zoning cannot read deal-grade",
       "input": {"storage_permission": "unclear", "acres": 4.0, "has_structure": true},
-      "score": 70,
+      "score": 69,
       "tier": "strong"
     },
     {
@@ -108,9 +108,9 @@
       "tier": "strong"
     },
     {
-      "name": "no verdict row at all (None) - zoning contributes 0",
+      "name": "no verdict row at all (None) - zoning contributes 0, capped at 69",
       "input": {"storage_permission": null, "acres": 4.0, "has_structure": false},
-      "score": 75,
+      "score": 69,
       "tier": "strong"
     }
   ]

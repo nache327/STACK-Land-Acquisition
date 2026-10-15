@@ -28,6 +28,27 @@ NEAR_RING_MISS_TOLERANCE = 0.05  # dt=10 HV may miss by at most 5%
 TAG_STANDARD = "standard"
 TAG_NEAR_RING = "near_ring_override"
 
+# HOME-VALUE EXCEPTIONS (Nache 2026-10-15). Towns whose dt=10 ring median home value
+# misses the 475k floor but which Nache has ruled in anyway (estate-lot pockets where the
+# ACS ring is diluted by neighbouring tracts). ONLY the home-value leg is waived; HHI and
+# acres still apply. Keyed on (jurisdiction_id, parcels.city) — city must match EXACTLY.
+_LAKE_IL = "10d01284-829b-4b03-b416-54bc452b8e70"
+HV_EXEMPT_TOWNS: frozenset[tuple[str, str]] = frozenset({
+    (_LAKE_IL, "BARRINGTON"),       # ring HV ~$424k, HHI ~$145k
+    (_LAKE_IL, "LAKE BARRINGTON"),  # ring HV ~$370k, HHI ~$135k
+})
+
+
+def hv_exempt_sql(jid_expr: str = "p.jurisdiction_id", city_expr: str = "p.city") -> str:
+    """SQL boolean: the parcel sits in a home-value-exempt town. No bind params (safe
+    inside SQLAlchemy text() and asyncpg alike)."""
+    pairs = " OR ".join(
+        f"({jid_expr} = CAST('{j}' AS uuid) AND {city_expr} = '{c}')"
+        for j, c in sorted(HV_EXEMPT_TOWNS)
+    )
+    return f"({pairs})"
+
+
 # Drive-times consulted by the rule. dt=15 participates only in the
 # HHI-everywhere condition (b).
 _RULE_DTS = (2, 5, 10, 15)
