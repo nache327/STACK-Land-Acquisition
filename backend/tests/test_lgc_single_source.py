@@ -54,13 +54,11 @@ def _lgc_rule(ss: str | None, mw: str | None, li: str | None,
     """
     if ss is None and mw is None and li is None:
         return None                                    # ungrounded, not prohibited
-    if ss == "prohibited" and human_reviewed and li != "permitted":
-        return "prohibited"                            # QC veto (Brink Rd)
-    # Storage OR light industrial by right => garage condo by right (Nache 2026-10-14).
-    if ss == "permitted" or mw == "permitted" or li == "permitted":
+    # Nache 2026-10-15: storage / mini-warehouse / light industrial allowed by right OR by
+    # special use => garage condo by right. No QC veto, no conditional tier.
+    allowed = ("permitted", "conditional")
+    if ss in allowed or mw in allowed or li in allowed:
         return "permitted"
-    if ss == "conditional" or mw == "conditional" or li == "conditional":
-        return "conditional"
     if "unclear" in (ss, mw, li):
         return "unclear"
     return "prohibited"
@@ -154,46 +152,46 @@ def _eval_clause(clause, row: dict) -> bool:
             return left != right
         if op == "isnot_distinct_from":
             return left == right
+        if op == "in_op":
+            vals = clause.right.value if hasattr(clause.right, "value") else None
+            if vals is None:  # expanding bindparam / tuple of literals
+                elems = getattr(clause.right, "element", clause.right)
+                vals = [getattr(e, "value", e) for e in getattr(elems, "clauses", [])]
+            return left in vals
         raise AssertionError(f"unhandled operator {op!r} — extend the evaluator")
     raise AssertionError(f"unhandled clause {type(clause).__name__}")
 
 
 def test_needle_metric_is_generated_not_copied() -> None:
-    """The needle predicate must be BUILT from the shared function, veto included."""
+    """The needle predicate must be BUILT from the shared function (no private copy)."""
     from precompute_needles import _LGC_VIABLE
 
-    assert "IS DISTINCT FROM 'permitted'" in _LGC_VIABLE, (
-        "the QC veto is missing from the needle predicate — this is exactly the drift "
-        "that produced 6,702 phantom Montgomery MD needles")
-    assert "v.ss" in _LGC_VIABLE and "v.hr" in _LGC_VIABLE
-    # human_reviewed must be the real column, not a hardcoded literal that only happens
-    # to agree because of how the LATERAL is written today.
-    assert "'true'" not in _LGC_VIABLE and " true " not in _LGC_VIABLE
+    assert _LGC_VIABLE.startswith("((") and "v.ss" in _LGC_VIABLE and "v.li" in _LGC_VIABLE
+    assert "WHEN v.ss IN ('permitted', 'conditional')" in _LGC_VIABLE.replace(
+        "'permitted','conditional'", "'permitted', 'conditional'")
 
 
-def test_needle_lateral_still_filters_human_reviewed() -> None:
-    """Pins the property the metric's correctness used to rest on IMPLICITLY.
+def test_storage_needles_stay_human_reviewed_lgc_does_not() -> None:
+    """Nache 2026-10-15: LGC needles count machine-parsed zones; storage stays human-only.
+    The LATERAL prefers a human row so storage picks exactly the row it used to."""
+    from precompute_needles import _LATERAL, _STORAGE_VIABLE
 
-    Even though the veto now receives the real human_reviewed column, the LATERAL's
-    filter is load-bearing for the rest of the needle definition (an un-reviewed matrix
-    row must not ground a needle at all). Assert it rather than assume it.
-    """
-    from precompute_needles import _LATERAL
-
-    assert re.search(r"AND\s+m\.human_reviewed", _LATERAL), (
-        "the needle LATERAL no longer restricts to human-reviewed matrix rows")
-    assert "human_reviewed AS hr" in _LATERAL or "m.human_reviewed AS hr" in _LATERAL
+    assert "v.hr" in _STORAGE_VIABLE
+    assert not re.search(r"AND\s+m\.human_reviewed\s*$", _LATERAL, re.M), (
+        "the LATERAL must not hard-filter human_reviewed any more (LGC counts unreviewed)")
+    assert re.search(r"ORDER BY m\.human_reviewed DESC", _LATERAL)
+    assert "human_reviewed AS hr" in _LATERAL
 
 
-def test_board_expression_still_carries_the_veto() -> None:
+def test_veto_is_retired_and_special_use_is_by_right() -> None:
     expr = verdict_expr(LGC_SLUG)
-    assert "IS DISTINCT FROM 'permitted'" in expr
-    assert "zum.human_reviewed" in expr
+    assert "IS DISTINCT FROM 'permitted'" not in expr
+    assert "'conditional'" in expr and "THEN 'conditional'" not in expr
 
 
 def test_shared_builder_renders_over_arbitrary_aliases() -> None:
     """The whole point of the refactor: one implementation, many renderings."""
     out = lgc_verdict_sql("a.x", "a.y", "a.z", "a.hr")
-    for tok in ("a.x", "a.y", "a.z", "a.hr"):
+    for tok in ("a.x", "a.y", "a.z"):
         assert tok in out
     assert "zum." not in out

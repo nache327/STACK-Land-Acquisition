@@ -36,12 +36,9 @@ DB_SYNC = get_sync_dsn()
 
 def infer_luxury_garage(ss: str, mw: str, li: str) -> str:
     """Mirror of apply_luxury_garage_inference() for direct SQL backfill."""
-    if mw == "permitted" or ss == "permitted":
+    allowed = ("permitted", "conditional")  # Nache 2026-10-15: any allowed sibling => by right
+    if ss in allowed or mw in allowed or li in allowed:
         return "permitted"
-    if mw == "conditional" or ss == "conditional":
-        return "conditional"
-    if li in ("permitted", "conditional"):
-        return "conditional"
     return "prohibited"
 
 
