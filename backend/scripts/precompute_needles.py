@@ -10,9 +10,10 @@ Computes BOTH assets:
   - lgc_incremental : LGC-viable AND storage-NOT-viable (the hidden pool)
   - storage_deals / lgc_deals : current CoStar listings sitting on a needle parcel
 
-Wealth gate (shared): acres>=1.5, dt10 ring median_home_value>=475k &
+Wealth gate: storage = acres>=1.5, dt10 ring median_home_value>=475k &
 median_hhi>=100k, human_reviewed matrix row (muni-aware LATERAL, town wins over
-county default). Mirrors verify_batch + the 2026-07-17 audit query; the LGC
+county default). LGC = acres>=1.5 AND keep_lane in (edge_of_wealth, core) when the
+parcel is keep-measured (parcel_keep_metrics), else the same ring gate. Mirrors verify_batch + the 2026-07-17 audit query; the LGC
 derivation matches services/use_verdicts.
 
 The refresh is DELETE-all + INSERT inside one transaction, so a jurisdiction
@@ -33,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import asyncpg  # noqa: E402
 
 from _db import get_sync_dsn  # noqa: E402
+from app.services.keep_market import NEEDLE_LANES  # noqa: E402
 from app.services.wealth_gate import hv_exempt_sql  # noqa: E402
 
 from app.services.use_verdicts import (  # noqa: E402
@@ -81,29 +83,51 @@ _LATERAL = """
 _WEALTH = ("p.acres >= 1.5 AND (prm.median_home_value >= 475000 "
            f"OR {hv_exempt_sql()}) AND prm.median_hhi >= 100000")
 
+# LGC needle gate (keep-market Phase B, 2026-10 calibration): garage-condo price and
+# sell-out speed track wealth DEPTH (share of $1M+ homes within 20 min, drive time to the
+# nearest $1M+ cluster), not the dt=10 ring median. A parcel MEASURED by
+# precompute_keep_metrics (parcel_keep_metrics.keep_lane non-NULL) is a needle iff its
+# lane is edge_of_wealth or core; an unmeasured parcel (no row, or NULL lane = an input
+# was unmeasured) keeps the legacy _WEALTH gate, so nothing regresses before the
+# backfill. Storage needles never read pkm — they stay on _WEALTH exactly as before.
+_KEEP_NEEDLE_LANES = "(" + ",".join(f"'{lane}'" for lane in NEEDLE_LANES) + ")"
+_LGC_GATE = (f"p.acres >= 1.5 AND CASE WHEN pkm.keep_lane IS NOT NULL "
+             f"THEN pkm.keep_lane IN {_KEEP_NEEDLE_LANES} ELSE ({_WEALTH}) END")
+# A storage needle, as a predicate (identical to the historical WHERE + FILTER pair).
+_STORAGE_NEEDLE = f"{_STORAGE_VIABLE} AND {_WEALTH}"
+
+# prm is a LEFT JOIN now: a keep-measured LGC parcel can be a needle without a dt=10 ring
+# row. Storage is unaffected — its FILTER carries the full _WEALTH predicate, which is
+# NULL (not counted) when prm is missing, exactly as the old inner join excluded it.
+# lgc_incremental = LGC needle AND NOT storage needle; (_WEALTH) IS TRUE keeps a NULL
+# ring from turning the NOT into NULL for a keep-path parcel.
 _NEEDLES_SQL = f"""
 SELECT j.id AS jid, j.name AS name, j.state AS state,
-       count(*) FILTER (WHERE {_STORAGE_VIABLE})                       AS storage_needles,
-       count(*) FILTER (WHERE {_LGC_VIABLE})                           AS lgc_needles,
-       count(*) FILTER (WHERE {_LGC_VIABLE} AND NOT ({_STORAGE_VIABLE})) AS lgc_incremental
+       count(*) FILTER (WHERE {_STORAGE_NEEDLE})                       AS storage_needles,
+       count(*) FILTER (WHERE {_LGC_VIABLE} AND {_LGC_GATE})           AS lgc_needles,
+       count(*) FILTER (WHERE {_LGC_VIABLE} AND {_LGC_GATE}
+                          AND NOT ({_STORAGE_VIABLE} AND ({_WEALTH}) IS TRUE)) AS lgc_incremental
   FROM parcels p
-  JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+  LEFT JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+  LEFT JOIN parcel_keep_metrics pkm ON pkm.parcel_id = p.id
   {_LATERAL}
   JOIN jurisdictions j ON j.id = p.jurisdiction_id
- WHERE {_WEALTH}
+ WHERE p.acres >= 1.5 AND (({_WEALTH}) OR pkm.keep_lane IN {_KEEP_NEEDLE_LANES})
  GROUP BY j.id, j.name, j.state
-HAVING count(*) FILTER (WHERE {_LGC_VIABLE}) > 0
+HAVING count(*) FILTER (WHERE {_LGC_VIABLE} AND {_LGC_GATE}) > 0
 """
 
 _DEALS_SQL = f"""
 SELECT p.jurisdiction_id AS jid,
-       count(*) FILTER (WHERE {_STORAGE_VIABLE}) AS storage_deals,
-       count(*) FILTER (WHERE {_LGC_VIABLE})     AS lgc_deals
+       count(*) FILTER (WHERE {_STORAGE_NEEDLE})               AS storage_deals,
+       count(*) FILTER (WHERE {_LGC_VIABLE} AND {_LGC_GATE})   AS lgc_deals
   FROM forsale_listings f
   JOIN parcels p ON p.id = f.matched_parcel_id
-  JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+  LEFT JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+  LEFT JOIN parcel_keep_metrics pkm ON pkm.parcel_id = p.id
   {_LATERAL}
- WHERE f.is_current = true AND f.match_confidence >= 0.85 AND {_WEALTH}
+ WHERE f.is_current = true AND f.match_confidence >= 0.85
+   AND p.acres >= 1.5 AND (({_WEALTH}) OR pkm.keep_lane IN {_KEEP_NEEDLE_LANES})
  GROUP BY p.jurisdiction_id
 """
 

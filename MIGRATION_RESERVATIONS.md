@@ -18,6 +18,7 @@ it: **claim the number here before authoring the alembic file.**
 | # | Reserved by (branch) | Description | Claimed (UTC) | Notes |
 |---|---|---|---|---|
 | 0038 | adarench/nearest-district-fallback | parcels.zone_binding_method varchar + index for Op-5 spatial_backfill nearest-fallback | 2026-06-04T18:00 | Dispatch J |
+| 0058 | feat/keep-market-phase-b | parcel_keep_metrics (LGC keep-market depth: lane / price band / velocity) | 2026-10-15T18:30 | Phase B |
 | (open) | | | | next available number for new claims |
 
 ## Rules

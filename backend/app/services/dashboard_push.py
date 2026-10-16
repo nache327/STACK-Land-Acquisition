@@ -91,6 +91,15 @@ _FACT_COLUMNS = [
     "ring_median_home_value", "ring_median_hhi", "ring_hnw_households",
     "pop_3mi", "sqft_per_capita_3mi",
 ]
+# Keep-market columns (garage-condo lane, Phase B): lane / supported $/SF band /
+# velocity flag from ParcelLogic's parcel_keep_metrics. They are NEW nullable columns
+# on the dashboard's deal_prospect, added by a dashboard-repo migration that may land
+# after this code deploys — so they are NOT in _FACT_COLUMNS. run_push detects which of
+# them exist on the board once per run (information_schema) and only then includes
+# them, so the push never fails on a board that hasn't migrated yet.
+_KEEP_COLUMNS = ["keep_lane", "keep_price_low", "keep_price_high", "keep_velocity_flag"]
+# Board asset types that carry keep data (a storage-only card gets NULLs).
+_KEEP_ASSET_TYPES = ("luxury_garage_condo", "both")
 _JSONB_COLUMNS = {"factors", "soft_flags"}
 # NUMERIC target columns — cast the bind to float8 so asyncpg encodes a Python
 # float (it demands Decimal for a bare numeric param); PG coerces float8→numeric.
@@ -240,21 +249,71 @@ def _row_for(p: DigestParcel, sup: dict, asset_type: str) -> dict:
     }
 
 
-def _upsert_sql() -> str:
+def _upsert_sql(columns: list[str] | None = None) -> str:
+    cols = list(columns) if columns is not None else _FACT_COLUMNS
     placeholders = []
-    for i, c in enumerate(_FACT_COLUMNS, start=1):
+    for i, c in enumerate(cols, start=1):
         ph = f"${i}"
         if c in _JSONB_COLUMNS:
             ph += "::jsonb"
         elif c in _FLOAT_COLUMNS:
             ph += "::float8"
         placeholders.append(ph)
-    set_clause = ", ".join(f"{c}=EXCLUDED.{c}" for c in _FACT_COLUMNS if c != "parcel_id")
+    set_clause = ", ".join(f"{c}=EXCLUDED.{c}" for c in cols if c != "parcel_id")
     return (
-        f"INSERT INTO deal_prospect ({', '.join(_FACT_COLUMNS)}, last_synced_at) "
+        f"INSERT INTO deal_prospect ({', '.join(cols)}, last_synced_at) "
         f"VALUES ({', '.join(placeholders)}, now()) "
         f"ON CONFLICT (parcel_id) DO UPDATE SET {set_clause}, last_synced_at = now()"
     )
+
+
+async def _board_keep_columns(dashboard_conn) -> list[str]:
+    """Which _KEEP_COLUMNS exist on the board's deal_prospect (in _KEEP_COLUMNS order).
+
+    Detected once per run so the push degrades to the pre-keep column set on a board
+    whose migration hasn't landed, instead of failing the whole sync."""
+    rows = await dashboard_conn.fetch(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name = 'deal_prospect' AND table_schema = current_schema() "
+        "AND column_name = ANY($1::text[])",
+        _KEEP_COLUMNS,
+    )
+    present = {r["column_name"] for r in rows}
+    return [c for c in _KEEP_COLUMNS if c in present]
+
+
+async def _keep_metrics(parcel_ids: list[int]) -> dict[int, dict]:
+    """parcel_keep_metrics for the given parcels, keyed by parcel_id, mapped onto the
+    board's keep_* column names. Separate (best-effort at the call site) so the
+    digest's own selection SQL stays untouched."""
+    if not parcel_ids:
+        return {}
+    conn = await asyncpg.connect(_pl_dsn())
+    try:
+        rows = await conn.fetch(
+            "SELECT parcel_id, keep_lane, price_band_low, price_band_high, velocity_flag "
+            "FROM parcel_keep_metrics WHERE parcel_id = ANY($1::bigint[])",
+            parcel_ids,
+        )
+    finally:
+        await conn.close()
+    return {
+        r["parcel_id"]: {
+            "keep_lane": r["keep_lane"],
+            "keep_price_low": r["price_band_low"],
+            "keep_price_high": r["price_band_high"],
+            "keep_velocity_flag": r["velocity_flag"],
+        }
+        for r in rows
+    }
+
+
+def _apply_keep(row: dict, keep: dict | None) -> None:
+    """Attach the keep_* fields: garage-condo / 'both' cards only, NULL otherwise
+    (NULL = unmeasured / not applicable, never a value)."""
+    use = row.get("asset_type") in _KEEP_ASSET_TYPES and keep
+    for c in _KEEP_COLUMNS:
+        row[c] = keep.get(c) if use else None
 
 
 def _dashboard_dsn() -> str | None:
@@ -479,7 +538,18 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     for r in rows:
         _promote_lgc_verdict(r, lgc_verdicts.get(r["parcel_id"]))
 
-    sql = _upsert_sql()
+    # Keep-market facts for garage-condo cards. Best-effort: a missing table (migration
+    # lag) or a read failure pushes the cards without them rather than failing the sync.
+    try:
+        keep = await _keep_metrics(
+            [r["parcel_id"] for r in rows if r.get("asset_type") in _KEEP_ASSET_TYPES]
+        )
+    except Exception:
+        logger.exception("dashboard_push: keep-metrics read failed; pushing without them")
+        keep = {}
+    for r in rows:
+        _apply_keep(r, keep.get(r["parcel_id"]))
+
     conn = await asyncpg.connect(dsn, ssl="require")
     dispositions = 0
     delisted = 0
@@ -501,10 +571,18 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             logger.exception("dashboard_push: closed-deal lookup failed; push unaffected")
             closed = set()
         rows = [r for r in rows if r["parcel_id"] not in closed]
+        # Include the keep_* columns only where the board has them (see _KEEP_COLUMNS).
+        try:
+            keep_cols = await _board_keep_columns(conn)
+        except Exception:
+            logger.exception("dashboard_push: keep-column detection failed; pushing without them")
+            keep_cols = []
+        columns = _FACT_COLUMNS + keep_cols
+        sql = _upsert_sql(columns)
         if rows:
             async with conn.transaction():
                 for r in rows:
-                    await conn.execute(sql, *[r[c] for c in _FACT_COLUMNS])
+                    await conn.execute(sql, *[r.get(c) for c in columns])
         if synced_back:
             try:
                 purged = await _purge_closed(conn, closed)

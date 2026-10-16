@@ -94,10 +94,14 @@ from app.services.ring_metrics_precompute import (  # noqa: E402
 # this predicate is precisely the drift that made "Actionable" mean two different
 # things on the board (audit A-4.7).
 from precompute_needles import (  # noqa: E402
+    _KEEP_NEEDLE_LANES,
     _LATERAL,
+    _LGC_GATE,
     _LGC_VIABLE,
     _NEEDLES_SQL,
+    _STORAGE_NEEDLE,
     _STORAGE_VIABLE,
+    _WEALTH,
 )
 
 # The 2026-07-28 accepted baseline (see memory: the older 10,709/16,816 figure was
@@ -362,17 +366,20 @@ async def _needles_for_jid(db, jid) -> tuple[int, int]:
     only the scope differs. The full scan is still run periodically to reconcile the
     incrementally-maintained global total -- see _RECONCILE_EVERY.
     """
+    # Same storage-needle / LGC-gate constants as _NEEDLES_SQL (the LGC gate reads
+    # parcel_keep_metrics since keep-market Phase B), so the per-jid tally and the
+    # full-scan reconciliation count the same thing.
     r = (await db.execute(text(f"""
-        SELECT count(*) FILTER (WHERE {_STORAGE_VIABLE}) AS storage,
-               count(*) FILTER (WHERE {_LGC_VIABLE})     AS lgc
+        SELECT count(*) FILTER (WHERE {_STORAGE_NEEDLE})             AS storage,
+               count(*) FILTER (WHERE {_LGC_VIABLE} AND {_LGC_GATE}) AS lgc
           FROM parcels p
-          JOIN parcel_ring_metrics prm
+          LEFT JOIN parcel_ring_metrics prm
             ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+          LEFT JOIN parcel_keep_metrics pkm ON pkm.parcel_id = p.id
           {_LATERAL}
          WHERE p.jurisdiction_id = :j
            AND p.acres >= 1.5
-           AND prm.median_home_value >= 475000
-           AND prm.median_hhi >= 100000
+           AND (({_WEALTH}) OR pkm.keep_lane IN {_KEEP_NEEDLE_LANES})
     """), {"j": str(jid)})).mappings().first()
     return int(r["storage"]), int(r["lgc"])
 

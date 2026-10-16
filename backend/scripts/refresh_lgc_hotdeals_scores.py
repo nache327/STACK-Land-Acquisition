@@ -37,7 +37,9 @@ SELECT p.id AS parcel_id, {verdict_expr(LGC_SLUG)} AS storage_permission,
        prm.homes_over_1m, prm.homes_over_2m, prm.homes_over_5m,
        prm.hnw_households,
        prm3.population AS pop_3mi, prm3.sqft_per_capita AS sqft_per_capita_3mi,
-       lst.source AS listing_source, lst.sale_price AS listing_sale_price, lst.days_on_market AS listing_dom
+       lst.source AS listing_source, lst.sale_price AS listing_sale_price, lst.days_on_market AS listing_dom,
+       pkm.owner_1m_share_20 AS owner_1m_share_20,
+       pkm.wealth_center_drive_min AS wealth_center_drive_min
 FROM parcels p
 LEFT JOIN LATERAL (SELECT self_storage, mini_warehouse, light_industrial,
        classification_source::text AS classification_source, confidence, human_reviewed
@@ -49,6 +51,7 @@ LEFT JOIN parcel_radial_metrics prm3 ON prm3.parcel_id=p.id AND prm3.radius_mile
 LEFT JOIN LATERAL (SELECT source, sale_price, days_on_market FROM forsale_listings
    WHERE matched_parcel_id=p.id AND is_current=true AND match_confidence>=0.85
    ORDER BY last_seen_at DESC LIMIT 1) lst ON true
+LEFT JOIN parcel_keep_metrics pkm ON pkm.parcel_id=p.id
 WHERE p.id = ANY($1::bigint[])
 """
 
@@ -84,6 +87,15 @@ def _inputs(r) -> ParcelInputs:
         confidence=(float(r["verdict_confidence"]) if r["verdict_confidence"] is not None else None),
         human_reviewed=bool(r["human_reviewed"]), verdict_matched=r["storage_permission"] is not None,
         overlay_ss=_has_ss_overlay(r["overlay_tags"]),
+        # Keep-market depth (Phase B) — replaces HNW depth when present; omitting it
+        # here would overwrite score_jurisdiction's Wealth-depth score with an HNW one.
+        owner_1m_share_20=(
+            float(r["owner_1m_share_20"]) if r["owner_1m_share_20"] is not None else None
+        ),
+        wealth_center_drive_min=(
+            float(r["wealth_center_drive_min"])
+            if r["wealth_center_drive_min"] is not None else None
+        ),
     )
 
 

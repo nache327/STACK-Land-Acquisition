@@ -28,6 +28,7 @@ import asyncpg
 
 from app.config import settings
 from app.models.zone_use_matrix import UsePermission
+from app.services import keep_market
 from app.services.use_verdicts import LGC_SLUG, SELF_STORAGE_SLUG, verdict_expr
 
 logger = logging.getLogger(__name__)
@@ -157,6 +158,11 @@ class ParcelInputs:
     # base district prohibits it (e.g. Billerica § 11.6), so it upgrades the
     # effective storage verdict to 'conditional'. Never downgrades.
     overlay_ss: bool = False
+    # Keep-market depth (parcel_keep_metrics, LGC lane only — see services/keep_market).
+    # None = no keep row yet: the LGC lane falls back to the legacy HNW-depth factor, so
+    # nothing regresses before the backfill. Never read on the storage lane.
+    owner_1m_share_20: float | None = None
+    wealth_center_drive_min: float | None = None
 
 
 @dataclass
@@ -331,10 +337,32 @@ def score_for_parcel(
                 })
 
     # ── Lane-aware demand factors ────────────────────────────────────────
-    # LGC lane: HNW-household depth is the demand driver (homes_over_* are NULL
-    # everywhere, so we use hnw_households which IS populated). Bonus-only —
-    # HNW coverage is good but not universal, so absence never penalizes.
-    if p.lane == LGC_SLUG and p.hnw_households is not None:
+    # LGC lane, keep-market measured (Phase B, 2026-10 calibration): price + sell-out
+    # speed track WEALTH DEPTH — the share of $1M+ owner homes within a 20-min drive —
+    # and distance to the nearest $1M+ cluster, not the ring median/HNW count. When the
+    # parcel has a parcel_keep_metrics row, "Wealth depth" REPLACES "HNW depth".
+    keep_wealth = (
+        keep_market.wealth_depth_delta(p.owner_1m_share_20) if p.lane == LGC_SLUG else None
+    )
+    if keep_wealth is not None:
+        factors.append({
+            "label": "Wealth depth",
+            "delta": keep_wealth,
+            "reason": f"{p.owner_1m_share_20 * 100:.1f}% of homes $1M+ within 20 min",
+        })
+    if p.lane == LGC_SLUG:
+        far = keep_market.far_from_wealth_delta(p.wealth_center_drive_min)
+        if far:
+            factors.append({
+                "label": "Far from wealth",
+                "delta": far,
+                "reason": f"{p.wealth_center_drive_min:.0f} min to nearest $1M+ area",
+            })
+
+    # LGC lane fallback (no keep row yet): HNW-household depth is the demand driver
+    # (homes_over_* are NULL everywhere, so we use hnw_households which IS populated).
+    # Bonus-only — HNW coverage is good but not universal, so absence never penalizes.
+    if p.lane == LGC_SLUG and keep_wealth is None and p.hnw_households is not None:
         span = LGC_HNW_FULL - LGC_HNW_FLOOR
         frac = max(min((p.hnw_households - LGC_HNW_FLOOR) / span, 1.0), 0.0)
         delta = round(frac * LGC_HNW_MAX_BONUS, 1)
@@ -472,7 +500,16 @@ def _has_ss_overlay(overlay_tags: object) -> bool:
 # selects all three sibling columns — the extra two are only read by the LGC
 # expression, so the self_storage output is unchanged. `{verdict_sql}` is filled
 # ONLY from the code-owned use_verdicts registry, never from user input.
-def _select_parcels_sql(verdict_sql: str) -> str:
+def _select_parcels_sql(verdict_sql: str, lane: str | None = None) -> str:
+    # The LGC lane additionally LEFT JOINs parcel_keep_metrics (keep-market depth).
+    # Storage renders the historical query byte-for-byte — it never touches the table.
+    keep_cols, keep_join = "", ""
+    if lane == LGC_SLUG:
+        keep_cols = (
+            "\n    pkm.owner_1m_share_20 AS owner_1m_share_20,"
+            "\n    pkm.wealth_center_drive_min AS wealth_center_drive_min,"
+        )
+        keep_join = "\nLEFT JOIN parcel_keep_metrics pkm\n    ON pkm.parcel_id = p.id"
     return f"""
 SELECT
     p.id                AS parcel_id,
@@ -485,7 +522,7 @@ SELECT
     p.in_flood_zone,
     p.in_wetland,
     p.has_structure,
-    p.overlay_tags     AS overlay_tags,
+    p.overlay_tags     AS overlay_tags,{keep_cols}
     prm.homes_over_1m,
     prm.homes_over_2m,
     prm.homes_over_5m,
@@ -527,7 +564,7 @@ LEFT JOIN LATERAL (
        AND match_confidence >= 0.85
      ORDER BY last_seen_at DESC
      LIMIT 1
-) lst ON true
+) lst ON true{keep_join}
 WHERE p.jurisdiction_id = $1::uuid
 """
 
@@ -678,7 +715,7 @@ async def score_jurisdiction(
             buybox_filter_id,
         )
         asset_label = "Garage" if slug == LGC_SLUG else "Storage"
-        select_sql = _select_parcels_sql(verdict_expr(slug))
+        select_sql = _select_parcels_sql(verdict_expr(slug), slug)
         rows = await conn.fetch(select_sql, jurisdiction_id, drive_time)
         logger.info(
             "Scoring %d parcels for jurisdiction %s under filter %s (ring=%d min)",
@@ -720,6 +757,15 @@ async def score_jurisdiction(
                 # LEFT LATERAL miss => storage_permission AND source both NULL
                 verdict_matched=r["storage_permission"] is not None,
                 overlay_ss=_has_ss_overlay(r["overlay_tags"]),
+                owner_1m_share_20=(
+                    float(r["owner_1m_share_20"])
+                    if slug == LGC_SLUG and r["owner_1m_share_20"] is not None else None
+                ),
+                wealth_center_drive_min=(
+                    float(r["wealth_center_drive_min"])
+                    if slug == LGC_SLUG and r["wealth_center_drive_min"] is not None
+                    else None
+                ),
             )
             s = score_for_parcel(inputs, filter_json, asset_label=asset_label)
             scored.append((
