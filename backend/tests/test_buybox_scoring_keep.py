@@ -52,7 +52,7 @@ def test_far_from_wealth_penalty():
                                  wealth_center_drive_min=57.4))
     f = _factor(s, "Far from wealth")
     assert f == {"label": "Far from wealth", "delta": -10.0,
-                 "reason": "57 min to nearest $1M+ area"}
+                 "reason": "57 min to nearest wealthy ($700K+) area"}
 
 
 def test_no_keep_row_falls_back_to_hnw_unchanged():

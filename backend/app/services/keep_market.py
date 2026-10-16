@@ -10,7 +10,7 @@ near the site, not the ring MEDIAN home value the LGC lane used to borrow from s
 
   * share of owner-occupied homes worth $1M+ within a 20-minute drive (ACS B25075)
     — rank correlation +0.56 with the ratio, the strongest signal;
-  * drive time to the nearest $1M+ neighbourhood cluster — −0.45, and the only signal
+  * drive time to the nearest wealthy ($700K+ median; was $1M+ in the calibration) neighbourhood cluster — −0.45, and the only signal
     that also separated SPEED (the Texas Garages-of-America test: the campus 64 min
     from its wealth center was the one still 57/99 unsold after ~3 years);
   * today's median-home-value gate — +0.28, weak, and it FAILED campuses that sold out.
@@ -60,7 +60,7 @@ VELOCITY_FAR_FROM_WEALTH = "far_from_wealth"
 # ── Thresholds (from the calibration memo) ────────────────────────────────────
 EDGE_OWNER_1M_SHARE_MIN = 0.03     # 3% of owner homes $1M+ within 20 min
 CORE_OWNER_1M_SHARE_MIN = 0.015    # 1.5%
-WEALTH_CENTER_DRIVE_MAX_MIN = 40.0  # minutes to the nearest $1M+ cluster
+WEALTH_CENTER_DRIVE_MAX_MIN = 40.0  # minutes to the nearest $700K+ cluster
 FAR_FROM_WEALTH_MIN = 55.0          # velocity warning beyond this drive time
 
 # Supported $/SF ÷ county typical home $/SF, per lane.
@@ -88,10 +88,10 @@ def classify_lane(
     """Return the keep lane, or None when either input is unmeasured (never guess).
 
     ``center_is_cluster=False`` means the nearest "wealth center" is the calibration's
-    FALLBACK (a single $750K+ tract, used where no cluster of >= 3 contiguous $1M+ tracts
+    FALLBACK (a single $600K+ tract, used where no cluster of >= 3 contiguous $700K+ tracts
     lies within 60 km). The calibration treated those rows as not comparable, and in the
     mountain West the fallback made every Lehi UT parcel read edge-of-wealth (2026-10-15).
-    So a fallback-measured site can be at most CORE — edge requires a real $1M+ cluster.
+    So a fallback-measured site can be at most CORE — edge requires a real wealth cluster.
     """
     if owner_1m_share_20 is None or wealth_center_drive_min is None:
         return None
@@ -156,7 +156,7 @@ def wealth_depth_delta(owner_1m_share_20: float | None) -> float | None:
 
 
 def far_from_wealth_delta(wealth_center_drive_min: float | None) -> float:
-    """−10 when the nearest $1M+ area is more than 55 min away; else 0."""
+    """−10 when the nearest wealthy ($700K+) area is more than 55 min away; else 0."""
     if wealth_center_drive_min is not None and wealth_center_drive_min > FAR_FROM_WEALTH_MIN:
         return FAR_FROM_WEALTH_PENALTY
     return 0.0

@@ -10,7 +10,7 @@ numbers are computed EXACTLY the way the thresholds in ``keep_market`` were cali
     intersection_area / tract_area (pools.py ``shares``), summing ACS 2022 5-yr counts.
   * Wealth centers: clusters of >= 3 contiguous tracts (1 m buffer touch) each with
     median home value (B25077) >= $1M nationwide; population-weighted centroid.
-    Fallback when no cluster lies within 60 km: the nearest single tract >= $750K
+    Fallback when no cluster lies within 60 km: the nearest single tract >= $600K
     (labelled FALLBACK). Drive time = Mapbox Matrix (driving) to the nearest-by-km
     candidate, as wealth_center.py reported it.
   * County home $/SF: Zillow ZHVI county series, latest FULL calendar year mean ÷ 1,800.
@@ -58,8 +58,10 @@ ACS_VARS: tuple[str, ...] = (
 )
 OWNER_1M_VARS: tuple[str, ...] = ("B25075_025E", "B25075_026E", "B25075_027E")
 
-WEALTH_TRACT_HV = 1_000_000
-WEALTH_FALLBACK_HV = 750_000
+# Nache 2026-10-16: err optimistic — $700-900K neighbourhoods are places we want to build
+# near, so a wealth center is a cluster of $700K+ tracts (calibration used $1M+).
+WEALTH_TRACT_HV = 700_000
+WEALTH_FALLBACK_HV = 600_000
 WEALTH_CLUSTER_MIN_TRACTS = 3
 WEALTH_CLUSTER_RADIUS_KM = 60.0
 WEALTH_CANDIDATES = 5          # nearest-by-km candidates sent to the Matrix API
@@ -303,7 +305,7 @@ def _center_rows(df, key: str, kind: str) -> list[WealthCenter]:
 
 
 def build_wealth_centers(tracts, acs) -> list[WealthCenter]:
-    """Clusters of >= 3 contiguous $1M+ tracts, plus single $750K+ tracts (fallback)."""
+    """Clusters of >= 3 contiguous $700K+ tracts, plus single $600K+ tracts (fallback)."""
     import geopandas as gpd
 
     t = tracts.join(acs[["B25077_001E", "B01003_001E", "B25075_001E"]], on="GEOID")
