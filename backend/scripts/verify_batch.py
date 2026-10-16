@@ -149,23 +149,35 @@ async def main() -> int:
         print(f"  TOTAL on-needle: {on_total}")
 
         # 3b. GARAGE-CONDO (LGC) needles + on-needle deals — additive; the storage tallies
-        # above are untouched. Uses the needle metric's own predicate/LATERAL so this can't
-        # drift from needle_snapshot (LGC counts machine-parsed zones since 2026-10-15).
-        from precompute_needles import _LATERAL as _LGC_LAT, _LGC_VIABLE as _LGC_OK
+        # above are untouched. Uses the needle metric's own predicate/LATERAL/gate so this
+        # can't drift from needle_snapshot (LGC counts machine-parsed zones since
+        # 2026-10-15). Gate (keep-market Phase B): keep_lane in (edge_of_wealth, core) when
+        # the parcel is keep-measured (parcel_keep_metrics), else the dt=10 ring gate.
+        from precompute_needles import (
+            _KEEP_NEEDLE_LANES, _LATERAL as _LGC_LAT, _LGC_GATE, _LGC_VIABLE as _LGC_OK,
+        )
         lgc = await conn.fetchrow(
-            f"""SELECT count(*) FILTER (WHERE {_LGC_OK}) AS needles,
-                       count(*) FILTER (WHERE {_LGC_OK} AND EXISTS (
+            f"""SELECT count(*) FILTER (WHERE {_LGC_OK} AND {_LGC_GATE}) AS needles,
+                       count(*) FILTER (WHERE {_LGC_OK} AND {_LGC_GATE} AND EXISTS (
                            SELECT 1 FROM forsale_listings f WHERE f.matched_parcel_id = p.id
-                              AND f.is_current = true AND f.match_confidence >= 0.85)) AS deals
+                              AND f.is_current = true AND f.match_confidence >= 0.85)) AS deals,
+                       count(*) FILTER (WHERE {_LGC_OK} AND {_LGC_GATE}
+                                          AND pkm.keep_lane IS NOT NULL) AS keep_measured,
+                       count(*) FILTER (WHERE {_LGC_OK} AND {_LGC_GATE}
+                                          AND pkm.keep_lane = 'edge_of_wealth') AS edge
                   FROM parcels p
-                  JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+                  LEFT JOIN parcel_ring_metrics prm ON prm.parcel_id = p.id AND prm.drive_time_minutes = 10
+                  LEFT JOIN parcel_keep_metrics pkm ON pkm.parcel_id = p.id
                   {_LGC_LAT}
                  WHERE p.jurisdiction_id = $1::uuid AND p.acres >= 1.5
-                   AND (prm.median_home_value >= 475000 OR {HV_EXEMPT}) AND prm.median_hhi >= 100000""",
+                   AND (((prm.median_home_value >= 475000 OR {HV_EXEMPT}) AND prm.median_hhi >= 100000)
+                        OR pkm.keep_lane IN {_KEEP_NEEDLE_LANES})""",
             jid,
         )
         print("\n--- 3b. GARAGE-CONDO (LGC) NEEDLES ---")
         print(f"  LGC needles: {lgc['needles']}  |  LGC on-needle deals: {lgc['deals']}")
+        print(f"  (keep-lane gated: {lgc['keep_measured']}, of which edge_of_wealth: "
+              f"{lgc['edge']}; the rest use the legacy dt=10 ring gate)")
 
         # 4. POST-INGEST GATE
         print("\n--- 4. POST-INGEST GATE ---")
