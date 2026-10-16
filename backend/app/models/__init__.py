@@ -20,3 +20,4 @@ from app.models.coverage_snapshot import CoverageSnapshot  # noqa: F401
 from app.models.zoning_source import ZoningSource  # noqa: F401
 from app.models.forsale_listing import ForsaleListing  # noqa: F401
 from app.models.notified_listing import NotifiedListing  # noqa: F401
+from app.models.parcel_keep_metric import ParcelKeepMetric  # noqa: F401
