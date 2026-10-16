@@ -97,3 +97,12 @@ def test_docstring_carries_product_assumption_and_memo():
     doc = km.__doc__ or ""
     assert "KEEP_MARKET_CALIBRATION_2026-10" in doc
     assert "FINISHED CLUBHOUSE" in doc and "Toy Barn" in doc
+
+
+def test_fallback_wealth_center_caps_lane_at_core():
+    """Lehi UT 2026-10-15: no $1M+ cluster within 60 km -> single-tract fallback center.
+    A fallback-measured site may be core at most, never edge of wealth."""
+    from app.services.keep_market import LANE_CORE, LANE_EDGE, classify_lane
+
+    assert classify_lane(0.084, 28.2, center_is_cluster=True) == LANE_EDGE
+    assert classify_lane(0.084, 28.2, center_is_cluster=False) == LANE_CORE

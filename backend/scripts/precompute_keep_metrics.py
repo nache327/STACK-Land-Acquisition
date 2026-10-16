@@ -287,7 +287,8 @@ def _parcel_rows(cands: list[dict], tract_metrics: dict[str, dict],
         home_ppsf = ppsf.get(g[:5]) if g else None
         share = tm["owner_1m_share_20"] if tm else None
         drive = tm["wealth_center_drive_min"] if tm else None
-        a = keep_market.assess(share, drive, home_ppsf)
+        a = keep_market.assess(share, drive, home_ppsf,
+                               center_is_cluster=bool(tm and tm.get("center_is_cluster", True)))
         row = {
             "parcel_id": c["parcel_id"], "tract_geoid": g,
             "county_home_ppsf": home_ppsf,
@@ -417,6 +418,7 @@ async def run_compute(args) -> int:
             "wealth_center_drive_min": None if dmin is None else round(dmin, 1),
             "wealth_center_km": None if km is None else round(km, 2),
             "wealth_center_label": idx.by_id[cid].label if cid else None,
+            "center_is_cluster": bool(cid) and cid.startswith("C:"),
         }
         if i % 500 == 0:
             logger.info("  pools %d/%d (%.0fs)", i, len(tract_pts), time.monotonic() - t0)

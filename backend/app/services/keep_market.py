@@ -83,12 +83,20 @@ FAR_FROM_WEALTH_PENALTY = -10.0
 def classify_lane(
     owner_1m_share_20: float | None,
     wealth_center_drive_min: float | None,
+    center_is_cluster: bool = True,
 ) -> str | None:
-    """Return the keep lane, or None when either input is unmeasured (never guess)."""
+    """Return the keep lane, or None when either input is unmeasured (never guess).
+
+    ``center_is_cluster=False`` means the nearest "wealth center" is the calibration's
+    FALLBACK (a single $750K+ tract, used where no cluster of >= 3 contiguous $1M+ tracts
+    lies within 60 km). The calibration treated those rows as not comparable, and in the
+    mountain West the fallback made every Lehi UT parcel read edge-of-wealth (2026-10-15).
+    So a fallback-measured site can be at most CORE — edge requires a real $1M+ cluster.
+    """
     if owner_1m_share_20 is None or wealth_center_drive_min is None:
         return None
     near = wealth_center_drive_min <= WEALTH_CENTER_DRIVE_MAX_MIN
-    if owner_1m_share_20 >= EDGE_OWNER_1M_SHARE_MIN and near:
+    if owner_1m_share_20 >= EDGE_OWNER_1M_SHARE_MIN and near and center_is_cluster:
         return LANE_EDGE
     if owner_1m_share_20 >= CORE_OWNER_1M_SHARE_MIN or near:
         return LANE_CORE
@@ -129,9 +137,10 @@ def assess(
     owner_1m_share_20: float | None,
     wealth_center_drive_min: float | None,
     home_ppsf: float | None,
+    center_is_cluster: bool = True,
 ) -> KeepAssessment:
     """Lane + band + velocity flag in one call (what the precompute persists)."""
-    lane = classify_lane(owner_1m_share_20, wealth_center_drive_min)
+    lane = classify_lane(owner_1m_share_20, wealth_center_drive_min, center_is_cluster)
     lo, hi = price_band(lane, home_ppsf)
     return KeepAssessment(lane, lo, hi, velocity_flag(wealth_center_drive_min))
 
