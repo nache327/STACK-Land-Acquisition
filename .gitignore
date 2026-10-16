@@ -74,3 +74,6 @@ supabase/.temp/
 # They are the revert net for a live write, so they must persist on disk locally,
 # but they must never be committed.
 backend/outputs/ring_captures/
+
+# keep-market precompute cache (isochrones / matrix / tract shapes / ACS)
+backend/scripts/_keep_cache/
