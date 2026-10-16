@@ -339,7 +339,7 @@ def score_for_parcel(
     # ── Lane-aware demand factors ────────────────────────────────────────
     # LGC lane, keep-market measured (Phase B, 2026-10 calibration): price + sell-out
     # speed track WEALTH DEPTH — the share of $1M+ owner homes within a 20-min drive —
-    # and distance to the nearest $1M+ cluster, not the ring median/HNW count. When the
+    # and distance to the nearest wealthy ($700K+) cluster, not the ring median/HNW count. When the
     # parcel has a parcel_keep_metrics row, "Wealth depth" REPLACES "HNW depth".
     keep_wealth = (
         keep_market.wealth_depth_delta(p.owner_1m_share_20) if p.lane == LGC_SLUG else None
@@ -356,7 +356,7 @@ def score_for_parcel(
             factors.append({
                 "label": "Far from wealth",
                 "delta": far,
-                "reason": f"{p.wealth_center_drive_min:.0f} min to nearest $1M+ area",
+                "reason": f"{p.wealth_center_drive_min:.0f} min to nearest wealthy ($700K+) area",
             })
 
     # LGC lane fallback (no keep row yet): HNW-household depth is the demand driver
