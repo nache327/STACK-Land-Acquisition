@@ -1,6 +1,6 @@
 # Keep market calibration — what sells, where, and for how much (Phase A)
 
-*2026-10-15 · STACK internal · data + scripts in `outputs/keep_calibration/`*
+*2026-10-15, updated 2026-10-19 · STACK internal · data + scripts in `outputs/keep_calibration/`*
 
 ## Bottom line
 
@@ -87,9 +87,9 @@ directional, and product finish moves you within the band.
 
 | Site | $1M+ homes 20 min | $200K HH 20 min | Wealth center | Comparable campuses | Supported $/SF | Lane |
 |---|---|---|---|---|---|---|
-| **Robbinsville NJ** (Rt 130) | 2.4% | 12,516 | 36 min (Princeton) | Toy Barn Chandler N, Luxe Dream, Big Door | **~$220–320**, center ≈ $270 | Edge of wealth |
-| **Westampton NJ** (Rt 541/I-295) | 1.8% | 13,449 | 38 min (Princeton) | Toy Barn Chandler N, Henderson P2, Luxe Dream | **~$210–300**, center ≈ $255 | Edge of wealth, lighter |
-| **Spring Hill FL** (US-19) | 0.5% | 2,317 | 57 min | Spanish Springs, Lake Havasu, Prescott, Goodyear | **~$120–190**, ≈ $210 with a strong product | Growth corridor (velocity) |
+| **Robbinsville NJ** (Rt 130) | 2.4% | 12,516 | 36 min (Princeton) | Toy Barn Chandler N, Luxe Dream, Big Door | **~$220–320**, center ≈ $270 | Core |
+| **Westampton NJ** (Rt 541/I-295) | 1.8% | 13,449 | 38 min (Princeton) | Toy Barn Chandler N, Henderson P2, Luxe Dream | **~$210–300**, center ≈ $255 | Core |
+| **Spring Hill FL** (US-19) | 0.5% | 2,317 | 57 min | Spanish Springs, Lake Havasu, Prescott, Goodyear | **~$120–190**, ≈ $210 with a strong product | Growth corridor + far-from-wealth flag |
 
 - **Spring Hill at $290 is not supported by any comparable.** $290 needs a ratio of about 1.7, which only
   Scottsdale, Jupiter and Motor Enclave achieved, all with 10–100× more nearby wealth. If Spring Hill goes ahead,
@@ -101,18 +101,17 @@ directional, and product finish moves you within the band.
 - Cross-check: the Lake County IL listings (Luxe Corsa $288–295/SF, MotorCave $273–289/SF, both counting the
   mezzanine) land at the same ~1.3 ratio as the band's upper half.
 
-## What to change in ParcelLogic (Phase B — proposed, awaiting your go)
+## Phase B — shipped in ParcelLogic (2026-10-16)
 
-1. **Replace the garage-condo median gate with depth measures, computed from the parcel itself:**
-   share of $1M+ homes within 20 min (predicts price), drive time to the nearest $1M+ cluster (predicts price AND
-   speed — the Texas test), and seasonal-home share. Storage scoring
-   stays as it is. This should also make the Barrington hand exceptions unnecessary.
-2. **Add a 20-minute drive ring** to the ring data (today it stops at 15), plus the $1M+ home counts, which also fills
-   the long-empty `homes_over_1m/2m` columns nationwide.
-3. **Show a price band and lane on every garage-condo card**: "Edge of wealth ~$270/SF" vs "Growth corridor ~$170/SF",
-   derived from the ratio bands above.
-4. **Keep works-pool and speed signals as information only,** not score points; they didn't separate campuses.
-5. **Off-market list:** top-scoring unlisted by-right parcels with owner mailing.
+- Garage-condo lanes on every candidate parcel (164,810), computed from the parcel's census tract:
+  **Edge of wealth** (≥3% of homes $1M+ within 20 min AND ≤40 min to a wealth center) → 1.2–1.8× local home $/SF;
+  **Core** (≥1.5% $1M+ OR ≤40 min) → 0.9–1.3×; **Growth corridor** (otherwise) → 0.7–1.1×.
+- Wealth center = cluster of 3+ neighbouring tracts with a $700K+ median home value (Nache: err optimistic).
+  Sites measured only against a single-tract fallback can be Core at most. Far-from-wealth flag beyond 55 min.
+- Garage-condo needles now use the lanes instead of the median-home-value gate: **44,454 → 87,267 needles; on-needle
+  listings 238 → 474.** Storage is unchanged except +126 from the Barrington exception.
+- Every garage-condo board card shows its lane and price band; scoring adds a wealth-depth bonus (up to +15) and a
+  −10 far-from-wealth penalty.
 
 ## Caveats
 
