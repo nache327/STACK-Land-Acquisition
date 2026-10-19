@@ -79,3 +79,21 @@ def test_unpopulated_tracts_use_parcel_centroid():
 def test_load_upsert_never_writes_unknown_parcels():
     assert "JOIN parcels p ON p.id = s.parcel_id" in pk._LOAD_UPSERT
     assert "ON CONFLICT (parcel_id) DO UPDATE" in pk._LOAD_UPSERT
+
+
+def test_parcel_rows_competitor_units_from_tract_point():
+    from app.services.keep_market import SupplyCampus
+
+    camps = [SupplyCampus("Near", 40.05, -74.60, 91), SupplyCampus("Far", 42.0, -74.6, 500)]
+    cands = [
+        {"parcel_id": 1, "geoid": "34021000100", "t_lat": 40.0, "t_lng": -74.6,
+         "p_lat": 45.0, "p_lng": -74.6, "jurisdiction_id": "j", "lgc_verdict": "permitted"},
+        {"parcel_id": 2, "geoid": None, "p_lat": 41.99, "p_lng": -74.6,
+         "jurisdiction_id": "j", "lgc_verdict": "unclear"},
+        {"parcel_id": 3, "geoid": None, "jurisdiction_id": "j", "lgc_verdict": "unclear"},
+    ]
+    rows = pk._parcel_rows(cands, {}, {}, camps)
+    assert [r["competitor_units_30"] for r in rows] == [91, 500, None]
+    # No campuses passed → column left NULL (and COALESCEd on load).
+    assert all(r["competitor_units_30"] is None for r in pk._parcel_rows(cands, {}, {}))
+    assert "COALESCE(EXCLUDED.competitor_units_30" in pk._LOAD_UPSERT

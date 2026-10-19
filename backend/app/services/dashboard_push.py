@@ -39,6 +39,7 @@ from app.config import settings
 from app.db import long_running_session_maker
 from app.models.buybox_filter import BuyboxFilter
 from app.models.use_case import UseCase
+from app.services import keep_market
 from app.workers.daily_email import (
     DigestParcel,
     _parcel_link,
@@ -97,7 +98,15 @@ _FACT_COLUMNS = [
 # after this code deploys — so they are NOT in _FACT_COLUMNS. run_push detects which of
 # them exist on the board once per run (information_schema) and only then includes
 # them, so the push never fails on a board that hasn't migrated yet.
-_KEEP_COLUMNS = ["keep_lane", "keep_price_low", "keep_price_high", "keep_velocity_flag"]
+# Card strategy (owner decision 2026-10-19): the price tier, its $/SF range, the
+# suggested Premium/Standard/Signature unit mix, competitor units within ~30 min (info
+# only) and the margin on STACK's real costs — all derived by app.services.keep_market
+# from the same parcel_keep_metrics row (+ the parcel's state), detected the same way.
+_KEEP_COLUMNS = [
+    "keep_lane", "keep_price_low", "keep_price_high", "keep_velocity_flag",
+    "keep_tier", "keep_tier_low", "keep_tier_high", "keep_mix",
+    "keep_competitor_units_30", "keep_margin_pct",
+]
 # Board asset types that carry keep data (a storage-only card gets NULLs).
 _KEEP_ASSET_TYPES = ("luxury_garage_condo", "both")
 _JSONB_COLUMNS = {"factors", "soft_flags"}
@@ -290,21 +299,38 @@ async def _keep_metrics(parcel_ids: list[int]) -> dict[int, dict]:
         return {}
     conn = await asyncpg.connect(_pl_dsn())
     try:
+        # k.* (not a column list) so a ParcelLogic DB that hasn't applied 0059 yet
+        # (competitor_units_30) still returns the rest; the state falls back to the
+        # jurisdiction's because parcels.state is mostly NULL.
         rows = await conn.fetch(
-            "SELECT parcel_id, keep_lane, price_band_low, price_band_high, velocity_flag "
-            "FROM parcel_keep_metrics WHERE parcel_id = ANY($1::bigint[])",
+            "SELECT k.*, coalesce(p.state, j.state) AS parcel_state "
+            "FROM parcel_keep_metrics k "
+            "JOIN parcels p ON p.id = k.parcel_id "
+            "LEFT JOIN jurisdictions j ON j.id = p.jurisdiction_id "
+            "WHERE k.parcel_id = ANY($1::bigint[])",
             parcel_ids,
         )
     finally:
         await conn.close()
+    return {r["parcel_id"]: _keep_fields(dict(r)) for r in rows}
+
+
+def _keep_fields(r: dict) -> dict:
+    """One parcel_keep_metrics row (+ parcel_state) → the board's keep_* fields."""
+    tier = keep_market.keep_tier(r.get("keep_lane"), r.get("owner_1m_share_20"))
+    lo, hi = keep_market.TIER_PRICE.get(tier, (None, None)) if tier else (None, None)
+    margin = keep_market.margin_pct(tier, r.get("parcel_state"))
     return {
-        r["parcel_id"]: {
-            "keep_lane": r["keep_lane"],
-            "keep_price_low": r["price_band_low"],
-            "keep_price_high": r["price_band_high"],
-            "keep_velocity_flag": r["velocity_flag"],
-        }
-        for r in rows
+        "keep_lane": r.get("keep_lane"),
+        "keep_price_low": r.get("price_band_low"),
+        "keep_price_high": r.get("price_band_high"),
+        "keep_velocity_flag": r.get("velocity_flag"),
+        "keep_tier": tier,
+        "keep_tier_low": lo,
+        "keep_tier_high": hi,
+        "keep_mix": keep_market.mix_label(tier),
+        "keep_competitor_units_30": r.get("competitor_units_30"),
+        "keep_margin_pct": None if margin is None else int(round(margin * 100)),
     }
 
 

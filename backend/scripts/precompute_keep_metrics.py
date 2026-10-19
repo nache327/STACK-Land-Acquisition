@@ -15,6 +15,9 @@ measurement is taken ONCE per tract centroid:
     bins), seasonal_share_20, young_old_200k_ratio_20.
   * Drive time to the nearest $1M+ wealth center (Mapbox Matrix, batched ≤25 coords).
   * county_home_ppsf from a Zillow ZHVI county CSV (--zhvi-csv).
+  * competitor_units_30: garage-condo units within 30 km straight-line of the tract
+    point (keep_market.competitor_units over backend/data/keep_supply_campuses.csv —
+    a proxy for a 30-min drive; info only). Existing rows: backfill_keep_competitors.py.
 
 Parcels whose centroid falls in no loaded census_tracts row are bucketed LOCALLY against
 the same cb_2022 shapes instead — so this script never writes to census_tracts.
@@ -96,13 +99,14 @@ TABLE_COLUMNS = [
     "parcel_id", "tract_geoid", "hh_200k_20", "owner_1m_count_20", "owner_1m_share_20",
     "seasonal_share_20", "young_old_200k_ratio_20", "wealth_center_drive_min",
     "wealth_center_km", "wealth_center_label", "county_home_ppsf", "keep_lane",
-    "price_band_low", "price_band_high", "velocity_flag",
+    "price_band_low", "price_band_high", "velocity_flag", "competitor_units_30",
 ]
 # Diagnostics carried in the CSV only (ignored by --load-csv).
 EXTRA_COLUMNS = ["jurisdiction_id", "lgc_verdict", "tract_source"]
 CSV_COLUMNS = TABLE_COLUMNS + EXTRA_COLUMNS
 
-_INT_COLS = {"parcel_id", "hh_200k_20", "owner_1m_count_20", "price_band_low", "price_band_high"}
+_INT_COLS = {"parcel_id", "hh_200k_20", "owner_1m_count_20", "price_band_low", "price_band_high",
+             "competitor_units_30"}
 _FLOAT_COLS = {"owner_1m_share_20", "seasonal_share_20", "young_old_200k_ratio_20",
                "wealth_center_drive_min", "wealth_center_km", "county_home_ppsf"}
 
@@ -278,9 +282,21 @@ def _fmt(v, nd=None):
     return round(v, nd) if nd is not None and isinstance(v, float) else v
 
 
+def _competitor_point(c: dict) -> tuple[float | None, float | None]:
+    """The tract point (lat, lng) used for competitor supply; parcel centroid when the
+    parcel has no tract."""
+    if c.get("t_lat") is not None and c.get("t_lng") is not None:
+        return float(c["t_lat"]), float(c["t_lng"])
+    if c.get("p_lat") is not None and c.get("p_lng") is not None:
+        return float(c["p_lat"]), float(c["p_lng"])
+    return None, None
+
+
 def _parcel_rows(cands: list[dict], tract_metrics: dict[str, dict],
-                 ppsf: dict[str, float]) -> list[dict]:
+                 ppsf: dict[str, float],
+                 campuses: list | None = None) -> list[dict]:
     out = []
+    comp_cache: dict[tuple, int | None] = {}
     for c in cands:
         g = c.get("geoid")
         tm = tract_metrics.get(g) if g else None
@@ -296,7 +312,13 @@ def _parcel_rows(cands: list[dict], tract_metrics: dict[str, dict],
             "price_band_high": a.price_band_high, "velocity_flag": a.velocity_flag,
             "jurisdiction_id": c["jurisdiction_id"], "lgc_verdict": c.get("lgc_verdict"),
             "tract_source": c.get("tract_source", "census_tracts") if g else "none",
+            "competitor_units_30": None,
         }
+        if campuses is not None:
+            pt = _competitor_point(c)
+            if pt not in comp_cache:
+                comp_cache[pt] = keep_market.competitor_units(pt[0], pt[1], campuses)
+            row["competitor_units_30"] = comp_cache[pt]
         for k in ("hh_200k_20", "owner_1m_count_20", "owner_1m_share_20", "seasonal_share_20",
                   "young_old_200k_ratio_20", "wealth_center_drive_min", "wealth_center_km",
                   "wealth_center_label"):
@@ -430,7 +452,9 @@ async def run_compute(args) -> int:
     else:
         logger.warning("no --zhvi-csv: county_home_ppsf and price bands will be NULL")
 
-    rows = _parcel_rows(cands, tract_metrics, ppsf)
+    campuses = keep_market.load_supply_campuses()
+    logger.info("supply: %d garage-condo campus(es) for competitor_units_30", len(campuses))
+    rows = _parcel_rows(cands, tract_metrics, ppsf, campuses)
     _summarise(rows)
     if args.out_csv:
         _write_csv(Path(args.out_csv), rows)
@@ -461,7 +485,10 @@ SELECT {", ".join("s." + c for c in TABLE_COLUMNS)}, now()
   FROM _keep_load s
   JOIN parcels p ON p.id = s.parcel_id
 ON CONFLICT (parcel_id) DO UPDATE SET
-  {", ".join(f"{c} = EXCLUDED.{c}" for c in TABLE_COLUMNS if c != "parcel_id")},
+  {", ".join(f"{c} = EXCLUDED.{c}" for c in TABLE_COLUMNS
+             if c not in ("parcel_id", "competitor_units_30"))},
+  competitor_units_30 = COALESCE(EXCLUDED.competitor_units_30,
+                                 parcel_keep_metrics.competitor_units_30),
   computed_at = now()
 """
 
@@ -476,6 +503,11 @@ async def run_load(args) -> int:
         await conn.execute(f"SET statement_timeout = '{int(args.statement_timeout_min)}min'")
         if not await conn.fetchval("SELECT to_regclass('parcel_keep_metrics') IS NOT NULL"):
             raise SystemExit("parcel_keep_metrics does not exist — apply migration 0058 first")
+        if not await conn.fetchval(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = 'parcel_keep_metrics' "
+                "AND column_name = 'competitor_units_30')"):
+            raise SystemExit("parcel_keep_metrics.competitor_units_30 missing — apply migration 0059 first")
         async with conn.transaction():
             await conn.execute(
                 "CREATE TEMP TABLE _keep_load (LIKE parcel_keep_metrics INCLUDING DEFAULTS) "

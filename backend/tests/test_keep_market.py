@@ -106,3 +106,77 @@ def test_fallback_wealth_center_caps_lane_at_core():
 
     assert classify_lane(0.084, 28.2, center_is_cluster=True) == LANE_EDGE
     assert classify_lane(0.084, 28.2, center_is_cluster=False) == LANE_CORE
+
+
+# ── Card strategy: tier / mix / margin / competitor supply (2026-10-19) ──────
+
+@pytest.mark.parametrize("lane,share,tier", [
+    ("core", 0.024, "tier_295_325"),           # Robbinsville NJ
+    ("core", 0.018, "tier_295_325"),           # Westampton NJ
+    ("core", 0.015, "tier_295_325"),           # boundary is inclusive
+    ("core", 0.010, "tier_270_295"),
+    ("core", None, "tier_270_295"),            # never promoted on a guess
+    ("growth_corridor", 0.002, "pass"),        # Spring Hill
+    ("edge_of_wealth", 0.05, "tier_325_350"),  # Toy Barn Helm
+    (None, 0.05, None),
+    ("bogus", 0.05, None),
+])
+def test_keep_tier(lane, share, tier):
+    assert km.keep_tier(lane, share) == tier
+
+
+def test_tier_tables_and_mix_label():
+    assert km.TIER_PRICE == {"tier_325_350": (325, 350), "tier_295_325": (295, 325),
+                              "tier_270_295": (270, 295)}
+    assert km.mix_label("tier_325_350") == "50/30/20"
+    assert km.mix_label("tier_295_325") == "30/40/30"
+    assert km.mix_label("tier_270_295") == "15/40/45"
+    assert km.mix_label("pass") is None and km.mix_label(None) is None
+    assert all(sum(m) == 100 for m in km.TIER_MIX.values())
+
+
+def test_cost_model_constants():
+    assert km.ALL_IN_COST_PSF == 184.17
+    assert km.selling_cost_pct("NJ") == pytest.approx(0.0159)
+    assert km.selling_cost_pct("fl") == pytest.approx(0.0145)
+    assert km.selling_cost_pct("IL") == pytest.approx(0.0090)
+    assert km.selling_cost_pct("PA") == pytest.approx(0.0175)
+    assert km.selling_cost_pct("MA") == pytest.approx(0.0121)
+    assert km.selling_cost_pct("VA") == pytest.approx(0.0175)  # default 1.0%
+    assert km.selling_cost_pct(None) == pytest.approx(0.0175)
+
+
+def test_margin_pct():
+    # 310 × (1 − 0.0159) = 305.07; (305.07 − 184.17) / 184.17 = 0.656
+    assert round(km.margin_pct("tier_295_325", "NJ"), 2) == 0.66
+    assert round(km.margin_pct("tier_325_350", "NJ"), 2) == round(
+        (337.5 * (1 - 0.0159) - 184.17) / 184.17, 2)
+    assert km.margin_pct("tier_270_295", "PA") < km.margin_pct("tier_270_295", "IL")
+    assert km.margin_pct("pass", "NJ") is None
+    assert km.margin_pct(None, "NJ") is None
+
+
+def test_competitor_units_radius_and_max_not_sum(tmp_path):
+    p = tmp_path / "supply.csv"
+    p.write_text(
+        "name,operator,lat,lng,units_built,units_planned,status,state\n"
+        "Near,,40.10,-74.60,91,91,selling,NJ\n"      # built == planned → 91, not 182
+        "Planned,,40.20,-74.60,,40,planned,NJ\n"     # blank built → 40
+        "Far,,41.00,-74.60,500,,operating,NJ\n"      # ~100 km away
+        "NoCoords,,,,100,,operating,NJ\n",
+        encoding="utf-8")
+    camps = km.load_supply_campuses(p)
+    assert [c.name for c in camps] == ["Near", "Planned", "Far"]
+    assert km.competitor_units(40.0, -74.6, camps) == 131
+    assert km.competitor_units(45.0, -74.6, camps) == 0
+    assert km.competitor_units(None, -74.6, camps) is None
+
+
+def test_shipped_supply_csv_loads():
+    camps = km.load_supply_campuses()
+    assert len(camps) > 500
+    names = [c.name for c in camps]
+    assert names.count("M1 Concourse") == 1  # known duplicate dropped
+    # Scottsdale has real nearby supply; open ocean has none.
+    assert km.competitor_units(33.62, -111.89, camps) > 0
+    assert km.competitor_units(30.0, -60.0, camps) == 0
