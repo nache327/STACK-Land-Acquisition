@@ -106,3 +106,11 @@ def test_fallback_wealth_center_caps_lane_at_core():
 
     assert classify_lane(0.084, 28.2, center_is_cluster=True) == LANE_EDGE
     assert classify_lane(0.084, 28.2, center_is_cluster=False) == LANE_CORE
+
+
+def test_price_band_capped_to_observed_range():
+    """Middlesex MA (~$447/SF homes) edge lane: raw 537–805 -> capped 300–450."""
+    from app.services.keep_market import LANE_CORE, LANE_EDGE, price_band
+
+    assert price_band(LANE_EDGE, 447) == (300, 450)
+    assert price_band(LANE_CORE, 247) == (222, 321)   # Robbinsville unchanged
