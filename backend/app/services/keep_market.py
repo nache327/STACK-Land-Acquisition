@@ -221,14 +221,44 @@ TIER_MIX: dict[str, tuple[int, int, int]] = {
 TIER_CORE_UPPER_SHARE_MIN = CORE_OWNER_1M_SHARE_MIN  # 1.5%
 
 # ── STACK cost model (owner inputs, per 90,000 SF campus) ─────────────────────
+# The original flat model priced land at a fixed $3.0M per 90K SF ($33.33/SF), giving
+# one all-in $184.17/SF for every card. Land is what varies most between tiers, so the
+# card margin now uses each parcel's ACTUAL listing price (owner decision 2026-10-19):
+#
+#   land_psf   = sale_price / (acres × sf_per_acre)
+#   all_in_psf = (HARD_BASE_PSF × state factor × (1 + CONTINGENCY_PCT)
+#                 + SOFT_PSF + FIN_PSF + land_psf) × (1 + DEV_FEE_PCT)
+#   margin     = (tier_mid × (1 − selling_cost_pct) − all_in_psf) / all_in_psf
 CAMPUS_SF = 90_000.0
 COST_LAND = 3_000_000.0
 COST_SOFT = 1_000_000.0
 COST_HARD_PSF = 127.50
 COST_FINANCING = 1_100_000.0
+# Legacy flat all-in (fixed $3M land, no dev fee) — kept for margin_pct_flat and the
+# before/after comparison; the card margin no longer uses it.
 ALL_IN_COST_PSF = round(
     COST_HARD_PSF + (COST_LAND + COST_SOFT + COST_FINANCING) / CAMPUS_SF, 2
 )  # 184.17
+
+# Buildable SF per usable acre (Grayslake ~16K, Spring Hill ~9K). The dashboard lets
+# the user override it per card (keep_sf_per_ac — never pushed from here).
+DEFAULT_SF_PER_ACRE = 15_000.0
+DEFAULT_LAND_PSF = COST_LAND / CAMPUS_SF  # 33.33 — the old fixed land assumption
+
+HARD_BASE_PSF = COST_HARD_PSF  # 127.50
+# Hard-cost regional factor by state. MA / IL / CO / UT are pending Build Co pricing
+# and use the default 1.00 until then.
+STATE_HARD_FACTOR: dict[str, float] = {
+    "FL": 0.95,
+    "NJ": 1.00,
+    "PA": 1.00,
+    "AZ": 1.05,
+}
+DEFAULT_HARD_FACTOR = 1.00
+SOFT_PSF = COST_SOFT / CAMPUS_SF  # ≈ 11.11
+FIN_PSF = COST_FINANCING / CAMPUS_SF  # ≈ 12.22
+CONTINGENCY_PCT = 0.0  # owner decision 2026-10-19: 0 for now
+DEV_FEE_PCT = 0.05  # development fee = 5% of total project cost
 
 MARKETING_PCT = 0.0075
 # Seller transfer tax (typical, state level) keyed by 2-letter state.
@@ -240,6 +270,12 @@ SELLER_TRANSFER_TAX: dict[str, float] = {
     "MA": 0.0046,
 }
 DEFAULT_SELLER_TRANSFER_TAX = 0.0100
+# Municipal override hook, keyed (STATE, CITY upper-cased) — replaces the state rate.
+# Philadelphia's combined realty transfer tax is 4.278% (city + state); customarily
+# split between buyer and seller, so the seller's share is 2.139%.
+SELLER_TRANSFER_TAX_CITY: dict[tuple[str, str], float] = {
+    ("PA", "PHILADELPHIA"): 0.02139,
+}
 
 
 def keep_tier(lane: str | None, owner_1m_share_20: float | None) -> str | None:
@@ -265,22 +301,91 @@ def mix_label(tier: str | None) -> str | None:
     return "/".join(str(p) for p in mix) if mix else None
 
 
-def selling_cost_pct(state: str | None) -> float:
-    """0.75% marketing + the state's seller transfer tax (default 1.0%)."""
+def selling_cost_pct(state: str | None, city: str | None = None) -> float:
+    """0.75% marketing + the seller transfer tax: the (state, city) override when one
+    exists, else the state's rate (default 1.0%)."""
     st = (state or "").strip().upper()
-    return MARKETING_PCT + SELLER_TRANSFER_TAX.get(st, DEFAULT_SELLER_TRANSFER_TAX)
+    ct = (city or "").strip().upper()
+    tax = SELLER_TRANSFER_TAX_CITY.get((st, ct)) if ct else None
+    if tax is None:
+        tax = SELLER_TRANSFER_TAX.get(st, DEFAULT_SELLER_TRANSFER_TAX)
+    return MARKETING_PCT + tax
 
 
-def margin_pct(tier: str | None, state: str | None) -> float | None:
-    """Margin on cost at the tier midpoint, net of selling costs:
+def hard_factor(state: str | None) -> float:
+    return STATE_HARD_FACTOR.get((state or "").strip().upper(), DEFAULT_HARD_FACTOR)
 
-        (mid × (1 − selling) − 184.17) / 184.17
 
-    None for 'pass' / None (no supported price)."""
-    band = TIER_PRICE.get(tier) if tier else None
-    if band is None:
+def hard_psf(state: str | None) -> float:
+    """Hard cost $/SF for the state: base × regional factor × (1 + contingency)."""
+    return HARD_BASE_PSF * hard_factor(state) * (1.0 + CONTINGENCY_PCT)
+
+
+def soft_fin_psf() -> float:
+    """Soft + financing $/SF (fixed per-campus dollars spread over 90K SF)."""
+    return SOFT_PSF + FIN_PSF
+
+
+def land_psf(
+    sale_price: float | None,
+    acres: float | None,
+    sf_per_acre: float = DEFAULT_SF_PER_ACRE,
+) -> float | None:
+    """Land $/buildable SF = sale_price / (acres × sf_per_acre). None when the price or
+    acreage is missing / ≤ 0 (never a guessed land cost)."""
+    try:
+        price = float(sale_price) if sale_price is not None else None
+        ac = float(acres) if acres is not None else None
+        spa = float(sf_per_acre) if sf_per_acre is not None else None
+    except (TypeError, ValueError):
         return None
-    mid = (band[0] + band[1]) / 2.0
+    if not price or price <= 0 or not ac or ac <= 0 or not spa or spa <= 0:
+        return None
+    return price / (ac * spa)
+
+
+def all_in_psf(land_psf: float, state: str | None) -> float:
+    """All-in development cost $/SF including land and the development fee."""
+    return (hard_psf(state) + soft_fin_psf() + land_psf) * (1.0 + DEV_FEE_PCT)
+
+
+def _tier_mid(tier: str | None) -> float | None:
+    band = TIER_PRICE.get(tier) if tier else None
+    return None if band is None else (band[0] + band[1]) / 2.0
+
+
+def margin_pct(
+    tier: str | None,
+    state: str | None,
+    land_psf: float | None,
+    city: str | None = None,
+) -> float | None:
+    """Land-aware margin on cost at the tier midpoint, net of selling costs:
+
+        (mid × (1 − selling) − all_in_psf(land_psf)) / all_in_psf(land_psf)
+
+    None for 'pass' / None (no supported price) or when land_psf is unknown."""
+    mid = _tier_mid(tier)
+    if mid is None or land_psf is None:
+        return None
+    cost = all_in_psf(land_psf, state)
+    net = mid * (1.0 - selling_cost_pct(state, city))
+    return (net - cost) / cost
+
+
+def margin_pct_default_land(
+    tier: str | None, state: str | None, city: str | None = None
+) -> float | None:
+    """margin_pct at the old fixed land assumption ($3M / 90K SF), new cost stack."""
+    return margin_pct(tier, state, DEFAULT_LAND_PSF, city)
+
+
+def margin_pct_flat(tier: str | None, state: str | None) -> float | None:
+    """LEGACY flat-cost margin (fixed $184.17/SF, no dev fee) — the pre-2026-10-19
+    card number, kept only for before/after comparisons."""
+    mid = _tier_mid(tier)
+    if mid is None:
+        return None
     net = mid * (1.0 - selling_cost_pct(state))
     return (net - ALL_IN_COST_PSF) / ALL_IN_COST_PSF
 
