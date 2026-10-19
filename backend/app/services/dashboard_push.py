@@ -106,13 +106,29 @@ _KEEP_COLUMNS = [
     "keep_lane", "keep_price_low", "keep_price_high", "keep_velocity_flag",
     "keep_tier", "keep_tier_low", "keep_tier_high", "keep_mix",
     "keep_competitor_units_30", "keep_margin_pct",
+    # Land-aware margin inputs (owner decision 2026-10-19): the card's land $/SF from
+    # its own listing price at DEFAULT_SF_PER_ACRE, the state's hard $/SF, soft +
+    # financing $/SF, selling cost and dev-fee fractions, and whether the margin is
+    # priced off a listing ('listing') or unpriced ('no_price'). keep_sf_per_ac is a
+    # user-editable board column and is deliberately NEVER pushed or overwritten.
+    "keep_land_psf", "keep_hard_psf", "keep_soft_psf", "keep_selling_pct",
+    "keep_dev_fee_pct", "keep_margin_basis",
 ]
+# Land-aware fields recomputed per card from the card's own sale_price / acres / city.
+_KEEP_LAND_COLUMNS = (
+    "keep_margin_pct", "keep_land_psf", "keep_hard_psf", "keep_soft_psf",
+    "keep_selling_pct", "keep_dev_fee_pct", "keep_margin_basis",
+)
 # Board asset types that carry keep data (a storage-only card gets NULLs).
 _KEEP_ASSET_TYPES = ("luxury_garage_condo", "both")
 _JSONB_COLUMNS = {"factors", "soft_flags"}
 # NUMERIC target columns — cast the bind to float8 so asyncpg encodes a Python
 # float (it demands Decimal for a bare numeric param); PG coerces float8→numeric.
-_FLOAT_COLUMNS = {"acres", "sale_price", "price_per_ac", "sqft_per_capita_3mi"}
+_FLOAT_COLUMNS = {
+    "acres", "sale_price", "price_per_ac", "sqft_per_capita_3mi",
+    "keep_land_psf", "keep_hard_psf", "keep_soft_psf", "keep_selling_pct",
+    "keep_dev_fee_pct",
+}
 
 # Board statuses that mean "never show me this parcel again". Their cards are
 # deleted from the board once mirrored into deal_dispositions, and the mirror row
@@ -315,12 +331,39 @@ async def _keep_metrics(parcel_ids: list[int]) -> dict[int, dict]:
     return {r["parcel_id"]: _keep_fields(dict(r)) for r in rows}
 
 
-def _keep_fields(r: dict) -> dict:
-    """One parcel_keep_metrics row (+ parcel_state) → the board's keep_* fields."""
+def _land_fields(
+    tier: str | None,
+    state: str | None,
+    sale_price=None,
+    acres=None,
+    city: str | None = None,
+) -> dict:
+    """The land-aware margin fields for one card. Land $/SF comes from the card's own
+    listing price + acres at the default buildable SF/acre; no price → margin NULL and
+    basis 'no_price' (never a margin on a guessed land cost)."""
+    lp = keep_market.land_psf(sale_price, acres)
+    margin = keep_market.margin_pct(tier, state, lp, city)
+    return {
+        "keep_margin_pct": None if margin is None else int(round(margin * 100)),
+        "keep_land_psf": None if lp is None else round(lp, 2),
+        "keep_hard_psf": round(keep_market.hard_psf(state), 2),
+        "keep_soft_psf": round(keep_market.soft_fin_psf(), 2),
+        "keep_selling_pct": round(keep_market.selling_cost_pct(state, city), 5),
+        "keep_dev_fee_pct": keep_market.DEV_FEE_PCT,
+        "keep_margin_basis": "listing" if lp is not None else "no_price",
+    }
+
+
+def _keep_fields(r: dict, sale_price=None, acres=None, city: str | None = None) -> dict:
+    """One parcel_keep_metrics row (+ parcel_state) → the board's keep_* fields.
+
+    The margin is land-aware: pass the card's listing sale_price / acres / city
+    (_apply_keep re-derives them from the push row). The private _tier/_state keys
+    carry what that re-derivation needs and are never pushed (not in _KEEP_COLUMNS)."""
     tier = keep_market.keep_tier(r.get("keep_lane"), r.get("owner_1m_share_20"))
     lo, hi = keep_market.TIER_PRICE.get(tier, (None, None)) if tier else (None, None)
-    margin = keep_market.margin_pct(tier, r.get("parcel_state"))
-    return {
+    state = r.get("parcel_state")
+    out = {
         "keep_lane": r.get("keep_lane"),
         "keep_price_low": r.get("price_band_low"),
         "keep_price_high": r.get("price_band_high"),
@@ -330,14 +373,27 @@ def _keep_fields(r: dict) -> dict:
         "keep_tier_high": hi,
         "keep_mix": keep_market.mix_label(tier),
         "keep_competitor_units_30": r.get("competitor_units_30"),
-        "keep_margin_pct": None if margin is None else int(round(margin * 100)),
+        "_tier": tier,
+        "_state": state,
     }
+    if r.get("keep_lane") is None:
+        # No keep measurement at all → every keep_* field NULL.
+        out.update({c: None for c in _KEEP_LAND_COLUMNS})
+    else:
+        out.update(_land_fields(tier, state, sale_price, acres, city))
+    return out
 
 
 def _apply_keep(row: dict, keep: dict | None) -> None:
     """Attach the keep_* fields: garage-condo / 'both' cards only, NULL otherwise
-    (NULL = unmeasured / not applicable, never a value)."""
+    (NULL = unmeasured / not applicable, never a value). The land-aware margin is
+    recomputed from THIS card's sale_price / acres / parcel city."""
     use = row.get("asset_type") in _KEEP_ASSET_TYPES and keep
+    if use and "_tier" in keep and keep.get("keep_lane") is not None:
+        keep = keep | _land_fields(
+            keep["_tier"], keep.get("_state"), row.get("sale_price"), row.get("acres"),
+            row.get("situs_city") or row.get("city"),
+        )
     for c in _KEEP_COLUMNS:
         row[c] = keep.get(c) if use else None
 

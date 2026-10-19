@@ -175,10 +175,18 @@ async def test_push_survives_keep_read_failure(monkeypatch):
 _OLD_KEEP = ["keep_lane", "keep_price_low", "keep_price_high", "keep_velocity_flag"]
 _TIER_KEEP = ["keep_tier", "keep_tier_low", "keep_tier_high", "keep_mix",
               "keep_competitor_units_30", "keep_margin_pct"]
+_LAND_KEEP = ["keep_land_psf", "keep_hard_psf", "keep_soft_psf", "keep_selling_pct",
+              "keep_dev_fee_pct", "keep_margin_basis"]
 
 
 def test_keep_columns_include_tier_fields_in_order():
-    assert dp._KEEP_COLUMNS == _OLD_KEEP + _TIER_KEEP
+    assert dp._KEEP_COLUMNS == _OLD_KEEP + _TIER_KEEP + _LAND_KEEP
+
+
+def test_keep_sf_per_ac_is_never_pushed():
+    # User-editable board column: the push must never write or overwrite it.
+    assert "keep_sf_per_ac" not in dp._KEEP_COLUMNS
+    assert "keep_sf_per_ac" not in dp._upsert_sql(dp._FACT_COLUMNS + dp._KEEP_COLUMNS)
 
 
 def test_keep_fields_core_nj():
@@ -190,8 +198,24 @@ def test_keep_fields_core_nj():
     assert (f["keep_tier_low"], f["keep_tier_high"]) == (295, 325)
     assert f["keep_mix"] == "30/40/30"
     assert f["keep_competitor_units_30"] == 64
-    assert f["keep_margin_pct"] == 66
+    # No listing price -> no land-aware margin, but the cost inputs are still shown.
+    assert f["keep_margin_pct"] is None and f["keep_margin_basis"] == "no_price"
+    assert f["keep_land_psf"] is None
+    assert f["keep_hard_psf"] == 127.5 and f["keep_soft_psf"] == 23.33
+    assert f["keep_selling_pct"] == 0.0159 and f["keep_dev_fee_pct"] == 0.05
     assert f["keep_price_low"] == 222
+    # $3M on 6 ac -> land $33.33/SF; 310 x 0.9841 vs 193.375 all-in -> 58%
+    f = dp._keep_fields({"keep_lane": "core", "owner_1m_share_20": 0.024,
+                         "parcel_state": "NJ"}, sale_price=3_000_000, acres=6)
+    assert f["keep_land_psf"] == 33.33 and f["keep_margin_basis"] == "listing"
+    assert f["keep_margin_pct"] == 58
+
+
+def test_keep_fields_fl_hard_factor_and_philadelphia():
+    f = dp._keep_fields({"keep_lane": "core", "parcel_state": "FL"})
+    assert f["keep_hard_psf"] == round(127.5 * 0.95, 2)
+    f = dp._keep_fields({"keep_lane": "core", "parcel_state": "PA"}, city="PHILADELPHIA")
+    assert f["keep_selling_pct"] == 0.02889
 
 
 def test_keep_fields_growth_is_pass_and_unmigrated_row_is_null():
@@ -223,8 +247,33 @@ async def test_push_includes_tier_columns_when_board_has_them(monkeypatch):
     assert args[cols.index("keep_tier_high")] == 350
     assert args[cols.index("keep_mix")] == "50/30/20"
     assert args[cols.index("keep_competitor_units_30")] == 120
-    assert args[cols.index("keep_margin_pct")] == round(
-        ((337.5 * (1 - 0.0159)) - 184.17) / 184.17 * 100)
+    # The faked row has no sale_price -> no land-aware margin.
+    assert args[cols.index("keep_margin_pct")] is None
+    assert args[cols.index("keep_margin_basis")] == "no_price"
+
+
+@pytest.mark.asyncio
+async def test_push_margin_uses_the_cards_own_listing_price(monkeypatch):
+    board = FakeBoard(dp._KEEP_COLUMNS)
+    _patch(monkeypatch, board, _KEEP_TIER)
+    base_row_for = dp._row_for
+
+    def row_for(d, s, a):
+        return base_row_for(d, s, a) | {"sale_price": 9_000_000.0, "acres": 6.0,
+                                        "situs_city": "Bernards township"}
+
+    monkeypatch.setattr(dp, "_row_for", row_for)
+    await dp.run_push()
+    (sql, args), = _inserts(board)
+    cols = dp._FACT_COLUMNS + dp._KEEP_COLUMNS
+    assert args[cols.index("keep_land_psf")] == 100.0
+    assert args[cols.index("keep_margin_basis")] == "listing"
+    assert args[cols.index("keep_margin_pct")] == 26  # 332.13 net vs 263.375 all-in
+    assert args[cols.index("keep_hard_psf")] == 127.5
+    assert args[cols.index("keep_dev_fee_pct")] == 0.05
+    i = cols.index("keep_land_psf") + 1
+    assert f"${i}::float8" in sql
+    assert ", _tier" not in sql and "_state" not in sql and "keep_sf_per_ac" not in sql
 
 
 @pytest.mark.asyncio
@@ -234,6 +283,6 @@ async def test_push_omits_tier_columns_on_board_with_only_phase_b_columns(monkey
     result = await dp.run_push()
     (sql, args), = _inserts(board)
     assert "keep_lane" in sql
-    assert not any(c in sql for c in _TIER_KEEP)
+    assert not any(c in sql for c in _TIER_KEEP + _LAND_KEEP)
     assert len(args) == len(dp._FACT_COLUMNS) + len(_OLD_KEEP)
     assert result["synced"] == 1

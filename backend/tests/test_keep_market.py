@@ -146,14 +146,72 @@ def test_cost_model_constants():
     assert km.selling_cost_pct(None) == pytest.approx(0.0175)
 
 
-def test_margin_pct():
+def test_margin_pct_flat_legacy():
     # 310 × (1 − 0.0159) = 305.07; (305.07 − 184.17) / 184.17 = 0.656
-    assert round(km.margin_pct("tier_295_325", "NJ"), 2) == 0.66
-    assert round(km.margin_pct("tier_325_350", "NJ"), 2) == round(
+    assert round(km.margin_pct_flat("tier_295_325", "NJ"), 2) == 0.66
+    assert round(km.margin_pct_flat("tier_325_350", "NJ"), 2) == round(
         (337.5 * (1 - 0.0159) - 184.17) / 184.17, 2)
-    assert km.margin_pct("tier_270_295", "PA") < km.margin_pct("tier_270_295", "IL")
-    assert km.margin_pct("pass", "NJ") is None
-    assert km.margin_pct(None, "NJ") is None
+    assert km.margin_pct_flat("tier_270_295", "PA") < km.margin_pct_flat("tier_270_295", "IL")
+    assert km.margin_pct_flat("pass", "NJ") is None
+    assert km.margin_pct_flat(None, "NJ") is None
+
+
+def test_cost_constants():
+    assert km.DEFAULT_SF_PER_ACRE == 15000
+    assert km.HARD_BASE_PSF == 127.50
+    assert km.STATE_HARD_FACTOR == {"FL": 0.95, "NJ": 1.00, "PA": 1.00, "AZ": 1.05}
+    assert km.hard_factor("MA") == 1.00 and km.hard_factor(None) == 1.00
+    assert km.SOFT_PSF == pytest.approx(11.111, abs=1e-3)
+    assert km.FIN_PSF == pytest.approx(12.222, abs=1e-3)
+    assert km.CONTINGENCY_PCT == 0.0
+    assert km.DEV_FEE_PCT == 0.05
+
+
+def test_land_psf():
+    assert km.land_psf(3_000_000, 6) == pytest.approx(33.333, abs=1e-3)
+    assert km.land_psf(3_000_000, 6, sf_per_acre=10_000) == pytest.approx(50.0)
+    for price, acres in ((None, 6), (3e6, None), (0, 6), (3e6, 0), (-1, 6), (3e6, -2)):
+        assert km.land_psf(price, acres) is None
+
+
+def test_all_in_psf():
+    # (127.50 + 11.11 + 12.22 + 33.33) × 1.05 = 193.375
+    assert km.all_in_psf(km.land_psf(3e6, 6), "NJ") == pytest.approx(193.375)
+    assert km.all_in_psf(33.33, "FL") < km.all_in_psf(33.33, "NJ")
+    assert km.all_in_psf(33.33, "AZ") > km.all_in_psf(33.33, "NJ")
+
+
+def _nj_top(price):
+    return km.margin_pct("tier_325_350", "NJ", km.land_psf(price, 6))
+
+
+def test_margin_pct_land_aware():
+    # 337.5 × (1 − 0.0159) = 332.134; (332.134 − 193.375) / 193.375 = 0.718
+    assert round(_nj_top(3_000_000), 2) == 0.72
+    # $9M on 6 ac → land $100/SF; all-in 263.375 → 26%
+    assert 0.26 <= _nj_top(9_000_000) <= 0.33
+    assert round(_nj_top(9_000_000), 2) == 0.26
+    # $15M on 6 ac → land $166.67/SF; all-in 333.375 → just below zero
+    assert round(_nj_top(15_000_000), 3) == -0.004
+    assert _nj_top(3e6) > _nj_top(9e6) > _nj_top(15e6)
+    # FL's lower hard factor beats NJ on the same land
+    assert km.margin_pct("tier_325_350", "FL", 33.33) > km.margin_pct("tier_325_350", "NJ", 33.33)
+    assert km.margin_pct("pass", "NJ", 33.33) is None
+    assert km.margin_pct(None, "NJ", 33.33) is None
+    assert km.margin_pct("tier_325_350", "NJ", None) is None
+    assert km.margin_pct_default_land("tier_325_350", "NJ") == pytest.approx(_nj_top(3e6))
+
+
+def test_philadelphia_transfer_tax_override():
+    assert km.selling_cost_pct("PA", "Philadelphia") == pytest.approx(0.0075 + 0.02139)
+    assert km.selling_cost_pct("pa", " philadelphia ") == pytest.approx(0.02889)
+    assert km.selling_cost_pct("PA", "Bensalem Township") == pytest.approx(0.0175)
+    assert km.selling_cost_pct("PA") == pytest.approx(0.0175)
+    # Keyed by (state, city) — a same-named city in another state is unaffected.
+    assert km.selling_cost_pct("MS", "Philadelphia") == pytest.approx(0.0175)
+    philly = km.margin_pct("tier_270_295", "PA", 50, "Philadelphia")
+    assert round(philly, 4) == 0.3010
+    assert philly < km.margin_pct("tier_270_295", "PA", 50)
 
 
 def test_competitor_units_radius_and_max_not_sum(tmp_path):
