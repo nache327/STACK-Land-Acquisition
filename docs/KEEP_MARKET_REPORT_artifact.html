@@ -1,0 +1,150 @@
+<title>Keep Market Calibration</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column, wide data tables scroll in place; lane colors match the dashboard chips */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --fg:#1d2329; --muted:#5b6670; --rule:#d9dee3;
+  --accent:#1f6f78; --accent-soft:#e3f0f1;
+  --edge:#7C6BB0; --core:#2F8A8A; --growth:#A0715A; --warn:#b4541f;
+  --display:"Archivo",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14181c; --surface:#1b2026; --fg:#e4e8ec; --muted:#9aa6b1; --rule:#2c343c;
+  --accent:#5fb3bb; --accent-soft:#1d3134; --edge:#a596d6; --core:#5fb7b7; --growth:#c99a82; --warn:#e8915f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14181c; --surface:#1b2026; --fg:#e4e8ec; --muted:#9aa6b1; --rule:#2c343c;
+  --accent:#5fb3bb; --accent-soft:#1d3134; --edge:#a596d6; --core:#5fb7b7; --growth:#c99a82; --warn:#e8915f; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--body)}
+.wrap{max-width:860px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:40px}
+header{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--fg);padding-bottom:20px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:800 clamp(28px,5vw,40px)/1.1 var(--display);margin:0;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+h2{font:700 21px/1.25 var(--display);margin:0 0 12px;text-wrap:balance}
+section{display:flex;flex-direction:column;gap:12px}
+p{margin:0;max-width:68ch}
+.findings{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.finding{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.finding .big{font:700 30px/1 var(--display);color:var(--accent);font-variant-numeric:tabular-nums}
+.finding .what{font-weight:600}
+.finding .how{color:var(--muted);font-size:14px}
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:500 11.5px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lane{display:inline-block;font:600 12px/1 var(--body);padding:4px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.lane.edge{color:var(--edge)} .lane.core{color:var(--core)} .lane.growth{color:var(--growth)}
+.flag{color:var(--warn);font-weight:600}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:68ch}
+.callout{background:var(--accent-soft);border-left:3px solid var(--accent);padding:14px 16px;border-radius:0 6px 6px 0}
+.note{font-size:13px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--rule);padding-top:16px}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">STACK internal · Updated 2026-10-19 · Phase B live</span>
+    <h1>Keep Market Calibration</h1>
+    <p class="lede">What garage-condo campuses actually sold for, what predicts price and sales speed, and what that means for our sites. Built from county deed records across 26 campuses and 4 operator families.</p>
+  </header>
+
+  <section>
+    <h2>Bottom line</h2>
+    <div class="findings">
+      <div class="finding"><span class="big">+57%</span><span class="what">Nicer product, same market</span><span class="how">Chandler, 2024–25: Toy Barn $309/SF vs LuxeLocker $196/SF.</span></div>
+      <div class="finding"><span class="big">+45%</span><span class="what">Wealthier location, same product</span><span class="how">Toy Barn Scottsdale $446/SF vs Toy Barn Chandler $309/SF, same developer and years.</span></div>
+      <div class="finding"><span class="big">$255–270</span><span class="what">Safer base-case price for our NJ sites</span><span class="how">$300/SF is the top of the band and needs a finished clubhouse product.</span></div>
+    </div>
+    <ul>
+      <li><strong>Price follows nearby wealth depth:</strong> the share of homes worth $1M+ within 20 minutes is the strongest predictor. Median home value and income barely predict it.</li>
+      <li><strong>Sales speed falls with distance from wealth.</strong> In Texas, one operator's campus 20 minutes from wealth sold out in 5 months; the one 64 minutes away still has 57 of 99 units after about 3 years.</li>
+      <li><strong>Unit size doesn't move price per SF.</strong> The unit mix is a speed and risk dial, not a price lever.</li>
+      <li><strong>The contractor buyer is barely visible in deeds</strong> (3–4% of LuxeLocker units). That is a floor: tradesmen buying in their own name don't show up.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What comparable campuses sold for</h2>
+    <p>Developer (first) sales from county deed records. "Ratio" is price per SF divided by the local typical home price per SF in the sale year, which removes timing effects.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Campus</th><th>Median $/SF</th><th>Year</th><th>Ratio</th><th>$1M+ homes, 20 min</th><th>Drive to wealth</th></tr></thead>
+      <tbody>
+        <tr><td>Toy Barn Scottsdale Airpark</td><td class="n">$298</td><td class="n">2019</td><td class="n">1.81</td><td class="n">11.8%</td><td class="n">23 min</td></tr>
+        <tr><td>Auto ClubHouse Jupiter</td><td class="n">$463</td><td class="n">2026</td><td class="n">1.77</td><td class="n">15.6%</td><td class="n">50 min</td></tr>
+        <tr><td>Toy Barn Scottsdale (Helm)</td><td class="n">$450</td><td class="n">2023</td><td class="n">1.74</td><td class="n">13.9%</td><td class="n">25 min</td></tr>
+        <tr><td>Motor Enclave Tampa <span class="note">(outlier: finished villa units)</span></td><td class="n">$385</td><td class="n">2023</td><td class="n">1.73</td><td class="n">0.7%</td><td class="n">29 min</td></tr>
+        <tr><td>Toy Barn Dove Valley</td><td class="n">$419</td><td class="n">2026</td><td class="n">1.64</td><td class="n">16.7%</td><td class="n">36 min</td></tr>
+        <tr><td>Big Door Mundelein</td><td class="n">$238</td><td class="n">2021</td><td class="n">1.44</td><td class="n">5.5%</td><td class="n">35 min</td></tr>
+        <tr><td>Motocave St. Pete</td><td class="n">$313</td><td class="n">2024</td><td class="n">1.38</td><td class="n">5.6%</td><td class="n">20 min</td></tr>
+        <tr><td>Luxe Dream Lakewood Ranch</td><td class="n">$307</td><td class="n">2024</td><td class="n">1.21</td><td class="n">4.4%</td><td class="n">38 min</td></tr>
+        <tr><td>Toy Barn Chandler North</td><td class="n">$309</td><td class="n">2025</td><td class="n">1.20</td><td class="n">3.0%</td><td class="n">39 min</td></tr>
+        <tr><td>Toy Barn Lone Mtn / North / Peak View</td><td class="n">$117–232</td><td class="n">2013–22</td><td class="n">0.79–1.13</td><td class="n">9–13%</td><td class="n">34–36 min</td></tr>
+        <tr><td>LuxeLocker (11 campuses)</td><td class="n">$103–253</td><td class="n">2020–26</td><td class="n">0.46–0.99</td><td class="n">0.6–4.7%</td><td class="n">27–184 min</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Asking prices only (no recorded closings yet), counting the mezzanine: REVAULT Lake Zurich $288–295, MotorCave Barrington $273–289, Bespoke Gilberts $244, Garages of America TX ~$300–400.</p>
+  </section>
+
+  <section>
+    <h2>Supported price for our sites</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Site</th><th>Lane</th><th>$1M+ homes, 20 min</th><th>Drive to wealth</th><th>Supported $/SF</th><th>Base case</th></tr></thead>
+      <tbody>
+        <tr><td>Robbinsville NJ (Rt 130)</td><td><span class="lane core">Core</span></td><td class="n">2.4%</td><td class="n">36 min</td><td class="n">$220–320</td><td class="n">~$270</td></tr>
+        <tr><td>Westampton NJ (Rt 541 / I-295)</td><td><span class="lane core">Core</span></td><td class="n">1.8%</td><td class="n">38 min</td><td class="n">$210–300</td><td class="n">~$255</td></tr>
+        <tr><td>Spring Hill FL (US-19)</td><td><span class="lane growth">Growth corridor</span> <span class="flag">⚠ far</span></td><td class="n">0.5%</td><td class="n">57 min</td><td class="n">$120–190</td><td class="n">Below $235 break-even</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout"><p><strong>Spring Hill:</strong> no comparable supports $290. It resembles LuxeLocker's cheaper markets (Spanish Springs, Lake Havasu, Prescott) and is as far from wealth as our slowest Texas campus. It works only as a cheap, contractor-heavy campus with all-in cost well under about $160/SF and presales before going vertical.</p></div>
+  </section>
+
+  <section>
+    <h2>Sales speed: the Texas test</h2>
+    <p>Texas doesn't publish sale prices, but county rolls date every unit leaving the developer. One operator (Garages of America), one product, different distances from wealth.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Campus</th><th>Drive to wealth</th><th>$1M+ homes, 20 min</th><th>Months to 50% / 90% sold</th></tr></thead>
+      <tbody>
+        <tr><td>Dallas Storey Ln</td><td class="n">20 min</td><td class="n">8.6%</td><td class="n">1.9 / 5.0</td></tr>
+        <tr><td>Carrollton I</td><td class="n">20 min</td><td class="n">5.5%</td><td class="n">7.4 / 13.6</td></tr>
+        <tr><td>Frisco II</td><td class="n">29 min</td><td class="n">4.9%</td><td class="n">4.8 / —</td></tr>
+        <tr><td>Katy</td><td class="n">30 min</td><td class="n">1.6%</td><td class="n">3.0 / 27</td></tr>
+        <tr><td>Lakeway</td><td class="n">39 min</td><td class="n">18.0%</td><td class="n">2.4 / 23</td></tr>
+        <tr><td>Roanoke</td><td class="n">41 min</td><td class="n">8.4%</td><td class="n">≈21 / ≈30</td></tr>
+        <tr><td>The Woodlands / Magnolia</td><td class="n">64 min</td><td class="n">6.0%</td><td class="n flag">57 of 99 unsold after ~3 yrs</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Evidence behind the conclusions</h2>
+    <div class="findings">
+      <div class="finding"><span class="what">Owners make money on resale</span><span class="how">Toy Barn 2018–22 campuses resell at 1.5–2.2× the launch price; Scottsdale resales reach $667–681/SF. LuxeLocker ranges from +70% (Lake Havasu) and +50% (Spanish Springs) to flat (Richland) and slightly negative (Prescott).</span></div>
+      <div class="finding"><span class="what">Most campuses sell fast</span><span class="how">Every Toy Barn campus since 2018 hit 50% closed within 3 months of first closing and 90% within 5–13 months. Newer campuses pre-sold 9–21 months before closing.</span></div>
+      <div class="finding"><span class="what">Who buys</span><span class="how">Toy Barn owners: median age 61–68, 13–35% under 60, 12–24% mail from out of state, 14–57% entity or trust owners. The Chandler-area list is youngest and most business-heavy.</span></div>
+      <div class="finding"><span class="what">Unit size and price</span><span class="how">At Toy Barn, Big Door and Motocave, price per SF is flat or lower for big units (Big Door: ~$250 for 560–740 SF vs ~$232 for 1,436–1,500 SF). Price comes from location and finish.</span></div>
+      <div class="finding"><span class="what">Where slow sales came from</span><span class="how">Execution and oversupply, not demographics: Prescott cleared only through bulk discounts and an affiliate takeout; Mesquite sold 18 of 215 units in 11 months; Richland took 4 years.</span></div>
+      <div class="finding"><span class="what">Works buyers and flex</span><span class="how">3–4% of LuxeLocker units went to operating businesses (deeds hide tradesmen buying in their own name). Utah flex condos ask $315–420/SF for 1,000–1,200 SF bays, so works units needn't be the cheap tier.</span></div>
+    </div>
+    <p class="note">Which measures line up with price across 26 campuses (rank correlation): $1M+ home share +0.56, $200K-household share +0.48, drive time to wealth −0.45, seasonal-home share +0.44, count of $200K households +0.30, median home value +0.28, contractor counts ≈ 0.</p>
+    <p class="note">Sources: 2,600+ unit-level deed and appraisal records (LuxeLocker's AZ/NV/WA/ID counties, Maricopa, Pinellas, Palm Beach, Sarasota, Hillsborough, Lake County IL, and 8 Texas appraisal districts), ACS 2022 tract data, IRS SOI, Census business patterns, Zillow county home values and Mapbox drive times.</p>
+  </section>
+
+  <section>
+    <h2>Live in ParcelLogic</h2>
+    <ul>
+      <li>Every garage-condo candidate parcel (164,810) carries a lane and price band:
+        <span class="lane edge">Edge of wealth</span> 1.2–1.8× local home $/SF (76,850 parcels),
+        <span class="lane core">Core</span> 0.9–1.3× (69,156),
+        <span class="lane growth">Growth corridor</span> 0.7–1.1× (18,804).</li>
+      <li>Wealth centers are clusters of neighborhoods with a $700K+ median home value, so strong $700–900K suburbs count.</li>
+      <li>Garage-condo needles: <strong>44,454 → 87,267</strong>. Needles with a current listing: <strong>238 → 474</strong>. Top counties: Chester PA, Middlesex MA, Bucks PA, Montgomery MD.</li>
+      <li>Scoring adds a wealth-depth bonus (up to +15) and a −10 penalty beyond 55 minutes from wealth. Every board card and the map use it.</li>
+    </ul>
+  </section>
+
+  <footer>Directional, not precise: treat every band as ±15%. The highest-priced campuses also sell nicer product, so location and product are partly mixed; the Toy Barn Scottsdale vs Chandler pair is the one fully controlled location test. Full methods and data: docs/KEEP_MARKET_CALIBRATION_2026-10.md.</footer>
+</div>
