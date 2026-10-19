@@ -22,9 +22,9 @@
    about 75% went to individuals and trusts. Tradesmen buying in their own name are invisible, so this is a floor,
    not a ceiling. Utah flex condos ask **$315–420/SF** for ~1,000–1,200 SF bays, so works units don't have to be the
    cheap tier.
-5. **Bigger units don't earn more per SF at the nicer projects** (flat or lower at Toy Barn, Big Door, Motocave).
-   Price comes from **location + finish/clubhouse product**, not unit size. The mix is a velocity and risk dial,
-   not a price lever.
+5. **Unit size isn't a reliable price lever.** Price per SF falls with size at Motor Enclave ($450 → $326) and Big
+   Door (~$250 → ~$232), is flat at Toy Barn and Luxe Dream, and rises at Motocave ($304 → $352) and LuxeLocker
+   Henderson. Price comes mainly from **location + finish/clubhouse product**; the mix is mainly a velocity and risk dial.
 
 ## The evidence
 
