@@ -180,3 +180,11 @@ def test_shipped_supply_csv_loads():
     # Scottsdale has real nearby supply; open ocean has none.
     assert km.competitor_units(33.62, -111.89, camps) > 0
     assert km.competitor_units(30.0, -60.0, camps) == 0
+
+
+def test_price_band_capped_to_observed_range():
+    """Middlesex MA (~$447/SF homes) edge lane: raw 537–805 -> capped 300–450."""
+    from app.services.keep_market import LANE_CORE, LANE_EDGE, price_band
+
+    assert price_band(LANE_EDGE, 447) == (300, 450)
+    assert price_band(LANE_CORE, 247) == (222, 321)   # Robbinsville unchanged

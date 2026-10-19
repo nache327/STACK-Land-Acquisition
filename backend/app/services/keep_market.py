@@ -119,12 +119,23 @@ def county_home_ppsf(county_typical_home_value: float | None) -> float | None:
     return county_typical_home_value / HOME_SF
 
 
+# Observed-range caps (Nache 2026-10-19). The ratio bands were calibrated mostly where homes
+# run $200–260/SF (AZ/FL); applied to ~$450/SF counties (Middlesex/Norfolk MA) they produced
+# $507–805/SF — above any developer sale we recorded (max ~$463, Jupiter). So the top of a band
+# never exceeds PRICE_BAND_CEILING, and its bottom never exceeds PRICE_BAND_LOW_CAP (about the
+# lowest price any high-wealth campus sold at: Scottsdale Airpark $298, Luxe Dream $307).
+PRICE_BAND_CEILING = 450
+PRICE_BAND_LOW_CAP = 300
+
+
 def price_band(lane: str | None, home_ppsf: float | None) -> tuple[int | None, int | None]:
-    """Supported garage-condo $/SF band for a lane: round(ratio × county home $/SF)."""
+    """Supported garage-condo $/SF band for a lane: round(ratio × county home $/SF), capped to
+    the observed range (see PRICE_BAND_CEILING / PRICE_BAND_LOW_CAP)."""
     if lane is None or home_ppsf is None or home_ppsf <= 0 or lane not in PRICE_RATIO_BANDS:
         return None, None
     lo, hi = PRICE_RATIO_BANDS[lane]
-    return int(round(lo * home_ppsf)), int(round(hi * home_ppsf))
+    return (min(int(round(lo * home_ppsf)), PRICE_BAND_LOW_CAP),
+            min(int(round(hi * home_ppsf)), PRICE_BAND_CEILING))
 
 
 @dataclass(frozen=True)
