@@ -113,12 +113,29 @@ _KEEP_COLUMNS = [
     # user-editable board column and is deliberately NEVER pushed or overwritten.
     "keep_land_psf", "keep_hard_psf", "keep_soft_psf", "keep_selling_pct",
     "keep_dev_fee_pct", "keep_margin_basis",
+    # Usable acres + existing building (owner decision 2026-10-19, migration 0060):
+    # gross vs usable acres (gross minus NWI wetland UNION FEMA SFHA), the assessor
+    # improvement share and its existing-building flag, the contingency fraction (its
+    # own cost line now -- keep_hard_psf excludes it) and the card flag
+    # (existing_building | negative_margin | verify). keep_land_psf / keep_margin_pct
+    # are priced on USABLE acres when measured. The board's own override columns
+    # (keep_dev_fee_override, keep_contingency_override) are NEVER pushed.
+    "keep_gross_acres", "keep_usable_acres", "keep_existing_building",
+    "keep_improvement_share", "keep_contingency_pct", "keep_flag",
 ]
+# Dashboard-owned, user-editable columns: never pushed, never overwritten.
+_BOARD_OWNED_KEEP_COLUMNS = (
+    "keep_sf_per_ac", "keep_dev_fee_override", "keep_contingency_override",
+)
 # Land-aware fields recomputed per card from the card's own sale_price / acres / city.
 _KEEP_LAND_COLUMNS = (
     "keep_margin_pct", "keep_land_psf", "keep_hard_psf", "keep_soft_psf",
     "keep_selling_pct", "keep_dev_fee_pct", "keep_margin_basis",
+    "keep_gross_acres", "keep_usable_acres", "keep_contingency_pct", "keep_flag",
 )
+# Board statuses whose cards are refreshed even when the current sync didn't carry
+# them (refresh_keep_fields_for_unsynced) -- open cards the owner is still looking at.
+_KEEP_REFRESH_STATUSES = ("new", "reviewing", "watching")
 # Board asset types that carry keep data (a storage-only card gets NULLs).
 _KEEP_ASSET_TYPES = ("luxury_garage_condo", "both")
 _JSONB_COLUMNS = {"factors", "soft_flags"}
@@ -127,7 +144,8 @@ _JSONB_COLUMNS = {"factors", "soft_flags"}
 _FLOAT_COLUMNS = {
     "acres", "sale_price", "price_per_ac", "sqft_per_capita_3mi",
     "keep_land_psf", "keep_hard_psf", "keep_soft_psf", "keep_selling_pct",
-    "keep_dev_fee_pct",
+    "keep_dev_fee_pct", "keep_gross_acres", "keep_usable_acres",
+    "keep_improvement_share", "keep_contingency_pct",
 }
 
 # Board statuses that mean "never show me this parcel again". Their cards are
@@ -331,18 +349,38 @@ async def _keep_metrics(parcel_ids: list[int]) -> dict[int, dict]:
     return {r["parcel_id"]: _keep_fields(dict(r)) for r in rows}
 
 
+def _num(v) -> float | None:
+    try:
+        return None if v is None else float(v)
+    except (TypeError, ValueError):
+        return None
+
+
 def _land_fields(
     tier: str | None,
     state: str | None,
     sale_price=None,
     acres=None,
     city: str | None = None,
+    usable_acres=None,
+    gross_acres=None,
+    existing_building: bool | None = None,
 ) -> dict:
     """The land-aware margin fields for one card. Land $/SF comes from the card's own
-    listing price + acres at the default buildable SF/acre; no price → margin NULL and
-    basis 'no_price' (never a margin on a guessed land cost)."""
-    lp = keep_market.land_psf(sale_price, acres)
+    listing price spread over its USABLE acres (gross − wetland ∪ SFHA, from
+    parcel_keep_metrics) when measured, else its gross acres, at the default buildable
+    SF/acre. No price → margin NULL and basis 'no_price'; a measured usable of 0 with a
+    price → basis 'no_usable_land' (never a margin on a guessed land cost)."""
+    gross = _num(acres) if acres is not None else _num(gross_acres)
+    usable = _num(usable_acres)
+    lp = keep_market.land_psf(sale_price, keep_market.land_acres(usable, gross))
     margin = keep_market.margin_pct(tier, state, lp, city)
+    if lp is not None:
+        basis = "listing"
+    elif usable is not None and usable <= 0 and _num(sale_price):
+        basis = "no_usable_land"
+    else:
+        basis = "no_price"
     return {
         "keep_margin_pct": None if margin is None else int(round(margin * 100)),
         "keep_land_psf": None if lp is None else round(lp, 2),
@@ -350,7 +388,11 @@ def _land_fields(
         "keep_soft_psf": round(keep_market.soft_fin_psf(), 2),
         "keep_selling_pct": round(keep_market.selling_cost_pct(state, city), 5),
         "keep_dev_fee_pct": keep_market.DEV_FEE_PCT,
-        "keep_margin_basis": "listing" if lp is not None else "no_price",
+        "keep_margin_basis": basis,
+        "keep_gross_acres": None if gross is None else round(gross, 3),
+        "keep_usable_acres": None if usable is None else round(usable, 3),
+        "keep_contingency_pct": keep_market.CONTINGENCY_PCT,
+        "keep_flag": keep_market.keep_flag(lp, margin, existing_building),
     }
 
 
@@ -358,11 +400,15 @@ def _keep_fields(r: dict, sale_price=None, acres=None, city: str | None = None) 
     """One parcel_keep_metrics row (+ parcel_state) → the board's keep_* fields.
 
     The margin is land-aware: pass the card's listing sale_price / acres / city
-    (_apply_keep re-derives them from the push row). The private _tier/_state keys
-    carry what that re-derivation needs and are never pushed (not in _KEEP_COLUMNS)."""
+    (_apply_keep re-derives them from the push row). The private _tier/_state/_usable/
+    _gross keys carry what that re-derivation needs and are never pushed (not in
+    _KEEP_COLUMNS). A row from a pre-0060 table simply lacks the usable/building keys
+    → gross-acre pricing and NULL building fields."""
     tier = keep_market.keep_tier(r.get("keep_lane"), r.get("owner_1m_share_20"))
     lo, hi = keep_market.TIER_PRICE.get(tier, (None, None)) if tier else (None, None)
     state = r.get("parcel_state")
+    share = _num(r.get("improvement_share"))
+    building = r.get("existing_building")
     out = {
         "keep_lane": r.get("keep_lane"),
         "keep_price_low": r.get("price_band_low"),
@@ -373,14 +419,23 @@ def _keep_fields(r: dict, sale_price=None, acres=None, city: str | None = None) 
         "keep_tier_high": hi,
         "keep_mix": keep_market.mix_label(tier),
         "keep_competitor_units_30": r.get("competitor_units_30"),
+        "keep_existing_building": building,
+        "keep_improvement_share": None if share is None else round(share, 4),
         "_tier": tier,
         "_state": state,
+        "_usable": r.get("usable_acres"),
+        "_gross": r.get("gross_acres"),
     }
     if r.get("keep_lane") is None:
         # No keep measurement at all → every keep_* field NULL.
         out.update({c: None for c in _KEEP_LAND_COLUMNS})
+        out["keep_existing_building"] = None
+        out["keep_improvement_share"] = None
     else:
-        out.update(_land_fields(tier, state, sale_price, acres, city))
+        out.update(_land_fields(tier, state, sale_price, acres, city,
+                                usable_acres=r.get("usable_acres"),
+                                gross_acres=r.get("gross_acres"),
+                                existing_building=building))
     return out
 
 
@@ -393,9 +448,62 @@ def _apply_keep(row: dict, keep: dict | None) -> None:
         keep = keep | _land_fields(
             keep["_tier"], keep.get("_state"), row.get("sale_price"), row.get("acres"),
             row.get("situs_city") or row.get("city"),
+            usable_acres=keep.get("_usable"), gross_acres=keep.get("_gross"),
+            existing_building=keep.get("keep_existing_building"),
         )
     for c in _KEEP_COLUMNS:
         row[c] = keep.get(c) if use else None
+
+
+def _update_keep_sql(columns: list[str]) -> str:
+    """UPDATE deal_prospect SET <keep cols> WHERE parcel_id = $1 (float casts as in the
+    upsert). Only the given keep columns -- never facts, dispositions or overrides."""
+    sets = []
+    for i, c in enumerate(columns, start=2):
+        ph = f"${i}::float8" if c in _FLOAT_COLUMNS else f"${i}"
+        sets.append(f"{c}={ph}")
+    return f"UPDATE deal_prospect SET {', '.join(sets)} WHERE parcel_id = $1"
+
+
+async def refresh_keep_fields_for_unsynced(
+    dashboard_conn, synced_ids, keep_cols: list[str]
+) -> int:
+    """Recompute keep_* on open garage-condo cards the current sync did NOT carry.
+
+    A card can stay on the board (status new / reviewing / watching) after it drops out
+    of the digest selection; run_push then never rewrites it and its keep_* numbers go
+    stale (a margin still priced on gross acres, a deleted condo-unit keep row still
+    showing a lane). This re-derives the same keep_* fields from parcel_keep_metrics +
+    the card's own sale_price / acres / city and writes ONLY the keep columns the board
+    has. A card whose keep row is gone gets NULLs (unmeasured), never the old numbers.
+    Board-owned override columns are never written. Returns the cards updated."""
+    cols = [c for c in keep_cols if c not in _BOARD_OWNED_KEEP_COLUMNS]
+    if not cols:
+        return 0
+    cards = await dashboard_conn.fetch(
+        "SELECT parcel_id, sale_price, acres, situs_city, city FROM deal_prospect "
+        "WHERE coalesce(status, 'new') = ANY($1::text[]) "
+        "AND asset_type = ANY($2::text[]) "
+        "AND NOT (parcel_id = ANY($3::bigint[]))",
+        list(_KEEP_REFRESH_STATUSES),
+        list(_KEEP_ASSET_TYPES),
+        list(synced_ids),
+    )
+    if not cards:
+        return 0
+    # A read failure propagates (the caller logs it) -- never NULL-out cards because
+    # the keep read failed.
+    keep = await _keep_metrics([c["parcel_id"] for c in cards])
+    sql = _update_keep_sql(cols)
+    args = []
+    for c in cards:
+        row = {"asset_type": "luxury_garage_condo", "sale_price": _num(c["sale_price"]),
+               "acres": _num(c["acres"]), "situs_city": c["situs_city"], "city": c["city"]}
+        _apply_keep(row, keep.get(c["parcel_id"]))
+        args.append((c["parcel_id"], *[row.get(k) for k in cols]))
+    async with dashboard_conn.transaction():
+        await dashboard_conn.executemany(sql, args)
+    return len(args)
 
 
 def _dashboard_dsn() -> str | None:
@@ -636,6 +744,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
     dispositions = 0
     delisted = 0
     purged = 0
+    keep_refreshed = 0
     try:
         # Pull the board's dispositions back FIRST, regardless of whether there are
         # new facts to push, so today's passed/dead marks are tombstoned before the
@@ -675,6 +784,14 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
             delisted = await _cleanup_delisted(conn)
         except Exception:
             logger.exception("dashboard_push: delisted cleanup failed; push unaffected")
+        # Open garage-condo cards this sync didn't carry still get today's keep_*
+        # numbers (never stale). Best-effort; a failure leaves them as they were.
+        try:
+            keep_refreshed = await refresh_keep_fields_for_unsynced(
+                conn, [r["parcel_id"] for r in rows], keep_cols
+            )
+        except Exception:
+            logger.exception("dashboard_push: keep refresh of unsynced cards failed")
         # Record push-health so the board can show "last synced" and a stale/failed
         # sync is visible. Best-effort; a missing push_run table (migration lag)
         # must not fail the sync.
@@ -692,8 +809,9 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
 
     logger.info(
         "dashboard_push: synced %d deal(s) across %d filter(s); %d disposition(s) pulled back; "
-        "%d delisted card(s) removed; %d passed/dead card(s) purged",
-        len(rows), len(filters), dispositions, delisted, purged,
+        "%d delisted card(s) removed; %d passed/dead card(s) purged; "
+        "%d unsynced card(s) keep-refreshed",
+        len(rows), len(filters), dispositions, delisted, purged, keep_refreshed,
     )
     return {
         "status": "ok",
@@ -702,6 +820,7 @@ async def run_push(force: bool = True, filter_id: int | None = None) -> dict:
         "dispositions": dispositions,
         "delisted_removed": delisted,
         "closed_purged": purged,
+        "keep_refreshed": keep_refreshed,
     }
 
 

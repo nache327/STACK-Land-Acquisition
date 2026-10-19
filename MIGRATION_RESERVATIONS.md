@@ -20,6 +20,7 @@ it: **claim the number here before authoring the alembic file.**
 | 0038 | adarench/nearest-district-fallback | parcels.zone_binding_method varchar + index for Op-5 spatial_backfill nearest-fallback | 2026-06-04T18:00 | Dispatch J |
 | 0058 | feat/keep-market-phase-b | parcel_keep_metrics (LGC keep-market depth: lane / price band / velocity) | 2026-10-15T18:30 | Phase B |
 | 0059 | feat/keep-tier-mix-cards | parcel_keep_metrics.competitor_units_30 (garage-condo units within ~30 min, info only) | 2026-10-19T18:00 | Keep tier/mix cards |
+| 0060 | feat/keep-usable-acres | parcel_keep_metrics usable/gross/wetland/sfha acres, improvement_share, existing_building | 2026-10-19T20:00 | Keep usable acres |
 | (open) | | | | next available number for new claims |
 
 ## Rules
