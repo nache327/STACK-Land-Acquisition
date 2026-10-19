@@ -44,7 +44,9 @@ the previous gate rather than reading it as a failure.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+from pathlib import Path
 
 # ── Lane names (persisted in parcel_keep_metrics.keep_lane; pushed to the board) ──
 LANE_EDGE = "edge_of_wealth"
@@ -171,3 +173,188 @@ def far_from_wealth_delta(wealth_center_drive_min: float | None) -> float:
     if wealth_center_drive_min is not None and wealth_center_drive_min > FAR_FROM_WEALTH_MIN:
         return FAR_FROM_WEALTH_PENALTY
     return 0.0
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CARD STRATEGY — price tier / unit mix / margin (owner decision 2026-10-19)
+# ═════════════════════════════════════════════════════════════════════════════
+# The Keep is a MIXED collector + business-owner garage-condo community priced
+# $270–350/SF. Every garage-condo (LGC) board card shows a price TIER, the suggested
+# unit MIX (Premium / Standard / Signature %) for that tier, the competitor units
+# within ~30 min (information only — never a gate), and the margin on STACK's real
+# costs. The tier is derived from the keep lane above plus wealth depth:
+#
+#   edge_of_wealth                            → tier_325_350
+#   core AND owner_1m_share_20 >= 1.5%        → tier_295_325
+#   core otherwise                            → tier_270_295
+#   growth_corridor                           → 'pass' (below the $270 floor)
+#   lane unmeasured (None)                    → None (never guess)
+#
+# Cost model = STACK's actual inputs, reconciled in
+# ``outputs/keep_research/00_model_reconcile.md`` (2026-10-19): per ~90,000 SF campus
+# (sellable = building) hard $127.50/SF (Build Co, 0% fee) + land $3.0M + soft $1.0M +
+# financing ~$1.1M ⇒ TDC $16.575M = $184.17/SF. Selling cost = 0.75% marketing + the
+# state's seller transfer tax (no brokers). Margin is on COST at the tier midpoint.
+# No acreage or flood filter lives here on purpose — the owner wants to see more parcels.
+
+TIER_325_350 = "tier_325_350"
+TIER_295_325 = "tier_295_325"
+TIER_270_295 = "tier_270_295"
+TIER_PASS = "pass"
+TIERS: tuple[str, ...] = (TIER_325_350, TIER_295_325, TIER_270_295)
+
+# Supported $/SF per tier (low, high).
+TIER_PRICE: dict[str, tuple[int, int]] = {
+    TIER_325_350: (325, 350),
+    TIER_295_325: (295, 325),
+    TIER_270_295: (270, 295),
+}
+
+# Suggested unit mix per tier: (Premium %, Standard %, Signature %).
+TIER_MIX: dict[str, tuple[int, int, int]] = {
+    TIER_325_350: (50, 30, 20),
+    TIER_295_325: (30, 40, 30),
+    TIER_270_295: (15, 40, 45),
+}
+
+# Core sites at/above this wealth depth earn the upper core tier.
+TIER_CORE_UPPER_SHARE_MIN = CORE_OWNER_1M_SHARE_MIN  # 1.5%
+
+# ── STACK cost model (owner inputs, per 90,000 SF campus) ─────────────────────
+CAMPUS_SF = 90_000.0
+COST_LAND = 3_000_000.0
+COST_SOFT = 1_000_000.0
+COST_HARD_PSF = 127.50
+COST_FINANCING = 1_100_000.0
+ALL_IN_COST_PSF = round(
+    COST_HARD_PSF + (COST_LAND + COST_SOFT + COST_FINANCING) / CAMPUS_SF, 2
+)  # 184.17
+
+MARKETING_PCT = 0.0075
+# Seller transfer tax (typical, state level) keyed by 2-letter state.
+SELLER_TRANSFER_TAX: dict[str, float] = {
+    "NJ": 0.0084,
+    "FL": 0.0070,
+    "IL": 0.0015,
+    "PA": 0.0100,
+    "MA": 0.0046,
+}
+DEFAULT_SELLER_TRANSFER_TAX = 0.0100
+
+
+def keep_tier(lane: str | None, owner_1m_share_20: float | None) -> str | None:
+    """Price tier for a garage-condo card from its keep lane (+ wealth depth for core).
+
+    Returns 'tier_325_350' | 'tier_295_325' | 'tier_270_295' | 'pass' | None. A core
+    site with an unmeasured share falls to the lower core tier (never promoted on a
+    guess); an unmeasured / unknown lane is None."""
+    if lane == LANE_EDGE:
+        return TIER_325_350
+    if lane == LANE_CORE:
+        if owner_1m_share_20 is not None and owner_1m_share_20 >= TIER_CORE_UPPER_SHARE_MIN:
+            return TIER_295_325
+        return TIER_270_295
+    if lane == LANE_GROWTH:
+        return TIER_PASS
+    return None
+
+
+def mix_label(tier: str | None) -> str | None:
+    """'50/30/20' style Premium/Standard/Signature mix; None for 'pass'/None."""
+    mix = TIER_MIX.get(tier) if tier else None
+    return "/".join(str(p) for p in mix) if mix else None
+
+
+def selling_cost_pct(state: str | None) -> float:
+    """0.75% marketing + the state's seller transfer tax (default 1.0%)."""
+    st = (state or "").strip().upper()
+    return MARKETING_PCT + SELLER_TRANSFER_TAX.get(st, DEFAULT_SELLER_TRANSFER_TAX)
+
+
+def margin_pct(tier: str | None, state: str | None) -> float | None:
+    """Margin on cost at the tier midpoint, net of selling costs:
+
+        (mid × (1 − selling) − 184.17) / 184.17
+
+    None for 'pass' / None (no supported price)."""
+    band = TIER_PRICE.get(tier) if tier else None
+    if band is None:
+        return None
+    mid = (band[0] + band[1]) / 2.0
+    net = mid * (1.0 - selling_cost_pct(state))
+    return (net - ALL_IN_COST_PSF) / ALL_IN_COST_PSF
+
+
+# ── Competitor supply within ~30 min (information only — never a gate) ────────
+# Source: backend/data/keep_supply_campuses.csv, a column subset of the national
+# garage-condo supply layer (outputs/keep_national/supply_campuses.csv, method in
+# outputs/keep_national/supply_method.md; the known M1 Concourse duplicate dropped).
+#
+# PROXY: 30 km straight-line from the parcel's census-tract point stands in for a
+# 30-minute drive (no per-parcel Mapbox call). Units per campus = the LARGER of
+# units_built and units_planned (blank = 0): in that file units_planned is the
+# campus's total planned count — ~300 rows carry built == planned — so summing the two
+# would double-count (supply_method.md: "Units are the larger of built and planned").
+# OGC anonymous points are geolocated to ~5–10 km and include some boat/RV condos, and
+# a few Florida points are very large; treat the count as direction, not precision.
+SUPPLY_CSV_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "keep_supply_campuses.csv"
+COMPETITOR_RADIUS_KM = 30.0
+_EARTH_KM = 6371.0088
+
+
+@dataclass(frozen=True)
+class SupplyCampus:
+    name: str
+    lat: float
+    lng: float
+    units: int
+
+
+def _units(v: str | None) -> int:
+    try:
+        return max(0, int(round(float(v)))) if v not in (None, "") else 0
+    except ValueError:
+        return 0
+
+
+def load_supply_campuses(path=None) -> list[SupplyCampus]:
+    """Campuses with coordinates from the supply CSV (rows without lat/lng skipped)."""
+    import csv
+
+    out: list[SupplyCampus] = []
+    with Path(path or SUPPLY_CSV_PATH).open(newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            try:
+                lat, lng = float(r["lat"]), float(r["lng"])
+            except (TypeError, ValueError):
+                continue
+            units = max(_units(r.get("units_built")), _units(r.get("units_planned")))
+            out.append(SupplyCampus(r.get("name") or "", lat, lng, units))
+    return out
+
+
+def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * _EARTH_KM * math.asin(min(1.0, math.sqrt(a)))
+
+
+def competitor_units(
+    lat: float | None,
+    lng: float | None,
+    campuses: list[SupplyCampus],
+    radius_km: float = COMPETITOR_RADIUS_KM,
+) -> int | None:
+    """Garage-condo units (built or planned) within ``radius_km`` straight-line of a
+    point. None when the point is unknown; 0 is a real measured zero."""
+    if lat is None or lng is None:
+        return None
+    dlat = radius_km / 111.0 + 0.01  # cheap latitude-band prefilter
+    total = 0
+    for c in campuses:
+        if abs(c.lat - lat) > dlat:
+            continue
+        if haversine_km(lat, lng, c.lat, c.lng) <= radius_km:
+            total += c.units
+    return total

@@ -168,3 +168,72 @@ async def test_push_survives_keep_read_failure(monkeypatch):
     (sql, args), = _inserts(board)
     cols = dp._FACT_COLUMNS + dp._KEEP_COLUMNS
     assert args[cols.index("keep_lane")] is None
+
+
+# ── Tier / mix / competitors / margin (card strategy 2026-10-19) ─────────────
+
+_OLD_KEEP = ["keep_lane", "keep_price_low", "keep_price_high", "keep_velocity_flag"]
+_TIER_KEEP = ["keep_tier", "keep_tier_low", "keep_tier_high", "keep_mix",
+              "keep_competitor_units_30", "keep_margin_pct"]
+
+
+def test_keep_columns_include_tier_fields_in_order():
+    assert dp._KEEP_COLUMNS == _OLD_KEEP + _TIER_KEEP
+
+
+def test_keep_fields_core_nj():
+    f = dp._keep_fields({"keep_lane": "core", "owner_1m_share_20": 0.024,
+                         "price_band_low": 222, "price_band_high": 321,
+                         "velocity_flag": None, "competitor_units_30": 64,
+                         "parcel_state": "NJ"})
+    assert f["keep_tier"] == "tier_295_325"
+    assert (f["keep_tier_low"], f["keep_tier_high"]) == (295, 325)
+    assert f["keep_mix"] == "30/40/30"
+    assert f["keep_competitor_units_30"] == 64
+    assert f["keep_margin_pct"] == 66
+    assert f["keep_price_low"] == 222
+
+
+def test_keep_fields_growth_is_pass_and_unmigrated_row_is_null():
+    f = dp._keep_fields({"keep_lane": "growth_corridor", "owner_1m_share_20": 0.002,
+                         "parcel_state": "TN"})  # no competitor_units_30 key (pre-0059)
+    assert f["keep_tier"] == "pass"
+    assert f["keep_tier_low"] is None and f["keep_mix"] is None
+    assert f["keep_margin_pct"] is None and f["keep_competitor_units_30"] is None
+    f = dp._keep_fields({"keep_lane": None})
+    assert all(v is None for v in f.values())
+
+
+_KEEP_TIER = {1: dp._keep_fields({
+    "keep_lane": "edge_of_wealth", "owner_1m_share_20": 0.05, "price_band_low": 356,
+    "price_band_high": 534, "velocity_flag": None, "competitor_units_30": 120,
+    "parcel_state": "NJ"})}
+
+
+@pytest.mark.asyncio
+async def test_push_includes_tier_columns_when_board_has_them(monkeypatch):
+    board = FakeBoard(dp._KEEP_COLUMNS)
+    _patch(monkeypatch, board, _KEEP_TIER)
+    await dp.run_push()
+    (sql, args), = _inserts(board)
+    cols = dp._FACT_COLUMNS + dp._KEEP_COLUMNS
+    assert "keep_mix=EXCLUDED.keep_mix" in sql
+    assert args[cols.index("keep_tier")] == "tier_325_350"
+    assert args[cols.index("keep_tier_low")] == 325
+    assert args[cols.index("keep_tier_high")] == 350
+    assert args[cols.index("keep_mix")] == "50/30/20"
+    assert args[cols.index("keep_competitor_units_30")] == 120
+    assert args[cols.index("keep_margin_pct")] == round(
+        ((337.5 * (1 - 0.0159)) - 184.17) / 184.17 * 100)
+
+
+@pytest.mark.asyncio
+async def test_push_omits_tier_columns_on_board_with_only_phase_b_columns(monkeypatch):
+    board = FakeBoard(_OLD_KEEP)
+    _patch(monkeypatch, board, _KEEP_TIER)
+    result = await dp.run_push()
+    (sql, args), = _inserts(board)
+    assert "keep_lane" in sql
+    assert not any(c in sql for c in _TIER_KEEP)
+    assert len(args) == len(dp._FACT_COLUMNS) + len(_OLD_KEEP)
+    assert result["synced"] == 1

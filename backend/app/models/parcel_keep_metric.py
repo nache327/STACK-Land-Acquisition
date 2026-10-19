@@ -37,6 +37,9 @@ class ParcelKeepMetric(Base):
     price_band_low: Mapped[int | None] = mapped_column(Integer, nullable=True)
     price_band_high: Mapped[int | None] = mapped_column(Integer, nullable=True)
     velocity_flag: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Garage-condo units (built or planned) within ~30 min — info only (migration 0059;
+    # filled by scripts/backfill_keep_competitors.py and precompute_keep_metrics.py).
+    competitor_units_30: Mapped[int | None] = mapped_column(Integer, nullable=True)
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

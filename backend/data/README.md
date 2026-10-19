@@ -57,3 +57,14 @@ Op-5 Master brief. Discovery code should accept either field, treating Bergen's
   vendor classification per county (schema v2 entries include vendor metadata
   used by `nj_municipal_discovery.py`).
 - `zoning_source_tenants.json` — tenant configuration for the discovery scrape.
+
+## Garage-condo supply (`keep_supply_campuses.csv`)
+
+Column subset (name, operator, lat, lng, units_built, units_planned, status, state) of
+the national garage-condo supply layer `outputs/keep_national/supply_campuses.csv`
+(method: `outputs/keep_national/supply_method.md`), copied here so production code never
+reads `outputs/`. The known M1 Concourse duplicate row is dropped. Read by
+`app.services.keep_market.competitor_units` → `parcel_keep_metrics.competitor_units_30`
+(info-only "competitor units within ~30 min" on garage-condo board cards). Refresh by
+re-copying the columns from a rebuilt supply layer, then run
+`scripts/backfill_keep_competitors.py`.
