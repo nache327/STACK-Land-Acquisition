@@ -151,6 +151,17 @@ def get_or_create_jurisdiction() -> str:
     return jur_id
 
 
+def _geom_acres(geom) -> float | None:
+    """Geodetic acres of a WGS84 geometry (== ingestion._geom_acres)."""
+    from pyproj import Geod
+
+    try:
+        area_sqm = abs(Geod(ellps="WGS84").geometry_area_perimeter(geom)[0])
+    except Exception:
+        return None
+    return round(area_sqm / 4046.8564224, 4) if area_sqm > 0 else None
+
+
 def download_parcels() -> list[dict]:
     logger.info("Downloading Allentown parcels from City_Landuse …")
     all_features: list = []
@@ -209,11 +220,11 @@ def insert_parcels(features: list[dict], jur_id: str) -> int:
         except Exception:
             continue
         address = props.get("PROPERTYADDR")
-        sqm = props.get("Shape__Area")
-        try:
-            acres = round(float(sqm) / 4046.856, 4) if sqm else None
-        except (ValueError, TypeError):
-            acres = None
+        # NOT Shape__Area: City_Landuse is in PA State Plane South (US feet), so its
+        # Shape__Area is square FEET. Dividing it by 4046.856 (m^2/acre) stored every
+        # Allentown acreage 10.76x too large (repaired 2026-10-19 by
+        # scripts/_repair_keep_acreage_2026_10_19.py). Use the geodetic area instead.
+        acres = _geom_acres(geom)
         batch.append((
             jur_id,
             str(apn),

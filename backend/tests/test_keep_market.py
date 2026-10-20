@@ -246,3 +246,59 @@ def test_price_band_capped_to_observed_range():
 
     assert price_band(LANE_EDGE, 447) == (300, 450)
     assert price_band(LANE_CORE, 247) == (222, 321)   # Robbinsville unchanged
+
+
+# ── Usable acres / contingency line / existing building / flags (2026-10-19) ──
+
+def test_hard_psf_excludes_contingency_and_contingency_is_its_own_line(monkeypatch):
+    assert km.hard_psf("NJ") == 127.5
+    assert km.contingency_psf("NJ") == 0.0
+    monkeypatch.setattr(km, "CONTINGENCY_PCT", 0.10)
+    assert km.hard_psf("NJ") == 127.5  # unchanged: contingency is NOT folded in
+    assert km.contingency_psf("NJ") == pytest.approx(12.75)
+    assert km.contingency_psf("FL") == pytest.approx(127.5 * 0.95 * 0.10)
+    # all-in still carries it: (127.5 + 12.75 + 23.33 + 33.33) × 1.05
+    assert km.all_in_psf(33.333333, "NJ") == pytest.approx(
+        (127.5 + 12.75 + km.soft_fin_psf() + 33.333333) * 1.05)
+
+
+def test_default_cost_inputs_unchanged_by_the_split():
+    assert km.CONTINGENCY_PCT == 0.0 and km.DEV_FEE_PCT == 0.05
+    assert km.all_in_psf(km.land_psf(3e6, 6), "NJ") == pytest.approx(193.375)
+
+
+def test_land_acres_prefers_usable_then_gross():
+    assert km.land_acres(4.0, 6.0) == 4.0
+    assert km.land_acres(None, 6.0) == 6.0
+    assert km.land_acres(0.0, 6.0) == 0.0  # measured: nothing buildable
+    assert km.land_acres(-1.0, 6.0) == 0.0
+    assert km.land_acres(None, None) is None
+    # $3M over 4 usable acres instead of 6 gross -> $50/SF, not $33.33
+    assert km.land_psf(3e6, km.land_acres(4.0, 6.0)) == pytest.approx(50.0)
+    assert km.land_psf(3e6, km.land_acres(0.0, 6.0)) is None
+
+
+def test_improvement_share_and_existing_building():
+    assert km.EXISTING_BUILDING_SHARE == 0.25
+    assert km.improvement_share(250, 1000) == 0.25
+    assert km.improvement_share(100, None, land_value=300) == 0.25
+    assert km.improvement_share(0, 500) == 0.0
+    assert km.improvement_share(900, 600) == 1.0  # clamped
+    for args in ((None, 1000), (100, None), (100, 0), (-5, 100), ("x", 100)):
+        assert km.improvement_share(*args) is None
+    assert km.existing_building(0.25) is True
+    assert km.existing_building(0.249) is False
+    assert km.existing_building(None) is None
+
+
+def test_keep_flag_priority():
+    assert km.keep_flag(40.0, -0.10, True) == "existing_building"
+    assert km.keep_flag(5.0, 0.95, True) == "existing_building"
+    assert km.keep_flag(40.0, -0.01, False) == "negative_margin"
+    assert km.keep_flag(5.0, -0.01, None) == "negative_margin"
+    assert km.keep_flag(9.99, 0.40, False) == "verify"
+    assert km.keep_flag(40.0, 0.81, None) == "verify"
+    assert km.keep_flag(10.0, 0.80, False) is None
+    assert km.keep_flag(40.0, 0.30, False) is None
+    assert km.keep_flag(None, None, None) is None
+    assert km.keep_flag(None, None, False) is None

@@ -177,10 +177,12 @@ _TIER_KEEP = ["keep_tier", "keep_tier_low", "keep_tier_high", "keep_mix",
               "keep_competitor_units_30", "keep_margin_pct"]
 _LAND_KEEP = ["keep_land_psf", "keep_hard_psf", "keep_soft_psf", "keep_selling_pct",
               "keep_dev_fee_pct", "keep_margin_basis"]
+_USABLE_KEEP = ["keep_gross_acres", "keep_usable_acres", "keep_existing_building",
+                "keep_improvement_share", "keep_contingency_pct", "keep_flag"]
 
 
 def test_keep_columns_include_tier_fields_in_order():
-    assert dp._KEEP_COLUMNS == _OLD_KEEP + _TIER_KEEP + _LAND_KEEP
+    assert dp._KEEP_COLUMNS == _OLD_KEEP + _TIER_KEEP + _LAND_KEEP + _USABLE_KEEP
 
 
 def test_keep_sf_per_ac_is_never_pushed():
@@ -283,6 +285,6 @@ async def test_push_omits_tier_columns_on_board_with_only_phase_b_columns(monkey
     result = await dp.run_push()
     (sql, args), = _inserts(board)
     assert "keep_lane" in sql
-    assert not any(c in sql for c in _TIER_KEEP + _LAND_KEEP)
+    assert not any(c in sql for c in _TIER_KEEP + _LAND_KEEP + _USABLE_KEEP)
     assert len(args) == len(dp._FACT_COLUMNS) + len(_OLD_KEEP)
     assert result["synced"] == 1

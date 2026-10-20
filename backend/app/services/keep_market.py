@@ -195,7 +195,8 @@ def far_from_wealth_delta(wealth_center_drive_min: float | None) -> float:
 # (sellable = building) hard $127.50/SF (Build Co, 0% fee) + land $3.0M + soft $1.0M +
 # financing ~$1.1M ⇒ TDC $16.575M = $184.17/SF. Selling cost = 0.75% marketing + the
 # state's seller transfer tax (no brokers). Margin is on COST at the tier midpoint.
-# No acreage or flood filter lives here on purpose — the owner wants to see more parcels.
+# No acreage or flood FILTER lives here on purpose — the owner wants to see more parcels.
+# Usable acres (wetland / SFHA removed) only re-price the land; they never drop a card.
 
 TIER_325_350 = "tier_325_350"
 TIER_295_325 = "tier_295_325"
@@ -225,9 +226,13 @@ TIER_CORE_UPPER_SHARE_MIN = CORE_OWNER_1M_SHARE_MIN  # 1.5%
 # one all-in $184.17/SF for every card. Land is what varies most between tiers, so the
 # card margin now uses each parcel's ACTUAL listing price (owner decision 2026-10-19):
 #
-#   land_psf   = sale_price / (acres × sf_per_acre)
-#   all_in_psf = (HARD_BASE_PSF × state factor × (1 + CONTINGENCY_PCT)
-#                 + SOFT_PSF + FIN_PSF + land_psf) × (1 + DEV_FEE_PCT)
+#   land_psf   = sale_price / (land_acres × sf_per_acre)
+#                land_acres = USABLE acres (gross − NWI wetland ∪ FEMA SFHA) when
+#                measured, else gross acres (see land_acres())
+#   hard_psf   = HARD_BASE_PSF × state factor            (contingency NOT included)
+#   contingency_psf = hard_psf × CONTINGENCY_PCT          (its own cost line)
+#   all_in_psf = (hard_psf + contingency_psf + SOFT_PSF + FIN_PSF + land_psf)
+#                × (1 + DEV_FEE_PCT)
 #   margin     = (tier_mid × (1 − selling_cost_pct) − all_in_psf) / all_in_psf
 CAMPUS_SF = 90_000.0
 COST_LAND = 3_000_000.0
@@ -317,8 +322,14 @@ def hard_factor(state: str | None) -> float:
 
 
 def hard_psf(state: str | None) -> float:
-    """Hard cost $/SF for the state: base × regional factor × (1 + contingency)."""
-    return HARD_BASE_PSF * hard_factor(state) * (1.0 + CONTINGENCY_PCT)
+    """Hard cost $/SF for the state: base × regional factor. Contingency is NOT in
+    here — it is its own cost line (contingency_psf) so the card can show both."""
+    return HARD_BASE_PSF * hard_factor(state)
+
+
+def contingency_psf(state: str | None) -> float:
+    """Hard-cost contingency $/SF = hard_psf × CONTINGENCY_PCT (0 by owner default)."""
+    return hard_psf(state) * CONTINGENCY_PCT
 
 
 def soft_fin_psf() -> float:
@@ -345,8 +356,29 @@ def land_psf(
 
 
 def all_in_psf(land_psf: float, state: str | None) -> float:
-    """All-in development cost $/SF including land and the development fee."""
-    return (hard_psf(state) + soft_fin_psf() + land_psf) * (1.0 + DEV_FEE_PCT)
+    """All-in development cost $/SF: hard + contingency + soft/financing + land, plus
+    the development fee on the total."""
+    return (hard_psf(state) + contingency_psf(state) + soft_fin_psf() + land_psf) * (
+        1.0 + DEV_FEE_PCT
+    )
+
+
+def land_acres(usable_acres: float | None, gross_acres: float | None) -> float | None:
+    """The acreage land $/SF is spread over: USABLE acres when measured (not NULL),
+    else gross. A measured usable of 0 (the whole parcel is wetland / floodway) is
+    returned as 0 on purpose — land_psf() then yields None rather than pricing the
+    land off acreage that can't be built on."""
+    if usable_acres is not None:
+        try:
+            return max(0.0, float(usable_acres))
+        except (TypeError, ValueError):
+            pass
+    if gross_acres is None:
+        return None
+    try:
+        return float(gross_acres)
+    except (TypeError, ValueError):
+        return None
 
 
 def _tier_mid(tier: str | None) -> float | None:
@@ -388,6 +420,81 @@ def margin_pct_flat(tier: str | None, state: str | None) -> float | None:
         return None
     net = mid * (1.0 - selling_cost_pct(state))
     return (net - ALL_IN_COST_PSF) / ALL_IN_COST_PSF
+
+
+# ── Existing building + card flags (owner decision 2026-10-19) ────────────────
+# A parcel whose assessor IMPROVEMENT (building) value is a quarter or more of its
+# total assessed value already carries a real building: a land play there means
+# buying (and usually demolishing) a going concern, so the card says so first.
+EXISTING_BUILDING_SHARE = 0.25
+
+# 'verify' bounds: land under $10/buildable SF or a margin above 80% on cost is
+# almost always a data problem (bad acreage, a non-land listing price), not a deal.
+VERIFY_LAND_PSF_MIN = 10.0
+VERIFY_MARGIN_MAX = 0.80
+
+FLAG_EXISTING_BUILDING = "existing_building"
+FLAG_NEGATIVE_MARGIN = "negative_margin"
+FLAG_VERIFY = "verify"
+
+
+def improvement_share(
+    improvement_value: float | None,
+    total_value: float | None,
+    land_value: float | None = None,
+) -> float | None:
+    """Assessor improvement (building) value ÷ total assessed value, clamped to [0, 1].
+
+    total_value falls back to land_value + improvement_value when the roll carries the
+    two parts but no total. NULL when the improvement value or a positive total is
+    missing (never guessed — an absent improvement value is NOT a vacant lot)."""
+    def _f(v):
+        try:
+            return None if v is None else float(v)
+        except (TypeError, ValueError):
+            return None
+
+    impr, total, land = _f(improvement_value), _f(total_value), _f(land_value)
+    if impr is None or impr < 0:
+        return None
+    if total is None or total <= 0:
+        if land is None or land < 0:
+            return None
+        total = land + impr
+    if total <= 0:
+        return None
+    return max(0.0, min(1.0, impr / total))
+
+
+def existing_building(share: float | None) -> bool | None:
+    """True when improvement_share >= EXISTING_BUILDING_SHARE; NULL when unmeasured."""
+    if share is None:
+        return None
+    return share >= EXISTING_BUILDING_SHARE
+
+
+def keep_flag(
+    land_psf: float | None,
+    margin: float | None,
+    existing_building: bool | None,
+) -> str | None:
+    """One card flag, in priority order:
+
+      'existing_building'  the parcel carries a building (improvement share >= 25%)
+      'negative_margin'    margin on cost < 0
+      'verify'             land_psf < $10/SF or margin > 80% (likely a data problem)
+      None                 nothing to flag (or nothing measured)
+
+    ``margin`` is the FRACTION margin_pct() returns (0.26 = 26%)."""
+    if existing_building:
+        return FLAG_EXISTING_BUILDING
+    if margin is not None and margin < 0:
+        return FLAG_NEGATIVE_MARGIN
+    if (land_psf is not None and land_psf < VERIFY_LAND_PSF_MIN) or (
+        margin is not None and margin > VERIFY_MARGIN_MAX
+    ):
+        return FLAG_VERIFY
+    return None
 
 
 # ── Competitor supply within ~30 min (information only — never a gate) ────────
