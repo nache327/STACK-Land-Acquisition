@@ -439,11 +439,32 @@ def _keep_fields(r: dict, sale_price=None, acres=None, city: str | None = None) 
     return out
 
 
+_CONFIRMED_BASES = ("human-verified", "ordinance-parsed")
+
+
+def _zoning_confirmed(row: dict) -> bool:
+    """True when the card's effective use verdict is viable on a grounded basis. A row
+    that carries neither field (older callers) is treated as confirmed so nothing that
+    previously showed economics silently loses them without a verdict to judge by."""
+    if "use_verdict" not in row and "verdict_basis" not in row:
+        return True
+    return (row.get("use_verdict") in _VIABLE
+            and row.get("verdict_basis") in _CONFIRMED_BASES)
+
+
 def _apply_keep(row: dict, keep: dict | None) -> None:
     """Attach the keep_* fields: garage-condo / 'both' cards only, NULL otherwise
     (NULL = unmeasured / not applicable, never a value). The land-aware margin is
     recomputed from THIS card's sale_price / acres / parcel city."""
     use = row.get("asset_type") in _KEEP_ASSET_TYPES and keep
+    # Filter 1 (Nache 2026-10-19): a tier / mix / margin is only shown on CONFIRMED
+    # by-right zoning -- an effective use_verdict of permitted/conditional on a grounded
+    # basis. An 'unclear' or heuristic card got a tier because the keep candidate set
+    # includes LGC 'unclear' parcels (Phase B); showing $325-350 and a margin there
+    # contradicted "zoned correctly, confirmed, not guessed". Those cards keep their
+    # 'Verify zoning' state on the main row and get no keep economics.
+    if use and not _zoning_confirmed(row):
+        use = False
     if use and "_tier" in keep and keep.get("keep_lane") is not None:
         keep = keep | _land_fields(
             keep["_tier"], keep.get("_state"), row.get("sale_price"), row.get("acres"),
@@ -481,7 +502,8 @@ async def refresh_keep_fields_for_unsynced(
     if not cols:
         return 0
     cards = await dashboard_conn.fetch(
-        "SELECT parcel_id, sale_price, acres, situs_city, city FROM deal_prospect "
+        "SELECT parcel_id, sale_price, acres, situs_city, city, use_verdict, verdict_basis "
+        "FROM deal_prospect "
         "WHERE coalesce(status, 'new') = ANY($1::text[]) "
         "AND asset_type = ANY($2::text[]) "
         "AND NOT (parcel_id = ANY($3::bigint[]))",
@@ -498,7 +520,8 @@ async def refresh_keep_fields_for_unsynced(
     args = []
     for c in cards:
         row = {"asset_type": "luxury_garage_condo", "sale_price": _num(c["sale_price"]),
-               "acres": _num(c["acres"]), "situs_city": c["situs_city"], "city": c["city"]}
+               "acres": _num(c["acres"]), "situs_city": c["situs_city"], "city": c["city"],
+               "use_verdict": c.get("use_verdict"), "verdict_basis": c.get("verdict_basis")}
         _apply_keep(row, keep.get(c["parcel_id"]))
         args.append((c["parcel_id"], *[row.get(k) for k in cols]))
     async with dashboard_conn.transaction():
