@@ -126,7 +126,8 @@ class _Tx:
 def _card(pid, **kw):
     return {"parcel_id": pid, "sale_price": 9_000_000, "acres": 6, "situs_city": None,
             "city": "Bernards township", "asset_type": "luxury_garage_condo",
-            "status": "reviewing"} | kw
+            "status": "reviewing", "use_verdict": "permitted",
+            "verdict_basis": "human-verified"} | kw
 
 
 @pytest.mark.asyncio
@@ -248,7 +249,9 @@ async def test_run_push_refreshes_unsynced_cards_at_the_end(monkeypatch):
         return [SimpleNamespace(id=1, use_case_id=1)]
 
     def row_for(d, s, a):
-        return {c: None for c in dp._FACT_COLUMNS} | {"parcel_id": d.parcel_id, "asset_type": a}
+        return {c: None for c in dp._FACT_COLUMNS} | {"parcel_id": d.parcel_id, "asset_type": a,
+                                                      "use_verdict": "permitted",
+                                                      "verdict_basis": "human-verified"}
 
     monkeypatch.setattr(dp, "_dashboard_dsn", lambda: "postgresql://board")
     monkeypatch.setattr(dp, "long_running_session_maker", session)
@@ -282,3 +285,22 @@ async def test_run_push_survives_refresh_failure(monkeypatch):
     monkeypatch.setattr(dp, "refresh_keep_fields_for_unsynced", boom)
     result = await dp.run_push()
     assert result["status"] == "ok" and result["keep_refreshed"] == 0
+
+
+def test_keep_economics_only_on_confirmed_zoning():
+    """Filter 1: no tier / mix / margin on an 'unclear' or heuristic card."""
+    from app.services import dashboard_push as dp
+
+    keep = {"keep_lane": "edge_of_wealth", "keep_tier": "tier_325_350", "keep_mix": "50/30/20",
+            "keep_margin_pct": 70}
+    for verdict, basis, shown in [
+        ("permitted", "human-verified", True),
+        ("conditional", "ordinance-parsed", True),
+        ("unclear", "human-verified", False),
+        ("permitted", "heuristic", False),
+        (None, "ungrounded muni", False),
+    ]:
+        row = {"asset_type": "luxury_garage_condo", "use_verdict": verdict, "verdict_basis": basis}
+        dp._apply_keep(row, dict(keep))
+        assert (row["keep_tier"] is not None) is shown, (verdict, basis)
+        assert (row["keep_mix"] is not None) is shown, (verdict, basis)

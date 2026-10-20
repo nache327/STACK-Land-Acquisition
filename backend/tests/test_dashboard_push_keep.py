@@ -109,7 +109,9 @@ def _patch(monkeypatch, board, keep_rows):
         return [SimpleNamespace(id=1, use_case_id=1)]
 
     def row_for(d, s, a):
-        return {c: None for c in dp._FACT_COLUMNS} | {"parcel_id": d.parcel_id, "asset_type": a}
+        return {c: None for c in dp._FACT_COLUMNS} | {"parcel_id": d.parcel_id, "asset_type": a,
+                                                      "use_verdict": "permitted",
+                                                      "verdict_basis": "human-verified"}
 
     monkeypatch.setattr(dp, "_dashboard_dsn", lambda: "postgresql://board")
     monkeypatch.setattr(dp, "long_running_session_maker", session)
