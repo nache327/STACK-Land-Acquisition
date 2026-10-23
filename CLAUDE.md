@@ -6,6 +6,24 @@ Real DB = Supabase (scripts use `scripts/_db.get_sync_dsn()` — asyncpg, sessio
 **Never hardcode/print credentials.** Commit + push when work is done; open a PR (merge-gated — Nache merges
 via UI → Railway auto-deploys). PR link form: `.../STACK-Land-Acquisition/pull/new/<branch>`.
 
+## HARD RULE — credentials never enter the repo (no exceptions, no "just this script")
+Why: Apr–May 2026, AI-written one-off scripts inlined the Supabase and Railway Postgres connection strings
+(password included) into ~45 files of a then-PUBLIC repo. A purge (Jul 6) did not rotate the Railway
+password, and on 2026-10-15 someone used it to log in and hunt for more credentials. Deleting a secret from
+code does NOT un-leak it — git history keeps it forever.
+- **NEVER write a password, API key, token, or full connection string into any file** — code, scripts, tests,
+  docs, notebooks, `outputs/`, commit messages, PR bodies. Not as a default, fallback, comment, or "temporary".
+- **Get the DB from the environment:** `from scripts._db import get_dsn, get_sync_dsn` (backend scripts) or
+  `from _db import get_sync_dsn` (repo-root `scripts/`). Other secrets: `app.config.settings.<name>` or
+  `os.environ[...]`, sourced from `backend/.env` (gitignored) or Railway variables.
+- If a script needs a credential that isn't in the environment, **stop and tell the user to add it to
+  `backend/.env`** — do not ask them to paste it into chat, and never paste one yourself.
+- Before every commit: `git diff --cached | grep -nE '://[^:/ ]+:[^@ ]+@|sk-ant-|re_[A-Za-z0-9]{8}|sk\.eyJ'`
+  must print nothing. If a secret ever lands in a commit or chat: tell the user, treat it as **leaked**, and
+  **rotate it at the provider first** — then clean the code.
+- Never print secret values in output (logs, `railway variables`, `.env`): report names, sanitized
+  hosts/users, and match/no-match only.
+
 ## The one metric — wealth-gated NEEDLE
 The product's only number is *parcels you'd confidently hand to someone for outreach*. Report the
 **wealth-gated needle count**, never raw coverage:
