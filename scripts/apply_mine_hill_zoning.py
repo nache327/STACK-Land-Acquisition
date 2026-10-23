@@ -46,8 +46,9 @@ MORRIS_ID = "746b7604-f362-470f-aa42-70dc8973b4ee"
 MUNICIPALITY = "Mine Hill township"
 
 # Direct-SQL DSN for the DELETE pass (no API endpoint exposes row delete).
-DSN = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
 
+DSN = get_sync_dsn()
 DELETE_ZONES = [
     "B-1", "B-2", "B-2ENV", "B-3", "B-4",
     "I-1", "I-2",

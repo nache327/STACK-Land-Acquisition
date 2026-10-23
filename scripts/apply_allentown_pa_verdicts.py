@@ -42,7 +42,9 @@ Coverage impact estimate (parcels):
 """
 import asyncio, asyncpg, json, sys
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB = get_sync_dsn()
 ALLENTOWN_JID = "8e7992d0-4d2f-42e9-b371-1c59c7767a33"
 
 PERMITTED_INDUSTRIAL = [

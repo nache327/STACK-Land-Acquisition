@@ -20,9 +20,9 @@ from __future__ import annotations
 import asyncio, argparse, sys
 import asyncpg
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
 
-
+DB = get_sync_dsn()
 async def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jid", help="Restrict to a single jurisdiction_id")

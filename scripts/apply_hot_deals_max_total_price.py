@@ -26,7 +26,9 @@ import sys
 
 import asyncpg
 
-DB_URL = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB_URL = get_sync_dsn()
 HOT_DEALS_FILTER_ID = "1c5a257d-b971-4ff7-bdf8-1b9b62083879"
 NEW_KEY = "maxTotalPrice"
 NEW_VALUE = 7_500_000

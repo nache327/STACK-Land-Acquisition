@@ -59,8 +59,9 @@ from typing import Any
 import asyncpg
 import requests
 
-DB_URL = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
 
+DB_URL = get_sync_dsn()
 # Registry: NJ counties that have parcel ingest in the DB. Bergen was
 # the first run (May 18 morning). The rest are added here so --all-nj
 # can sweep them. Monmouth + Somerset are deliberately omitted from
