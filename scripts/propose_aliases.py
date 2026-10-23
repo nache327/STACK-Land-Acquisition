@@ -27,7 +27,9 @@ from pathlib import Path
 
 import asyncpg
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB = get_sync_dsn()
 JURISDICTIONS = {
     "loudoun_va": "8ebaf814-11f9-4e18-89de-d8b947660174",
     "howard_md":  "dc2d9d42-aa78-45e3-8c85-970e69a30240",

@@ -37,7 +37,11 @@ raise SystemExit(
 
 import asyncio, asyncpg, sys  # noqa: E402,F401
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from pathlib import Path  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _db import get_sync_dsn  # noqa: E402
+
+DB = get_sync_dsn()
 APN = "0337_201_10"
 BURL = "d316fb43-d0e6-4359-aa47-6475fa99cc0f"
 TARGET_ZONE = "B-1"

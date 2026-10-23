@@ -41,7 +41,9 @@ import sys
 import asyncpg
 import httpx
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB = get_sync_dsn()
 NJDCA_FS = (
     "https://services.arcgis.com/Aur8tCo478N3VovT/arcgis/rest/services/"
     "Municipal_Zoning/FeatureServer/0"

@@ -2,10 +2,7 @@
 import asyncio
 import os
 
-os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://postgres.bbvywbpxwsoyvdvygvyw:"
-    "Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
-)
+# DATABASE_URL comes from the environment / backend/.env (app.config). Never hardcode it.
 
 from app.db import async_session_maker
 from app.services.competitor_kmz import ingest_kmz_file

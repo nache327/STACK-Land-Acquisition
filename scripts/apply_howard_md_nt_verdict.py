@@ -27,7 +27,9 @@ Bundled secondary updates from reviewer Chrome session:
 """
 import asyncio, asyncpg, json, sys
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB = get_sync_dsn()
 HOWARD_JID = "dc2d9d42-aa78-45e3-8c85-970e69a30240"
 
 

@@ -47,7 +47,9 @@ All map to canonical 'self_storage_facility'.
 """
 import asyncio, asyncpg, json, sys
 
-DB = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB = get_sync_dsn()
 ALLENTOWN = "8e7992d0-4d2f-42e9-b371-1c59c7767a33"
 HOWARD    = "dc2d9d42-aa78-45e3-8c85-970e69a30240"
 LOUDOUN   = "8ebaf814-11f9-4e18-89de-d8b947660174"

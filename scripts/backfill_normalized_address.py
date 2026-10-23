@@ -30,7 +30,9 @@ import asyncpg
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from app.services.address_normalizer import normalize  # noqa: E402
 
-DB_SESSION = "postgresql://postgres.bbvywbpxwsoyvdvygvyw:Teczmn3027$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+from _db import get_sync_dsn  # noqa: E402
+
+DB_SESSION = get_sync_dsn()
 CHUNK = 5000
 
 
